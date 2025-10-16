@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { createContext, useContext, useState, useCallback, ReactNode } from 'react';
@@ -32,9 +33,7 @@ export function GlobalNotificationProvider({ children }: { children: ReactNode }
 export function useGlobalNotification() {
   const context = useContext(NotificationContext);
   if (context === undefined) {
-    throw new Error('useGlobalNotification must be used within a GlobalNotificationProvider');
+    throw new Error('useGlobalNotification debe usarse dentro de un GlobalNotificationProvider');
   }
   return context;
 }
-
-    

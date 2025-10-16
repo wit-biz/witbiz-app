@@ -1,3 +1,4 @@
+
 import type { Metadata } from 'next';
 import './globals.css';
 import { SidebarProvider, SidebarInset } from '@/components/ui/sidebar';
@@ -9,7 +10,7 @@ import { GlobalNotificationProvider } from '@/contexts/NotificationContext';
 
 export const metadata: Metadata = {
   title: 'WitCRM',
-  description: 'A CRM for the modern sales team.',
+  description: 'Un CRM para el equipo de ventas moderno.',
 };
 
 export default function RootLayout({
@@ -18,7 +19,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="es" suppressHydrationWarning>
       <head>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />

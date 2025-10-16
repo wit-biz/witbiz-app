@@ -57,30 +57,30 @@ export function AppSidebar() {
           <DropdownMenuTrigger asChild>
             <SidebarMenuButton
               className="w-full justify-start"
-              tooltip="User Profile"
+              tooltip="Perfil de Usuario"
             >
               <Avatar className="h-8 w-8">
                 {userAvatar && <AvatarImage src={userAvatar.imageUrl} data-ai-hint={userAvatar.imageHint}/>}
                 <AvatarFallback>U</AvatarFallback>
               </Avatar>
-              <span className="text-sm font-medium">User Profile</span>
+              <span className="text-sm font-medium">Perfil de Usuario</span>
             </SidebarMenuButton>
           </DropdownMenuTrigger>
           <DropdownMenuContent side="right" align="start" sideOffset={12}>
-            <DropdownMenuLabel>My Account</DropdownMenuLabel>
+            <DropdownMenuLabel>Mi Cuenta</DropdownMenuLabel>
             <DropdownMenuSeparator />
             <DropdownMenuItem>
               <UserCircle className="mr-2 h-4 w-4" />
-              <span>Profile</span>
+              <span>Perfil</span>
             </DropdownMenuItem>
             <DropdownMenuItem>
               <LifeBuoy className="mr-2 h-4 w-4" />
-              <span>Support</span>
+              <span>Soporte</span>
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem>
               <LogOut className="mr-2 h-4 w-4" />
-              <span>Log out</span>
+              <span>Cerrar Sesión</span>
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

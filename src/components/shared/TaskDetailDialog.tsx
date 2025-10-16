@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useState } from 'react';
@@ -47,15 +48,15 @@ export function TaskDetailDialog({
   const handleMarkAsComplete = async () => {
     if (!onUpdateTask) return;
     setIsSubmitting(true);
-    const success = await onUpdateTask(task.id, { status: 'Done' });
+    const success = await onUpdateTask(task.id, { status: 'Completada' });
     if (success) {
-      toast({ title: 'Success', description: 'Task marked as complete.' });
+      toast({ title: 'Éxito', description: 'Tarea marcada como completada.' });
       onOpenChange(false);
     } else {
       toast({
         variant: 'destructive',
         title: 'Error',
-        description: 'Failed to update task.',
+        description: 'No se pudo actualizar la tarea.',
       });
     }
     setIsSubmitting(false);
@@ -66,13 +67,13 @@ export function TaskDetailDialog({
     setIsSubmitting(true);
     const success = await onDeleteTask(task.id);
     if (success) {
-      toast({ title: 'Success', description: 'Task deleted.' });
+      toast({ title: 'Éxito', description: 'Tarea eliminada.' });
       onOpenChange(false);
     } else {
       toast({
         variant: 'destructive',
         title: 'Error',
-        description: 'Failed to delete task.',
+        description: 'No se pudo eliminar la tarea.',
       });
     }
     setIsSubmitting(false);
@@ -84,15 +85,15 @@ export function TaskDetailDialog({
         <DialogHeader>
           <DialogTitle>{task.title}</DialogTitle>
           <DialogDescription>
-            Due: {format(task.dueDate, 'PPP')} | Status: {task.status}
+            Vence: {format(new Date(task.dueDate), 'PPP')} | Estado: {task.status}
           </DialogDescription>
         </DialogHeader>
         <div className="py-4 space-y-2">
           <p>
-            <strong>Client:</strong> {task.clientName}
+            <strong>Cliente:</strong> {task.clientName}
           </p>
           <p>
-            <strong>Details:</strong> {task.description || 'No details provided.'}
+            <strong>Detalles:</strong> {task.description || 'Sin detalles.'}
           </p>
         </div>
         <DialogFooter className="sm:justify-between">
@@ -103,7 +104,7 @@ export function TaskDetailDialog({
               onClick={() => setIsEditing(!isEditing)}
               disabled={isSubmitting}
             >
-              <Edit className="mr-2 h-4 w-4" /> Edit
+              <Edit className="mr-2 h-4 w-4" /> Editar
             </Button>
             <Button
               variant="destructive"
@@ -113,16 +114,16 @@ export function TaskDetailDialog({
               className="ml-2"
             >
                {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Trash className="mr-2 h-4 w-4" />}
-              Delete
+              Eliminar
             </Button>
           </div>
           <Button
             size="sm"
             onClick={handleMarkAsComplete}
-            disabled={isSubmitting || task.status === 'Done'}
+            disabled={isSubmitting || task.status === 'Completada'}
           >
             {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <CheckCircle className="mr-2 h-4 w-4" />}
-            Mark as Completed
+            Marcar como Completada
           </Button>
         </DialogFooter>
       </DialogContent>

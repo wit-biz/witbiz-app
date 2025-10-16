@@ -91,7 +91,7 @@ export function SmartDocumentUploadDialog({
         const mockResult = {
           clientName: 'Innovate Inc.',
           documentType: 'Propuesta' as DocumentType,
-          rawText: 'This is a mock analysis of the document content...'
+          rawText: 'Este es un análisis simulado del contenido del documento...'
         };
         
         setAnalysisResult(mockResult);
@@ -143,7 +143,6 @@ export function SmartDocumentUploadDialog({
             name: newClientName.trim(),
             owner: 'Auto-Asignado (IA)',
             category: 'General',
-            // Omit other fields, they can be filled later
         });
         if (newClient && typeof newClient !== 'boolean') {
             finalClientId = newClient.id;
@@ -160,7 +159,6 @@ export function SmartDocumentUploadDialog({
             name: file.name,
             type: finalDocumentType as DocumentType,
             clientId: finalClientId,
-            // uploadDate will be handled by the context/backend
         }, file);
         if (newDoc) {
             onDocumentUploaded?.(newDoc.id);
@@ -300,4 +298,3 @@ export function SmartDocumentUploadDialog({
     </Dialog>
   );
 }
-

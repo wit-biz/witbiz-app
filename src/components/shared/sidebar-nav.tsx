@@ -28,11 +28,11 @@ import { NavItem } from "@/lib/types";
 
 
 const navItems: NavItem[] = [
-    { href: '/', label: 'Dashboard', icon: LayoutDashboard, exactMatch: true, requiredPermission: 'dashboard' },
-    { href: '/contacts', label: 'Clients', icon: Users, requiredPermission: 'clients_view' },
-    { href: '/tasks', label: 'Tasks', icon: ListTodo, requiredPermission: 'tasks_view' },
-    { href: '/bookings', label: 'Bookings', icon: Calendar, requiredPermission: 'reservations_view' },
-    { href: '/workflows', label: 'Workflows', icon: Settings, requiredPermission: 'workflows_view' },
+    { href: '/', label: 'Inicio', icon: LayoutDashboard, exactMatch: true, requiredPermission: 'dashboard' },
+    { href: '/contacts', label: 'Usuarios', icon: Users, requiredPermission: 'clients_view' },
+    { href: '/tasks', label: 'Tareas', icon: ListTodo, requiredPermission: 'tasks_view' },
+    { href: '/bookings', label: 'Reservaciones', icon: Calendar, requiredPermission: 'reservations_view' },
+    { href: '/workflows', label: 'Flujos', icon: Settings, requiredPermission: 'workflows_view' },
 ];
 
 export function SidebarNav() {
@@ -50,7 +50,6 @@ export function SidebarNav() {
     if (!currentUser?.permissions?.donna) return false;
     if (permissionKey === 'dashboard') return true;
     
-    // A simple guard against trying to access a key that might not exist, which would crash.
     if (permissionKey in currentUser.permissions.donna) {
         return currentUser.permissions.donna[permissionKey as keyof typeof currentUser.permissions.donna];
     }

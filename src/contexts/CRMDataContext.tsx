@@ -19,12 +19,12 @@ import {
 } from '@/lib/types';
 import { clients as mockClients, tasks as mockTasks, documents as mockDocs, notes as mockNotes, bookings as mockBookings, workflowStages as mockWorkflowStages } from '@/lib/data';
 
-// Initial Mock Data
+// Datos Iniciales de Ejemplo
 const initialServiceWorkflows: ServiceWorkflow[] = [
     {
       id: 'sw-1',
       name: 'Onboarding de Cliente Estándar',
-      stages: [], // Not used when subServices are present
+      stages: [], // No usado cuando hay sub-servicios
       subServices: [
         {
           id: 'sub-1',
@@ -41,11 +41,11 @@ const initialServiceWorkflows: ServiceWorkflow[] = [
 ];
 
 const initialClients: Client[] = [
-    { id: '1', name: 'Innovate Inc.', owner: 'You', category: 'Tech', subscribedServiceIds: ['sw-1'], currentWorkflowStageId: 'stage-2', currentObjectiveId: 'obj-2-1', contactEmail: "contact@innovate.com", contactPhone: "123-456-7890", website: "innovate.com" },
-    { id: '2', name: 'Synergy Corp.', owner: 'Alex Smith', category: 'Finance', subscribedServiceIds: ['sw-1'], currentWorkflowStageId: 'stage-3', currentObjectiveId: 'obj-3-1', contactEmail: "contact@synergy.com", contactPhone: "123-456-7890", website: "synergy.com" },
-    { id: '3', name: 'Solutions LLC', owner: 'You', category: 'Healthcare', subscribedServiceIds: ['sw-1'], currentWorkflowStageId: 'stage-1', currentObjectiveId: 'obj-1-1', contactEmail: "contact@solutions.com", contactPhone: "123-456-7890", website: "solutions.com" },
-    { id: '4', name: 'Global Net', owner: 'Jane Doe', category: 'Logistics', subscribedServiceIds: ['sw-1'], currentWorkflowStageId: 'stage-4', currentObjectiveId: 'obj-4-1', contactEmail: "contact@global.com", contactPhone: "123-456-7890", website: "global.com" },
-    { id: '5', name: 'Marketing Pro', owner: 'You', category: 'Marketing', subscribedServiceIds: ['sw-1'], currentWorkflowStageId: 'stage-1', currentObjectiveId: 'obj-1-1', contactEmail: "contact@marketing.com", contactPhone: "123-456-7890", website: "marketing.com" },
+    { id: '1', name: 'Innovate Inc.', owner: 'Tú', category: 'Tecnología', subscribedServiceIds: ['sw-1'], currentWorkflowStageId: 'stage-2', currentObjectiveId: 'obj-2-1', contactEmail: "contact@innovate.com", contactPhone: "123-456-7890", website: "innovate.com" },
+    { id: '2', name: 'Synergy Corp.', owner: 'Alex Smith', category: 'Finanzas', subscribedServiceIds: ['sw-1'], currentWorkflowStageId: 'stage-3', currentObjectiveId: 'obj-3-1', contactEmail: "contact@synergy.com", contactPhone: "123-456-7890", website: "synergy.com" },
+    { id: '3', name: 'Solutions LLC', owner: 'Tú', category: 'Salud', subscribedServiceIds: ['sw-1'], currentWorkflowStageId: 'stage-1', currentObjectiveId: 'obj-1-1', contactEmail: "contact@solutions.com", contactPhone: "123-456-7890", website: "solutions.com" },
+    { id: '4', name: 'Global Net', owner: 'Jane Doe', category: 'Logística', subscribedServiceIds: ['sw-1'], currentWorkflowStageId: 'stage-4', currentObjectiveId: 'obj-4-1', contactEmail: "contact@global.com", contactPhone: "123-456-7890", website: "global.com" },
+    { id: '5', name: 'Marketing Pro', owner: 'Tú', category: 'Marketing', subscribedServiceIds: ['sw-1'], currentWorkflowStageId: 'stage-1', currentObjectiveId: 'obj-1-1', contactEmail: "contact@marketing.com", contactPhone: "123-456-7890", website: "marketing.com" },
 ];
 
 
@@ -108,7 +108,7 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
     const { showNotification } = useGlobalNotification();
 
     const [currentUser, setCurrentUser] = useState<AuthenticatedUser | null>({
-        uid: 'user-123', email: 'user@example.com', displayName: 'Test User', photoURL: null,
+        uid: 'user-123', email: 'usuario@ejemplo.com', displayName: 'Usuario de Prueba', photoURL: null,
         permissions: { donna: { clients_create: true, clients_edit: true, clients_delete: true, clients_view: true, documents_create: true, documents_edit: true, documents_delete: true, documents_view: true, tasks_create: true, tasks_edit: true, tasks_delete: true, tasks_view: true, reservations_create: true, reservations_edit: true, reservations_delete: true, reservations_view: true, workflows_edit: true, workflows_view: true, reports_view: true } }
     });
 
@@ -125,7 +125,7 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
     const [isLoadingClientNotes, setIsLoadingClientNotes] = useState(false);
     const [isLoadingDonnaReservations, setIsLoadingDonnaReservations] = useState(false);
 
-    // MOCK IMPLEMENTATIONS
+    // IMPLEMENTACIONES DE EJEMPLO (MOCK)
     const addClient = async (data: Omit<Client, 'id'>) => {
         const newClient: Client = { id: `C${Date.now()}`, ...data };
         setClients(prev => [...prev, newClient]);
@@ -222,7 +222,7 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
         return true;
     };
 
-    // WORKFLOWS MOCKS
+    // MOCKS DE FLUJOS DE TRABAJO
     const addService = async () => {
         const newService: ServiceWorkflow = { id: `sw-${Date.now()}`, name: "Nuevo Servicio (sin título)", stages: [], subServices: [] };
         setServiceWorkflows(prev => [...prev, newService]);

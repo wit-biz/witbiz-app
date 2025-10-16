@@ -6,8 +6,8 @@ export type Client = {
   name: string;
   owner: string;
   category: string;
-  stage?: string; // Optional legacy
-  currentObjective?: string; // Optional legacy
+  stage?: string; // Opcional, legado
+  currentObjective?: string; // Opcional, legado
   contactEmail?: string;
   contactPhone?: string;
   website?: string;
@@ -31,7 +31,7 @@ export type Document = {
   id: string;
   name: string;
   type: DocumentType;
-  uploadedAt: any; // Firestore Timestamp or Date
+  uploadedAt: any; // Firestore Timestamp o Date
   clientId: string;
   downloadURL?: string;
   uploadDate?: string; // ISO String YYYY-MM-DD
@@ -39,12 +39,12 @@ export type Document = {
 
 export type Note = {
   id: string;
-  content: string; // Legacy or for display
+  content: string; // Legado o para visualización
   text: string;
-  createdAt: any; // Firestore Timestamp or Date
+  createdAt: any; // Firestore Timestamp o Date
   clientId: string;
   authorName?: string;
-  updatedAt?: any; // Firestore Timestamp or Date
+  updatedAt?: any; // Firestore Timestamp o Date
 };
 
 export type Reservation = {
@@ -56,7 +56,7 @@ export type Reservation = {
   time: string; // HH:MM
   details: string;
   status: 'Confirmada' | 'Pendiente' | 'Cancelada';
-  createdAt?: any; // Firestore Timestamp or Date
+  createdAt?: any; // Firestore Timestamp o Date
 };
 
 export type WorkflowStage = {
@@ -77,7 +77,7 @@ export type WorkflowStageObjective = {
 export type SubObjective = {
     id: string;
     text: string;
-    order?: number; // Made optional for mock data simplicity
+    order?: number; // Opcional para simplicidad en datos de ejemplo
 };
 
 export type DocumentType = "Contrato" | "Factura" | "Propuesta" | "Informe" | "Otro";
@@ -135,7 +135,7 @@ export interface SubService {
 export interface ServiceWorkflow {
     id: string;
     name: string;
-    stages: WorkflowStage[]; // Legacy or for simple workflows
+    stages: WorkflowStage[]; // Legado o para flujos simples
     subServices: SubService[];
 }
 

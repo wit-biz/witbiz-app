@@ -84,7 +84,7 @@ export default function InicioPage() {
 
   const [searchTermDashboard, setSearchTermDashboard] = useState("");
   const [isPopoverOpenDashboard, setIsPopoverOpenDashboard] = useState(false);
-  const [highlightedStage, setHighlightedStage] = useState<string | null>(null);
+  const [highlightedStageId, setHighlightedStageId] = useState<string | null>(null);
   const inputRefDashboard = useRef<HTMLInputElement>(null);
   
   const workflowStagesForDisplay: WorkflowStage[] = workflowStages;
@@ -122,7 +122,7 @@ export default function InicioPage() {
   }, [searchTermDashboard, clients, isLoadingClients]);
 
   const handleStageClick = (stage: WorkflowStage) => {
-    setHighlightedStage(stage.title);
+    setHighlightedStageId(stage.id);
     setSelectedStage(stage);
     setIsStageClientsDialogOpen(true);
   };
@@ -135,7 +135,7 @@ export default function InicioPage() {
 
   const handleClientSearchSelection = useCallback((client: Client) => {
     setSearchTermDashboard(client.name);
-    setHighlightedStage(client.stage || null);
+    setHighlightedStageId(client.stage || null);
     setIsPopoverOpenDashboard(false);
 
     const stage = workflowStages.find(ws => ws.title === client.stage);
@@ -238,7 +238,7 @@ export default function InicioPage() {
                     <Button variant="outline" className="h-8 px-2 py-1 text-xs w-full sm:w-40">
                     <Search className="h-3 w-3 mr-1.5 text-muted-foreground" />
                     <span className="text-muted-foreground truncate max-w-[100px] sm:max-w-[120px]">
-                        {highlightedStage && clients.find(c => c.stage === highlightedStage && c.name === searchTermDashboard) ? searchTermDashboard : "Buscar Cliente..."}
+                        {highlightedStageId && clients.find(c => c.stage === highlightedStageId && c.name === searchTermDashboard) ? searchTermDashboard : "Buscar Cliente..."}
                     </span>
                     </Button>
                 </PopoverTrigger>
@@ -292,7 +292,7 @@ export default function InicioPage() {
             <div className="flex flex-col items-center gap-2 sm:hidden">
                 {workflowStagesForDisplay.map((stage, index) => {
                 const isPopulated = populatedStageIds.has(stage.title);
-                const isHighlighted = stage.title === highlightedStage;
+                const isHighlighted = stage.id === highlightedStageId;
                 let currentStatusForStyling: 'locked' | 'active' | 'completed' = 'locked';
 
                 if (isPopulated && !isHighlighted) {
@@ -346,7 +346,7 @@ export default function InicioPage() {
             <div className="hidden sm:flex flex-wrap items-start gap-2">
                 {workflowStagesForDisplay.map((stage, index) => {
                  const isPopulated = populatedStageIds.has(stage.title);
-                 const isHighlighted = stage.title === highlightedStage;
+                 const isHighlighted = stage.id === highlightedStageId;
                  let currentStatusForStyling: 'locked' | 'active' | 'completed' = 'locked';
                 
                  if (isPopulated && !isHighlighted) {
