@@ -1,3 +1,6 @@
+
+import { type LucideIcon } from "lucide-react";
+
 export type Client = {
   id: string;
   name: string;
@@ -79,25 +82,41 @@ export type SubObjective = {
 
 export type DocumentType = "Contrato" | "Factura" | "Propuesta" | "Informe" | "Otro";
 
+export type DonnaPermissions = {
+    clients_create: boolean;
+    clients_edit: boolean;
+    clients_delete: boolean;
+    clients_view: boolean;
+    documents_create: boolean;
+    documents_edit: boolean;
+    documents_delete: boolean;
+    documents_view: boolean;
+    tasks_create: boolean;
+    tasks_edit: boolean;
+    tasks_delete: boolean;
+    tasks_view: boolean;
+    reservations_create: boolean;
+    reservations_edit: boolean;
+    reservations_delete: boolean;
+    reservations_view: boolean;
+    workflows_edit: boolean;
+    workflows_view: boolean;
+    reports_view: boolean;
+}
+
+export type UserRole = {
+    id: string;
+    name: string;
+    permissions: DonnaPermissions;
+}
+
 export interface AuthenticatedUser {
   uid: string;
   email: string | null;
   displayName: string | null;
   photoURL: string | null;
   permissions: {
-    donna: {
-      clients_create: boolean;
-      clients_edit: boolean;
-      clients_delete: boolean;
-      documents_create: boolean;
-      documents_edit: boolean;
-      documents_delete: boolean;
-      tasks_create: boolean;
-      reservations_create: boolean;
-      reservations_edit: boolean;
-      reservations_delete: boolean;
-      workflows_edit: boolean;
-    };
+    donna: Partial<DonnaPermissions>;
   };
 }
 
@@ -118,4 +137,12 @@ export interface ServiceWorkflow {
     name: string;
     stages: WorkflowStage[]; // Legacy or for simple workflows
     subServices: SubService[];
+}
+
+export interface NavItem {
+  href: string;
+  label: string;
+  icon: LucideIcon;
+  exactMatch?: boolean;
+  requiredPermission: 'dashboard' | keyof DonnaPermissions;
 }

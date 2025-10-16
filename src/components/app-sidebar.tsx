@@ -1,26 +1,18 @@
+
 'use client';
 
 import {
   Sidebar,
   SidebarHeader,
   SidebarContent,
-  SidebarMenu,
-  SidebarMenuItem,
-  SidebarMenuButton,
   SidebarFooter,
+  SidebarMenuButton,
 } from '@/components/ui/sidebar';
 import {
-  LayoutDashboard,
-  Users,
-  Calendar,
-  Settings,
   UserCircle,
   LifeBuoy,
   LogOut,
-  ListTodo,
 } from 'lucide-react';
-import Link from 'next/link';
-import { usePathname } from 'next/navigation';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -31,6 +23,7 @@ import {
 } from './ui/dropdown-menu';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
+import { SidebarNav } from './shared/sidebar-nav';
 
 const userAvatar = PlaceHolderImages.find((img) => img.id === 'user-avatar');
 
@@ -47,15 +40,6 @@ const Logo = () => (
 );
 
 export function AppSidebar() {
-  const pathname = usePathname();
-
-  const menuItems = [
-    { href: '/', label: 'Dashboard', icon: LayoutDashboard },
-    { href: '/contacts', label: 'Clients', icon: Users },
-    { href: '/tasks', label: 'Tasks', icon: ListTodo },
-    { href: '/bookings', label: 'Bookings', icon: Calendar },
-    { href: '/workflows', label: 'Workflows', icon: Settings },
-  ];
 
   return (
     <Sidebar>
@@ -66,22 +50,7 @@ export function AppSidebar() {
         </div>
       </SidebarHeader>
       <SidebarContent>
-        <SidebarMenu>
-          {menuItems.map((item) => (
-            <SidebarMenuItem key={item.label}>
-              <SidebarMenuButton
-                asChild
-                isActive={pathname === item.href}
-                tooltip={item.label}
-              >
-                <Link href={item.href}>
-                  <item.icon />
-                  <span>{item.label}</span>
-                </Link>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-          ))}
-        </SidebarMenu>
+        <SidebarNav />
       </SidebarContent>
       <SidebarFooter>
         <DropdownMenu>

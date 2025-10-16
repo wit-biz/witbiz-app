@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { createContext, useContext, useState, useMemo, type ReactNode, useCallback, useEffect } from 'react';
@@ -12,7 +13,9 @@ import {
     type ServiceWorkflow, 
     type SubService, 
     type WorkflowStage, 
-    type WorkflowStageObjective 
+    type WorkflowStageObjective,
+    type DocumentType,
+    type DonnaPermissions,
 } from '@/lib/types';
 import { clients as mockClients, tasks as mockTasks, documents as mockDocs, notes as mockNotes, bookings as mockBookings, workflowStages as mockWorkflowStages } from '@/lib/data';
 
@@ -50,7 +53,7 @@ interface CRMContextType {
   currentUser: AuthenticatedUser | null;
   clients: Client[];
   isLoadingClients: boolean;
-  addClient: (newClientData: Omit<Client, 'id'>) => Promise<boolean>;
+  addClient: (newClientData: Omit<Client, 'id'>) => Promise<Client | null>;
   updateClient: (clientId: string, updates: Partial<Client>) => Promise<boolean>;
   deleteClient: (clientId: string) => Promise<boolean>;
   getClientById: (clientId: string) => Client | undefined;
@@ -64,7 +67,7 @@ interface CRMContextType {
 
   documents: Document[];
   isLoadingDocuments: boolean;
-  addDocument: (newDocumentData: Omit<Document, 'id'>, file?: File) => Promise<Document | null>;
+  addDocument: (newDocumentData: Omit<Document, 'id' | 'uploadedAt' | 'downloadURL'>, file: File) => Promise<Document | null>;
   updateDocument: (documentId: string, updates: Partial<Document>) => Promise<boolean>;
   deleteDocument: (documentId: string) => Promise<boolean>;
   getDocumentsByClientId: (clientId: string) => Document[];
@@ -93,6 +96,7 @@ interface CRMContextType {
   updateStageInSubService: (serviceId: string, subServiceId: string | null, stageId: string, updates: Partial<WorkflowStage>) => Promise<boolean>;
   deleteStageFromSubService: (serviceId: string, subServiceId: string | null, stageId: string) => Promise<boolean>;
   addObjectiveToStage: (serviceId: string, subServiceId: string | null, stageId: string) => Promise<boolean>;
+  updateObjectiveInStage: (serviceId: string, subServiceId: string | null, stageId: string, objectiveId: string, updates: Partial<WorkflowStageObjective>) => Promise<boolean>;
   deleteObjectiveFromStage: (serviceId: string, subServiceId: string | null, stageId: string, objectiveId: string) => Promise<boolean>;
   getObjectiveById: (objectiveId: string) => WorkflowStageObjective | null;
   completeClientObjective: (clientId: string) => Promise<{ nextObjective: WorkflowStageObjective | null; updatedClient: Client | null; }>;
@@ -105,7 +109,7 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
 
     const [currentUser, setCurrentUser] = useState<AuthenticatedUser | null>({
         uid: 'user-123', email: 'user@example.com', displayName: 'Test User', photoURL: null,
-        permissions: { donna: { clients_create: true, clients_edit: true, clients_delete: true, documents_create: true, documents_edit: true, documents_delete: true, tasks_create: true, reservations_create: true, reservations_edit: true, reservations_delete: true, workflows_edit: true } }
+        permissions: { donna: { clients_create: true, clients_edit: true, clients_delete: true, clients_view: true, documents_create: true, documents_edit: true, documents_delete: true, documents_view: true, tasks_create: true, tasks_edit: true, tasks_delete: true, tasks_view: true, reservations_create: true, reservations_edit: true, reservations_delete: true, reservations_view: true, workflows_edit: true, workflows_view: true, reports_view: true } }
     });
 
     const [clients, setClients] = useState<Client[]>(initialClients);
@@ -126,7 +130,7 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
         const newClient: Client = { id: `C${Date.now()}`, ...data };
         setClients(prev => [...prev, newClient]);
         showNotification('success', 'Cliente añadido', `El cliente ${newClient.name} ha sido creado.`);
-        return true;
+        return newClient;
     };
     const updateClient = async (id: string, updates: Partial<Client>) => {
         setClients(prev => prev.map(c => c.id === id ? {...c, ...updates} : c));
@@ -159,7 +163,7 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
     }
     const getTasksByClientId = (clientId: string) => tasks.filter(t => t.clientId === clientId);
     
-    const addDocument = async (data: Omit<Document, 'id'>) => {
+    const addDocument = async (data: Omit<Document, 'id' | 'uploadedAt' | 'downloadURL'>) => {
         const newDoc: Document = { id: `D${Date.now()}`, uploadedAt: new Date(), downloadURL: '#', ...data };
         setDocuments(prev => [...prev, newDoc]);
         showNotification('success', 'Documento añadido', `El documento ${newDoc.name} ha sido subido.`);
@@ -185,7 +189,7 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
         }, 300);
     };
     const addClientNote = async (clientId: string, text: string) => {
-        const newNote: Note = { id: `N${Date.now()}`, clientId, text, content: text, createdAt: new Date(), authorName: currentUser?.displayName || 'Usuario' };
+        const newNote: Note = { id: `N${Date.now()}`, clientId, text: text, content: text, createdAt: new Date(), authorName: currentUser?.displayName || 'Usuario' };
         setClientNotes(prev => [newNote, ...prev]);
         showNotification('success', 'Nota añadida');
         return true;
@@ -339,6 +343,28 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
         }));
         return true;
     };
+    const updateObjectiveInStage = async (serviceId: string, subServiceId: string | null, stageId: string, objectiveId: string, updates: Partial<WorkflowStageObjective>) => {
+        setServiceWorkflows(prev => prev.map(s => {
+            if (s.id === serviceId) {
+                const newSubs = s.subServices.map(sub => {
+                    if ((subServiceId && sub.id === subServiceId) || (!subServiceId && s.subServices.indexOf(sub) === 0)) {
+                        const newStages = sub.stages.map(st => {
+                            if (st.id === stageId) {
+                                const newObjectives = st.objectives.map(o => o.id === objectiveId ? {...o, ...updates} : o);
+                                return {...st, objectives: newObjectives };
+                            }
+                            return st;
+                        });
+                        return {...sub, stages: newStages };
+                    }
+                    return sub;
+                });
+                return {...s, subServices: newSubs };
+            }
+            return s;
+        }));
+        return true;
+    };
     const deleteObjectiveFromStage = async (serviceId: string, subServiceId: string | null, stageId: string, objectiveId: string) => {
         setServiceWorkflows(prev => prev.map(s => {
             if (s.id === serviceId) {
@@ -433,7 +459,7 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
         documents, isLoadingDocuments, addDocument, updateDocument, deleteDocument, getDocumentsByClientId,
         clientNotes, isLoadingClientNotes, fetchClientNotes, addClientNote, updateClientNote, deleteClientNote,
         donnaReservations, isLoadingDonnaReservations, addDonnaReservation, updateDonnaReservation, deleteDonnaReservation,
-        serviceWorkflows, addService, updateService, deleteService, addSubServiceToService, updateSubServiceName, deleteSubServiceFromService, addStageToSubService, updateStageInSubService, deleteStageFromSubService, addObjectiveToStage, deleteObjectiveFromStage,
+        serviceWorkflows, addService, updateService, deleteService, addSubServiceToService, updateSubServiceName, deleteSubServiceFromService, addStageToSubService, updateStageInSubService, deleteStageFromSubService, addObjectiveToStage, updateObjectiveInStage, deleteObjectiveFromStage,
         getObjectiveById, completeClientObjective
     }), [
         currentUser, clients, isLoadingClients, getClientById,
@@ -443,7 +469,7 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
         clientNotes, isLoadingClientNotes,
         donnaReservations, isLoadingDonnaReservations,
         serviceWorkflows,
-        getObjectiveById, completeClientObjective
+        getObjectiveById, completeClientObjective, addClient, updateClient, deleteClient, addTask, updateTask, deleteTask, addDocument, updateDocument, deleteDocument, fetchClientNotes, addClientNote, updateClientNote, deleteClientNote, addDonnaReservation, updateDonnaReservation, deleteDonnaReservation, addService, updateService, deleteService, addSubServiceToService, updateSubServiceName, deleteSubServiceFromService, addStageToSubService, updateStageInSubService, deleteStageFromSubService, addObjectiveToStage, updateObjectiveInStage, deleteObjectiveFromStage
     ]);
 
     return (
