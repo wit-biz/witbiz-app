@@ -20,7 +20,7 @@ import { cn, formatDateString, formatTimeString, parseDateString } from "@/lib/u
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { Badge } from "@/components/ui/badge";
-import { Booking, Client } from "@/lib/types";
+import { type Booking } from "@/lib/types";
 import { useCRMData } from "@/contexts/CRMDataContext";
 
 type ReservationType = 'Cita' | 'Operación Divisas';
@@ -31,7 +31,7 @@ const initialNewReservationData: FormData = {
   clientId: "",
   clientName: "",
   type: 'Cita',
-  date: new Date(),
+  date: new Date().toISOString().split('T')[0],
   time: "",
   details: "",
   status: 'Confirmada',
@@ -48,6 +48,7 @@ export default function ReservationsPage() {
         updateDonnaReservation, 
         deleteDonnaReservation 
     } = useCRMData();
+
     const [calendarDate, setCalendarDate] = useState<Date | undefined>(new Date());
     const [isSubmitting, setIsSubmitting] = useState(false);
   
@@ -96,7 +97,10 @@ export default function ReservationsPage() {
   const handleOpenFormDialog = (reservation: Booking | null) => {
     if (reservation) {
       setReservationToEdit(reservation);
-      setFormData(reservation);
+      setFormData({
+        ...reservation,
+        date: reservation.date ? format(parseDateString(reservation.date) || new Date(), 'yyyy-MM-dd') : format(new Date(), 'yyyy-MM-dd')
+      });
     } else {
       setReservationToEdit(null);
       setFormData({ ...initialNewReservationData, date: format(calendarDate || new Date(), 'yyyy-MM-dd')});
@@ -147,12 +151,12 @@ export default function ReservationsPage() {
   const reservationsForSelectedDate = useMemo(() => {
     if (!calendarDate) return [];
     const selectedDayString = format(calendarDate, 'yyyy-MM-dd');
-    return bookings.filter(res => format(new Date(res.date), 'yyyy-MM-dd') === selectedDayString).sort((a, b) => (a.time || '00:00').localeCompare(b.time || '00:00'));
+    return bookings.filter(res => format(parseDateString(res.date) || new Date(), 'yyyy-MM-dd') === selectedDayString).sort((a, b) => (a.time || '00:00').localeCompare(b.time || '00:00'));
   }, [bookings, calendarDate]);
   
   const dayModifiers = useMemo(() => {
     if (!today) return {};
-    const reservationDates = bookings.map(res => res.date).filter((date): date is Date => date !== null).map(d => new Date(d));
+    const reservationDates = bookings.map(res => parseDateString(res.date)).filter((date): date is Date => date !== null);
     const todayReservations = reservationDates.filter(date => date.getTime() === today.getTime());
     const futureReservations = reservationDates.filter(date => date.getTime() > today.getTime());
     return { today_reservations: todayReservations, future_reservations: futureReservations };
@@ -311,10 +315,10 @@ export default function ReservationsPage() {
                     <PopoverTrigger asChild>
                       <Button variant="outline" className={cn("w-full justify-start text-left font-normal", !formData.date && "text-muted-foreground")} disabled={isSubmitting}>
                         <CalendarIcon className="mr-2 h-4 w-4" />
-                        {formData.date ? format(new Date(formData.date), "PPP", { locale: es }) : <span>Seleccione fecha</span>}
+                        {formData.date ? format(parseDateString(formData.date) || new Date(), "PPP", { locale: es }) : <span>Seleccione fecha</span>}
                       </Button>
                     </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0"><Calendar mode="single" selected={new Date(formData.date)} onSelect={handleDateChangeForAddDialog} initialFocus /></PopoverContent>
+                    <PopoverContent className="w-auto p-0"><Calendar mode="single" selected={parseDateString(formData.date)} onSelect={handleDateChangeForAddDialog} initialFocus /></PopoverContent>
                   </Popover>
                 </div>
                 <div>
