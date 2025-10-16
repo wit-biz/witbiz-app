@@ -1,6 +1,6 @@
 'use client';
 
-import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Tooltip } from 'recharts';
+import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis } from 'recharts';
 import { leads } from '@/lib/data';
 import {
   ChartTooltip,
@@ -19,12 +19,19 @@ const leadStages: ('New' | 'Contacted' | 'Proposal' | 'Negotiation' | 'Won' | 'L
 const chartData = leadStages.map((stage) => ({
   name: stage,
   total: leads.filter((lead) => lead.stage === stage).length,
+  fill: 'hsl(var(--primary))',
 }));
+
+const chartConfig = {
+  total: {
+    label: 'Leads',
+  },
+};
 
 export function LeadsChart() {
   return (
-    <ResponsiveContainer width="100%" height={350}>
-      <BarChart data={chartData}>
+    <ChartContainer config={chartConfig} className="min-h-[200px] w-full">
+      <BarChart accessibilityLayer data={chartData}>
         <XAxis
           dataKey="name"
           stroke="hsl(var(--foreground))"
@@ -43,8 +50,8 @@ export function LeadsChart() {
           cursor={false}
           content={<ChartTooltipContent indicator="dot" />}
         />
-        <Bar dataKey="total" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
+        <Bar dataKey="total" radius={[4, 4, 0, 0]} />
       </BarChart>
-    </ResponsiveContainer>
+    </ChartContainer>
   );
 }
