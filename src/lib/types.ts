@@ -5,6 +5,12 @@ export type Client = {
   category: string;
   stage: string;
   currentObjective: string;
+  contactEmail?: string;
+  contactPhone?: string;
+  website?: string;
+  subscribedServiceIds?: string[];
+  currentWorkflowStageId?: string;
+  currentObjectiveId?: string;
 };
 
 export type Task = {
@@ -14,6 +20,8 @@ export type Task = {
   status: 'To-Do' | 'In Progress' | 'Done' | 'Overdue';
   clientId: string;
   clientName: string;
+  description?: string;
+  dueTime?: string;
 };
 
 export type Document = {
@@ -22,6 +30,8 @@ export type Document = {
   type: string;
   uploadedAt: Date;
   clientId: string;
+  downloadURL?: string;
+  uploadDate?: string;
 };
 
 export type Note = {
@@ -29,6 +39,9 @@ export type Note = {
   content: string;
   createdAt: Date;
   clientId: string;
+  authorName?: string;
+  updatedAt?: Date;
+  text: string;
 };
 
 export type Booking = {
@@ -44,4 +57,50 @@ export type WorkflowStageObjective = {
   id: string;
   description: string;
   documentTypeTrigger?: string;
+  subObjectives?: SubObjective[];
+  requiredDocumentForCompletion?: string;
 };
+
+export type SubObjective = {
+    id: string;
+    text: string;
+};
+
+export type DocumentType = "Contrato" | "Factura" | "Propuesta" | "Informe" | "Otro";
+
+export interface AuthenticatedUser {
+  uid: string;
+  email: string | null;
+  displayName: string | null;
+  photoURL: string | null;
+  permissions: {
+    donna: {
+      clients_create: boolean;
+      clients_edit: boolean;
+      clients_delete: boolean;
+      documents_create: boolean;
+      documents_edit: boolean;
+      documents_delete: boolean;
+      tasks_create: boolean;
+    };
+  };
+}
+
+export interface Service {
+    id: string;
+    name: string;
+    description: string;
+}
+
+export interface SubService {
+    id: string;
+    name: string;
+    stages: WorkflowStage[];
+}
+
+export interface ServiceWorkflow {
+    id: string;
+    name: string;
+    stages: WorkflowStage[];
+    subServices: SubService[];
+}
