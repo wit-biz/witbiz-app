@@ -3,6 +3,7 @@ import './globals.css';
 import { SidebarProvider, SidebarInset } from '@/components/ui/sidebar';
 import { AppSidebar } from '@/components/app-sidebar';
 import { Toaster } from '@/components/ui/toaster';
+import { TasksProvider } from '@/contexts/TasksContext';
 
 export const metadata: Metadata = {
   title: 'WitCRM',
@@ -25,12 +26,14 @@ export default function RootLayout({
         />
       </head>
       <body className="font-body antialiased">
-        <SidebarProvider>
-          <AppSidebar />
-          <SidebarInset>
-            {children}
-          </SidebarInset>
-        </SidebarProvider>
+        <TasksProvider>
+          <SidebarProvider>
+            <AppSidebar />
+            <SidebarInset>
+              {children}
+            </SidebarInset>
+          </SidebarProvider>
+        </TasksProvider>
         <Toaster />
       </body>
     </html>

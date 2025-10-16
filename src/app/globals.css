@@ -85,4 +85,13 @@ body {
   body {
     @apply bg-background text-foreground;
   }
+  .calendar-day--overdue-bg {
+    @apply bg-red-100 dark:bg-red-900/50 text-red-700 dark:text-red-300;
+  }
+  .calendar-day--today-task-bg {
+      @apply bg-green-100 dark:bg-green-900/50 text-green-700 dark:text-green-300;
+  }
+  .calendar-day--upcoming-bg {
+      @apply bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300;
+  }
 }

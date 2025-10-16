@@ -1,207 +1,249 @@
-'use client';
-import { useState } from 'react';
-import { Header } from '@/components/header';
-import { Button } from '@/components/ui/button';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogFooter,
-} from '@/components/ui/dialog';
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from '@/components/ui/accordion';
-import { Calendar } from '@/components/ui/calendar';
-import { tasks } from '@/lib/data';
-import { Task } from '@/lib/types';
-import { Edit, Trash } from 'lucide-react';
-import { format, isSameDay, isPast, isToday } from 'date-fns';
-import { cn } from '@/lib/utils';
+"use client";
 
-function TaskDialog({
-  task,
-  isOpen,
-  onOpenChange,
-}: {
-  task: Task | null;
-  isOpen: boolean;
-  onOpenChange: (open: boolean) => void;
-}) {
-  if (!task) return null;
+import React, { useState, useEffect, useMemo, type ChangeEvent, useCallback } from "react";
+import { Header } from "@/components/header";
+import { Button } from "@/components/ui/button"; 
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { PlusCircle, AlertTriangle, CalendarClock, Loader2, Briefcase, Clock, CalendarDays, Info, CheckCircle2, ListTodo } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Calendar } from "@/components/ui/calendar";
+import { format } from "date-fns";
+import { es } from "date-fns/locale";
+import type { DayModifiers } from "react-day-picker";
+import { cn, parseDateString, formatDateString, formatTimeString } from "@/lib/utils"; 
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { tasks as mockTasks, clients as mockClients } from '@/lib/data';
+import type { Task, Client } from '@/lib/types';
+import { useToast } from "@/hooks/use-toast";
+import { TaskDetailDialog } from "@/components/shared/TaskDetailDialog";
 
-  return (
-    <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>{task.title}</DialogTitle>
-          <DialogDescription>
-            Due: {format(task.dueDate, 'PPP')} | Status: {task.status}
-          </DialogDescription>
-        </DialogHeader>
-        <div className="py-4">
-          <p>
-            <strong>Client:</strong> {task.clientName}
-          </p>
-          <p>
-            <strong>Details:</strong> This is a placeholder for task details.
-          </p>
-        </div>
-        <DialogFooter>
-          <Button variant="outline">
-            <Edit className="mr-2 h-4 w-4" /> Edit
-          </Button>
-          <Button variant="destructive">
-            <Trash className="mr-2 h-4 w-4" /> Delete
-          </Button>
-          <Button>Mark as Completed</Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+
+const MemoizedTaskItemDisplay = React.memo(function TaskItemDisplay({ task, icon: Icon, iconColor = "text-gray-500", showDate = true, isClient, onClickHandler }: { task: Task; icon?: React.ElementType; iconColor?: string, showDate?: boolean, isClient: boolean, onClickHandler: (task: Task) => void }) {
+  const taskDueDate = task.dueDate;
+  return ( 
+    <div 
+      className="flex items-start gap-3 p-3 bg-background hover:bg-secondary/50 rounded-md border cursor-pointer transition-colors" 
+      onClick={() => onClickHandler(task)} 
+      role="button" 
+      tabIndex={0} 
+      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') onClickHandler(task); }} 
+      aria-label={`Ver detalles de la tarea: ${task.title}`} 
+    > 
+      {Icon && <Icon className={`h-5 w-5 mt-1 flex-shrink-0 ${iconColor}`} />} 
+      <div className="flex-grow min-w-0"> 
+        <p className="font-semibold text-card-foreground truncate">{task.title}</p> 
+        {task.clientName && ( 
+          <p className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5"> 
+            <Briefcase className="h-3 w-3" /> {task.clientName} 
+          </p> 
+        )} 
+        {showDate && taskDueDate && ( 
+          <p className="text-xs text-muted-foreground mt-1"> 
+             {format(taskDueDate, 'PPP', { locale: es })}
+            {task.dueTime && ( 
+              <span className="ml-2 inline-flex items-center"> 
+                <Clock className="h-3 w-3 mr-1" /> {task.dueTime}
+              </span> 
+            )} 
+          </p> 
+        )} 
+        {!showDate && task.dueTime && ( 
+          <p className="text-xs text-muted-foreground mt-1 inline-flex items-center"> 
+            <Clock className="h-3 w-3 mr-1" /> {task.dueTime}
+          </p> 
+        )} 
+      </div> 
+      {task.status === 'Done' && ( 
+        <CheckCircle2 className="h-5 w-5 text-green-500 flex-shrink-0" /> 
+      )} 
+    </div> 
   );
-}
-
-function TaskList({
-  tasks,
-  onTaskClick,
-}: {
-  tasks: Task[];
-  onTaskClick: (task: Task) => void;
-}) {
-  return (
-    <ul className="space-y-2">
-      {tasks.map((task) => (
-        <li
-          key={task.id}
-          onClick={() => onTaskClick(task)}
-          className="p-3 border rounded-md cursor-pointer hover:bg-muted"
-        >
-          <p className="font-semibold">{task.title}</p>
-          <p className="text-sm text-muted-foreground">
-            Client: {task.clientName}
-          </p>
-          <p
-            className={cn(
-              'text-sm',
-              isPast(task.dueDate) && task.status !== 'Done'
-                ? 'text-red-500'
-                : 'text-muted-foreground'
-            )}
-          >
-            Due: {format(task.dueDate, 'MMM dd, yyyy')}
-          </p>
-        </li>
-      ))}
-    </ul>
-  );
-}
+});
+MemoizedTaskItemDisplay.displayName = 'TaskItemDisplay';
 
 export default function TasksPage() {
-  const [selectedDate, setSelectedDate] = useState<Date | undefined>(
-    new Date()
-  );
-  const [selectedTask, setSelectedTask] = useState<Task | null>(null);
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const { toast } = useToast();
 
-  const overdueTasks = tasks.filter(
-    (task) => isPast(task.dueDate) && task.status !== 'Done'
-  );
-  const todayTasks = tasks.filter((task) =>
-    isSameDay(task.dueDate, new Date()) && task.status !== 'Done'
-  );
-  const upcomingTasks = tasks.filter(
-    (task) =>
-      !isPast(task.dueDate) &&
-      !isToday(task.dueDate) &&
-      task.status !== 'Done'
-  );
-  
-  const tasksForSelectedDay = selectedDate ? tasks.filter(task => isSameDay(task.dueDate, selectedDate as Date)) : [];
+  const [allTasks, setAllTasks] = useState<Task[]>(mockTasks);
+  const [isLoadingTasks, setIsLoadingTasks] = useState(false);
 
-  const handleTaskClick = (task: Task) => {
-    setSelectedTask(task);
-    setIsDialogOpen(true);
-  };
+  const [isClient, setIsClient] = useState(false);
+  const [currentClientDate, setCurrentClientDate] = useState<Date | null>(null);
+  const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
+  const [calendarMonth, setCalendarMonth] = useState<Date>();
+  const [openAccordionItems, setOpenAccordionItems] = useState<string[]>(["today-tasks"]);
   
-  const dateHasTasks = (date: Date) => {
-    const hasTask = tasks.some(d => isSameDay(d.dueDate, date));
-    if (!hasTask) return '';
+  const [selectedTaskDetail, setSelectedTaskDetail] = useState<Task | null>(null);
+  const [isDetailDialogOpen, setIsDetailDialogOpen] = useState(false);
+  const [isAddTaskDialogOpen, setIsAddTaskDialogOpen] = useState(false);
+  
+  useEffect(() => { 
+    setIsClient(true);
+    const today = new Date(); 
+    today.setHours(0, 0, 0, 0); 
+    setCurrentClientDate(today); 
+    setCalendarMonth(today); 
+  }, []);
+  
+  const { overdueTasks, todayTasks, upcomingWeekTasks } = useMemo(() => {
+    if (!currentClientDate || !Array.isArray(allTasks)) {
+      return { overdueTasks: [], todayTasks: [], upcomingWeekTasks: [] };
+    }
+    const today = new Date(currentClientDate);
+    const endOfWeek = new Date(today);
+    endOfWeek.setDate(today.getDate() + (7 - (today.getDay() === 0 ? 7 : today.getDay())));
+    endOfWeek.setHours(23, 59, 59, 999);
+  
+    const pendingTasks = allTasks.filter(task => task && task.status !== 'Done');
+  
+    const overdue = pendingTasks
+      .filter(task => {
+        const taskDueDate = task.dueDate;
+        return taskDueDate && taskDueDate < today;
+      })
+      .sort((a, b) => {
+        const dateA = a.dueDate;
+        const dateB = b.dueDate;
+        if (!dateA || !dateB) return 0;
+        return dateA.getTime() - dateB.getTime() || (a.dueTime || "23:59").localeCompare(b.dueTime || "23:59");
+      });
+  
+    const forToday = pendingTasks
+      .filter(task => {
+        const taskDueDate = task.dueDate;
+        return taskDueDate && taskDueDate.getTime() === today.getTime();
+      })
+      .sort((a, b) => (a.dueTime || "23:59").localeCompare(b.dueTime || "23:59"));
+  
+    const upcomingThisWeek = pendingTasks
+      .filter(task => {
+        const taskDueDate = task.dueDate;
+        return taskDueDate && taskDueDate > today && taskDueDate <= endOfWeek;
+      })
+      .sort((a, b) => {
+        const dateA = a.dueDate;
+        const dateB = b.dueDate;
+        if (!dateA || !dateB) return 0;
+        return dateA.getTime() - dateB.getTime() || (a.dueTime || "23:59").localeCompare(b.dueTime || "23:59");
+      });
+  
+    return { overdueTasks: overdue, todayTasks: forToday, upcomingWeekTasks: upcomingThisWeek };
+  }, [allTasks, currentClientDate]);
     
-    const isOverdue = tasks.some(t => isSameDay(t.dueDate, date) && isPast(t.dueDate) && t.status !== 'Done');
-    if (isOverdue) return 'text-red-500';
+  
+  const dayModifiers = useMemo(() => {
+    if (!currentClientDate || !Array.isArray(allTasks)) return {};
+    const today = new Date(currentClientDate);
+    const pendingTasksWithValidDates = allTasks.filter(task => task && task.status !== 'Done');
+  
+    const overdueDays = pendingTasksWithValidDates
+      .map(task => task.dueDate)
+      .filter((date): date is Date => date !== null && date < today);
+    
+    const todayTaskDays = pendingTasksWithValidDates
+      .map(task => task.dueDate)
+      .filter((date): date is Date => date !== null && date.getFullYear() === today.getFullYear() && date.getMonth() === today.getMonth() && date.getDate() === today.getDate());
+      
+    const upcomingTaskDays = pendingTasksWithValidDates
+      .map(task => task.dueDate)
+      .filter((date): date is Date => date !== null && date > today);
+  
+    return { 
+      overdue_highlight: overdueDays, 
+      today_task_highlight: todayTaskDays, 
+      upcoming_highlight: upcomingTaskDays 
+    } as DayModifiers;
+  }, [allTasks, currentClientDate]);
+  
+  const dayModifiersClassNames = { overdue_highlight: 'calendar-day--overdue-bg', today_task_highlight: 'calendar-day--today-task-bg', upcoming_highlight: 'calendar-day--upcoming-bg' };
+  
+  const tasksForSelectedDate = useMemo(() => {
+    if (!selectedDate || !Array.isArray(allTasks)) return [];
+    const selectedDayStart = new Date(selectedDate);
+    selectedDayStart.setHours(0,0,0,0);
+    return allTasks.filter(task => {
+        if (!task) return false;
+        const taskDueDate = task.dueDate;
+        return taskDueDate && taskDueDate.getTime() === selectedDayStart.getTime() && task.status !== 'Done';
+    }).sort((a,b) => (a.dueTime || "23:59").localeCompare(b.dueTime || "23:59"));
+  }, [selectedDate, allTasks]);
+  
+  const handleTaskClick = useCallback((task: Task) => { setSelectedTaskDetail(task); setIsDetailDialogOpen(true); }, []);
+  
+  const taskSections = [ { id: "overdue-tasks", title: "Tareas Atrasadas", tasks: overdueTasks, icon: AlertTriangle, color: "text-destructive", emptyMsg: "¡Ninguna tarea atrasada! Buen trabajo." }, { id: "today-tasks", title: "Tareas Para Hoy", tasks: todayTasks, icon: CheckCircle2, color: "text-green-500", emptyMsg: "No hay tareas programadas para hoy." }, { id: "upcoming-tasks", title: "Próximas Tareas", tasks: upcomingWeekTasks, icon: ListTodo, color: "text-blue-500", emptyMsg: "No hay más tareas para esta semana." } ];
 
-    const isTodayTask = tasks.some(t => isSameDay(t.dueDate, date) && isToday(t.dueDate));
-    if (isTodayTask) return 'text-green-500';
-
-    return 'text-blue-500';
-  }
+  const canCreateTask = true; // Simplified for now
 
   return (
-    <div className="flex flex-col min-h-screen">
-      <Header title="Tasks Management" />
-      <main className="flex-1 grid md:grid-cols-3 gap-4 p-4 md:p-8">
-        <div className="md:col-span-1">
-          <Calendar
-            selected={selectedDate}
-            onSelect={setSelectedDate}
-            className="rounded-md border"
-             modifiers={{
-              hasTasks: (date) => tasks.some(d => isSameDay(d.dueDate, date))
-            }}
-            modifiersClassNames={{
-              hasTasks: 'font-bold'
-            }}
-          />
+    <TooltipProvider>
+      <div className="flex flex-col min-h-screen">
+      <Header
+        title="Mis Tareas"
+        description="Organiza y sigue tus actividades y compromisos diarios y semanales."
+      >
+        {
+          canCreateTask ? (
+            <Button onClick={() => setIsAddTaskDialogOpen(true)} className="w-full sm:w-auto" size="sm">
+              <PlusCircle className="mr-2 h-4 w-4" />
+              Añadir Nueva Tarea
+            </Button>
+          ) : null
+        }
+      </Header>
+      <main className="flex-1 p-4 md:p-8">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="lg:col-span-1 space-y-6">
+            <Card> 
+              <CardHeader> 
+                <CardTitle className="flex items-center gap-2"> 
+                  <CalendarDays className="h-6 w-6 text-accent" /> Calendario 
+                </CardTitle> 
+                <CardDescription> Selecciona una fecha para ver las tareas. Fechas resaltadas: <span className="inline-block w-3 h-3 rounded-full mx-1 align-middle bg-red-500" ></span> Atrasadas, <span className="inline-block w-3 h-3 rounded-full mx-1 align-middle bg-green-500" ></span> Hoy, <span className="inline-block w-3 h-3 rounded-full mx-1 align-middle bg-blue-500" ></span> Futuras. </CardDescription> 
+              </CardHeader> 
+              <CardContent className="flex justify-center">
+                {!isClient ? (
+                  <div className="p-3 rounded-md border w-[280px] h-[321px] flex items-center justify-center">
+                    <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                  </div>
+                ) : (
+                  <Calendar 
+                    mode="single" 
+                    selected={selectedDate} 
+                    onSelect={setSelectedDate} 
+                    month={calendarMonth} 
+                    onMonthChange={setCalendarMonth} 
+                    locale={es} 
+                    className="rounded-md border" 
+                    disabled={!currentClientDate ? (date) => true : (date) => {
+                        const oneYearAgo = new Date(currentClientDate);
+                        oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
+                        const twoYearsFromNow = new Date(currentClientDate);
+                        twoYearsFromNow.setFullYear(twoYearsFromNow.getFullYear() + 2);
+                        return date < oneYearAgo || date > twoYearsFromNow;
+                      }} 
+                    modifiers={dayModifiers} 
+                    modifiersClassNames={dayModifiersClassNames} 
+                  />
+                )}
+              </CardContent> 
+            </Card>
+            {selectedDate && ( <Card> <CardHeader> <CardTitle>Tareas para el {isClient ? format(selectedDate, 'PPP', { locale: es }) : '...'}</CardTitle> </CardHeader> <CardContent className="space-y-3"> {tasksForSelectedDate.length > 0 ? ( tasksForSelectedDate.map(task => <MemoizedTaskItemDisplay key={task.id} task={task} showDate={false} icon={Clock} iconColor="text-blue-500" isClient={isClient} onClickHandler={handleTaskClick} />) ) : ( <div className="text-sm text-muted-foreground p-4 text-center flex flex-col items-center"> <Info className="h-8 w-8 text-muted-foreground mb-2"/> No hay tareas pendientes para esta fecha. </div> )} </CardContent> </Card> )}
         </div>
-        <div className="md:col-span-2">
-          {selectedDate ? (
-            <div>
-              <h2 className="text-xl font-bold mb-4">Tasks for {format(selectedDate, 'PPP')}</h2>
-              {tasksForSelectedDay.length > 0 ? (
-                <TaskList tasks={tasksForSelectedDay} onTaskClick={handleTaskClick} />
-              ) : (
-                <p>No tasks for this day.</p>
-              )}
-            </div>
-          ) : (
-            <Accordion type="multiple" defaultValue={['today', 'overdue']} className="w-full">
-              <AccordionItem value="overdue">
-                <AccordionTrigger>
-                  Overdue Tasks ({overdueTasks.length})
-                </AccordionTrigger>
-                <AccordionContent>
-                  <TaskList tasks={overdueTasks} onTaskClick={handleTaskClick} />
-                </AccordionContent>
-              </AccordionItem>
-              <AccordionItem value="today">
-                <AccordionTrigger>
-                  Today's Tasks ({todayTasks.length})
-                </AccordionTrigger>
-                <AccordionContent>
-                  <TaskList tasks={todayTasks} onTaskClick={handleTaskClick} />
-                </AccordionContent>
-              </AccordionItem>
-              <AccordionItem value="upcoming">
-                <AccordionTrigger>
-                  Upcoming Tasks ({upcomingTasks.length})
-                </AccordionTrigger>
-                <AccordionContent>
-                  <TaskList tasks={upcomingTasks} onTaskClick={handleTaskClick} />
-                </AccordionContent>
-              </AccordionItem>
-            </Accordion>
-          )}
+        <div className="lg:col-span-2 space-y-1">
+            <Accordion type="multiple" className="w-full space-y-4" value={openAccordionItems} onValueChange={setOpenAccordionItems} > {taskSections.map(section => ( <AccordionItem value={section.id} key={section.id} className="border-none"> <Card> <AccordionTrigger className="w-full hover:no-underline p-0 [&_svg]:ml-auto [&_svg]:mr-2"> <CardHeader className="flex-1 p-4"> <CardTitle className="flex items-center gap-2 text-lg"> <section.icon className={`h-6 w-6 ${section.color}`} /> {section.title} <Badge variant={section.tasks.length > 0 && section.id === "overdue-tasks" ? "destructive" : "secondary"} className="ml-auto mr-2" > {section.tasks.length} </Badge> </CardTitle> </CardHeader> </AccordionTrigger> <AccordionContent> <CardContent className="space-y-3 pt-0 p-4"> {section.tasks.length > 0 ? ( section.tasks.map(task => <MemoizedTaskItemDisplay key={task.id} task={task} icon={section.icon} iconColor={section.color} showDate={section.id !== 'today-tasks'} isClient={isClient} onClickHandler={handleTaskClick} />) ) : ( <div className="text-sm text-muted-foreground p-4 text-center flex flex-col items-center"> <Info className="h-8 w-8 text-muted-foreground mb-2"/> {section.emptyMsg} </div> )} </CardContent> </AccordionContent> </Card> </AccordionItem> ))} </Accordion>
         </div>
+      </div>
+      {/* <AddTaskDialog isOpen={isAddTaskDialogOpen} onOpenChange={setIsAddTaskDialogOpen} onTaskAdd={addTask} /> */}
+      {selectedTaskDetail && (
+        <TaskDetailDialog
+          key={selectedTaskDetail.id}
+          isOpen={isDetailDialogOpen}
+          onOpenChange={setIsDetailDialogOpen}
+          task={selectedTaskDetail}
+        />
+      )}
       </main>
-      <TaskDialog
-        task={selectedTask}
-        isOpen={isDialogOpen}
-        onOpenChange={setIsDialogOpen}
-      />
-    </div>
+    </TooltipProvider>
   );
 }
