@@ -108,3 +108,11 @@ export const bookings: Reservation[] = [
     { id: 'B1', clientName: 'Innovate Inc.', date: new Date(new Date().getTime() + 2 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], clientId: '1', type: 'Cita', time: '10:00', details: 'Llamada de seguimiento', status: 'Confirmada' },
     { id: 'B2', clientName: 'Synergy Corp.', date: new Date(new Date().getTime() + 1 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], clientId: '2', type: 'Cita', time: '14:30', details: 'Revisión de contrato', status: 'Confirmada' },
 ];
+
+export const navItems = [
+    { href: '/', label: 'Inicio', icon: 'LayoutDashboard', exactMatch: true, requiredPermission: 'dashboard' },
+    { href: '/contacts', label: 'Usuarios', icon: 'Users', requiredPermission: 'clients_view' },
+    { href: '/tasks', label: 'Tareas', icon: 'ListTodo', requiredPermission: 'tasks_view' },
+    { href: '/bookings', label: 'Reservaciones', icon: 'Calendar', requiredPermission: 'reservations_view' },
+    { href: '/workflows', label: 'Flujos', icon: 'Settings', requiredPermission: 'workflows_view' },
+];

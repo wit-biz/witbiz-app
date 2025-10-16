@@ -142,7 +142,7 @@ export interface ServiceWorkflow {
 export interface NavItem {
   href: string;
   label: string;
-  icon: LucideIcon;
+  icon: LucideIcon | string;
   exactMatch?: boolean;
   requiredPermission: 'dashboard' | keyof DonnaPermissions;
 }

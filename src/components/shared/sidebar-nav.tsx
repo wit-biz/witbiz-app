@@ -4,16 +4,12 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
-  Home,
-  Users,
-  CheckSquare,
-  GitFork,
-  BarChart3,
-  Calendar,
-  type LucideIcon,
-  ListTodo,
-  Settings,
   LayoutDashboard,
+  Users,
+  ListTodo,
+  Calendar,
+  Settings,
+  type LucideIcon,
 } from "lucide-react";
 import {
   SidebarMenu,
@@ -25,20 +21,26 @@ import { cn } from "@/lib/utils";
 import React from "react";
 import { useCRMData } from "@/contexts/CRMDataContext";
 import { NavItem } from "@/lib/types";
+import { navItems as navData } from "@/lib/data";
 
+const icons: { [key: string]: LucideIcon } = {
+    LayoutDashboard,
+    Users,
+    ListTodo,
+    Calendar,
+    Settings,
+};
 
-const navItems: NavItem[] = [
-    { href: '/', label: 'Inicio', icon: LayoutDashboard, exactMatch: true, requiredPermission: 'dashboard' },
-    { href: '/contacts', label: 'Usuarios', icon: Users, requiredPermission: 'clients_view' },
-    { href: '/tasks', label: 'Tareas', icon: ListTodo, requiredPermission: 'tasks_view' },
-    { href: '/bookings', label: 'Reservaciones', icon: Calendar, requiredPermission: 'reservations_view' },
-    { href: '/workflows', label: 'Flujos', icon: Settings, requiredPermission: 'workflows_view' },
-];
 
 export function SidebarNav() {
   const pathname = usePathname();
   const { state: sidebarState, isMobile, setOpenMobile } = useSidebar();
   const { currentUser } = useCRMData(); 
+
+  const navItems: NavItem[] = navData.map(item => ({
+      ...item,
+      icon: icons[item.icon as string] || LayoutDashboard
+  }));
 
   const handleLinkClick = React.useCallback(() => {
     if (isMobile) {
