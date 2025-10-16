@@ -12,12 +12,12 @@ import {
 import {
   LayoutDashboard,
   Users,
-  Target,
-  ListTodo,
+  Calendar,
+  Settings,
   UserCircle,
   LifeBuoy,
   LogOut,
-  Bot,
+  ListTodo,
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -51,9 +51,10 @@ export function AppSidebar() {
 
   const menuItems = [
     { href: '/', label: 'Dashboard', icon: LayoutDashboard },
-    { href: '/leads', label: 'Leads', icon: Target },
-    { href: '/contacts', label: 'Contacts', icon: Users },
+    { href: '/contacts', label: 'Clients', icon: Users },
     { href: '/tasks', label: 'Tasks', icon: ListTodo },
+    { href: '/bookings', label: 'Bookings', icon: Calendar },
+    { href: '/workflows', label: 'Workflows', icon: Settings },
   ];
 
   return (
