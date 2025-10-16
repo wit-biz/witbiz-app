@@ -17,10 +17,13 @@ import { tasks as mockTasks, clients as mockClients } from '@/lib/data';
 import type { Task, Client } from '@/lib/types';
 import { useToast } from "@/hooks/use-toast";
 import { TaskDetailDialog } from "@/components/shared/TaskDetailDialog";
+import { useCRMData } from "@/contexts/CRMDataContext";
+import { useTasksContext } from "@/contexts/TasksContext";
+import { AddTaskDialog } from "@/components/shared/AddTaskDialog";
 
 
 const MemoizedTaskItemDisplay = React.memo(function TaskItemDisplay({ task, icon: Icon, iconColor = "text-gray-500", showDate = true, isClient, onClickHandler }: { task: Task; icon?: React.ElementType; iconColor?: string, showDate?: boolean, isClient: boolean, onClickHandler: (task: Task) => void }) {
-  const taskDueDate = task.dueDate;
+  const taskDueDate = new Date(task.dueDate);
   return ( 
     <div 
       className="flex items-start gap-3 p-3 bg-background hover:bg-secondary/50 rounded-md border cursor-pointer transition-colors" 
@@ -54,7 +57,7 @@ const MemoizedTaskItemDisplay = React.memo(function TaskItemDisplay({ task, icon
           </p> 
         )} 
       </div> 
-      {task.status === 'Done' && ( 
+      {task.status === 'Completada' && ( 
         <CheckCircle2 className="h-5 w-5 text-green-500 flex-shrink-0" /> 
       )} 
     </div> 
@@ -65,8 +68,8 @@ MemoizedTaskItemDisplay.displayName = 'TaskItemDisplay';
 export default function TasksPage() {
   const { toast } = useToast();
 
-  const [allTasks, setAllTasks] = useState<Task[]>(mockTasks);
-  const [isLoadingTasks, setIsLoadingTasks] = useState(false);
+  const { tasks: allTasks, isLoadingTasks, currentUser, addTask } = useCRMData();
+  const { setHasTasksForToday } = useTasksContext();
 
   const [isClient, setIsClient] = useState(false);
   const [currentClientDate, setCurrentClientDate] = useState<Date | null>(null);
@@ -95,35 +98,35 @@ export default function TasksPage() {
     endOfWeek.setDate(today.getDate() + (7 - (today.getDay() === 0 ? 7 : today.getDay())));
     endOfWeek.setHours(23, 59, 59, 999);
   
-    const pendingTasks = allTasks.filter(task => task && task.status !== 'Done');
+    const pendingTasks = allTasks.filter(task => task && task.status !== 'Completada');
   
     const overdue = pendingTasks
       .filter(task => {
-        const taskDueDate = task.dueDate;
+        const taskDueDate = new Date(task.dueDate);
         return taskDueDate && taskDueDate < today;
       })
       .sort((a, b) => {
-        const dateA = a.dueDate;
-        const dateB = b.dueDate;
+        const dateA = new Date(a.dueDate);
+        const dateB = new Date(b.dueDate);
         if (!dateA || !dateB) return 0;
         return dateA.getTime() - dateB.getTime() || (a.dueTime || "23:59").localeCompare(b.dueTime || "23:59");
       });
   
     const forToday = pendingTasks
       .filter(task => {
-        const taskDueDate = task.dueDate;
+        const taskDueDate = new Date(task.dueDate);
         return taskDueDate && taskDueDate.getTime() === today.getTime();
       })
       .sort((a, b) => (a.dueTime || "23:59").localeCompare(b.dueTime || "23:59"));
   
     const upcomingThisWeek = pendingTasks
       .filter(task => {
-        const taskDueDate = task.dueDate;
+        const taskDueDate = new Date(task.dueDate);
         return taskDueDate && taskDueDate > today && taskDueDate <= endOfWeek;
       })
       .sort((a, b) => {
-        const dateA = a.dueDate;
-        const dateB = b.dueDate;
+        const dateA = new Date(a.dueDate);
+        const dateB = new Date(b.dueDate);
         if (!dateA || !dateB) return 0;
         return dateA.getTime() - dateB.getTime() || (a.dueTime || "23:59").localeCompare(b.dueTime || "23:59");
       });
@@ -135,18 +138,18 @@ export default function TasksPage() {
   const dayModifiers = useMemo(() => {
     if (!currentClientDate || !Array.isArray(allTasks)) return {};
     const today = new Date(currentClientDate);
-    const pendingTasksWithValidDates = allTasks.filter(task => task && task.status !== 'Done');
+    const pendingTasksWithValidDates = allTasks.filter(task => task && task.status !== 'Completada');
   
     const overdueDays = pendingTasksWithValidDates
-      .map(task => task.dueDate)
+      .map(task => new Date(task.dueDate))
       .filter((date): date is Date => date !== null && date < today);
     
     const todayTaskDays = pendingTasksWithValidDates
-      .map(task => task.dueDate)
+      .map(task => new Date(task.dueDate))
       .filter((date): date is Date => date !== null && date.getFullYear() === today.getFullYear() && date.getMonth() === today.getMonth() && date.getDate() === today.getDate());
       
     const upcomingTaskDays = pendingTasksWithValidDates
-      .map(task => task.dueDate)
+      .map(task => new Date(task.dueDate))
       .filter((date): date is Date => date !== null && date > today);
   
     return { 
@@ -164,8 +167,8 @@ export default function TasksPage() {
     selectedDayStart.setHours(0,0,0,0);
     return allTasks.filter(task => {
         if (!task) return false;
-        const taskDueDate = task.dueDate;
-        return taskDueDate && taskDueDate.getTime() === selectedDayStart.getTime() && task.status !== 'Done';
+        const taskDueDate = new Date(task.dueDate);
+        return taskDueDate && taskDueDate.getTime() === selectedDayStart.getTime() && task.status !== 'Completada';
     }).sort((a,b) => (a.dueTime || "23:59").localeCompare(b.dueTime || "23:59"));
   }, [selectedDate, allTasks]);
   
@@ -173,7 +176,7 @@ export default function TasksPage() {
   
   const taskSections = [ { id: "overdue-tasks", title: "Tareas Atrasadas", tasks: overdueTasks, icon: AlertTriangle, color: "text-destructive", emptyMsg: "¡Ninguna tarea atrasada! Buen trabajo." }, { id: "today-tasks", title: "Tareas Para Hoy", tasks: todayTasks, icon: CheckCircle2, color: "text-green-500", emptyMsg: "No hay tareas programadas para hoy." }, { id: "upcoming-tasks", title: "Próximas Tareas", tasks: upcomingWeekTasks, icon: ListTodo, color: "text-blue-500", emptyMsg: "No hay más tareas para esta semana." } ];
 
-  const canCreateTask = true; // Simplified for now
+  const canCreateTask = currentUser?.permissions.donna.tasks_create ?? true; 
 
   return (
     <TooltipProvider>
@@ -199,7 +202,7 @@ export default function TasksPage() {
                 <CardTitle className="flex items-center gap-2"> 
                   <CalendarDays className="h-6 w-6 text-accent" /> Calendario 
                 </CardTitle> 
-                <CardDescription> Selecciona una fecha para ver las tareas. Fechas resaltadas: <span className="inline-block w-3 h-3 rounded-full mx-1 align-middle bg-red-500" ></span> Atrasadas, <span className="inline-block w-3 h-3 rounded-full mx-1 align-middle bg-green-500" ></span> Hoy, <span className="inline-block w-3 h-3 rounded-full mx-1 align-middle bg-blue-500" ></span> Futuras. </CardDescription> 
+                <CardDescription> Selecciona una fecha para ver las tareas. Fechas resaltadas: <span className="inline-block w-3 h-3 rounded-full mx-1 align-middle bg-indicator-overdue" ></span> Atrasadas, <span className="inline-block w-3 h-3 rounded-full mx-1 align-middle bg-indicator-today" ></span> Hoy, <span className="inline-block w-3 h-3 rounded-full mx-1 align-middle bg-indicator-upcoming" ></span> Futuras. </CardDescription> 
               </CardHeader> 
               <CardContent className="flex justify-center">
                 {!isClient ? (
@@ -234,7 +237,7 @@ export default function TasksPage() {
             <Accordion type="multiple" className="w-full space-y-4" value={openAccordionItems} onValueChange={setOpenAccordionItems} > {taskSections.map(section => ( <AccordionItem value={section.id} key={section.id} className="border-none"> <Card> <AccordionTrigger className="w-full hover:no-underline p-0 [&_svg]:ml-auto [&_svg]:mr-2"> <CardHeader className="flex-1 p-4"> <CardTitle className="flex items-center gap-2 text-lg"> <section.icon className={`h-6 w-6 ${section.color}`} /> {section.title} <Badge variant={section.tasks.length > 0 && section.id === "overdue-tasks" ? "destructive" : "secondary"} className="ml-auto mr-2" > {section.tasks.length} </Badge> </CardTitle> </CardHeader> </AccordionTrigger> <AccordionContent> <CardContent className="space-y-3 pt-0 p-4"> {section.tasks.length > 0 ? ( section.tasks.map(task => <MemoizedTaskItemDisplay key={task.id} task={task} icon={section.icon} iconColor={section.color} showDate={section.id !== 'today-tasks'} isClient={isClient} onClickHandler={handleTaskClick} />) ) : ( <div className="text-sm text-muted-foreground p-4 text-center flex flex-col items-center"> <Info className="h-8 w-8 text-muted-foreground mb-2"/> {section.emptyMsg} </div> )} </CardContent> </AccordionContent> </Card> </AccordionItem> ))} </Accordion>
         </div>
       </div>
-      {/* <AddTaskDialog isOpen={isAddTaskDialogOpen} onOpenChange={setIsAddTaskDialogOpen} onTaskAdd={addTask} /> */}
+      <AddTaskDialog isOpen={isAddTaskDialogOpen} onOpenChange={setIsAddTaskDialogOpen} onTaskAdd={async (task) => !!(await addTask(task))} />
       {selectedTaskDetail && (
         <TaskDetailDialog
           key={selectedTaskDetail.id}

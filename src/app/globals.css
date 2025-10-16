@@ -1,107 +1,341 @@
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 body {
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
 }
 
 @layer base {
   :root {
-    --background: 180 52% 96%;
-    --foreground: 224 71% 4%;
+    --background: 0 0% 100%; /* White */
+    --foreground: 0 0% 3.9%; /* Near Black */
     --card: 0 0% 100%;
-    --card-foreground: 224 71% 4%;
+    --card-foreground: 0 0% 3.9%;
     --popover: 0 0% 100%;
-    --popover-foreground: 224 71% 4%;
-    --primary: 180 100% 25%;
-    --primary-foreground: 180 100% 98%;
-    --secondary: 180 20% 90%;
-    --secondary-foreground: 224 71% 4%;
-    --muted: 180 15% 94%;
-    --muted-foreground: 224 71% 25%;
-    --accent: 45 63% 52%;
-    --accent-foreground: 45 100% 15%;
+    --popover-foreground: 0 0% 3.9%;
+    --primary: 120 73% 75%; /* WitBiz Green #90EE90 */
+    --primary-foreground: 0 0% 3.9%; /* Black for text on green */
+    --secondary: 0 0% 96.1%; /* Light Gray */
+    --secondary-foreground: 0 0% 9%;
+    --muted: 0 0% 96.1%;
+    --muted-foreground: 0 0% 45.1%;
+    --accent: 120 73% 75%; /* Brand Green #90EE90 */
+    --accent-foreground: 0 0% 3.9%; /* Black text on accent for contrast */
+    --accent-raw: 120 73% 75%; /* Raw HSL for accent */
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 0 0% 98%;
-    --border: 180 15% 88%;
-    --input: 180 15% 88%;
-    --ring: 180 100% 25%;
-    --chart-1: 180 100% 25%;
-    --chart-2: 45 63% 52%;
+    --destructive-raw: 0 84.2% 60.2%; /* For direct HSL use with opacity */
+    --border: 0 0% 89.8%;
+    --input: 0 0% 89.8%;
+    --ring: 120 73% 75%; /* Ring color based on accent */
+    --chart-1: 12 76% 61%;
+    --chart-2: 173 58% 39%;
     --chart-3: 197 37% 24%;
     --chart-4: 43 74% 66%;
     --chart-5: 27 87% 67%;
     --radius: 0.5rem;
-    --sidebar-background: 0 0% 100%;
-    --sidebar-foreground: 240 5.3% 26.1%;
-    --sidebar-primary: 180 100% 25%;
-    --sidebar-primary-foreground: 0 0% 98%;
-    --sidebar-accent: 180 20% 90%;
-    --sidebar-accent-foreground: 240 5.9% 10%;
-    --sidebar-border: 220 13% 91%;
-    --sidebar-ring: 180 100% 25%;
-    --reservation-indicator-today-bg: 120 73% 75%;
-    --reservation-indicator-future-bg: 210 100% 79%;
+
+    /* Sidebar specific colors */
+    --sidebar-background: 0 0% 98%; /* Very Light Gray, almost white */
+    --sidebar-foreground: 0 0% 3.9%; /* Black text */
+    --sidebar-primary: 120 73% 75%; /* Accent Green for active/primary items in sidebar */
+    --sidebar-primary-foreground: 0 0% 3.9%; /* Black text on primary */
+    --sidebar-accent: 0 0% 92%; /* Lighter gray for hover/accent backgrounds in sidebar */
+    --sidebar-accent-foreground: 0 0% 3.9%; /* Black text on accent */
+    --sidebar-border: 0 0% 89.8%;
+    --sidebar-ring: 120 73% 75%;
+
+    /* Calendar Indicator Colors */
+    --indicator-overdue-bg: hsl(var(--destructive)); /* Rojo */
+    --indicator-today-bg: 130 60% 50%; /* Verde */
+    --indicator-upcoming-bg: 210 70% 55%; /* Azul */
+    --indicator-today-bg-raw: 130 60% 50%; /* Verde raw for HSL use with opacity */
+    --indicator-upcoming-bg-raw: 210 70% 55%; /* Azul raw for HSL use with opacity */
   }
+
   .dark {
-    --background: 240 10% 3.9%;
+    --background: 0 0% 3.9%;
     --foreground: 0 0% 98%;
-    --card: 240 10% 3.9%;
+    --card: 0 0% 3.9%;
     --card-foreground: 0 0% 98%;
-    --popover: 240 10% 3.9%;
+    --popover: 0 0% 3.9%;
     --popover-foreground: 0 0% 98%;
-    --primary: 180 100% 35%;
-    --primary-foreground: 180 100% 98%;
+    --primary: 120 73% 75%; /* WitBiz Green #90EE90 */
+    --primary-foreground: 0 0% 3.9%; /* Black text on green */
     --secondary: 0 0% 14.9%;
     --secondary-foreground: 0 0% 98%;
     --muted: 0 0% 14.9%;
     --muted-foreground: 0 0% 63.9%;
-    --accent: 45 76% 51%;
-    --accent-foreground: 45 100% 15%;
+    --accent: 120 73% 75%; /* Brand Green #90EE90 for Dark Mode */
+    --accent-foreground: 0 0% 3.9%; /* Black text on accent */
+    --accent-raw: 120 73% 75%;
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 0 0% 98%;
+    --destructive-raw: 0 62.8% 30.6%;
     --border: 0 0% 14.9%;
     --input: 0 0% 14.9%;
-    --ring: 180 100% 40%;
-    --chart-1: 180 100% 35%;
-    --chart-2: 45 76% 51%;
+    --ring: 120 73% 75%;
+    --chart-1: 220 70% 50%;
+    --chart-2: 160 60% 45%;
     --chart-3: 30 80% 55%;
     --chart-4: 280 65% 60%;
     --chart-5: 340 75% 55%;
-    --sidebar-background: 240 5.9% 10%;
-    --sidebar-foreground: 240 4.8% 95.9%;
-    --sidebar-primary: 180 100% 35%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 240 3.7% 15.9%;
-    --sidebar-accent-foreground: 240 4.8% 95.9%;
-    --sidebar-border: 240 3.7% 15.9%;
-    --sidebar-ring: 180 100% 40%;
-    --reservation-indicator-today-bg: 120 73% 25%;
-    --reservation-indicator-future-bg: 210 100% 29%;
+
+    /* Sidebar specific colors - Dark Mode */
+    --sidebar-background: 0 0% 7%; /* Darker Gray */
+    --sidebar-foreground: 0 0% 98%; /* Light text */
+    --sidebar-primary: 120 73% 75%; /* Accent Green for active/primary items */
+    --sidebar-primary-foreground: 0 0% 3.9%; /* Black text on primary */
+    --sidebar-accent: 0 0% 12%; /* Slightly lighter gray for hover */
+    --sidebar-accent-foreground: 0 0% 98%; /* Light text on accent */
+    --sidebar-border: 0 0% 14.9%;
+    --sidebar-ring: 120 73% 75%;
+
+    /* Calendar Indicator Colors - Dark Mode */
+    --indicator-overdue-bg: hsl(var(--destructive));
+    --indicator-today-bg: 130 50% 45%;
+    --indicator-upcoming-bg: 210 60% 50%;
+    --indicator-today-bg-raw: 130 50% 45%;
+    --indicator-upcoming-bg-raw: 210 60% 50%;
   }
 }
 
 @layer base {
   * {
     @apply border-border;
+    transition: background-color 0.5s ease, color 0.5s ease, border-color 0.5s ease;
   }
   body {
     @apply bg-background text-foreground;
+    font-feature-settings: "rlig" 1, "calt" 1;
   }
-  .calendar-day--overdue-bg {
-    @apply bg-red-100 dark:bg-red-900/50 text-red-700 dark:text-red-300;
-  }
-  .calendar-day--today-task-bg {
-      @apply bg-green-100 dark:bg-green-900/50 text-green-700 dark:text-green-300;
-  }
-  .calendar-day--upcoming-bg {
-      @apply bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300;
-  }
-  .day-reserved-today {
-      @apply bg-green-200 dark:bg-green-800/50;
-  }
-  .day-reserved-future {
-      @apply bg-blue-200 dark:bg-blue-800/50;
+  .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border-width: 0;
   }
 }
+
+@layer utilities {
+  /* Hide number input arrows */
+  input[type=number]::-webkit-inner-spin-button,
+  input[type=number]::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+  input[type=number] {
+    -moz-appearance: textfield; /* Firefox */
+  }
+
+  /* Scrollbar Styles */
+  ::-webkit-scrollbar {
+    width: 12px;
+    height: 12px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background-color: hsl(var(--border));
+    border-radius: 6px;
+    border: 3px solid transparent;
+    background-clip: content-box;
+    transition: background-color 0.3s ease;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background-color: hsl(var(--primary));
+  }
+
+  /* Calendar Indicator Colors */
+  .calendar-day--overdue-bg .rdp-button:not([disabled]) {
+    background-color: hsla(var(--destructive-raw), 0.3); 
+  }
+  .calendar-day--today-task-bg .rdp-button:not([disabled]) {
+    background-color: hsla(var(--indicator-today-bg-raw), 0.3); 
+  }
+  .calendar-day--upcoming-bg .rdp-button:not([disabled]) {
+    background-color: hsla(var(--indicator-upcoming-bg-raw), 0.3); 
+  }
+
+  /* Ensure today's date from react-day-picker is distinct if it also has tasks */
+  .calendar-day--today-task-bg.rdp-day_today .rdp-button:not([disabled]) {
+    background-color: hsla(var(--indicator-today-bg-raw), 0.5); 
+    font-weight: bold;
+  }
+
+  /* If a highlighted day is selected, make it more prominent */
+  .rdp-day_selected .rdp-button:not([disabled]) {
+     box-shadow: inset 0 0 0 2px hsl(var(--primary)); 
+  }
+  
+  /* Ensure hover on a task-highlighted day uses primary color for hover, not its task color */
+  .calendar-day--overdue-bg .rdp-button:not([disabled]):not([aria-selected="true"]):hover,
+  .calendar-day--today-task-bg .rdp-button:not([disabled]):not([aria-selected="true"]):hover,
+  .calendar-day--upcoming-bg .rdp-button:not([disabled]):not([aria-selected="true"]):hover,
+  .rdp-button:not([disabled]):not([aria-selected="true"]):hover {
+    background-color: hsl(var(--primary)) !important; 
+    color: hsl(var(--primary-foreground)) !important; 
+  }
+  .rdp-day_today:not([aria-selected="true"]) > .rdp-button:not([disabled]):hover {
+      background-color: hsl(var(--primary)) !important;
+      color: hsl(var(--primary-foreground)) !important;
+  }
+
+  .bg-indicator-overdue { background-color: hsl(var(--indicator-overdue-bg)); }
+  .bg-indicator-today { background-color: hsl(var(--indicator-today-bg)); }
+  .bg-indicator-upcoming { background-color: hsl(var(--indicator-upcoming-bg)); }
+
+  /* Animation for the UserNav task indicator dot */
+  @keyframes pulse-indicator-animation {
+    0%, 100% {
+      opacity: 1;
+      transform: scale(1);
+    }
+    50% {
+      opacity: 0.6;
+      transform: scale(1.15);
+    }
+  }
+  .animate-pulse-indicator {
+    animation: pulse-indicator-animation 1.5s infinite ease-in-out;
+  }
+
+  /* Styles for calendar day reservation indicators (background highlight) */
+  .day-reserved-today .rdp-button:not([disabled]):not([aria-selected="true"]) {
+    background-color: hsla(var(--indicator-today-bg-raw), 0.3) !important;
+  }
+  .day-reserved-future .rdp-button:not([disabled]):not([aria-selected="true"]) {
+    background-color: hsla(var(--indicator-upcoming-bg-raw), 0.3) !important;
+  }
+  
+  /* Floating currency animation */
+  .currency-animation-bg {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    z-index: 0;
+  }
+  
+  .currency-animation-bg span {
+    position: absolute;
+    display: block;
+    list-style: none;
+    width: 20px;
+    height: 20px;
+    background: transparent;
+    color: hsl(var(--primary) / 0.15);
+    animation: float 25s linear infinite;
+    bottom: -150px;
+    font-size: 2rem;
+    font-weight: bold;
+    text-shadow: 0 0 5px hsl(var(--primary) / 0.2);
+  }
+
+  .dark .currency-animation-bg span {
+    color: hsl(var(--primary) / 0.1);
+    text-shadow: 0 0 5px hsl(var(--primary) / 0.15);
+  }
+
+  .currency-animation-bg span:nth-child(1) { left: 25%; width: 80px; height: 80px; animation-delay: 0s; font-size: 4rem; }
+  .currency-animation-bg span:nth-child(2) { left: 10%; width: 20px; height: 20px; animation-delay: 2s; animation-duration: 12s; font-size: 1.5rem;}
+  .currency-animation-bg span:nth-child(3) { left: 70%; width: 20px; height: 20px; animation-delay: 4s; font-size: 1.8rem;}
+  .currency-animation-bg span:nth-child(4) { left: 40%; width: 60px; height: 60px; animation-delay: 0s; animation-duration: 18s; font-size: 3rem;}
+  .currency-animation-bg span:nth-child(5) { left: 65%; width: 20px; height: 20px; animation-delay: 0s; font-size: 2rem;}
+  .currency-animation-bg span:nth-child(6) { left: 75%; width: 110px; height: 110px; animation-delay: 3s; font-size: 5rem; }
+  .currency-animation-bg span:nth-child(7) { left: 35%; width: 150px; height: 150px; animation-delay: 7s; font-size: 6rem; }
+  .currency-animation-bg span:nth-child(8) { left: 50%; width: 25px; height: 25px; animation-delay: 15s; animation-duration: 45s; font-size: 2.2rem;}
+  .currency-animation-bg span:nth-child(9) { left: 20%; width: 15px; height: 15px; animation-delay: 2s; animation-duration: 35s; font-size: 1.2rem;}
+  .currency-animation-bg span:nth-child(10) { left: 85%; width: 150px; height: 150px; animation-delay: 0s; animation-duration: 11s; font-size: 7rem;}
+
+  @keyframes float {
+    0% {
+      transform: translateY(0) rotate(0deg);
+      opacity: 1;
+      border-radius: 0;
+    }
+    100% {
+      transform: translateY(-1000px) rotate(720deg);
+      opacity: 0;
+      border-radius: 50%;
+    }
+  }
+
+  /* Animated Gradient Background */
+  @keyframes gradient-flow {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+  }
+
+  .animated-gradient-bg {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 0;
+    background: linear-gradient(
+      -45deg,
+      hsl(var(--primary) / 0.15),
+      hsl(var(--muted) / 0.05),
+      hsl(var(--primary) / 0.2)
+    );
+    background-size: 400% 400%;
+    animation: gradient-flow 15s ease infinite;
+  }
+  
+  .dark .animated-gradient-bg {
+    background: linear-gradient(
+      -45deg,
+      hsl(var(--primary) / 0.2), /* Green */
+      hsl(var(--secondary) / 0.15), /* Light Gray */
+      hsl(var(--primary) / 0.25) /* Green */
+    );
+    background-size: 400% 400%;
+    animation: gradient-flow 15s ease infinite;
+  }
+
+  /* Futuristic button styles */
+  .btn-futuristic {
+    @apply inline-flex items-center justify-center relative p-px font-semibold leading-6 text-foreground no-underline bg-background shadow-lg shadow-zinc-900/10 dark:shadow-zinc-900/30 rounded-lg;
+    @apply transition-all duration-300 ease-in-out;
+  }
+
+  .btn-futuristic::before {
+    content: '';
+    @apply absolute -top-px -left-px -right-px -bottom-px rounded-lg;
+    background: conic-gradient(from 180deg at 50% 50%, hsl(var(--primary) / 0.8), hsl(var(--accent) / 0.8), hsl(var(--primary) / 0.8));
+    z-index: 0;
+  }
+  
+  .dark .btn-futuristic::before {
+    background: conic-gradient(from 180deg at 50% 50%, hsl(var(--primary)), hsl(var(--accent)), hsl(var(--primary)));
+  }
+
+  .btn-futuristic span {
+    @apply relative flex items-center justify-center space-x-2 h-10 px-6 py-2 bg-background hover:bg-muted/50 rounded-[calc(var(--radius)-1px)] transition-colors;
+  }
+  
+  .dark .btn-futuristic span {
+      @apply hover:bg-muted/20;
+  }
+
+  .btn-futuristic:hover::before {
+    filter: blur(1px);
+  }
+}
+
+    

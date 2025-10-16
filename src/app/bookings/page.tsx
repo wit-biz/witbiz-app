@@ -21,6 +21,7 @@ import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { Badge } from "@/components/ui/badge";
 import { Booking, Client } from "@/lib/types";
+import { useCRMData } from "@/contexts/CRMDataContext";
 
 type ReservationType = 'Cita' | 'Operación Divisas';
 type ReservationStatus = 'Confirmada' | 'Pendiente' | 'Cancelada';
@@ -38,34 +39,32 @@ const initialNewReservationData: FormData = {
 
 export default function ReservationsPage() {
     const { toast } = useToast();
-    const [bookings, setBookings] = useState<Booking[]>([]);
-    const [clients, setClients] = useState<Client[]>([]);
-    const [isLoadingBookings, setIsLoadingBookings] = useState(true);
+    const { clients, donnaReservations: bookings, isLoadingDonnaReservations: isLoadingBookings } = useCRMData();
+    const [calendarDate, setCalendarDate] = useState<Date | undefined>(new Date());
+    const [isSubmitting, setIsSubmitting] = useState(false);
+  
+    const [isFormDialogOpen, setIsFormDialogOpen] = useState(false);
+    const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
+    
+    const [reservationToEdit, setReservationToEdit] = useState<Booking | null>(null);
+    const [reservationToDelete, setReservationToDelete] = useState<Booking | null>(null);
+    const [formData, setFormData] = useState<any>(initialNewReservationData);
+    
+    const [isClient, setIsClient] = useState(false);
+    const [today, setToday] = useState<Date | null>(null);
 
-  const [calendarDate, setCalendarDate] = useState<Date | undefined>(new Date());
-  const [isSubmitting, setIsSubmitting] = useState(false);
+    useEffect(() => {
+        setIsClient(true);
+        const todayDate = new Date();
+        todayDate.setHours(0, 0, 0, 0);
+        setToday(todayDate);
+    }, []);
   
-  const [isFormDialogOpen, setIsFormDialogOpen] = useState(false);
-  const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
-  
-  const [reservationToEdit, setReservationToEdit] = useState<Booking | null>(null);
-  const [reservationToDelete, setReservationToDelete] = useState<Booking | null>(null);
-  const [formData, setFormData] = useState<any>(initialNewReservationData);
-  
-  const [isClient, setIsClient] = useState(false);
-  const [today, setToday] = useState<Date | null>(null);
+  const { currentUser, addDonnaReservation, updateDonnaReservation, deleteDonnaReservation } = useCRMData();
+  const canCreateReservation = currentUser?.permissions.donna.reservations_create ?? true;
+  const canEditReservation = currentUser?.permissions.donna.reservations_edit ?? true;
+  const canDeleteReservation = currentUser?.permissions.donna.reservations_delete ?? true;
 
-  useEffect(() => {
-    setIsClient(true);
-    const todayDate = new Date();
-    todayDate.setHours(0, 0, 0, 0);
-    setToday(todayDate);
-    setIsLoadingBookings(false);
-  }, []);
-  
-  const canCreateReservation = true;
-  const canEditReservation = true;
-  const canDeleteReservation = true;
 
   const handleDataChange = useCallback((e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -93,7 +92,7 @@ export default function ReservationsPage() {
       setFormData(reservation);
     } else {
       setReservationToEdit(null);
-      setFormData(initialNewReservationData);
+      setFormData({ ...initialNewReservationData, date: format(calendarDate || new Date(), 'yyyy-MM-dd')});
     }
     setIsFormDialogOpen(true);
   }
@@ -110,43 +109,43 @@ export default function ReservationsPage() {
       return;
     }
     setIsSubmitting(true);
-    // Mock implementation
-    setTimeout(() => {
-        if (reservationToEdit) {
-            setBookings(bookings.map(b => b.id === reservationToEdit.id ? {...reservationToEdit, ...formData} : b));
-            toast({ title: 'Éxito', description: 'Reservación actualizada.' });
-        } else {
-            const newBooking = { ...formData, id: `B${Date.now()}`};
-            setBookings([...bookings, newBooking]);
-            toast({ title: 'Éxito', description: 'Reservación creada.' });
-        }
+    const action = reservationToEdit 
+        ? updateDonnaReservation(reservationToEdit.id, formData)
+        : addDonnaReservation(formData);
+    
+    action.then(() => {
+        toast({ title: 'Éxito', description: `Reservación ${reservationToEdit ? 'actualizada' : 'creada'}.` });
         setIsSubmitting(false);
         setIsFormDialogOpen(false);
-    }, 500);
-  }, [formData, reservationToEdit, bookings, toast]);
+    }).catch(err => {
+        toast({ title: 'Error', description: `No se pudo guardar la reservación: ${err.message}`, variant: 'destructive' });
+        setIsSubmitting(false);
+    });
+  }, [formData, reservationToEdit, toast, addDonnaReservation, updateDonnaReservation]);
 
   const handleDelete = async () => {
     if (!reservationToDelete) return;
     setIsSubmitting(true);
-     // Mock implementation
-     setTimeout(() => {
-        setBookings(bookings.filter(b => b.id !== reservationToDelete.id));
+    deleteDonnaReservation(reservationToDelete.id).then(() => {
+        toast({ title: 'Éxito', description: 'Reservación eliminada.' });
         setIsSubmitting(false);
         setIsDeleteConfirmOpen(false);
         setReservationToDelete(null);
-        toast({ title: 'Éxito', description: 'Reservación eliminada.' });
-    }, 500);
+    }).catch(err => {
+        toast({ title: 'Error', description: `No se pudo eliminar la reservación: ${err.message}`, variant: 'destructive' });
+        setIsSubmitting(false);
+    });
   };
   
   const reservationsForSelectedDate = useMemo(() => {
     if (!calendarDate) return [];
     const selectedDayString = format(calendarDate, 'yyyy-MM-dd');
-    return bookings.filter(res => format(res.date, 'yyyy-MM-dd') === selectedDayString).sort((a, b) => (a.time || '00:00').localeCompare(b.time || '00:00'));
+    return bookings.filter(res => format(new Date(res.date), 'yyyy-MM-dd') === selectedDayString).sort((a, b) => (a.time || '00:00').localeCompare(b.time || '00:00'));
   }, [bookings, calendarDate]);
   
   const dayModifiers = useMemo(() => {
     if (!today) return {};
-    const reservationDates = bookings.map(res => res.date).filter((date): date is Date => date !== null);
+    const reservationDates = bookings.map(res => res.date).filter((date): date is Date => date !== null).map(d => new Date(d));
     const todayReservations = reservationDates.filter(date => date.getTime() === today.getTime());
     const futureReservations = reservationDates.filter(date => date.getTime() > today.getTime());
     return { today_reservations: todayReservations, future_reservations: futureReservations };
@@ -176,8 +175,8 @@ export default function ReservationsPage() {
           <CardHeader>
             <CardTitle>Calendario de Reservas</CardTitle>
             <CardDescription className="flex items-center gap-x-2 text-xs">
-              <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-green-500"></span>Hoy</span>
-              <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-blue-500"></span>Futuras</span>
+              <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-indicator-today"></span>Hoy</span>
+              <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-indicator-upcoming"></span>Futuras</span>
             </CardDescription>
           </CardHeader>
           <CardContent className="flex justify-center">
@@ -192,10 +191,7 @@ export default function ReservationsPage() {
                 onSelect={setCalendarDate}
                 className="rounded-md border"
                 modifiers={dayModifiers}
-                modifiersClassNames={{
-                    today_reservations: 'bg-green-100 text-green-800',
-                    future_reservations: 'bg-blue-100 text-blue-800',
-                }}
+                modifiersClassNames={dayModifiersClassNames}
                 disabled={!today || isLoadingBookings ? (date) => true : (date) => {
                   if (!today) return true;
                   const oneYearAgo = new Date(today);
@@ -308,10 +304,10 @@ export default function ReservationsPage() {
                     <PopoverTrigger asChild>
                       <Button variant="outline" className={cn("w-full justify-start text-left font-normal", !formData.date && "text-muted-foreground")} disabled={isSubmitting}>
                         <CalendarIcon className="mr-2 h-4 w-4" />
-                        {formData.date ? format(formData.date, "PPP", { locale: es }) : <span>Seleccione fecha</span>}
+                        {formData.date ? format(new Date(formData.date), "PPP", { locale: es }) : <span>Seleccione fecha</span>}
                       </Button>
                     </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0"><Calendar mode="single" selected={formData.date} onSelect={handleDateChangeForAddDialog} initialFocus /></PopoverContent>
+                    <PopoverContent className="w-auto p-0"><Calendar mode="single" selected={new Date(formData.date)} onSelect={handleDateChangeForAddDialog} initialFocus /></PopoverContent>
                   </Popover>
                 </div>
                 <div>
@@ -340,7 +336,7 @@ export default function ReservationsPage() {
           <AlertDialogHeader>
             <AlertDialogTitle>¿Confirmar Eliminación?</AlertDialogTitle>
             <AlertDialogDescription>
-              Esta acción no se puede deshacer. ¿Está seguro de que desea eliminar la reservación para "{reservationToDelete?.clientName}" el {reservationToDelete?.date ? format(reservationToDelete.date, 'PPP') : ''}?
+              Esta acción no se puede deshacer. ¿Está seguro de que desea eliminar la reservación para "{reservationToDelete?.clientName}" el {reservationToDelete?.date ? formatDateString(reservationToDelete.date as string) : ''}?
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
