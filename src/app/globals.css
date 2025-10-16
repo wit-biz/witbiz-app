@@ -4,7 +4,7 @@
 @tailwind utilities;
 
 body {
-  font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
+  font-family: var(--font-montserrat), Arial, Helvetica, sans-serif;
 }
 
 @layer base {
@@ -15,13 +15,13 @@ body {
     --card-foreground: 0 0% 3.9%;
     --popover: 0 0% 100%;
     --popover-foreground: 0 0% 3.9%;
-    --primary: 120 73% 75%; /* WitBiz Green #90EE90 */
+    --primary: 120 73% 75%; /* Accent Green #90EE90 */
     --primary-foreground: 0 0% 3.9%; /* Black for text on green */
     --secondary: 0 0% 96.1%; /* Light Gray */
     --secondary-foreground: 0 0% 9%;
     --muted: 0 0% 96.1%;
     --muted-foreground: 0 0% 45.1%;
-    --accent: 120 73% 75%; /* Brand Green #90EE90 */
+    --accent: 120 73% 75%; /* Accent Green #90EE90 */
     --accent-foreground: 0 0% 3.9%; /* Black text on accent for contrast */
     --accent-raw: 120 73% 75%; /* Raw HSL for accent */
     --destructive: 0 84.2% 60.2%;
@@ -48,11 +48,13 @@ body {
     --sidebar-ring: 120 73% 75%;
 
     /* Calendar Indicator Colors */
-    --indicator-overdue-bg: hsl(var(--destructive)); /* Rojo */
-    --indicator-today-bg: 130 60% 50%; /* Verde */
-    --indicator-upcoming-bg: 210 70% 55%; /* Azul */
-    --indicator-today-bg-raw: 130 60% 50%; /* Verde raw for HSL use with opacity */
-    --indicator-upcoming-bg-raw: 210 70% 55%; /* Azul raw for HSL use with opacity */
+    --indicator-overdue-bg: hsl(var(--destructive));
+    --indicator-today-bg: 130 60% 50%;
+    --indicator-upcoming-bg: 210 70% 55%;
+    --indicator-today-bg-raw: 130 60% 50%;
+    --indicator-upcoming-bg-raw: 210 70% 55%;
+    --reservation-indicator-today-bg: 130 60% 50%;
+    --reservation-indicator-future-bg: 210 70% 55%;
   }
 
   .dark {
@@ -62,14 +64,14 @@ body {
     --card-foreground: 0 0% 98%;
     --popover: 0 0% 3.9%;
     --popover-foreground: 0 0% 98%;
-    --primary: 120 73% 75%; /* WitBiz Green #90EE90 */
-    --primary-foreground: 0 0% 3.9%; /* Black text on green */
+    --primary: 120 73% 75%;
+    --primary-foreground: 0 0% 3.9%;
     --secondary: 0 0% 14.9%;
     --secondary-foreground: 0 0% 98%;
     --muted: 0 0% 14.9%;
     --muted-foreground: 0 0% 63.9%;
-    --accent: 120 73% 75%; /* Brand Green #90EE90 for Dark Mode */
-    --accent-foreground: 0 0% 3.9%; /* Black text on accent */
+    --accent: 120 73% 75%;
+    --accent-foreground: 0 0% 3.9%;
     --accent-raw: 120 73% 75%;
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 0 0% 98%;
@@ -84,12 +86,12 @@ body {
     --chart-5: 340 75% 55%;
 
     /* Sidebar specific colors - Dark Mode */
-    --sidebar-background: 0 0% 7%; /* Darker Gray */
-    --sidebar-foreground: 0 0% 98%; /* Light text */
-    --sidebar-primary: 120 73% 75%; /* Accent Green for active/primary items */
-    --sidebar-primary-foreground: 0 0% 3.9%; /* Black text on primary */
-    --sidebar-accent: 0 0% 12%; /* Slightly lighter gray for hover */
-    --sidebar-accent-foreground: 0 0% 98%; /* Light text on accent */
+    --sidebar-background: 0 0% 7%;
+    --sidebar-foreground: 0 0% 98%;
+    --sidebar-primary: 120 73% 75%;
+    --sidebar-primary-foreground: 0 0% 3.9%;
+    --sidebar-accent: 0 0% 12%;
+    --sidebar-accent-foreground: 0 0% 98%;
     --sidebar-border: 0 0% 14.9%;
     --sidebar-ring: 120 73% 75%;
 
@@ -99,6 +101,8 @@ body {
     --indicator-upcoming-bg: 210 60% 50%;
     --indicator-today-bg-raw: 130 50% 45%;
     --indicator-upcoming-bg-raw: 210 60% 50%;
+    --reservation-indicator-today-bg: 130 50% 45%;
+    --reservation-indicator-future-bg: 210 60% 50%;
   }
 }
 
