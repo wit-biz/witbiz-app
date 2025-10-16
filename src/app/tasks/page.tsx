@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useState, useEffect, useMemo, type ChangeEvent, useCallback } from "react";
@@ -13,13 +14,12 @@ import { es } from "date-fns/locale";
 import type { DayModifiers } from "react-day-picker";
 import { cn, parseDateString, formatDateString, formatTimeString } from "@/lib/utils"; 
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { tasks as mockTasks, clients as mockClients } from '@/lib/data';
-import type { Task, Client } from '@/lib/types';
 import { useToast } from "@/hooks/use-toast";
 import { TaskDetailDialog } from "@/components/shared/TaskDetailDialog";
 import { useCRMData } from "@/contexts/CRMDataContext";
 import { useTasksContext } from "@/contexts/TasksContext";
 import { AddTaskDialog } from "@/components/shared/AddTaskDialog";
+import { Task } from "@/lib/types";
 
 
 const MemoizedTaskItemDisplay = React.memo(function TaskItemDisplay({ task, icon: Icon, iconColor = "text-gray-500", showDate = true, isClient, onClickHandler }: { task: Task; icon?: React.ElementType; iconColor?: string, showDate?: boolean, isClient: boolean, onClickHandler: (task: Task) => void }) {
@@ -181,72 +181,73 @@ export default function TasksPage() {
   return (
     <TooltipProvider>
       <div className="flex flex-col min-h-screen">
-      <Header
-        title="Mis Tareas"
-        description="Organiza y sigue tus actividades y compromisos diarios y semanales."
-      >
-        {
-          canCreateTask ? (
-            <Button onClick={() => setIsAddTaskDialogOpen(true)} className="w-full sm:w-auto" size="sm">
-              <PlusCircle className="mr-2 h-4 w-4" />
-              Añadir Nueva Tarea
-            </Button>
-          ) : null
-        }
-      </Header>
-      <main className="flex-1 p-4 md:p-8">
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-1 space-y-6">
-            <Card> 
-              <CardHeader> 
-                <CardTitle className="flex items-center gap-2"> 
-                  <CalendarDays className="h-6 w-6 text-accent" /> Calendario 
-                </CardTitle> 
-                <CardDescription> Selecciona una fecha para ver las tareas. Fechas resaltadas: <span className="inline-block w-3 h-3 rounded-full mx-1 align-middle bg-indicator-overdue" ></span> Atrasadas, <span className="inline-block w-3 h-3 rounded-full mx-1 align-middle bg-indicator-today" ></span> Hoy, <span className="inline-block w-3 h-3 rounded-full mx-1 align-middle bg-indicator-upcoming" ></span> Futuras. </CardDescription> 
-              </CardHeader> 
-              <CardContent className="flex justify-center">
-                {!isClient ? (
-                  <div className="p-3 rounded-md border w-[280px] h-[321px] flex items-center justify-center">
-                    <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-                  </div>
-                ) : (
-                  <Calendar 
-                    mode="single" 
-                    selected={selectedDate} 
-                    onSelect={setSelectedDate} 
-                    month={calendarMonth} 
-                    onMonthChange={setCalendarMonth} 
-                    locale={es} 
-                    className="rounded-md border" 
-                    disabled={!currentClientDate ? (date) => true : (date) => {
-                        const oneYearAgo = new Date(currentClientDate);
-                        oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
-                        const twoYearsFromNow = new Date(currentClientDate);
-                        twoYearsFromNow.setFullYear(twoYearsFromNow.getFullYear() + 2);
-                        return date < oneYearAgo || date > twoYearsFromNow;
-                      }} 
-                    modifiers={dayModifiers} 
-                    modifiersClassNames={dayModifiersClassNames} 
-                  />
-                )}
-              </CardContent> 
-            </Card>
-            {selectedDate && ( <Card> <CardHeader> <CardTitle>Tareas para el {isClient ? format(selectedDate, 'PPP', { locale: es }) : '...'}</CardTitle> </CardHeader> <CardContent className="space-y-3"> {tasksForSelectedDate.length > 0 ? ( tasksForSelectedDate.map(task => <MemoizedTaskItemDisplay key={task.id} task={task} showDate={false} icon={Clock} iconColor="text-blue-500" isClient={isClient} onClickHandler={handleTaskClick} />) ) : ( <div className="text-sm text-muted-foreground p-4 text-center flex flex-col items-center"> <Info className="h-8 w-8 text-muted-foreground mb-2"/> No hay tareas pendientes para esta fecha. </div> )} </CardContent> </Card> )}
-        </div>
-        <div className="lg:col-span-2 space-y-1">
-            <Accordion type="multiple" className="w-full space-y-4" value={openAccordionItems} onValueChange={setOpenAccordionItems} > {taskSections.map(section => ( <AccordionItem value={section.id} key={section.id} className="border-none"> <Card> <AccordionTrigger className="w-full hover:no-underline p-0 [&_svg]:ml-auto [&_svg]:mr-2"> <CardHeader className="flex-1 p-4"> <CardTitle className="flex items-center gap-2 text-lg"> <section.icon className={`h-6 w-6 ${section.color}`} /> {section.title} <Badge variant={section.tasks.length > 0 && section.id === "overdue-tasks" ? "destructive" : "secondary"} className="ml-auto mr-2" > {section.tasks.length} </Badge> </CardTitle> </CardHeader> </AccordionTrigger> <AccordionContent> <CardContent className="space-y-3 pt-0 p-4"> {section.tasks.length > 0 ? ( section.tasks.map(task => <MemoizedTaskItemDisplay key={task.id} task={task} icon={section.icon} iconColor={section.color} showDate={section.id !== 'today-tasks'} isClient={isClient} onClickHandler={handleTaskClick} />) ) : ( <div className="text-sm text-muted-foreground p-4 text-center flex flex-col items-center"> <Info className="h-8 w-8 text-muted-foreground mb-2"/> {section.emptyMsg} </div> )} </CardContent> </AccordionContent> </Card> </AccordionItem> ))} </Accordion>
-        </div>
+        <Header
+          title="Mis Tareas"
+          description="Organiza y sigue tus actividades y compromisos diarios y semanales."
+        >
+          {
+            canCreateTask ? (
+              <Button onClick={() => setIsAddTaskDialogOpen(true)} className="w-full sm:w-auto" size="sm">
+                <PlusCircle className="mr-2 h-4 w-4" />
+                Añadir Nueva Tarea
+              </Button>
+            ) : null
+          }
+        </Header>
+        <main className="flex-1 p-4 md:p-8">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="lg:col-span-1 space-y-6">
+              <Card> 
+                <CardHeader> 
+                  <CardTitle className="flex items-center gap-2"> 
+                    <CalendarDays className="h-6 w-6 text-accent" /> Calendario 
+                  </CardTitle> 
+                  <CardDescription> Selecciona una fecha para ver las tareas. Fechas resaltadas: <span className="inline-block w-3 h-3 rounded-full mx-1 align-middle bg-indicator-overdue" ></span> Atrasadas, <span className="inline-block w-3 h-3 rounded-full mx-1 align-middle bg-indicator-today" ></span> Hoy, <span className="inline-block w-3 h-3 rounded-full mx-1 align-middle bg-indicator-upcoming" ></span> Futuras. </CardDescription> 
+                </CardHeader> 
+                <CardContent className="flex justify-center">
+                  {!isClient ? (
+                    <div className="p-3 rounded-md border w-[280px] h-[321px] flex items-center justify-center">
+                      <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                    </div>
+                  ) : (
+                    <Calendar 
+                      mode="single" 
+                      selected={selectedDate} 
+                      onSelect={setSelectedDate} 
+                      month={calendarMonth} 
+                      onMonthChange={setCalendarMonth} 
+                      locale={es} 
+                      className="rounded-md border" 
+                      disabled={!currentClientDate ? (date) => true : (date) => {
+                          const oneYearAgo = new Date(currentClientDate);
+                          oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
+                          const twoYearsFromNow = new Date(currentClientDate);
+                          twoYearsFromNow.setFullYear(twoYearsFromNow.getFullYear() + 2);
+                          return date < oneYearAgo || date > twoYearsFromNow;
+                        }} 
+                      modifiers={dayModifiers} 
+                      modifiersClassNames={dayModifiersClassNames} 
+                    />
+                  )}
+                </CardContent> 
+              </Card>
+              {selectedDate && ( <Card> <CardHeader> <CardTitle>Tareas para el {isClient ? format(selectedDate, 'PPP', { locale: es }) : '...'}</CardTitle> </CardHeader> <CardContent className="space-y-3"> {tasksForSelectedDate.length > 0 ? ( tasksForSelectedDate.map(task => <MemoizedTaskItemDisplay key={task.id} task={task} showDate={false} icon={Clock} iconColor="text-blue-500" isClient={isClient} onClickHandler={handleTaskClick} />) ) : ( <div className="text-sm text-muted-foreground p-4 text-center flex flex-col items-center"> <Info className="h-8 w-8 text-muted-foreground mb-2"/> No hay tareas pendientes para esta fecha. </div> )} </CardContent> </Card> )}
+            </div>
+            <div className="lg:col-span-2 space-y-1">
+              <Accordion type="multiple" className="w-full space-y-4" value={openAccordionItems} onValueChange={setOpenAccordionItems} > {taskSections.map(section => ( <AccordionItem value={section.id} key={section.id} className="border-none"> <Card> <AccordionTrigger className="w-full hover:no-underline p-0 [&_svg]:ml-auto [&_svg]:mr-2"> <CardHeader className="flex-1 p-4"> <CardTitle className="flex items-center gap-2 text-lg"> <section.icon className={`h-6 w-6 ${section.color}`} /> {section.title} <Badge variant={section.tasks.length > 0 && section.id === "overdue-tasks" ? "destructive" : "secondary"} className="ml-auto mr-2" > {section.tasks.length} </Badge> </CardTitle> </CardHeader> </AccordionTrigger> <AccordionContent> <CardContent className="space-y-3 pt-0 p-4"> {section.tasks.length > 0 ? ( section.tasks.map(task => <MemoizedTaskItemDisplay key={task.id} task={task} icon={section.icon} iconColor={section.color} showDate={section.id !== 'today-tasks'} isClient={isClient} onClickHandler={handleTaskClick} />) ) : ( <div className="text-sm text-muted-foreground p-4 text-center flex flex-col items-center"> <Info className="h-8 w-8 text-muted-foreground mb-2"/> {section.emptyMsg} </div> )} </CardContent> </AccordionContent> </Card> </AccordionItem> ))} </Accordion>
+            </div>
+          </div>
+        </main>
+        <AddTaskDialog isOpen={isAddTaskDialogOpen} onOpenChange={setIsAddTaskDialogOpen} onTaskAdd={async (task) => !!(await addTask(task))} />
+        {selectedTaskDetail && (
+          <TaskDetailDialog
+            key={selectedTaskDetail.id}
+            isOpen={isDetailDialogOpen}
+            onOpenChange={setIsDetailDialogOpen}
+            task={selectedTaskDetail}
+          />
+        )}
       </div>
-      <AddTaskDialog isOpen={isAddTaskDialogOpen} onOpenChange={setIsAddTaskDialogOpen} onTaskAdd={async (task) => !!(await addTask(task))} />
-      {selectedTaskDetail && (
-        <TaskDetailDialog
-          key={selectedTaskDetail.id}
-          isOpen={isDetailDialogOpen}
-          onOpenChange={setIsDetailDialogOpen}
-          task={selectedTaskDetail}
-        />
-      )}
-      </main>
     </TooltipProvider>
   );
 }
