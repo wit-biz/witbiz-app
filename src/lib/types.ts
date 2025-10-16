@@ -3,8 +3,8 @@ export type Client = {
   name: string;
   owner: string;
   category: string;
-  stage: string;
-  currentObjective: string;
+  stage?: string; // Optional legacy
+  currentObjective?: string; // Optional legacy
   contactEmail?: string;
   contactPhone?: string;
   website?: string;
@@ -16,59 +16,65 @@ export type Client = {
 export type Task = {
   id: string;
   title: string;
-  dueDate: Date;
-  status: 'To-Do' | 'In Progress' | 'Done' | 'Overdue';
+  dueDate: string; // ISO String YYYY-MM-DD
+  status: 'Pendiente' | 'Completada';
   clientId: string;
   clientName: string;
   description?: string;
-  dueTime?: string;
+  dueTime?: string; // HH:MM
 };
 
 export type Document = {
   id: string;
   name: string;
-  type: string;
-  uploadedAt: Date;
+  type: DocumentType;
+  uploadedAt: any; // Firestore Timestamp or Date
   clientId: string;
   downloadURL?: string;
-  uploadDate?: string;
+  uploadDate?: string; // ISO String YYYY-MM-DD
 };
 
 export type Note = {
   id: string;
-  content: string;
-  createdAt: Date;
+  content: string; // Legacy or for display
+  text: string;
+  createdAt: any; // Firestore Timestamp or Date
   clientId: string;
   authorName?: string;
-  updatedAt?: Date;
-  text: string;
+  updatedAt?: any; // Firestore Timestamp or Date
 };
 
-export type Booking = {
+export type Reservation = {
+  id: string;
+  clientId: string;
+  clientName: string;
+  type: 'Cita' | 'Operación Divisas';
+  date: string; // ISO String YYYY-MM-DD
+  time: string; // HH:MM
+  details: string;
+  status: 'Confirmada' | 'Pendiente' | 'Cancelada';
+  createdAt?: any; // Firestore Timestamp or Date
+};
+
+export type WorkflowStage = {
   id: string;
   title: string;
-  date: Date;
-  clientId: string;
-  clientName?: string;
-  type?: 'Cita' | 'Operación Divisas';
-  time?: string;
-  details?: string;
-  status?: 'Confirmada' | 'Pendiente' | 'Cancelada';
+  order: number;
+  objectives: WorkflowStageObjective[];
 };
-
-export type WorkflowStage = string;
 
 export type WorkflowStageObjective = {
   id: string;
   description: string;
-  documentTypeTrigger?: string;
-  subObjectives?: SubObjective[];
+  order: number;
+  subObjectives: SubObjective[];
   requiredDocumentForCompletion?: string;
 };
 
 export type SubObjective = {
     id: string;
     text: string;
+    order?: number; // Made optional for mock data simplicity
 };
 
 export type DocumentType = "Contrato" | "Factura" | "Propuesta" | "Informe" | "Otro";
@@ -90,6 +96,7 @@ export interface AuthenticatedUser {
       reservations_create: boolean;
       reservations_edit: boolean;
       reservations_delete: boolean;
+      workflows_edit: boolean;
     };
   };
 }
@@ -109,6 +116,6 @@ export interface SubService {
 export interface ServiceWorkflow {
     id: string;
     name: string;
-    stages: WorkflowStage[];
+    stages: WorkflowStage[]; // Legacy or for simple workflows
     subServices: SubService[];
 }

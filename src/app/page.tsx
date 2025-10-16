@@ -41,6 +41,10 @@ import {
 import { cn } from "@/lib/utils";
 import { tasks as allTasks, clients as allClients, workflowStages } from '@/lib/data';
 import type { Client, Task, WorkflowStage } from '@/lib/types';
+import { useTasksContext } from "@/contexts/TasksContext";
+import { TaskDetailDialog } from "@/components/shared/TaskDetailDialog";
+import { useCRMData } from "@/contexts/CRMDataContext";
+
 
 const StageNumberIcon = ({ index, variant = 'default' }: { index: number, variant?: 'default' | 'large' | 'dialog' }) => {
   const variants = {
@@ -57,9 +61,8 @@ const StageNumberIcon = ({ index, variant = 'default' }: { index: number, varian
 
 
 export default function InicioPage() {
-  const [clients, setClients] = useState<Client[]>(allClients);
-  const [tasks, setTasks] = useState<Task[]>(allTasks);
-  const [isLoadingClients, setIsLoadingClients] = useState(true);
+  const { clients, isLoadingClients, tasks } = useCRMData();
+  const { setHasTasksForToday } = useTasksContext();
 
   const [currentClientDateForDashboard, setCurrentClientDateForDashboard] = useState<Date | null>(null);
   
@@ -70,8 +73,11 @@ export default function InicioPage() {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     setCurrentClientDateForDashboard(today);
-    setIsLoadingClients(false);
-  }, []);
+    if (tasks && tasks.length > 0) {
+      const hasToday = tasks.some(t => t.status === 'Pendiente' && new Date(t.dueDate).toDateString() === today.toDateString());
+      setHasTasksForToday(hasToday);
+    }
+  }, [tasks, setHasTasksForToday]);
 
   const [selectedStage, setSelectedStage] = useState<WorkflowStage | null>(null);
   const [isStageClientsDialogOpen, setIsStageClientsDialogOpen] = useState(false);
@@ -87,15 +93,15 @@ export default function InicioPage() {
     if (!selectedStage || isLoadingClients || !clients ) return [];
 
     return clients
-      .filter(client => client.stage === selectedStage)
+      .filter(client => client.stage === selectedStage.title)
       .map(client => {
         const clientTasks = tasks.filter(t => t.clientId === client.id);
-        const pendingTask = clientTasks.find(task => task.status === 'To-Do');
+        const pendingTask = clientTasks.find(task => task.status === 'Pendiente');
 
         return {
           ...client,
           currentObjectiveDisplay: client.currentObjective,
-          pendingTaskInfo: pendingTask ? { title: pendingTask.title, dueDate: pendingTask.dueDate } : undefined,
+          pendingTaskInfo: pendingTask ? { title: pendingTask.title, dueDate: new Date(pendingTask.dueDate) } : undefined,
         };
       })
       .sort((a, b) => a.name.localeCompare(b.name));
@@ -116,14 +122,14 @@ export default function InicioPage() {
   }, [searchTermDashboard, clients, isLoadingClients]);
 
   const handleStageClick = (stage: WorkflowStage) => {
-    setHighlightedStage(stage);
+    setHighlightedStage(stage.title);
     setSelectedStage(stage);
     setIsStageClientsDialogOpen(true);
   };
 
   const populatedStageIds = useMemo(() => {
     if (isLoadingClients || !clients) return new Set<string>();
-    return new Set(clients.map(client => client.stage));
+    return new Set(clients.map(client => client.stage || ''));
   }, [clients, isLoadingClients]);
 
 
@@ -132,7 +138,7 @@ export default function InicioPage() {
     setHighlightedStage(client.stage || null);
     setIsPopoverOpenDashboard(false);
 
-    const stage = client.stage;
+    const stage = workflowStages.find(ws => ws.title === client.stage);
     if (stage) {
       setSelectedStage(stage);
       setIsStageClientsDialogOpen(true);
@@ -144,7 +150,7 @@ export default function InicioPage() {
     const today = currentClientDateForDashboard;
     return tasks
       .filter(task => {
-        if (task.status !== 'To-Do') return false;
+        if (task.status !== 'Pendiente') return false;
         try {
           const taskDueDate = new Date(task.dueDate);
           taskDueDate.setHours(0,0,0,0);
@@ -285,8 +291,8 @@ export default function InicioPage() {
             {/* Mobile: Vertical flow */}
             <div className="flex flex-col items-center gap-2 sm:hidden">
                 {workflowStagesForDisplay.map((stage, index) => {
-                const isPopulated = populatedStageIds.has(stage);
-                const isHighlighted = stage === highlightedStage;
+                const isPopulated = populatedStageIds.has(stage.title);
+                const isHighlighted = stage.title === highlightedStage;
                 let currentStatusForStyling: 'locked' | 'active' | 'completed' = 'locked';
 
                 if (isPopulated && !isHighlighted) {
@@ -307,7 +313,7 @@ export default function InicioPage() {
                 }
 
                 return (
-                    <React.Fragment key={stage}>
+                    <React.Fragment key={stage.id}>
                     <div
                         onClick={() => handleStageClick(stage)}
                         className={cn(
@@ -320,12 +326,12 @@ export default function InicioPage() {
                         role="button"
                         tabIndex={0}
                         onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') handleStageClick(stage); }}
-                        aria-label={stage}
+                        aria-label={stage.title}
                     >
                         <StageNumberIcon index={index} variant="default" />
                         <div className="min-w-0">
                         <span className={cn("leading-tight break-words text-sm font-medium", isHighlighted ? 'text-inherit' : baseTextClass)}>
-                            {stage}
+                            {stage.title}
                         </span>
                         </div>
                     </div>
@@ -339,8 +345,8 @@ export default function InicioPage() {
             {/* Desktop: Horizontal wrap flow */}
             <div className="hidden sm:flex flex-wrap items-start gap-2">
                 {workflowStagesForDisplay.map((stage, index) => {
-                 const isPopulated = populatedStageIds.has(stage);
-                 const isHighlighted = stage === highlightedStage;
+                 const isPopulated = populatedStageIds.has(stage.title);
+                 const isHighlighted = stage.title === highlightedStage;
                  let currentStatusForStyling: 'locked' | 'active' | 'completed' = 'locked';
                 
                  if (isPopulated && !isHighlighted) {
@@ -365,7 +371,7 @@ export default function InicioPage() {
                 }
 
                 return (
-                    <React.Fragment key={stage}>
+                    <React.Fragment key={stage.id}>
                     <div
                         onClick={() => handleStageClick(stage)}
                         className={cn(
@@ -378,11 +384,11 @@ export default function InicioPage() {
                         role={"button"}
                         tabIndex={0}
                         onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') handleStageClick(stage); }}
-                        aria-label={stage}
+                        aria-label={stage.title}
                     >
                         <StageNumberIcon index={index} variant="large" />
                         <span className={cn("leading-tight break-words text-[10px] sm:text-xs w-full px-0.5", isHighlighted ? 'text-inherit' : baseTextClass)}>
-                        {stage}
+                        {stage.title}
                         </span>
                     </div>
                     {index < workflowStagesForDisplay.length - 1 && (
@@ -401,8 +407,8 @@ export default function InicioPage() {
           <DialogContent className="sm:max-w-lg md:max-w-xl">
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2 text-lg">
-                <StageNumberIcon index={workflowStagesForDisplay.findIndex(s => s === selectedStage)} variant="dialog" />
-                Clientes en Etapa: {selectedStage}
+                <StageNumberIcon index={workflowStagesForDisplay.findIndex(s => s.title === selectedStage.title)} variant="dialog" />
+                Clientes en Etapa: {selectedStage.title}
               </DialogTitle>
               <DialogDescription>
                 Listado de clientes actuales en esta etapa y su objetivo principal.
@@ -447,7 +453,7 @@ export default function InicioPage() {
               ) : !isLoadingClients && (
                 <div className="text-center text-muted-foreground py-8 flex flex-col items-center">
                   <Info className="h-10 w-10 mb-3 text-gray-400" />
-                  <p className="text-sm">No hay clientes actualmente en la etapa "{selectedStage}".</p>
+                  <p className="text-sm">No hay clientes actualmente en la etapa "{selectedStage.title}".</p>
                 </div>
               )}
             </div>
@@ -456,23 +462,13 @@ export default function InicioPage() {
       )}
 
       {selectedTaskDetail && (
-        <Dialog open={isDetailDialogOpen} onOpenChange={setIsDetailDialogOpen}>
-            <DialogContent>
-                <DialogHeader>
-                <DialogTitle>{selectedTaskDetail.title}</DialogTitle>
-                <DialogDescription>
-                    Vence: {selectedTaskDetail.dueDate.toLocaleDateString()} | Estado: {selectedTaskDetail.status}
-                </DialogDescription>
-                </DialogHeader>
-                <div className="py-4 space-y-2">
-                    <p><strong>Cliente:</strong> {selectedTaskDetail.clientName}</p>
-                    <p><strong>Detalles:</strong> Esto es un placeholder para los detalles de la tarea.</p>
-                </div>
-            </DialogContent>
-        </Dialog>
+        <TaskDetailDialog
+          key={selectedTaskDetail.id}
+          isOpen={isDetailDialogOpen}
+          onOpenChange={setIsDetailDialogOpen}
+          task={selectedTaskDetail}
+        />
       )}
     </div>
   );
 }
-
-    
