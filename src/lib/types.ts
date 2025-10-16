@@ -49,6 +49,11 @@ export type Booking = {
   title: string;
   date: Date;
   clientId: string;
+  clientName?: string;
+  type?: 'Cita' | 'Operación Divisas';
+  time?: string;
+  details?: string;
+  status?: 'Confirmada' | 'Pendiente' | 'Cancelada';
 };
 
 export type WorkflowStage = string;
@@ -82,6 +87,9 @@ export interface AuthenticatedUser {
       documents_edit: boolean;
       documents_delete: boolean;
       tasks_create: boolean;
+      reservations_create: boolean;
+      reservations_edit: boolean;
+      reservations_delete: boolean;
     };
   };
 }

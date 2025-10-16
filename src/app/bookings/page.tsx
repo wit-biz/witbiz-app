@@ -1,126 +1,356 @@
-'use client';
-import { useState } from 'react';
-import { Header } from '@/components/header';
-import { Button } from '@/components/ui/button';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogFooter,
-} from '@/components/ui/dialog';
-import { Calendar } from '@/components/ui/calendar';
-import { bookings } from '@/lib/data';
-import { Booking } from '@/lib/types';
-import { PlusCircle, Edit, Trash } from 'lucide-react';
-import { format, isSameDay } from 'date-fns';
 
-function BookingDialog({
-  booking,
-  isOpen,
-  onOpenChange,
-}: {
-  booking: Booking | null;
-  isOpen: boolean;
-  onOpenChange: (open: boolean) => void;
-}) {
-  if (!booking) return null;
+"use client";
 
-  return (
-    <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>{booking.title}</DialogTitle>
-          <DialogDescription>
-            Date: {format(booking.date, 'PPP')}
-          </DialogDescription>
-        </DialogHeader>
-        <div className="py-4">
-          <p>
-            <strong>Client ID:</strong> {booking.clientId}
-          </p>
-        </div>
-        <DialogFooter>
-          <Button variant="outline">
-            <Edit className="mr-2 h-4 w-4" /> Edit
-          </Button>
-          <Button variant="destructive">
-            <Trash className="mr-2 h-4 w-4" /> Delete
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
-  );
-}
+import React, { useState, useMemo, useCallback, type FormEvent, useEffect } from "react";
+import { Header } from "@/components/header";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose, DialogDescription } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
+import { PlusCircle, Calendar as CalendarIcon, Loader2, Save, Building, Briefcase, MoreHorizontal, Edit, Trash2 } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import { cn, formatDateString, formatTimeString, parseDateString } from "@/lib/utils";
+import { format } from "date-fns";
+import { es } from "date-fns/locale";
+import { Badge } from "@/components/ui/badge";
+import { Booking, Client } from "@/lib/types";
 
-export default function BookingsPage() {
-  const [selectedDate, setSelectedDate] = useState<Date | undefined>(
-    new Date()
-  );
-  const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
+type ReservationType = 'Cita' | 'Operación Divisas';
+type ReservationStatus = 'Confirmada' | 'Pendiente' | 'Cancelada';
+type FormData = Omit<Booking, 'id' | 'createdAt'>;
 
-  const bookingsForSelectedDay = selectedDate
-    ? bookings.filter((booking) => isSameDay(booking.date, selectedDate as Date))
-    : [];
+const initialNewReservationData: FormData = {
+  clientId: "",
+  clientName: "",
+  type: 'Cita',
+  date: new Date(),
+  time: "",
+  details: "",
+  status: 'Confirmada',
+};
 
-  const handleBookingClick = (booking: Booking) => {
-    setSelectedBooking(booking);
-    setIsDialogOpen(true);
+export default function ReservationsPage() {
+    const { toast } = useToast();
+    const [bookings, setBookings] = useState<Booking[]>([]);
+    const [clients, setClients] = useState<Client[]>([]);
+    const [isLoadingBookings, setIsLoadingBookings] = useState(true);
+
+  const [calendarDate, setCalendarDate] = useState<Date | undefined>(new Date());
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  
+  const [isFormDialogOpen, setIsFormDialogOpen] = useState(false);
+  const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
+  
+  const [reservationToEdit, setReservationToEdit] = useState<Booking | null>(null);
+  const [reservationToDelete, setReservationToDelete] = useState<Booking | null>(null);
+  const [formData, setFormData] = useState<any>(initialNewReservationData);
+  
+  const [isClient, setIsClient] = useState(false);
+  const [today, setToday] = useState<Date | null>(null);
+
+  useEffect(() => {
+    setIsClient(true);
+    const todayDate = new Date();
+    todayDate.setHours(0, 0, 0, 0);
+    setToday(todayDate);
+    setIsLoadingBookings(false);
+  }, []);
+  
+  const canCreateReservation = true;
+  const canEditReservation = true;
+  const canDeleteReservation = true;
+
+  const handleDataChange = useCallback((e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
+  }, []);
+
+  const handleSelectChange = useCallback((name: keyof FormData) => (value: string) => {
+    if (name === 'clientId') {
+      const selectedClient = clients.find(c => c.id === value);
+      setFormData(prev => ({ ...prev, clientId: value, clientName: selectedClient?.name || '' }));
+    } else {
+      setFormData(prev => ({ ...prev, [name]: value as any }));
+    }
+  }, [clients]);
+
+  const handleDateChangeForAddDialog = useCallback((date: Date | undefined) => {
+    if (date) {
+      setFormData(prev => ({ ...prev, date: format(date, 'yyyy-MM-dd') }));
+    }
+  }, []);
+
+  const handleOpenFormDialog = (reservation: Booking | null) => {
+    if (reservation) {
+      setReservationToEdit(reservation);
+      setFormData(reservation);
+    } else {
+      setReservationToEdit(null);
+      setFormData(initialNewReservationData);
+    }
+    setIsFormDialogOpen(true);
+  }
+
+  const handleOpenDeleteDialog = (reservation: Booking) => {
+    setReservationToDelete(reservation);
+    setIsDeleteConfirmOpen(true);
+  }
+
+  const handleSubmit = useCallback(async (e: FormEvent) => {
+    e.preventDefault();
+    if (!formData.clientId || !formData.date || !formData.time) {
+      toast({ title: 'Error', description: 'Usuario, fecha y hora son obligatorios.', variant: 'destructive'});
+      return;
+    }
+    setIsSubmitting(true);
+    // Mock implementation
+    setTimeout(() => {
+        if (reservationToEdit) {
+            setBookings(bookings.map(b => b.id === reservationToEdit.id ? {...reservationToEdit, ...formData} : b));
+            toast({ title: 'Éxito', description: 'Reservación actualizada.' });
+        } else {
+            const newBooking = { ...formData, id: `B${Date.now()}`};
+            setBookings([...bookings, newBooking]);
+            toast({ title: 'Éxito', description: 'Reservación creada.' });
+        }
+        setIsSubmitting(false);
+        setIsFormDialogOpen(false);
+    }, 500);
+  }, [formData, reservationToEdit, bookings, toast]);
+
+  const handleDelete = async () => {
+    if (!reservationToDelete) return;
+    setIsSubmitting(true);
+     // Mock implementation
+     setTimeout(() => {
+        setBookings(bookings.filter(b => b.id !== reservationToDelete.id));
+        setIsSubmitting(false);
+        setIsDeleteConfirmOpen(false);
+        setReservationToDelete(null);
+        toast({ title: 'Éxito', description: 'Reservación eliminada.' });
+    }, 500);
+  };
+  
+  const reservationsForSelectedDate = useMemo(() => {
+    if (!calendarDate) return [];
+    const selectedDayString = format(calendarDate, 'yyyy-MM-dd');
+    return bookings.filter(res => format(res.date, 'yyyy-MM-dd') === selectedDayString).sort((a, b) => (a.time || '00:00').localeCompare(b.time || '00:00'));
+  }, [bookings, calendarDate]);
+  
+  const dayModifiers = useMemo(() => {
+    if (!today) return {};
+    const reservationDates = bookings.map(res => res.date).filter((date): date is Date => date !== null);
+    const todayReservations = reservationDates.filter(date => date.getTime() === today.getTime());
+    const futureReservations = reservationDates.filter(date => date.getTime() > today.getTime());
+    return { today_reservations: todayReservations, future_reservations: futureReservations };
+  }, [bookings, today]);
+
+  const dayModifiersClassNames = {
+    today_reservations: 'day-reserved-today',
+    future_reservations: 'day-reserved-future'
   };
 
   return (
     <div className="flex flex-col min-h-screen">
-      <Header title="Bookings">
-        <Button>
-          <PlusCircle className="mr-2" />
-          New Booking
-        </Button>
+      <Header
+        title="Reservaciones"
+        description="Gestione y programe citas y operaciones."
+      >
+          {canCreateReservation ? (
+            <Button onClick={() => handleOpenFormDialog(null)}>
+              <PlusCircle className="mr-2 h-4 w-4" />
+              Nueva Reservación
+            </Button>
+          ) : null}
       </Header>
-      <main className="flex-1 grid md:grid-cols-3 gap-4 p-4 md:p-8">
-        <div className="md:col-span-1">
-          <Calendar
-            selected={selectedDate}
-            onSelect={setSelectedDate}
-            className="rounded-md border"
-            modifiers={{
-              hasBooking: (date) => bookings.some(b => isSameDay(b.date, date))
-            }}
-            modifiersClassNames={{
-              hasBooking: 'font-bold text-primary'
-            }}
-          />
+      <main className="flex-1 p-4 md:p-8">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <Card className="lg:col-span-1">
+          <CardHeader>
+            <CardTitle>Calendario de Reservas</CardTitle>
+            <CardDescription className="flex items-center gap-x-2 text-xs">
+              <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-green-500"></span>Hoy</span>
+              <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-blue-500"></span>Futuras</span>
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="flex justify-center">
+            {!isClient ? (
+              <div className="p-3 rounded-md border w-[280px] h-[321px] flex items-center justify-center">
+                <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+              </div>
+            ) : (
+              <Calendar
+                mode="single"
+                selected={calendarDate}
+                onSelect={setCalendarDate}
+                className="rounded-md border"
+                modifiers={dayModifiers}
+                modifiersClassNames={{
+                    today_reservations: 'bg-green-100 text-green-800',
+                    future_reservations: 'bg-blue-100 text-blue-800',
+                }}
+                disabled={!today || isLoadingBookings ? (date) => true : (date) => {
+                  if (!today) return true;
+                  const oneYearAgo = new Date(today);
+                  oneYearAgo.setFullYear(today.getFullYear() - 1);
+                  const twoYearsFromNow = new Date(today);
+                  twoYearsFromNow.setFullYear(today.getFullYear() + 2);
+                  return date < oneYearAgo || date > twoYearsFromNow;
+                }}
+              />
+            )}
+          </CardContent>
+        </Card>
+        
+        <div className="lg:col-span-2">
+          <Card>
+            <CardHeader>
+              <CardTitle>
+                Reservaciones para {calendarDate && isClient ? formatDateString(format(calendarDate, 'yyyy-MM-dd'), { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }) : "Seleccione una fecha"}
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3 min-h-[300px]">
+              {isLoadingBookings ? (
+                  <div className="text-center py-12 text-muted-foreground"><Loader2 className="mx-auto h-8 w-8 animate-spin" /></div>
+              ) : reservationsForSelectedDate.length > 0 ? (
+                reservationsForSelectedDate.map(res => (
+                  <div key={res.id} className="p-3 border rounded-md flex items-start gap-4 hover:bg-secondary/50">
+                    <div className="text-center w-16 flex-shrink-0">
+                      <p className="font-bold text-lg">{isClient && res.time ? formatTimeString(res.time) : res.time}</p>
+                      <p className="text-xs text-muted-foreground">{res.type === 'Cita' ? <Briefcase className="inline h-3 w-3 mr-1"/> : <Building className="inline h-3 w-3 mr-1"/>}{res.type}</p>
+                    </div>
+                    <div className="flex-grow border-l pl-4">
+                      <p className="font-semibold">{res.clientName}</p>
+                      <p className="text-sm text-muted-foreground">{res.details || 'Sin detalles.'}</p>
+                    </div>
+                    <div className="flex-shrink-0 flex flex-col items-end gap-2">
+                      <Badge variant={res.status === 'Confirmada' ? 'default' : res.status === 'Pendiente' ? 'secondary' : 'destructive'}
+                        className={cn(res.status === 'Confirmada' && 'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300')}>
+                        {res.status}
+                      </Badge>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-7 w-7"><MoreHorizontal className="h-4 w-4" /></Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            {canEditReservation && <DropdownMenuItem onClick={() => handleOpenFormDialog(res)}><Edit className="mr-2 h-4 w-4" />Editar</DropdownMenuItem>}
+                            {canDeleteReservation && <DropdownMenuItem onClick={() => handleOpenDeleteDialog(res)} className="text-destructive"><Trash2 className="mr-2 h-4 w-4" />Eliminar</DropdownMenuItem>}
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div className="text-center py-12 text-muted-foreground">
+                  <CalendarIcon className="mx-auto h-12 w-12 mb-4" />
+                  <h3 className="text-lg font-semibold">No hay reservaciones</h3>
+                  <p className="text-sm">Seleccione otro día o cree una nueva reservación.</p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
         </div>
-        <div className="md:col-span-2">
-           <h2 className="text-xl font-bold mb-4">
-            Bookings for {selectedDate ? format(selectedDate, 'PPP') : 'today'}
-          </h2>
-          {bookingsForSelectedDay.length > 0 ? (
-            <ul className="space-y-2">
-              {bookingsForSelectedDay.map((booking) => (
-                <li
-                  key={booking.id}
-                  onClick={() => handleBookingClick(booking)}
-                  className="p-3 border rounded-md cursor-pointer hover:bg-muted"
-                >
-                  <p className="font-semibold">{booking.title}</p>
-                  <p className="text-sm text-muted-foreground">
-                    Client ID: {booking.clientId}
-                  </p>
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <p>No bookings for this day.</p>
-          )}
-        </div>
-      </main>
-      <BookingDialog
-        booking={selectedBooking}
-        isOpen={isDialogOpen}
-        onOpenChange={setIsDialogOpen}
-      />
+      </div>
+
+      <Dialog open={isFormDialogOpen} onOpenChange={setIsFormDialogOpen}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>{reservationToEdit ? 'Editar Reservación' : 'Nueva Reservación'}</DialogTitle>
+            <DialogDescription>Complete los detalles para {reservationToEdit ? 'actualizar' : 'crear'} una reservación.</DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleSubmit}>
+            <div className="grid gap-4 py-4 max-h-[60vh] overflow-y-auto px-1">
+              <div>
+                <Label htmlFor="clientId">Usuario</Label>
+                <Select name="clientId" value={formData.clientId} onValueChange={handleSelectChange('clientId')} required disabled={isSubmitting}>
+                  <SelectTrigger id="clientId"><SelectValue placeholder="Seleccione un usuario..." /></SelectTrigger>
+                  <SelectContent>
+                    {clients.map(client => (
+                      <SelectItem key={client.id} value={client.id}>{client.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="type">Tipo de Reservación</Label>
+                  <Select name="type" value={formData.type} onValueChange={handleSelectChange('type')} disabled={isSubmitting}>
+                    <SelectTrigger id="type"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Cita">Cita / Reunión</SelectItem>
+                      <SelectItem value="Operación Divisas">Operación Divisas</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label htmlFor="status">Estado</Label>
+                  <Select name="status" value={formData.status} onValueChange={handleSelectChange('status')} disabled={isSubmitting}>
+                    <SelectTrigger id="status"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Confirmada">Confirmada</SelectItem>
+                      <SelectItem value="Pendiente">Pendiente</SelectItem>
+                      <SelectItem value="Cancelada">Cancelada</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="date">Fecha</Label>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button variant="outline" className={cn("w-full justify-start text-left font-normal", !formData.date && "text-muted-foreground")} disabled={isSubmitting}>
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        {formData.date ? format(formData.date, "PPP", { locale: es }) : <span>Seleccione fecha</span>}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0"><Calendar mode="single" selected={formData.date} onSelect={handleDateChangeForAddDialog} initialFocus /></PopoverContent>
+                  </Popover>
+                </div>
+                <div>
+                  <Label htmlFor="time">Hora (HH:MM)</Label>
+                  <Input id="time" name="time" type="time" value={formData.time} onChange={handleDataChange} required disabled={isSubmitting} />
+                </div>
+              </div>
+              <div>
+                <Label htmlFor="details">Detalles / Notas</Label>
+                <Textarea id="details" name="details" value={formData.details || ''} onChange={handleDataChange} disabled={isSubmitting} placeholder="Detalles de la operación, tema de la cita, etc." />
+              </div>
+            </div>
+            <DialogFooter>
+              <DialogClose asChild><Button type="button" variant="outline" disabled={isSubmitting}>Cancelar</Button></DialogClose>
+              <Button type="submit" disabled={isSubmitting}>
+                {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Save className="mr-2 h-4 w-4"/>}
+                Guardar Reservación
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+      
+      <AlertDialog open={isDeleteConfirmOpen} onOpenChange={setIsDeleteConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Confirmar Eliminación?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta acción no se puede deshacer. ¿Está seguro de que desea eliminar la reservación para "{reservationToDelete?.clientName}" el {reservationToDelete?.date ? format(reservationToDelete.date, 'PPP') : ''}?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isSubmitting}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete} disabled={isSubmitting} className="bg-destructive hover:bg-destructive/90">
+              {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : "Eliminar"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

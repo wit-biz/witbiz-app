@@ -41,6 +41,8 @@ body {
     --sidebar-accent-foreground: 240 5.9% 10%;
     --sidebar-border: 220 13% 91%;
     --sidebar-ring: 180 100% 25%;
+    --reservation-indicator-today-bg: 120 73% 75%;
+    --reservation-indicator-future-bg: 210 100% 79%;
   }
   .dark {
     --background: 240 10% 3.9%;
@@ -75,6 +77,8 @@ body {
     --sidebar-accent-foreground: 240 4.8% 95.9%;
     --sidebar-border: 240 3.7% 15.9%;
     --sidebar-ring: 180 100% 40%;
+    --reservation-indicator-today-bg: 120 73% 25%;
+    --reservation-indicator-future-bg: 210 100% 29%;
   }
 }
 
@@ -93,5 +97,11 @@ body {
   }
   .calendar-day--upcoming-bg {
       @apply bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300;
+  }
+  .day-reserved-today {
+      @apply bg-green-200 dark:bg-green-800/50;
+  }
+  .day-reserved-future {
+      @apply bg-blue-200 dark:bg-blue-800/50;
   }
 }
