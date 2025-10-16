@@ -39,7 +39,15 @@ const initialNewReservationData: FormData = {
 
 export default function ReservationsPage() {
     const { toast } = useToast();
-    const { clients, donnaReservations: bookings, isLoadingDonnaReservations: isLoadingBookings } = useCRMData();
+    const { 
+        clients, 
+        donnaReservations: bookings, 
+        isLoadingDonnaReservations: isLoadingBookings,
+        currentUser, 
+        addDonnaReservation, 
+        updateDonnaReservation, 
+        deleteDonnaReservation 
+    } = useCRMData();
     const [calendarDate, setCalendarDate] = useState<Date | undefined>(new Date());
     const [isSubmitting, setIsSubmitting] = useState(false);
   
@@ -60,7 +68,6 @@ export default function ReservationsPage() {
         setToday(todayDate);
     }, []);
   
-  const { currentUser, addDonnaReservation, updateDonnaReservation, deleteDonnaReservation } = useCRMData();
   const canCreateReservation = currentUser?.permissions.donna.reservations_create ?? true;
   const canEditReservation = currentUser?.permissions.donna.reservations_edit ?? true;
   const canDeleteReservation = currentUser?.permissions.donna.reservations_delete ?? true;
@@ -175,8 +182,8 @@ export default function ReservationsPage() {
           <CardHeader>
             <CardTitle>Calendario de Reservas</CardTitle>
             <CardDescription className="flex items-center gap-x-2 text-xs">
-              <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-indicator-today"></span>Hoy</span>
-              <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-indicator-upcoming"></span>Futuras</span>
+              <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-green-500"></span>Hoy</span>
+              <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-blue-500"></span>Futuras</span>
             </CardDescription>
           </CardHeader>
           <CardContent className="flex justify-center">
