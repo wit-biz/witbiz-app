@@ -1,7 +1,7 @@
 
 "use client";
 
-import React, { useState, useCallback, useMemo, type ChangeEvent } from 'react';
+import React, { useState, useCallback, useMemo, type ChangeEvent, useEffect } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -298,3 +298,5 @@ export function SmartDocumentUploadDialog({
     </Dialog>
   );
 }
+
+    
