@@ -8,7 +8,6 @@ import { es } from 'date-fns/locale';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Calendar } from '@/components/ui/calendar';
 import { Badge } from '@/components/ui/badge';
@@ -48,9 +47,9 @@ const resources = [
     { id: 'res3', title: 'Presentación de Servicios', description: 'Deck actualizado de todos nuestros servicios.' },
 ];
 
-// --- Components ---
+// --- Components for each view ---
 
-function ClientsTab() {
+function ClientsView() {
     return (
         <Card>
             <CardHeader>
@@ -83,7 +82,7 @@ function ClientsTab() {
     );
 }
 
-function CommissionsTab() {
+function CommissionsView() {
     const [isClient, setIsClient] = useState(false);
     const [dateRange, setDateRange] = useState<DateRange | undefined>();
     const [selectedDay, setSelectedDay] = useState<Date | undefined>();
@@ -252,7 +251,7 @@ function CommissionsTab() {
     );
 }
 
-function ResourcesTab() {
+function ResourcesView() {
     const { toast } = useToast();
 
     const handleDownload = (resourceTitle: string) => {
@@ -282,44 +281,64 @@ function ResourcesTab() {
     );
 }
 
+const navItems = [
+    { id: 'clients', label: 'Clientes', icon: Users, component: ClientsView },
+    { id: 'commissions', label: 'Comisiones', icon: CircleDollarSign, component: CommissionsView },
+    { id: 'charts', label: 'Gráficos', icon: BarChart, component: ChartsTab },
+    { id: 'resources', label: 'Recursos', icon: BookText, component: ResourcesView },
+];
+
 export default function PromoterPage() {
     const router = useRouter();
+    const [activeView, setActiveView] = useState('commissions');
     
     const handleLogout = () => {
         router.push('/promoter-login');
     };
 
+    const ActiveComponent = navItems.find(item => item.id === activeView)?.component || (() => null);
+
     return (
-        <div className="flex flex-col min-h-screen bg-muted/40">
-             <header className="sticky top-0 z-30 flex h-16 shrink-0 items-center justify-between gap-4 border-b bg-background/80 px-4 backdrop-blur-sm sm:px-6">
-                <Logo />
-                <Button onClick={handleLogout} variant="outline" size="sm">
-                   <LogOut className="mr-2 h-4 w-4" />
-                    Cerrar Sesión
-                </Button>
-            </header>
-            <main className="flex-1 p-4 md:p-8">
-                 <Tabs defaultValue="commissions" className="w-full">
-                    <TabsList className="grid w-full grid-cols-4">
-                        <TabsTrigger value="clients"><Users className="mr-2 h-4 w-4" />Clientes</TabsTrigger>
-                        <TabsTrigger value="commissions"><CircleDollarSign className="mr-2 h-4 w-4" />Comisiones</TabsTrigger>
-                        <TabsTrigger value="charts"><BarChart className="mr-2 h-4 w-4" />Gráficos</TabsTrigger>
-                        <TabsTrigger value="resources"><BookText className="mr-2 h-4 w-4" />Recursos</TabsTrigger>
-                    </TabsList>
-                    <TabsContent value="clients" className="mt-6">
-                        <ClientsTab />
-                    </TabsContent>
-                    <TabsContent value="commissions" className="mt-6">
-                        <CommissionsTab />
-                    </TabsContent>
-                    <TabsContent value="charts" className="mt-6">
-                        <ChartsTab />
-                    </TabsContent>
-                    <TabsContent value="resources" className="mt-6">
-                        <ResourcesTab />
-                    </TabsContent>
-                </Tabs>
-            </main>
+        <div className="flex min-h-screen bg-muted/40">
+             <aside className="w-64 flex-shrink-0 border-r bg-background p-4 flex flex-col">
+                <div className="flex justify-center mb-6">
+                    <Logo />
+                </div>
+                <nav className="flex flex-col gap-2">
+                    {navItems.map(item => {
+                        const Icon = item.icon;
+                        return (
+                            <Button
+                                key={item.id}
+                                variant={activeView === item.id ? 'default' : 'ghost'}
+                                className="justify-start gap-2"
+                                onClick={() => setActiveView(item.id)}
+                            >
+                                <Icon className="h-4 w-4"/>
+                                {item.label}
+                            </Button>
+                        )
+                    })}
+                </nav>
+                 <div className="mt-auto">
+                    <Button onClick={handleLogout} variant="outline" size="sm" className="w-full">
+                        <LogOut className="mr-2 h-4 w-4" />
+                        Cerrar Sesión
+                    </Button>
+                </div>
+            </aside>
+            <div className="flex-1 flex flex-col">
+                <header className="sticky top-0 z-10 flex h-16 shrink-0 items-center justify-between gap-4 border-b bg-background/80 px-4 backdrop-blur-sm sm:px-6">
+                    <h1 className="text-xl font-semibold">
+                        {navItems.find(item => item.id === activeView)?.label || 'Panel de Promotor'}
+                    </h1>
+                </header>
+                <main className="flex-1 p-4 md:p-8 overflow-y-auto">
+                    <ActiveComponent />
+                </main>
+            </div>
         </div>
     );
 }
+
+    
