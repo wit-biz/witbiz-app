@@ -81,9 +81,7 @@ export default function InicioPage() {
   const [isStageClientsDialogOpen, setIsStageClientsDialogOpen] = useState(false);
 
   const [searchTermDashboard, setSearchTermDashboard] = useState("");
-  const [isPopoverOpenDashboard, setIsPopoverOpenDashboard] = useState(false);
   const [highlightedStageId, setHighlightedStageId] = useState<string | null>(null);
-  const inputRefDashboard = useRef<HTMLInputElement>(null);
   
   const workflowStagesForDisplay: WorkflowStage[] = useMemo(() => {
       if (!serviceWorkflows || serviceWorkflows.length === 0) return [];
@@ -113,15 +111,16 @@ export default function InicioPage() {
   const filteredClientsDashboard = useMemo(() => {
     if (isLoadingClients || !clients) return [];
     if (!searchTermDashboard.trim()) {
-      return clients.slice(0, 10);
+      return [];
     }
     const lowerSearchTerm = searchTermDashboard.toLowerCase();
     return clients.filter(client =>
       client.name.toLowerCase().includes(lowerSearchTerm) ||
       (client.owner && client.owner.toLowerCase().includes(lowerSearchTerm)) ||
       (client.category && client.category.toLowerCase().includes(lowerSearchTerm))
-    ).sort((a, b) => a.name.localeCompare(b.name));
+    ).sort((a, b) => a.name.localeCompare(b.name)).slice(0, 5);
   }, [searchTermDashboard, clients, isLoadingClients]);
+
 
   const handleStageClick = (stage: WorkflowStage) => {
     setHighlightedStageId(stage.id);
@@ -136,9 +135,12 @@ export default function InicioPage() {
 
 
   const handleClientSearchSelection = useCallback((client: Client) => {
-    setSearchTermDashboard(client.name);
+    setSearchTermDashboard(""); // Clear search term to hide results
     setHighlightedStageId(client.currentWorkflowStageId || null);
-    setIsPopoverOpenDashboard(false);
+    setTimeout(() => {
+        // Remove highlight after animation
+        setHighlightedStageId(null);
+    }, 2000);
   }, []);
 
   const todaysTasks = useMemo(() => {
@@ -225,73 +227,45 @@ export default function InicioPage() {
       </Card>
 
       <Card className="w-full">
-         <CardHeader className="flex flex-row justify-between items-center w-full">
-            <div className="flex-grow text-left">
-                <CardTitle className="flex items-center gap-2">CRM de WitBiz</CardTitle>
-                <CardDescription>Etapas clave en el ciclo de vida del Cliente.</CardDescription>
-            </div>
-            <div className="ml-auto flex-shrink-0 relative" onClick={(e) => e.stopPropagation()}>
-                <Popover open={isPopoverOpenDashboard} onOpenChange={setIsPopoverOpenDashboard}>
-                <PopoverTrigger asChild>
-                    <Button variant="outline" className="h-8 px-2 py-1 text-xs w-full sm:w-40">
-                    <Search className="h-3 w-3 mr-1.5 text-muted-foreground" />
-                    <span className="text-muted-foreground truncate max-w-[100px] sm:max-w-[120px]">
-                        {highlightedStageId && clients && clients.find(c => c.currentWorkflowStageId === highlightedStageId && c.name === searchTermDashboard) ? searchTermDashboard : "Buscar Cliente..."}
-                    </span>
-                    </Button>
-                </PopoverTrigger>
-                <PopoverContent
-                    className="p-1 w-52 sm:w-60 bg-popover shadow-lg border"
-                    align="end"
-                    sideOffset={5}
-                    onOpenAutoFocus={(event) => {
-                    event.preventDefault();
-                    inputRefDashboard.current?.focus();
-                    }}
-                >
-                    <div className="p-2">
-                       <Input
-                        ref={inputRefDashboard}
-                        value={searchTermDashboard}
-                        onChange={(e) => setSearchTermDashboard(e.target.value)}
-                        placeholder="Buscar por nombre..."
-                        className="h-8 text-xs"
-                      />
-                    </div>
-                    <div className="h-40 overflow-y-auto">
-                    {isLoadingClients && <div className="p-2 text-center"><Loader2 className="h-4 w-4 animate-spin inline mr-1 text-accent"/>Cargando...</div>}
-                    {!isLoadingClients && filteredClientsDashboard.length === 0 && searchTermDashboard.trim() && (
-                        <p className="text-xs text-muted-foreground p-2 text-center">Ningún cliente coincide.</p>
-                    )}
-                    {!isLoadingClients && filteredClientsDashboard.length > 0 && (
-                        filteredClientsDashboard.map(client => (
-                        <div
-                            key={client.id}
-                            className="p-1.5 hover:bg-accent cursor-pointer rounded-md text-xs"
-                            onClick={() => handleClientSearchSelection(client)}
-                        >
-                            <p className="font-medium truncate">{client.name}</p>
-                            <p className="text-[10px] text-muted-foreground">
-                            Etapa: {client.stage || 'N/A'}
-                            </p>
-                        </div>
-                        ))
-                    )}
-                    {!isLoadingClients && clients && clients.length === 0 && (
-                        <p className="text-xs text-muted-foreground p-2 text-center">No hay clientes.</p>
-                    )}
-                    </div>
-                </PopoverContent>
-                </Popover>
-            </div>
+         <CardHeader>
+            <CardTitle className="flex items-center gap-2">CRM de WitBiz</CardTitle>
+            <CardDescription>Etapas clave en el ciclo de vida del Cliente y búsqueda rápida.</CardDescription>
         </CardHeader>
-        <CardContent className="pt-0">
+        <CardContent className="pt-0 space-y-4">
+            <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                    value={searchTermDashboard}
+                    onChange={(e) => setSearchTermDashboard(e.target.value)}
+                    placeholder="Buscar cliente para resaltar su etapa..."
+                    className="pl-10"
+                />
+                {filteredClientsDashboard.length > 0 && (
+                    <div className="absolute z-10 top-full mt-2 w-full rounded-md border bg-popover shadow-lg text-popover-foreground">
+                        <div className="max-h-60 overflow-y-auto p-1">
+                           {filteredClientsDashboard.map(client => (
+                                <div
+                                    key={client.id}
+                                    className="p-2 hover:bg-accent rounded-md cursor-pointer text-sm"
+                                    onClick={() => handleClientSearchSelection(client)}
+                                >
+                                    <p className="font-medium truncate">{client.name}</p>
+                                    <p className="text-xs text-muted-foreground">
+                                        Etapa: {workflowStagesForDisplay.find(s => s.id === client.currentWorkflowStageId)?.title || 'N/A'}
+                                    </p>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
+            </div>
+
             {isLoadingWorkflows ? (
                 <div className="flex items-center justify-center p-12"><Loader2 className="h-8 w-8 animate-spin text-primary"/></div>
             ) : (
             <>
             {/* Mobile: Vertical flow */}
-            <div className="flex flex-col items-center gap-2 sm:hidden">
+            <div className="flex flex-col items-center gap-2 sm:hidden pt-4">
                 {workflowStagesForDisplay.map((stage, index) => {
                 const isPopulated = populatedStageIds.has(stage.id);
                 const isHighlighted = stage.id === highlightedStageId;
@@ -345,7 +319,7 @@ export default function InicioPage() {
                 })}
             </div>
             {/* Desktop: Horizontal wrap flow */}
-            <div className="hidden sm:flex flex-wrap items-start gap-2">
+            <div className="hidden sm:flex flex-wrap items-start gap-2 pt-4">
                 {workflowStagesForDisplay.map((stage, index) => {
                  const isPopulated = populatedStageIds.has(stage.id);
                  const isHighlighted = stage.id === highlightedStageId;
