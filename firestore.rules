@@ -2,92 +2,101 @@
  * @fileoverview Firestore Security Rules for WitCRM application.
  *
  * Core Philosophy:
- * This ruleset enforces a strict user-ownership model for leads, contacts, and tasks.
- * Each user has complete control over the data nested under their respective /users/{userId} path.
+ * This ruleset enforces a strict user-ownership model for leads, contacts, and tasks. Each user has full control over the data nested under their /users/{userId} path.
  *
  * Data Structure:
- * All data is nested under /users/{userId}, creating a hierarchical data organization.
- * Leads: /users/{userId}/leads/{leadId}
- * Contacts: /users/{userId}/contacts/{contactId}
- * Tasks: /users/{userId}/tasks/{taskId}
+ * All data is nested under /users/{userId}, including leads, contacts, and tasks. This hierarchical structure simplifies access control.
  *
  * Key Security Decisions:
- * - User listing is implicitly disallowed as there are no rules on the root /users collection.
- * - All writes are protected by authorization checks, preventing unauthorized data modification.
+ * - No public data access: All reads and writes are restricted to the authenticated user.
+ * - Path-based ownership: The authenticated user's UID must match the {userId} path parameter for all operations.
+ * - Denormalization is not required as path-based ownership simplifies rules and avoids costly `get()` calls.
  */
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
     /**
-     * @description Enforces owner-only access to leads for all operations.
+     * @description Grants the user identified by {userId} complete control over the leads located under their respective path.
      * @path /users/{userId}/leads/{leadId}
-     * @allow (create) User with UID 'lbz7nN49aERC4AwnsGSruB6spQJ3' can create a lead document with the lead's userId field equal to 'lbz7nN49aERC4AwnsGSruB6spQJ3'.
-     * @deny (create) User with UID 'otherUserId' cannot create a lead document under /users/lbz7nN49aERC4AwnsGSruB6spQJ3/leads/ with a mismatched userId.
+     * @allow (create) User "lbz7nN49aERC4AwnsGSruB6spQJ3" can create a new lead document under /users/lbz7nN49aERC4AwnsGSruB6spQJ3/leads.
+     * @deny (create) User "otherUser" cannot create a lead document under /users/lbz7nN49aERC4AwnsGSruB6spQJ3/leads.
      * @principle Enforces document ownership for writes.
      */
     match /users/{userId}/leads/{leadId} {
-      // Helper function to check if the request is made by the owner of the resource
+      // Helper function to check if the authenticated user is the owner of the document.
       function isOwner(userId) {
         return request.auth != null && request.auth.uid == userId;
       }
-      // Helper function to check if the request is made by the owner of an existing resource
+
+      // Helper function to check if the authenticated user is the owner of an existing document.
       function isExistingOwner(userId) {
         return isOwner(userId) && resource != null;
       }
 
+      // Read operations: get and list
       allow get: if isOwner(userId);
       allow list: if isOwner(userId);
-      allow create: if isOwner(userId) && request.resource.data.id == leadId;
-      allow update: if isExistingOwner(userId) && request.resource.data.id == resource.data.id;
+
+      // Write operations: create, update, and delete
+      allow create: if isOwner(userId);
+      allow update: if isExistingOwner(userId);
       allow delete: if isExistingOwner(userId);
     }
 
     /**
-     * @description Enforces owner-only access to contacts for all operations.
+     * @description Grants the user identified by {userId} complete control over the contacts located under their respective path.
      * @path /users/{userId}/contacts/{contactId}
-     * @allow (create) User with UID 'lbz7nN49aERC4AwnsGSruB6spQJ3' can create a contact document with the contact's userId field equal to 'lbz7nN49aERC4AwnsGSruB6spQJ3'.
-     * @deny (create) User with UID 'otherUserId' cannot create a contact document under /users/lbz7nN49aERC4AwnsGSruB6spQJ3/contacts/ with a mismatched userId.
+     * @allow (create) User "lbz7nN49aERC4AwnsGSruB6spQJ3" can create a new contact document under /users/lbz7nN49aERC4AwnsGSruB6spQJ3/contacts.
+     * @deny (create) User "otherUser" cannot create a contact document under /users/lbz7nN49aERC4AwnsGSruB6spQJ3/contacts.
      * @principle Enforces document ownership for writes.
      */
     match /users/{userId}/contacts/{contactId} {
-       // Helper function to check if the request is made by the owner of the resource
+      // Helper function to check if the authenticated user is the owner of the document.
       function isOwner(userId) {
         return request.auth != null && request.auth.uid == userId;
       }
-      // Helper function to check if the request is made by the owner of an existing resource
+
+      // Helper function to check if the authenticated user is the owner of an existing document.
       function isExistingOwner(userId) {
         return isOwner(userId) && resource != null;
       }
 
+      // Read operations: get and list
       allow get: if isOwner(userId);
       allow list: if isOwner(userId);
-      allow create: if isOwner(userId) && request.resource.data.id == contactId;
-      allow update: if isExistingOwner(userId) && request.resource.data.id == resource.data.id;
+
+      // Write operations: create, update, and delete
+      allow create: if isOwner(userId);
+      allow update: if isExistingOwner(userId);
       allow delete: if isExistingOwner(userId);
     }
 
     /**
-     * @description Enforces owner-only access to tasks for all operations.
+     * @description Grants the user identified by {userId} complete control over the tasks located under their respective path.
      * @path /users/{userId}/tasks/{taskId}
-     * @allow (create) User with UID 'lbz7nN49aERC4AwnsGSruB6spQJ3' can create a task document with the task's userId field equal to 'lbz7nN49aERC4AwnsGSruB6spQJ3'.
-     * @deny (create) User with UID 'otherUserId' cannot create a task document under /users/lbz7nN49aERC4AwnsGSruB6spQJ3/tasks/ with a mismatched userId.
+     * @allow (create) User "lbz7nN49aERC4AwnsGSruB6spQJ3" can create a new task document under /users/lbz7nN49aERC4AwnsGSruB6spQJ3/tasks.
+     * @deny (create) User "otherUser" cannot create a task document under /users/lbz7nN49aERC4AwnsGSruB6spQJ3/tasks.
      * @principle Enforces document ownership for writes.
      */
     match /users/{userId}/tasks/{taskId} {
-      // Helper function to check if the request is made by the owner of the resource
+      // Helper function to check if the authenticated user is the owner of the document.
       function isOwner(userId) {
         return request.auth != null && request.auth.uid == userId;
       }
-      // Helper function to check if the request is made by the owner of an existing resource
+
+      // Helper function to check if the authenticated user is the owner of an existing document.
       function isExistingOwner(userId) {
         return isOwner(userId) && resource != null;
       }
 
+      // Read operations: get and list
       allow get: if isOwner(userId);
       allow list: if isOwner(userId);
-      allow create: if isOwner(userId) && request.resource.data.id == taskId;
-      allow update: if isExistingOwner(userId) && request.resource.data.id == resource.data.id;
+
+      // Write operations: create, update, and delete
+      allow create: if isOwner(userId);
+      allow update: if isExistingOwner(userId);
       allow delete: if isExistingOwner(userId);
     }
   }
