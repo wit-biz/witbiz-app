@@ -222,40 +222,38 @@ export default function PromoterPage() {
                                         </Card>
                                     </div>
                                 </div>
-                                <div>
-                                    <Card>
-                                        <CardHeader>
-                                            <CardTitle>Historial de Comisiones</CardTitle>
-                                            <CardDescription>Detalle de las comisiones generadas por tus clientes.</CardDescription>
-                                        </CardHeader>
-                                        <CardContent>
-                                            <Table>
-                                                <TableHeader>
-                                                    <TableRow>
-                                                        <TableHead>Cliente</TableHead>
-                                                        <TableHead>Monto Venta</TableHead>
-                                                        <TableHead>Comisión</TableHead>
-                                                        <TableHead>Fecha de Pago</TableHead>
-                                                        <TableHead className="text-right">Estado</TableHead>
+                                <Card>
+                                    <CardHeader>
+                                        <CardTitle>Historial de Comisiones</CardTitle>
+                                        <CardDescription>Detalle de las comisiones generadas por tus clientes.</CardDescription>
+                                    </CardHeader>
+                                    <CardContent>
+                                        <Table>
+                                            <TableHeader>
+                                                <TableRow>
+                                                    <TableHead>Cliente</TableHead>
+                                                    <TableHead>Monto Venta</TableHead>
+                                                    <TableHead>Comisión</TableHead>
+                                                    <TableHead>Fecha de Pago</TableHead>
+                                                    <TableHead className="text-right">Estado</TableHead>
+                                                </TableRow>
+                                            </TableHeader>
+                                            <TableBody>
+                                                {commissions.map(com => (
+                                                    <TableRow key={com.id}>
+                                                        <TableCell className="font-medium">{com.clientName}</TableCell>
+                                                        <TableCell>${com.saleAmount.toFixed(2)}</TableCell>
+                                                        <TableCell className="font-semibold text-green-600">${com.commission.toFixed(2)}</TableCell>
+                                                        <TableCell>{isClient ? new Date(com.paymentDate).toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: 'numeric' }) : ''}</TableCell>
+                                                        <TableCell className="text-right">
+                                                            <Badge variant={com.status === 'Pagada' ? 'default' : 'outline'} className={com.status === 'Pagada' ? 'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300' : ''}>{com.status}</Badge>
+                                                        </TableCell>
                                                     </TableRow>
-                                                </TableHeader>
-                                                <TableBody>
-                                                    {commissions.map(com => (
-                                                        <TableRow key={com.id}>
-                                                            <TableCell className="font-medium">{com.clientName}</TableCell>
-                                                            <TableCell>${com.saleAmount.toFixed(2)}</TableCell>
-                                                            <TableCell className="font-semibold text-green-600">${com.commission.toFixed(2)}</TableCell>
-                                                            <TableCell>{isClient ? new Date(com.paymentDate).toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: 'numeric' }) : ''}</TableCell>
-                                                            <TableCell className="text-right">
-                                                                <Badge variant={com.status === 'Pagada' ? 'default' : 'outline'} className={com.status === 'Pagada' ? 'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300' : ''}>{com.status}</Badge>
-                                                            </TableCell>
-                                                        </TableRow>
-                                                    ))}
-                                                </TableBody>
-                                            </Table>
-                                        </CardContent>
-                                    </Card>
-                                </div>
+                                                ))}
+                                            </TableBody>
+                                        </Table>
+                                    </CardContent>
+                                </Card>
                             </div>
                         </TabsContent>
 
@@ -347,7 +345,6 @@ export default function PromoterPage() {
             </main>
         </div>
     );
-
 }
 
     
