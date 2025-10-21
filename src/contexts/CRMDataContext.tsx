@@ -116,7 +116,7 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
                   dashboard: true, 
                   clients_view: true, 
                   tasks_view: true, 
-                  bookings_view: true, 
+                  reservations_view: true, 
                   crm_view: true, 
                   audit_view: true, 
                   admin_view: true,
@@ -131,6 +131,7 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
                   reservations_delete: true,
                   crm_edit: true,
                   team_invite: true,
+                  documents_view: true,
                 },
             });
         } else {
@@ -228,6 +229,62 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
         return null;
     }, [serviceWorkflows]);
 
+    const addService = async (): Promise<ServiceWorkflow | null> => {
+        const newService: ServiceWorkflow = {
+            id: `service-${Date.now()}`,
+            name: "Nuevo Servicio (sin título)",
+            subServices: [{
+                id: `sub-service-${Date.now()}`,
+                name: 'General',
+                stages: []
+            }],
+            stages: [] // Keep for legacy compatibility if needed
+        };
+        setServiceWorkflows(prev => [...prev, newService]);
+        return newService;
+    };
+
+    const addSubServiceToService = async (serviceId: string): Promise<boolean> => {
+        const newSubService: SubService = {
+            id: `sub-service-${Date.now()}`,
+            name: "Nuevo Sub-Servicio",
+            stages: [],
+        };
+        setServiceWorkflows(prev => prev.map(service => 
+            service.id === serviceId
+                ? { ...service, subServices: [...service.subServices, newSubService] }
+                : service
+        ));
+        return true;
+    };
+    
+    const addStageToSubService = async (serviceId: string, subServiceId: string | null): Promise<boolean> => {
+        const newStage: WorkflowStage = {
+            id: `stage-${Date.now()}`,
+            title: "Nueva Etapa",
+            order: 100, // Append to the end
+            objectives: [],
+        };
+
+        setServiceWorkflows(prev => prev.map(service => {
+            if (service.id === serviceId) {
+                const targetSubServiceId = subServiceId ?? service.subServices[0]?.id;
+                if (!targetSubServiceId) return service; // Should not happen if service exists
+
+                const newSubServices = service.subServices.map(sub => {
+                    if (sub.id === targetSubServiceId) {
+                        const newOrder = sub.stages.length > 0 ? Math.max(...sub.stages.map(s => s.order)) + 1 : 1;
+                        return { ...sub, stages: [...sub.stages, { ...newStage, order: newOrder }] };
+                    }
+                    return sub;
+                });
+                return { ...service, subServices: newSubServices };
+            }
+            return service;
+        }));
+        return true;
+    };
+
     // Placeholder functions to avoid breaking the UI
     const placeholderPromise = async <T,>(data: T | null = null): Promise<any> => {
         showNotification('info', 'Funcionalidad no implementada', 'Esta acción aún no está conectada.');
@@ -261,13 +318,13 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
         deleteReservation,
 
         serviceWorkflows, isLoadingWorkflows,
-        addService: () => placeholderPromise(null),
+        addService,
         updateService: (id, d) => placeholderPromise(false),
         deleteService: (id) => placeholderPromise(false),
-        addSubServiceToService: (id) => placeholderPromise(false),
+        addSubServiceToService,
         updateSubServiceName: (id, subId, name) => placeholderPromise(false),
         deleteSubServiceFromService: (id, subId) => placeholderPromise(false),
-        addStageToSubService: (id, subId) => placeholderPromise(false),
+        addStageToSubService,
         updateStageInSubService: (id, subId, stageId, d) => placeholderPromise(false),
         deleteStageFromSubService: (id, subId, stageId) => placeholderPromise(false),
         addObjectiveToStage: (id, subId, stageId) => placeholderPromise(false),
@@ -296,3 +353,5 @@ export function useCRMData() {
   }
   return context;
 }
+
+    
