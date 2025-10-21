@@ -51,6 +51,11 @@
     --indicator-upcoming-bg-raw: 210 70% 55%;
     --reservation-indicator-today-bg: 86 100% 72%;
     --reservation-indicator-future-bg: 210 70% 55%;
+    
+    /* Promoter Calendar Colors */
+    --promoter-paid-bg-raw: 142.1 76.2% 36.3%; /* Green */
+    --promoter-pending-bg-raw: 221.2 83.2% 53.3%; /* Blue */
+
 
     --font-montserrat: 'Montserrat', sans-serif;
   }
@@ -101,6 +106,10 @@
     --indicator-upcoming-bg-raw: 210 60% 50%;
     --reservation-indicator-today-bg: 86 100% 72%;
     --reservation-indicator-future-bg: 210 60% 50%;
+    
+    /* Promoter Calendar Colors - Dark Mode */
+    --promoter-paid-bg-raw: 142.1 76.2% 45.3%;
+    --promoter-pending-bg-raw: 221.2 83.2% 63.3%;
   }
 }
 
@@ -222,6 +231,14 @@
   }
   .day-reserved-future .rdp-button:not([disabled]):not([aria-selected="true"]) {
     background-color: hsla(var(--indicator-upcoming-bg-raw), 0.3) !important;
+  }
+
+  /* Styles for promoter calendar */
+  .day-paid .rdp-button:not([disabled]):not([aria-selected="true"]) {
+    background-color: hsla(var(--promoter-paid-bg-raw), 0.3);
+  }
+  .day-pending .rdp-button:not([disabled]):not([aria-selected="true"]) {
+    background-color: hsla(var(--promoter-pending-bg-raw), 0.3);
   }
   
   /* Floating currency animation */

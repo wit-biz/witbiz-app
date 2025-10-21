@@ -26,31 +26,24 @@ function AppContent({ children }: { children: React.ReactNode }) {
     setIsClient(true);
   }, []);
 
+  const isAuthPage = pathname === '/login' || pathname === '/register';
+  const isPromoterRoute = pathname.startsWith('/promoter');
+
+  // If it's a promoter route, render children immediately without auth checks.
+  if (isPromoterRoute) {
+    return <>{children}</>;
+  }
+  
   useEffect(() => {
     if (isClient && !isUserLoading) {
-      const isAuthPage = pathname === '/login' || pathname === '/register';
-      const isPromoterRoute = pathname.startsWith('/promoter');
-
-      if (!user && !isAuthPage && !isPromoterRoute) {
+      if (!user && !isAuthPage) {
         router.push('/login');
       }
-      if (user && !user.isAnonymous && isAuthPage) {
+      if (user && isAuthPage) {
         router.push('/');
       }
-      if (user && user.isAnonymous && !isPromoterRoute) {
-        // Logged in as a promoter, but trying to access a non-promoter page
-        // Redirect them to their dashboard
-        router.push('/promoters');
-      }
     }
-  }, [isUserLoading, user, router, pathname, isClient]);
-
-  const isAuthPage = pathname === '/login' || pathname === '/register';
-  const isPromoterPage = pathname.startsWith('/promoters') || pathname === '/promoter-login';
-  
-  if (isPromoterPage) {
-      return <>{children}</>;
-  }
+  }, [isUserLoading, user, router, pathname, isClient, isAuthPage]);
 
 
   if (!isClient || (isUserLoading && !isAuthPage)) {
@@ -62,8 +55,8 @@ function AppContent({ children }: { children: React.ReactNode }) {
   }
   
   if (isAuthPage) {
-     // If we are on an auth page and the user is logged in, show a loader while redirecting
-    if (user && !user.isAnonymous) {
+    // If we are on an auth page and the user is logged in, show a loader while redirecting
+    if (user) {
         return (
             <div className="flex h-screen w-full items-center justify-center">
               <Loader2 className="h-8 w-8 animate-spin" />
@@ -73,8 +66,8 @@ function AppContent({ children }: { children: React.ReactNode }) {
     return <>{children}</>;
   }
   
-  if (!user || user.isAnonymous) {
-      // If user is not logged in (or is an anon promoter) and not on an auth page, show loader while redirecting
+  if (!user) {
+      // If user is not logged in and not on an auth page, show loader while redirecting
       return (
           <div className="flex h-screen w-full items-center justify-center">
             <Loader2 className="h-8 w-8 animate-spin" />
