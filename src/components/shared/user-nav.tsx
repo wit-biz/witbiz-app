@@ -12,27 +12,37 @@ import {
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
-  MoreVertical,
   UserCircle,
   LifeBuoy,
   LogOut,
 } from "lucide-react";
 import { PlaceHolderImages } from "@/lib/placeholder-images";
 import Link from "next/link";
-import { cn } from "@/lib/utils";
 
 const userAvatar = PlaceHolderImages.find((img) => img.id === "user-avatar");
+
+const UserMenuIcon = () => (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor" className="user-nav-glow h-6 w-6">
+        <circle cx="12" cy="6" r="1.5" />
+        <circle cx="12" cy="12" r="1.5" />
+        <circle cx="12" cy="18" r="1.5" />
+    </svg>
+);
+
 
 export function UserNav() {
   return (
     <div className="fixed top-4 right-4 z-50">
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <button className="btn-futuristic rounded-full p-px">
-            <span className="flex h-9 w-9 items-center justify-center rounded-full bg-background/80 px-0 py-0 hover:bg-muted/90 backdrop-blur-sm">
-                <MoreVertical className="h-5 w-5" />
-            </span>
-          </button>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-9 w-9 rounded-full bg-background/80 backdrop-blur-sm hover:bg-muted/90"
+          >
+            <UserMenuIcon />
+            <span className="sr-only">Abrir menú de usuario</span>
+          </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
           <DropdownMenuLabel>

@@ -310,33 +310,19 @@
     background-size: 400% 400%;
     animation: gradient-flow 15s ease infinite;
   }
-
-  /* Futuristic button styles */
-  .btn-futuristic {
-    @apply inline-flex items-center justify-center relative p-px font-semibold leading-6 text-foreground no-underline bg-transparent shadow-zinc-900/10 dark:shadow-zinc-900/30 rounded-lg;
-    @apply transition-all duration-300 ease-in-out;
-  }
-
-  .btn-futuristic::before {
-    content: '';
-    @apply absolute -top-px -left-px -right-px -bottom-px rounded-lg;
-    background: conic-gradient(from 180deg at 50% 50%, hsl(var(--primary) / 0.3), hsl(var(--accent) / 0.3), hsl(var(--primary) / 0.3));
-    z-index: 0;
-  }
   
-  .dark .btn-futuristic::before {
-    background: conic-gradient(from 180deg at 50% 50%, hsl(var(--primary)), hsl(var(--accent)), hsl(var(--primary)));
+  .user-nav-glow {
+    color: hsl(var(--foreground) / 0.8);
+    filter: drop-shadow(0 0 3px hsl(var(--primary) / 0.5));
+    transition: color 0.3s ease, filter 0.3s ease;
+  }
+  .dark .user-nav-glow {
+    color: hsl(var(--foreground) / 0.9);
+    filter: drop-shadow(0 0 5px hsl(var(--primary) / 0.7));
+  }
+  .user-nav-glow:hover {
+    color: hsl(var(--foreground));
+     filter: drop-shadow(0 0 6px hsl(var(--primary)));
   }
 
-  .btn-futuristic span {
-    @apply relative flex items-center justify-center space-x-2 h-10 px-6 py-2 bg-background hover:bg-muted/50 rounded-[calc(var(--radius)-1px)] transition-colors;
-  }
-  
-  .dark .btn-futuristic span {
-      @apply hover:bg-muted/20;
-  }
-
-  .btn-futuristic:hover::before {
-    filter: blur(2px);
-  }
 }
