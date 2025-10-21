@@ -38,7 +38,7 @@ export default function PromoterLoginPage() {
           title: 'Acceso concedido',
           description: 'Bienvenido, promotor.',
         });
-        router.push('/');
+        router.push('/promoters');
       } catch (error) {
         toast({
           variant: 'destructive',
