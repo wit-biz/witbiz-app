@@ -111,9 +111,6 @@ export const bookings: Reservation[] = [
 
 export const navItems: NavItem[] = [
     { href: '/', label: 'Inicio', icon: 'LayoutDashboard', exactMatch: true, requiredPermission: 'dashboard' },
-    { href: '/operations', label: 'Nueva Operación', icon: 'ArrowRightLeft', requiredPermission: 'operations_create' },
-    { href: '/quotes', label: 'Cotizaciones', icon: 'FileText', requiredPermission: 'quotes_view' },
-    { href: '/cash-management', label: 'Gestión de Caja', icon: 'Calculator', requiredPermission: 'cash_management_view' },
     { href: '/audit', label: 'Auditoría', icon: 'Scale', requiredPermission: 'audit_view' },
     { href: '/contacts', label: 'Directorio de usuarios', icon: 'Users', requiredPermission: 'clients_view' },
     { href: '/tasks', label: 'Tareas', icon: 'ListTodo', requiredPermission: 'tasks_view' },

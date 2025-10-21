@@ -102,9 +102,6 @@ export type DonnaPermissions = {
     crm_edit: boolean;
     crm_view: boolean;
     reports_view: boolean;
-    operations_create: boolean;
-    quotes_view: boolean;
-    cash_management_view: boolean;
     audit_view: boolean;
     admin_view: boolean;
 }

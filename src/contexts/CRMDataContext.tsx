@@ -95,7 +95,7 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
                 tasks_create: true, tasks_edit: true, tasks_delete: true, tasks_view: true,
                 reservations_create: true, reservations_edit: true, reservations_delete: true, reservations_view: true,
                 crm_edit: true, crm_view: true, reports_view: true,
-                operations_create: true, quotes_view: true, cash_management_view: true, audit_view: true, admin_view: true,
+                audit_view: true, admin_view: true,
                 dashboard: true,
             }
         }
