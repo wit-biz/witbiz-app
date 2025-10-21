@@ -82,7 +82,7 @@ export type SubObjective = {
 
 export type DocumentType = "Contrato" | "Factura" | "Propuesta" | "Informe" | "Otro";
 
-export type DonnaPermissions = {
+export type AppPermissions = {
     clients_create: boolean;
     clients_edit: boolean;
     clients_delete: boolean;
@@ -110,7 +110,7 @@ export type DonnaPermissions = {
 export type UserRole = {
     id: string;
     name: string;
-    permissions: Partial<DonnaPermissions>;
+    permissions: Partial<AppPermissions>;
 }
 
 export interface AppUser {
@@ -125,7 +125,7 @@ export interface AuthenticatedUser {
   displayName: string | null;
   photoURL: string | null;
   roleId?: string;
-  permissions: Partial<DonnaPermissions>;
+  permissions: Partial<AppPermissions>;
 }
 
 export interface Service {
@@ -152,5 +152,5 @@ export interface NavItem {
   label: string;
   icon: LucideIcon | string;
   exactMatch?: boolean;
-  requiredPermission: keyof DonnaPermissions;
+  requiredPermission: keyof AppPermissions;
 }

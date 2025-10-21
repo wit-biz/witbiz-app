@@ -15,6 +15,7 @@ import {
     type WorkflowStageObjective,
     type AppUser,
     type UserRole,
+    type AppPermissions,
 } from '@/lib/types';
 import { useUser, useFirestore, useMemoFirebase, useDoc, useAuth } from '@/firebase';
 import { collection, doc, writeBatch, setDoc, getDoc, addDoc, updateDoc, deleteDoc, serverTimestamp } from 'firebase/firestore';
@@ -51,11 +52,11 @@ interface CRMContextType {
   updateNote: (noteId: string, newText: string, clientId?: string) => Promise<boolean>;
   deleteNote: (noteId: string, clientId?: string) => Promise<boolean>;
 
-  donnaReservations: Reservation[];
-  isLoadingDonnaReservations: boolean;
-  addDonnaReservation: (newReservationData: Omit<Reservation, 'id'>) => Promise<Reservation | null>;
-  updateDonnaReservation: (reservationId: string, updates: Partial<Reservation>) => Promise<boolean>;
-  deleteDonnaReservation: (reservationId: string) => Promise<boolean>;
+  reservations: Reservation[];
+  isLoadingReservations: boolean;
+  addReservation: (newReservationData: Omit<Reservation, 'id'>) => Promise<Reservation | null>;
+  updateReservation: (reservationId: string, updates: Partial<Reservation>) => Promise<boolean>;
+  deleteReservation: (reservationId: string) => Promise<boolean>;
 
   serviceWorkflows: ServiceWorkflow[];
   isLoadingWorkflows: boolean;
@@ -93,8 +94,8 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
     const isLoadingDocuments = false;
     const notes: Note[] = [];
     const isLoadingNotes = false;
-    const donnaReservations: Reservation[] = [];
-    const isLoadingDonnaReservations = false;
+    const reservations: Reservation[] = [];
+    const isLoadingReservations = false;
     const serviceWorkflows: ServiceWorkflow[] = [];
     const isLoadingWorkflows = false;
 
@@ -107,7 +108,25 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
                 email: user.email,
                 displayName: user.displayName,
                 photoURL: user.photoURL,
-                permissions: { dashboard: true, clients_view: true, tasks_view: true, bookings_view: true, crm_view: true, audit_view: true, admin_view: true },
+                permissions: { 
+                  dashboard: true, 
+                  clients_view: true, 
+                  tasks_view: true, 
+                  bookings_view: true, 
+                  crm_view: true, 
+                  audit_view: true, 
+                  admin_view: true,
+                  clients_create: true,
+                  clients_edit: true,
+                  clients_delete: true,
+                  tasks_create: true,
+                  tasks_edit: true,
+                  tasks_delete: true,
+                  reservations_create: true,
+                  reservations_edit: true,
+                  reservations_delete: true,
+                  crm_edit: true
+                },
             });
         } else {
             setCurrentUser(null);
@@ -170,10 +189,10 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
         updateNote: (id, text) => placeholderPromise(false),
         deleteNote: (id) => placeholderPromise(false),
 
-        donnaReservations, isLoadingDonnaReservations,
-        addDonnaReservation: (d) => placeholderPromise(null),
-        updateDonnaReservation: (id, d) => placeholderPromise(false),
-        deleteDonnaReservation: (id) => placeholderPromise(false),
+        reservations, isLoadingReservations,
+        addReservation: (d) => placeholderPromise(null),
+        updateReservation: (id, d) => placeholderPromise(false),
+        deleteReservation: (id) => placeholderPromise(false),
 
         serviceWorkflows, isLoadingWorkflows,
         addService: () => placeholderPromise(null),
@@ -195,7 +214,7 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
     }), [
         currentUser, isUserLoading, clients, isLoadingClients, 
         tasks, isLoadingTasks, documents, isLoadingDocuments, notes, isLoadingNotes,
-        donnaReservations, isLoadingDonnaReservations, serviceWorkflows, isLoadingWorkflows,
+        reservations, isLoadingReservations, serviceWorkflows, isLoadingWorkflows,
     ]);
 
     return (

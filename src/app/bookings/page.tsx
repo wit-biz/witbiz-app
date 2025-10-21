@@ -20,7 +20,7 @@ import { cn, formatDateString, formatTimeString, parseDateString } from "@/lib/u
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { Badge } from "@/components/ui/badge";
-import { type Booking } from "@/lib/types";
+import { type Reservation as Booking } from "@/lib/types";
 import { useCRMData } from "@/contexts/CRMDataContext";
 
 type ReservationType = 'Cita' | 'Operación Divisas';
@@ -41,12 +41,12 @@ export default function ReservationsPage() {
     const { toast } = useToast();
     const { 
         clients, 
-        donnaReservations: bookings, 
-        isLoadingDonnaReservations: isLoadingBookings,
+        reservations: bookings, 
+        isLoadingReservations: isLoadingBookings,
         currentUser, 
-        addDonnaReservation, 
-        updateDonnaReservation, 
-        deleteDonnaReservation 
+        addReservation, 
+        updateReservation, 
+        deleteReservation 
     } = useCRMData();
 
     const [calendarDate, setCalendarDate] = useState<Date | undefined>(new Date());
@@ -121,8 +121,8 @@ export default function ReservationsPage() {
         }
         setIsSubmitting(true);
         const action = reservationToEdit 
-            ? updateDonnaReservation(reservationToEdit.id, formData)
-            : addDonnaReservation(formData);
+            ? updateReservation(reservationToEdit.id, formData)
+            : addReservation(formData);
         
         action.then(() => {
             toast({ title: 'Éxito', description: `Reservación ${reservationToEdit ? 'actualizada' : 'creada'}.` });
@@ -132,12 +132,12 @@ export default function ReservationsPage() {
             toast({ title: 'Error', description: `No se pudo guardar la reservación: ${err.message}`, variant: 'destructive' });
             setIsSubmitting(false);
         });
-    }, [formData, reservationToEdit, toast, addDonnaReservation, updateDonnaReservation]);
+    }, [formData, reservationToEdit, toast, addReservation, updateReservation]);
 
     const handleDelete = async () => {
         if (!reservationToDelete) return;
         setIsSubmitting(true);
-        deleteDonnaReservation(reservationToDelete.id).then(() => {
+        deleteReservation(reservationToDelete.id).then(() => {
             toast({ title: 'Éxito', description: 'Reservación eliminada.' });
             setIsSubmitting(false);
             setIsDeleteConfirmOpen(false);
