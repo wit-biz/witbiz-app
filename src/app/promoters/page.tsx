@@ -165,9 +165,64 @@ export default function PromoterPage() {
                         </TabsContent>
 
                         <TabsContent value="commissions">
-                             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                                <div className="lg:col-span-2 space-y-6">
-                                     <Card>
+                            <div className="space-y-6">
+                                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                                    <div className="lg:col-span-1">
+                                        <Card>
+                                            <CardHeader>
+                                                <CardTitle className="flex items-center gap-2"><CalendarDays className="h-5 w-5 text-accent"/>Calendario de Pagos</CardTitle>
+                                                <CardDescription>Pagos realizados (verde) y pendientes (azul).</CardDescription>
+                                            </CardHeader>
+                                            <CardContent className="flex justify-center">
+                                                {isClient ? (
+                                                    <Calendar
+                                                        mode="single"
+                                                        selected={selectedDate}
+                                                        onSelect={setSelectedDate}
+                                                        className="rounded-md border"
+                                                        modifiers={{ paid: paymentDays, pending: pendingPaymentDays }}
+                                                        modifiersClassNames={{
+                                                            paid: 'bg-green-100 dark:bg-green-900/50 text-green-800 dark:text-green-300',
+                                                            pending: 'bg-blue-100 dark:bg-blue-900/50 text-blue-800 dark:text-blue-300'
+                                                        }}
+                                                        locale={es}
+                                                    />
+                                                ) : (
+                                                    <div className="p-3 rounded-md border w-[280px] h-[321px] flex items-center justify-center">
+                                                        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                                                    </div>
+                                                )}
+                                            </CardContent>
+                                        </Card>
+                                    </div>
+                                    <div className="lg:col-span-2">
+                                        <Card>
+                                            <CardHeader>
+                                                <CardTitle>Pagos para el {selectedDate ? format(selectedDate, "d 'de' MMMM", { locale: es }) : '...'}</CardTitle>
+                                            </CardHeader>
+                                            <CardContent className="space-y-3 min-h-[353px]">
+                                                {commissionsForSelectedDate.length > 0 ? (
+                                                    commissionsForSelectedDate.map(com => (
+                                                        <div key={com.id} className="p-3 border rounded-md flex items-center justify-between">
+                                                            <div>
+                                                                <p className="font-semibold">{com.clientName}</p>
+                                                                <p className="text-sm text-muted-foreground">${com.commission.toFixed(2)}</p>
+                                                            </div>
+                                                            <Badge variant={com.status === 'Pagada' ? 'default' : 'outline'} className={com.status === 'Pagada' ? 'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300' : ''}>{com.status}</Badge>
+                                                        </div>
+                                                    ))
+                                                ) : (
+                                                    <div className="text-center text-muted-foreground py-6 flex flex-col items-center justify-center h-full">
+                                                        <Info className="mx-auto h-8 w-8 mb-2"/>
+                                                        <p className="text-sm">No hay pagos para esta fecha.</p>
+                                                    </div>
+                                                )}
+                                            </CardContent>
+                                        </Card>
+                                    </div>
+                                </div>
+                                <div>
+                                    <Card>
                                         <CardHeader>
                                             <CardTitle>Historial de Comisiones</CardTitle>
                                             <CardDescription>Detalle de las comisiones generadas por tus clientes.</CardDescription>
@@ -200,58 +255,7 @@ export default function PromoterPage() {
                                         </CardContent>
                                     </Card>
                                 </div>
-                                <div className="lg:col-span-1 space-y-6">
-                                    <Card>
-                                        <CardHeader>
-                                            <CardTitle className="flex items-center gap-2"><CalendarDays className="h-5 w-5 text-accent"/>Calendario de Pagos</CardTitle>
-                                            <CardDescription>Pagos realizados (verde) y pendientes (azul).</CardDescription>
-                                        </CardHeader>
-                                        <CardContent className="flex justify-center">
-                                             {isClient ? (
-                                                <Calendar
-                                                    mode="single"
-                                                    selected={selectedDate}
-                                                    onSelect={setSelectedDate}
-                                                    className="rounded-md border"
-                                                    modifiers={{ paid: paymentDays, pending: pendingPaymentDays }}
-                                                    modifiersClassNames={{
-                                                        paid: 'bg-green-100 dark:bg-green-900/50 text-green-800 dark:text-green-300',
-                                                        pending: 'bg-blue-100 dark:bg-blue-900/50 text-blue-800 dark:text-blue-300'
-                                                    }}
-                                                    locale={es}
-                                                />
-                                             ) : (
-                                                <div className="p-3 rounded-md border w-[280px] h-[321px] flex items-center justify-center">
-                                                    <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-                                                </div>
-                                             )}
-                                        </CardContent>
-                                    </Card>
-                                     <Card>
-                                        <CardHeader>
-                                            <CardTitle>Pagos para el {selectedDate ? format(selectedDate, "d 'de' MMMM", { locale: es }) : '...'}</CardTitle>
-                                        </CardHeader>
-                                        <CardContent className="space-y-3">
-                                            {commissionsForSelectedDate.length > 0 ? (
-                                                commissionsForSelectedDate.map(com => (
-                                                    <div key={com.id} className="p-3 border rounded-md flex items-center justify-between">
-                                                        <div>
-                                                            <p className="font-semibold">{com.clientName}</p>
-                                                            <p className="text-sm text-muted-foreground">${com.commission.toFixed(2)}</p>
-                                                        </div>
-                                                        <Badge variant={com.status === 'Pagada' ? 'default' : 'outline'} className={com.status === 'Pagada' ? 'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300' : ''}>{com.status}</Badge>
-                                                    </div>
-                                                ))
-                                            ) : (
-                                                <div className="text-center text-muted-foreground py-6">
-                                                    <Info className="mx-auto h-8 w-8 mb-2"/>
-                                                    <p className="text-sm">No hay pagos para esta fecha.</p>
-                                                </div>
-                                            )}
-                                        </CardContent>
-                                    </Card>
-                                </div>
-                             </div>
+                            </div>
                         </TabsContent>
 
                         <TabsContent value="resources">
@@ -343,7 +347,3 @@ export default function PromoterPage() {
         </div>
     );
 }
-
-    
-
-    
