@@ -9,52 +9,11 @@ import { GlobalNotificationProvider } from '@/contexts/NotificationContext';
 import { DialogsProvider } from '@/contexts/DialogsContext';
 import { UserNav } from '@/components/shared/user-nav';
 import { ThemeProvider } from '@/components/theme-provider';
-import { useEffect, useState } from 'react';
-import { FirebaseClientProvider, useUser } from '@/firebase';
-import { CRMDataProvider, useCRMData } from '@/contexts/CRMDataContext';
+import { FirebaseClientProvider } from '@/firebase';
+import { CRMDataProvider } from '@/contexts/CRMDataContext';
 import { TasksProvider } from '@/contexts/TasksContext';
-import { usePathname, useRouter } from 'next/navigation';
-import { Loader2 } from 'lucide-react';
 
 function AppContent({ children }: { children: React.ReactNode }) {
-  const { currentUser, isLoadingCurrentUser } = useCRMData();
-  const router = useRouter();
-  const pathname = usePathname();
-  const [isClient, setIsClient] = useState(false);
-
-  useEffect(() => {
-    setIsClient(true);
-  }, []);
-  
-  useEffect(() => {
-    if (!isLoadingCurrentUser && !currentUser && pathname !== '/login' && pathname !== '/register') {
-      router.push('/login');
-    }
-  }, [currentUser, isLoadingCurrentUser, pathname, router]);
-
-  if (isLoadingCurrentUser || !isClient) {
-    return (
-      <div className="flex h-screen w-full items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin" />
-      </div>
-    );
-  }
-
-  const isAuthPage = pathname === '/login' || pathname === '/register';
-
-  if (isAuthPage) {
-    return <>{children}</>;
-  }
-
-  if (!currentUser) {
-    return (
-        <div className="flex h-screen w-full items-center justify-center">
-            <Loader2 className="h-8 w-8 animate-spin" />
-            <p className="ml-2">Redireccionando...</p>
-        </div>
-    );
-  }
-
   return (
     <SidebarProvider>
       <AppSidebar />

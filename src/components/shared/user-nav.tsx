@@ -20,10 +20,11 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
-import { useFirebase, useUser } from "@/firebase";
+import { useUser } from "@/firebase";
 import { SidebarTrigger } from "../ui/sidebar";
 import { initiateSignOut } from "@/firebase/non-blocking-login";
 import { useAuth } from "@/firebase/provider";
+import { useCRMData } from "@/contexts/CRMDataContext";
 
 const UserMenuIcon = () => (
     <svg width="24" height="24" viewBox="0 0 24 24" className="user-nav-glow h-6 w-6">
@@ -34,10 +35,9 @@ const UserMenuIcon = () => (
 );
 
 export function UserNav() {
-  const { user, isUserLoading } = useUser();
-  const auth = useAuth();
+  const { currentUser, isLoadingCurrentUser } = useCRMData();
 
-  if (isUserLoading) {
+  if (isLoadingCurrentUser) {
     return (
       <div className="fixed top-4 right-4 z-50">
         <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
@@ -60,12 +60,12 @@ export function UserNav() {
               "sidebar-glowing-border"
             )}
           >
-            {user ? (
+            {currentUser ? (
               <Avatar className="h-8 w-8">
-                {user.photoURL ? (
-                  <AvatarImage src={user.photoURL} alt={user.displayName || 'User'}/>
+                {currentUser.photoURL ? (
+                  <AvatarImage src={currentUser.photoURL} alt={currentUser.displayName || 'User'}/>
                 ) : (
-                  <AvatarFallback>{user.displayName?.charAt(0).toUpperCase() || 'U'}</AvatarFallback>
+                  <AvatarFallback>{currentUser.displayName?.charAt(0).toUpperCase() || 'U'}</AvatarFallback>
                 )}
               </Avatar>
             ) : (
@@ -75,21 +75,21 @@ export function UserNav() {
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
-          {user ? (
+          {currentUser ? (
             <>
               <DropdownMenuLabel>
                 <div className="flex items-center gap-3">
                   <Avatar className="h-9 w-9">
-                    {user.photoURL ? (
-                      <AvatarImage src={user.photoURL} alt={user.displayName || 'User'}/>
+                    {currentUser.photoURL ? (
+                      <AvatarImage src={currentUser.photoURL} alt={currentUser.displayName || 'User'}/>
                     ) : (
-                      <AvatarFallback>{user.displayName?.charAt(0).toUpperCase() || 'U'}</AvatarFallback>
+                      <AvatarFallback>{currentUser.displayName?.charAt(0).toUpperCase() || 'U'}</AvatarFallback>
                     )}
                   </Avatar>
                   <div>
-                    <p className="text-sm font-medium leading-none">{user.displayName || 'Usuario'}</p>
+                    <p className="text-sm font-medium leading-none">{currentUser.displayName || 'Usuario'}</p>
                     <p className="text-xs leading-none text-muted-foreground">
-                      {user.email || 'No email'}
+                      {currentUser.email || 'No email'}
                     </p>
                   </div>
                 </div>
@@ -105,30 +105,12 @@ export function UserNav() {
                 <LifeBuoy className="mr-2 h-4 w-4" />
                 <span>Soporte</span>
               </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={() => initiateSignOut(auth)}>
-                <LogOut className="mr-2 h-4 w-4" />
-                <span>Cerrar Sesión</span>
-              </DropdownMenuItem>
             </>
           ) : (
              <>
                 <DropdownMenuLabel>
                     <p>No autenticado</p>
                 </DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem asChild>
-                    <Link href="/login">
-                        <LogIn className="mr-2 h-4 w-4" />
-                        <span>Iniciar Sesión</span>
-                    </Link>
-                </DropdownMenuItem>
-                <DropdownMenuItem asChild>
-                    <Link href="/register">
-                        <UserCircle className="mr-2 h-4 w-4" />
-                        <span>Registrarse</span>
-                    </Link>
-                </DropdownMenuItem>
              </>
           )}
         </DropdownMenuContent>
