@@ -188,71 +188,39 @@
     ]
   },
   "firestore": {
-    "structure": [
-      {
-        "path": "/users/{userId}/leads/{leadId}",
-        "definition": {
-          "entityName": "Lead",
-          "schema": { "$ref": "#/entities/Lead" },
-          "description": "Stores leads for a user."
-        }
-      },
-      {
-        "path": "/users/{userId}/contacts/{contactId}",
-        "definition": {
-          "entityName": "Contact",
-          "schema": { "$ref": "#/entities/Contact" },
-          "description": "Stores contacts for a user."
-        }
-      },
-      {
-        "path": "/users/{userId}/tasks/{taskId}",
-        "definition": {
-          "entityName": "Task",
-          "schema": { "$ref": "#/entities/Task" },
-          "description": "Stores tasks for a user."
-        }
-      },
-      {
-        "path": "/users/{userId}/clients/{clientId}",
-        "definition": {
-          "entityName": "Client",
-          "schema": { "$ref": "#/entities/Client" },
-          "description": "Stores clients for a user."
-        }
-      },
-      {
-        "path": "/users/{userId}/documents/{documentId}",
-        "definition": {
-          "entityName": "Document",
-          "schema": { "$ref": "#/entities/Document" },
-          "description": "Stores documents for a user."
-        }
-      },
-      {
-        "path": "/users/{userId}/notes/{noteId}",
-        "definition": {
-          "entityName": "Note",
-          "schema": { "$ref": "#/entities/Note" },
-          "description": "Stores notes for a user."
-        }
-      },
-      {
-        "path": "/users/{userId}/bookings/{bookingId}",
-        "definition": {
-          "entityName": "Reservation",
-          "schema": { "$ref": "#/entities/Reservation" },
-          "description": "Stores bookings/reservations for a user."
-        }
-      },
-      {
-        "path": "/users/{userId}/serviceWorkflows/{workflowId}",
-        "definition": {
-          "entityName": "ServiceWorkflow",
-          "schema": { "$ref": "#/entities/ServiceWorkflow" },
-          "description": "Stores service workflows for a user."
-        }
-      }
-    ]
+    "/users/{userId}/leads/{leadId}": {
+      "schema": { "$ref": "#/entities/Lead" },
+      "description": "Stores leads for a user."
+    },
+    "/users/{userId}/contacts/{contactId}": {
+      "schema": { "$ref": "#/entities/Contact" },
+      "description": "Stores contacts for a user."
+    },
+    "/users/{userId}/tasks/{taskId}": {
+      "schema": { "$ref": "#/entities/Task" },
+      "description": "Stores tasks for a user."
+    },
+    "/users/{userId}/clients/{clientId}": {
+      "schema": { "$ref": "#/entities/Client" },
+      "description": "Stores clients for a user."
+    },
+    "/users/{userId}/documents/{documentId}": {
+      "schema": { "$ref": "#/entities/Document" },
+      "description": "Stores documents for a user."
+    },
+    "/users/{userId}/notes/{noteId}": {
+      "schema": { "$ref": "#/entities/Note" },
+      "description": "Stores notes for a user."
+    },
+    "/users/{userId}/bookings/{bookingId}": {
+      "schema": { "$ref": "#/entities/Reservation" },
+      "description": "Stores bookings/reservations for a user."
+    },
+    "/users/{userId}/serviceWorkflows/{workflowId}": {
+      "schema": { "$ref": "#/entities/ServiceWorkflow" },
+      "description": "Stores service workflows for a user."
+    }
   }
 }
+
+    
