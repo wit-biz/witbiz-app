@@ -5,15 +5,24 @@ import { Button } from '@/components/ui/button';
 import { useAuth } from '@/firebase';
 import { signOut } from 'firebase/auth';
 import { useRouter } from 'next/navigation';
-import { LogOut, Loader2, Users, CircleDollarSign, Download } from 'lucide-react';
+import { LogOut, Loader2, Users, CircleDollarSign, Download, CalendarDays } from 'lucide-react';
 import { useState } from 'react';
 import { Logo } from '@/components/shared/logo';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Calendar } from '@/components/ui/calendar';
 
 export default function PromoterPage() {
     const auth = useAuth();
     const router = useRouter();
     const [isLoggingOut, setIsLoggingOut] = useState(false);
+    const [date, setDate] = useState<Date | undefined>(new Date());
+    
+    // Example payment dates
+    const paymentDays = [
+        new Date(new Date().setDate(2)),
+        new Date(new Date().setDate(16)),
+    ];
+
 
     const handleLogout = async () => {
         setIsLoggingOut(true);
@@ -42,7 +51,7 @@ export default function PromoterPage() {
                         <p className="text-muted-foreground">Bienvenido a su espacio exclusivo.</p>
                     </div>
                     
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
                         <Card>
                             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                                 <CardTitle className="text-sm font-medium">Clientes</CardTitle>
@@ -77,6 +86,32 @@ export default function PromoterPage() {
                             </CardContent>
                         </Card>
                     </div>
+
+                    <Card>
+                        <CardHeader>
+                            <CardTitle className="flex items-center gap-2">
+                                <CalendarDays className="h-5 w-5 text-accent"/>
+                                Calendario de Pagos
+                            </CardTitle>
+                            <CardDescription>
+                                Días de pago de comisiones marcados en verde.
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent className="flex justify-center">
+                            <Calendar
+                                mode="single"
+                                selected={date}
+                                onSelect={setDate}
+                                className="rounded-md border"
+                                modifiers={{
+                                    paymentDays: paymentDays
+                                }}
+                                modifiersClassNames={{
+                                    paymentDays: 'bg-green-100 dark:bg-green-900/50 text-green-800 dark:text-green-300 rounded-full'
+                                }}
+                            />
+                        </CardContent>
+                    </Card>
 
                 </div>
             </main>
