@@ -21,8 +21,8 @@ import { useToast } from "@/hooks/use-toast";
 import { Logo } from "@/components/shared/logo";
 
 export default function LoginPage() {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const [email, setEmail] = useState("saidsaigar@gmail.com");
+  const [password, setPassword] = useState("123456");
   const [isLoading, setIsLoading] = useState(false);
   const auth = useAuth();
   const router = useRouter();
