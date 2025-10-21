@@ -379,6 +379,9 @@ const navItems = [
     { id: 'resources', label: 'Recursos', icon: BookText, component: ResourcesView },
 ];
 
+const profileNavItem = { id: 'profile', label: 'Perfil', icon: User, component: ProfileView };
+
+
 export default function PromoterPage() {
     const router = useRouter();
     const [activeView, setActiveView] = useState('clients');
@@ -387,7 +390,7 @@ export default function PromoterPage() {
         router.push('/promoter-login');
     };
 
-    const ActiveComponent = navItems.find(item => item.id === activeView)?.component || ProfileView;
+    const ActiveComponent = [...navItems, profileNavItem].find(item => item.id === activeView)?.component || ClientsView;
 
     return (
         <div className="flex min-h-screen bg-muted/40">
@@ -413,13 +416,13 @@ export default function PromoterPage() {
                 </nav>
                  <div className="mt-auto">
                     <Button
-                        key="profile"
-                        variant={activeView === 'profile' ? 'default' : 'ghost'}
+                        key={profileNavItem.id}
+                        variant={activeView === profileNavItem.id ? 'default' : 'ghost'}
                         className="justify-start gap-2 w-full mb-2"
-                        onClick={() => setActiveView('profile')}
+                        onClick={() => setActiveView(profileNavItem.id)}
                     >
                         <User className="h-4 w-4"/>
-                        Perfil
+                        {profileNavItem.label}
                     </Button>
                     <Button onClick={handleLogout} variant="outline" size="sm" className="w-full">
                         <LogOut className="mr-2 h-4 w-4" />
@@ -427,13 +430,13 @@ export default function PromoterPage() {
                     </Button>
                 </div>
             </aside>
-            <div className="flex-1 flex flex-col">
+            <div className="flex flex-col w-full overflow-x-auto">
                 <header className="sticky top-0 z-10 flex h-16 shrink-0 items-center justify-between gap-4 border-b bg-background/80 px-4 backdrop-blur-sm sm:px-6">
                     <h1 className="text-xl font-semibold">
                         {activeView === 'profile' ? 'Mi Perfil' : navItems.find(item => item.id === activeView)?.label || 'Panel de Promotor'}
                     </h1>
                 </header>
-                <main className="flex-1 p-4 md:p-8 overflow-y-auto">
+                <main className="flex-1 p-4 md:p-8">
                     <ActiveComponent />
                 </main>
             </div>
