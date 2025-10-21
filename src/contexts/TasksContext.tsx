@@ -18,6 +18,10 @@ export function TasksProvider({ children }: { children: ReactNode }) {
   // This effect is now just for calculating if there are tasks for today
   // The actual fetching happens in CRMDataContext
   React.useEffect(() => {
+    if (!tasks) {
+      setHasTasksForToday(false);
+      return;
+    }
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     const hasToday = tasks.some(t => {
