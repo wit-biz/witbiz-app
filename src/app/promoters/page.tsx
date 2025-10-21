@@ -5,8 +5,8 @@ import { Button } from '@/components/ui/button';
 import { useAuth } from '@/firebase';
 import { signOut } from 'firebase/auth';
 import { useRouter } from 'next/navigation';
-import { LogOut, Loader2, Users, CircleDollarSign, Download, CalendarDays, HardDriveDownload, Presentation, Image as ImageIcon, TrendingUp } from 'lucide-react';
-import { useState, useEffect } from 'react';
+import { LogOut, Loader2, Users, CircleDollarSign, Download, CalendarDays, HardDriveDownload, Presentation, Image as ImageIcon, TrendingUp, Info } from 'lucide-react';
+import { useState, useEffect, useMemo } from 'react';
 import { Logo } from '@/components/shared/logo';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Calendar } from '@/components/ui/calendar';
@@ -15,7 +15,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from '@/components/ui/badge';
 import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Tooltip } from "recharts"
 import { ChartContainer, ChartTooltip, ChartTooltipContent, type ChartConfig } from "@/components/ui/chart"
-
+import { format } from 'date-fns';
+import { es } from 'date-fns/locale';
 
 // Helper to get dates for the current month
 const getCurrentMonthDate = (day: number) => {
@@ -45,6 +46,7 @@ const commissions = [
     { id: 'com2', clientName: 'Synergy Corp.', saleAmount: 1200, commission: 120, paymentDate: getCurrentMonthDate(2), status: 'Pagada' },
     { id: 'com3', clientName: 'Global Net', saleAmount: 800, commission: 80, paymentDate: getCurrentMonthDate(15), status: 'Pendiente' },
     { id: 'com4', clientName: 'Innovate Inc.', saleAmount: 300, commission: 30, paymentDate: getCurrentMonthDate(25), status: 'Pendiente' },
+    { id: 'com5', clientName: 'Solutions LLC', saleAmount: 750, commission: 75, paymentDate: getCurrentMonthDate(15), status: 'Pendiente' },
 ];
 
 const resources = [
@@ -80,7 +82,7 @@ export default function PromoterPage() {
     const auth = useAuth();
     const router = useRouter();
     const [isLoggingOut, setIsLoggingOut] = useState(false);
-    const [date, setDate] = useState<Date | undefined>(new Date());
+    const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
     const [isClient, setIsClient] = useState(false);
 
     useEffect(() => {
@@ -89,6 +91,12 @@ export default function PromoterPage() {
     
     const paymentDays = commissions.filter(c => c.status === 'Pagada').map(c => new Date(c.paymentDate));
     const pendingPaymentDays = commissions.filter(c => c.status === 'Pendiente').map(c => new Date(c.paymentDate));
+
+    const commissionsForSelectedDate = useMemo(() => {
+        if (!selectedDate) return [];
+        const selectedDayString = format(selectedDate, 'yyyy-MM-dd');
+        return commissions.filter(c => c.paymentDate === selectedDayString);
+    }, [selectedDate]);
 
     const handleLogout = async () => {
         setIsLoggingOut(true);
@@ -111,7 +119,7 @@ export default function PromoterPage() {
                 </Button>
             </header>
             <main className="flex-1 p-4 md:p-8">
-                <div className="mx-auto max-w-6xl">
+                <div className="mx-auto max-w-7xl">
                     <div className="mb-8">
                         <h1 className="text-3xl font-bold tracking-tight">Panel de Promotor</h1>
                         <p className="text-muted-foreground">Bienvenido a tu centro de operaciones. Aquí puedes seguir tu progreso.</p>
@@ -144,7 +152,7 @@ export default function PromoterPage() {
                                             {referredClients.map(client => (
                                                 <TableRow key={client.id}>
                                                     <TableCell className="font-medium">{client.name}</TableCell>
-                                                    <TableCell>{isClient ? new Date(client.joinDate).toLocaleDateString() : ''}</TableCell>
+                                                    <TableCell>{isClient ? new Date(client.joinDate).toLocaleDateString('es-ES') : ''}</TableCell>
                                                     <TableCell className="text-right">
                                                         <Badge variant={client.status === 'Activo' ? 'default' : 'secondary'}>{client.status}</Badge>
                                                     </TableCell>
@@ -158,7 +166,7 @@ export default function PromoterPage() {
 
                         <TabsContent value="commissions">
                              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                                <div className="lg:col-span-2">
+                                <div className="lg:col-span-2 space-y-6">
                                      <Card>
                                         <CardHeader>
                                             <CardTitle>Historial de Comisiones</CardTitle>
@@ -181,9 +189,9 @@ export default function PromoterPage() {
                                                             <TableCell className="font-medium">{com.clientName}</TableCell>
                                                             <TableCell>${com.saleAmount.toFixed(2)}</TableCell>
                                                             <TableCell className="font-semibold text-green-600">${com.commission.toFixed(2)}</TableCell>
-                                                            <TableCell>{isClient ? new Date(com.paymentDate).toLocaleDateString() : ''}</TableCell>
+                                                            <TableCell>{isClient ? new Date(com.paymentDate).toLocaleDateString('es-ES') : ''}</TableCell>
                                                             <TableCell className="text-right">
-                                                                <Badge variant={com.status === 'Pagada' ? 'default' : 'outline'}>{com.status}</Badge>
+                                                                <Badge variant={com.status === 'Pagada' ? 'default' : 'outline'} className={com.status === 'Pagada' ? 'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300' : ''}>{com.status}</Badge>
                                                             </TableCell>
                                                         </TableRow>
                                                     ))}
@@ -192,7 +200,7 @@ export default function PromoterPage() {
                                         </CardContent>
                                     </Card>
                                 </div>
-                                <div className="lg:col-span-1">
+                                <div className="lg:col-span-1 space-y-6">
                                     <Card>
                                         <CardHeader>
                                             <CardTitle className="flex items-center gap-2"><CalendarDays className="h-5 w-5 text-accent"/>Calendario de Pagos</CardTitle>
@@ -202,20 +210,44 @@ export default function PromoterPage() {
                                              {isClient ? (
                                                 <Calendar
                                                     mode="single"
-                                                    selected={date}
-                                                    onSelect={setDate}
+                                                    selected={selectedDate}
+                                                    onSelect={setSelectedDate}
                                                     className="rounded-md border"
                                                     modifiers={{ paid: paymentDays, pending: pendingPaymentDays }}
                                                     modifiersClassNames={{
                                                         paid: 'bg-green-100 dark:bg-green-900/50 text-green-800 dark:text-green-300',
                                                         pending: 'bg-blue-100 dark:bg-blue-900/50 text-blue-800 dark:text-blue-300'
                                                     }}
+                                                    locale={es}
                                                 />
                                              ) : (
                                                 <div className="p-3 rounded-md border w-[280px] h-[321px] flex items-center justify-center">
                                                     <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
                                                 </div>
                                              )}
+                                        </CardContent>
+                                    </Card>
+                                     <Card>
+                                        <CardHeader>
+                                            <CardTitle>Pagos para el {selectedDate ? format(selectedDate, "d 'de' MMMM", { locale: es }) : '...'}</CardTitle>
+                                        </CardHeader>
+                                        <CardContent className="space-y-3">
+                                            {commissionsForSelectedDate.length > 0 ? (
+                                                commissionsForSelectedDate.map(com => (
+                                                    <div key={com.id} className="p-3 border rounded-md flex items-center justify-between">
+                                                        <div>
+                                                            <p className="font-semibold">{com.clientName}</p>
+                                                            <p className="text-sm text-muted-foreground">${com.commission.toFixed(2)}</p>
+                                                        </div>
+                                                        <Badge variant={com.status === 'Pagada' ? 'default' : 'outline'} className={com.status === 'Pagada' ? 'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300' : ''}>{com.status}</Badge>
+                                                    </div>
+                                                ))
+                                            ) : (
+                                                <div className="text-center text-muted-foreground py-6">
+                                                    <Info className="mx-auto h-8 w-8 mb-2"/>
+                                                    <p className="text-sm">No hay pagos para esta fecha.</p>
+                                                </div>
+                                            )}
                                         </CardContent>
                                     </Card>
                                 </div>
@@ -311,3 +343,5 @@ export default function PromoterPage() {
         </div>
     );
 }
+
+    
