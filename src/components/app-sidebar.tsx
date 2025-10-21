@@ -16,11 +16,10 @@ const Logo = () => (
     className="h-8 w-auto" // Auto width to maintain aspect ratio
     aria-label="WitBiz Logo"
   >
-    {/* Black rectangle for WIT */}
-    <rect x="0" y="0" width="80" height="40" fill="black" />
+    <rect className="logo-rect" x="0" y="0" width="80" height="40" fill="black" />
     
-    {/* WIT text */}
     <text
+      className="logo-wit-text"
       x="40"
       y="27" // Vertically centered
       fontFamily="Arial, sans-serif"
@@ -32,7 +31,6 @@ const Logo = () => (
       WIT
     </text>
     
-    {/* BIZ text */}
     <text
       x="120" // Positioned to the right of the box
       y="27" // Vertically centered
@@ -46,9 +44,14 @@ const Logo = () => (
       BIZ
     </text>
     
-    {/* Style for dark mode */}
     <style>
       {`
+        .dark .logo-rect {
+            fill: white;
+        }
+        .dark .logo-wit-text {
+            fill: black;
+        }
         .dark .logo-biz-text {
             fill: white;
         }
