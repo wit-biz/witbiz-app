@@ -103,10 +103,6 @@ export function UserNav() {
                   <span>Perfil</span>
                 </Link>
               </DropdownMenuItem>
-              <DropdownMenuItem>
-                <LifeBuoy className="mr-2 h-4 w-4" />
-                <span>Soporte</span>
-              </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={() => initiateSignOut(auth)}>
                 <LogOut className="mr-2 h-4 w-4" />
