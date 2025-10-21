@@ -120,7 +120,7 @@ export function AddEditClientDialog({ client, isOpen, onClose }: AddEditClientDi
                         name="name"
                         render={({ field }) => (
                             <FormItem>
-                                <FormLabel>Nombre <span className="text-destructive">*</span></FormLabel>
+                                <FormLabel>Nombre de la Empresa <span className="text-destructive">*</span></FormLabel>
                                 <FormControl>
                                     <Input placeholder="Nombre del cliente" {...field} disabled={isSubmitting}/>
                                 </FormControl>
@@ -133,7 +133,7 @@ export function AddEditClientDialog({ client, isOpen, onClose }: AddEditClientDi
                         name="owner"
                         render={({ field }) => (
                             <FormItem>
-                                <FormLabel>Propietario</FormLabel>
+                                <FormLabel>Contacto Principal</FormLabel>
                                 <FormControl>
                                     <Input placeholder="Propietario asignado" {...field} disabled={isSubmitting}/>
                                 </FormControl>
