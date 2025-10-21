@@ -16,14 +16,14 @@ import {
   LifeBuoy,
   LogOut,
   Loader2,
+  LogIn,
 } from "lucide-react";
-import { PlaceHolderImages } from "@/lib/placeholder-images";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { useFirebase } from "@/firebase";
 import { SidebarTrigger } from "../ui/sidebar";
-
-const userAvatar = PlaceHolderImages.find((img) => img.id === "user-avatar");
+import { initiateSignOut } from "@/firebase/non-blocking-login";
+import { useAuth } from "@/firebase/provider";
 
 const UserMenuIcon = () => (
     <svg width="24" height="24" viewBox="0 0 24 24" className="user-nav-glow h-6 w-6">
@@ -35,6 +35,7 @@ const UserMenuIcon = () => (
 
 export function UserNav() {
   const { user, isUserLoading } = useFirebase();
+  const auth = useAuth();
 
   if (isUserLoading) {
     return (
@@ -105,17 +106,30 @@ export function UserNav() {
                 <span>Soporte</span>
               </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={() => {
-                // Here you would call your sign-out function
-              }}>
+              <DropdownMenuItem onClick={() => initiateSignOut(auth)}>
                 <LogOut className="mr-2 h-4 w-4" />
                 <span>Cerrar Sesión</span>
               </DropdownMenuItem>
             </>
           ) : (
-             <DropdownMenuLabel>
-                <p>No autenticado</p>
-             </DropdownMenuLabel>
+             <>
+                <DropdownMenuLabel>
+                    <p>No autenticado</p>
+                </DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem asChild>
+                    <Link href="/login">
+                        <LogIn className="mr-2 h-4 w-4" />
+                        <span>Iniciar Sesión</span>
+                    </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                    <Link href="/register">
+                        <UserCircle className="mr-2 h-4 w-4" />
+                        <span>Registrarse</span>
+                    </Link>
+                </DropdownMenuItem>
+             </>
           )}
         </DropdownMenuContent>
       </DropdownMenu>

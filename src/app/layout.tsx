@@ -10,9 +10,62 @@ import { DialogsProvider } from '@/contexts/DialogsContext';
 import { UserNav } from '@/components/shared/user-nav';
 import { ThemeProvider } from '@/components/theme-provider';
 import { useEffect, useState } from 'react';
-import { FirebaseClientProvider } from '@/firebase';
+import { FirebaseClientProvider, useUser } from '@/firebase';
 import { CRMDataProvider } from '@/contexts/CRMDataContext';
 import { TasksProvider } from '@/contexts/TasksContext';
+import { usePathname, useRouter } from 'next/navigation';
+import { Loader2 } from 'lucide-react';
+
+function AppContent({ children }: { children: React.ReactNode }) {
+  const { user, isUserLoading } = useUser();
+  const router = useRouter();
+  const pathname = usePathname();
+  const [isClient, setIsClient] = useState(false);
+
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
+  
+  useEffect(() => {
+    if (!isUserLoading && !user && pathname !== '/login' && pathname !== '/register') {
+      router.push('/login');
+    }
+  }, [user, isUserLoading, pathname, router]);
+
+  if (isUserLoading || !isClient) {
+    return (
+      <div className="flex h-screen w-full items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin" />
+      </div>
+    );
+  }
+
+  const isAuthPage = pathname === '/login' || pathname === '/register';
+
+  if (isAuthPage) {
+    return <>{children}</>;
+  }
+
+  if (!user) {
+    // This can happen briefly during redirection
+    return (
+        <div className="flex h-screen w-full items-center justify-center">
+            <Loader2 className="h-8 w-8 animate-spin" />
+            <p className="ml-2">Redireccionando...</p>
+        </div>
+    );
+  }
+
+  return (
+    <SidebarProvider>
+      <AppSidebar />
+      <SidebarInset>
+        <UserNav />
+        {children}
+      </SidebarInset>
+    </SidebarProvider>
+  );
+}
 
 
 export default function RootLayout({
@@ -20,11 +73,6 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const [isClient, setIsClient] = useState(false);
-
-  useEffect(() => {
-    setIsClient(true);
-  }, []);
 
   return (
     <html lang="es" suppressHydrationWarning>
@@ -50,21 +98,7 @@ export default function RootLayout({
                 <CRMDataProvider>
                   <TasksProvider>
                     <DialogsProvider>
-                      <SidebarProvider>
-                        {isClient ? (
-                          <>
-                            <AppSidebar />
-                            <SidebarInset>
-                              <UserNav />
-                              {children}
-                            </SidebarInset>
-                          </>
-                        ) : (
-                          <div className="flex h-screen w-full items-center justify-center">
-                            {/* Puedes poner un spinner o un loader aquí */}
-                          </div>
-                        )}
-                      </SidebarProvider>
+                       <AppContent>{children}</AppContent>
                     </DialogsProvider>
                   </TasksProvider>
                 </CRMDataProvider>
