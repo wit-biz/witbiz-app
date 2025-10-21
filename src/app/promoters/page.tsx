@@ -181,7 +181,7 @@ export default function PromoterPage() {
                                     <Card>
                                         <CardHeader>
                                             <CardTitle className="flex items-center gap-2"><CalendarDays className="h-5 w-5 text-accent"/>Calendario de Pagos</CardTitle>
-                                            <CardDescription>Pagos realizados (verde) y pendientes (amarillo).</CardDescription>
+                                            <CardDescription>Pagos realizados (verde) y pendientes (azul).</CardDescription>
                                         </CardHeader>
                                         <CardContent className="flex justify-center">
                                              {isClient ? (
@@ -193,7 +193,7 @@ export default function PromoterPage() {
                                                     modifiers={{ paid: paymentDays, pending: pendingPaymentDays }}
                                                     modifiersClassNames={{
                                                         paid: 'bg-green-100 dark:bg-green-900/50 text-green-800 dark:text-green-300',
-                                                        pending: 'bg-yellow-100 dark:bg-yellow-900/50 text-yellow-800 dark:text-yellow-300'
+                                                        pending: 'bg-blue-100 dark:bg-blue-900/50 text-blue-800 dark:text-blue-300'
                                                     }}
                                                 />
                                              ) : (
