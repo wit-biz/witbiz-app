@@ -13,6 +13,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Button } from '@/components/ui/button';
 import { Plus, UploadCloud, UserPlus } from 'lucide-react';
 import { useDialogs } from '@/contexts/DialogsContext';
+import { cn } from '@/lib/utils';
 
 const Logo = () => (
   <svg
@@ -79,7 +80,14 @@ export function AppSidebar() {
         <div className="p-2 flex justify-center">
             <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                    <Button variant="default" size="icon" className="rounded-full h-10 w-10 transition-all duration-300 group-data-[collapsible=icon]:h-10 group-data-[collapsible=icon]:w-10 group-data-[collapsible=icon]:p-2 group-data-[collapsible=icon]:group-hover:rotate-90">
+                    <Button 
+                      variant="ghost" 
+                      size="icon" 
+                      className={cn(
+                        "rounded-full h-9 w-9 transition-all duration-300 hover:rotate-90",
+                        "sidebar-glowing-border"
+                      )}
+                    >
                         <Plus className="h-5 w-5" />
                         <span className="sr-only">Nuevo...</span>
                     </Button>
