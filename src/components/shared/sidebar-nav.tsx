@@ -79,8 +79,9 @@ export function SidebarNav() {
   return (
     <SidebarMenu>
       {navItems.map((item) => {
-        // Hide "Workflows" link if user cannot edit CRM
-        if (item.href === '/workflows' && !currentUser.permissions.crm_edit) {
+        // This logic handles the visibility of the CRM link and its configuration sub-link.
+        // The CRM page itself will decide if the configuration button is visible based on permissions.
+        if (item.href === '/crm' && !currentUser.permissions.crm_view) {
           return null;
         }
 
