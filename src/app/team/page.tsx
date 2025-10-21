@@ -85,6 +85,16 @@ const initialRoles = [
             crm_view: true, crm_edit: false, audit_view: false, admin_view: false,
         }
     },
+    { 
+        id: 'promoter', 
+        name: 'Promotor', 
+        permissions: {
+            dashboard: false, clients_view: false, clients_create: false, clients_edit: false, clients_delete: false,
+            tasks_view: false, tasks_create: false, tasks_edit: false, tasks_delete: false,
+            reservations_view: false, reservations_create: false, reservations_edit: false, reservations_delete: false,
+            crm_view: false, crm_edit: false, audit_view: false, admin_view: false,
+        }
+    },
 ];
 
 
