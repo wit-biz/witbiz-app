@@ -3,7 +3,7 @@
 
 import React, { useState, useMemo, useEffect } from 'react';
 import { DateRange } from 'react-day-picker';
-import { format, isWithinInterval } from 'date-fns';
+import { format, isWithinInterval, startOfDay } from 'date-fns';
 import { es } from 'date-fns/locale';
 
 import { Button } from '@/components/ui/button';
@@ -31,13 +31,20 @@ const generateCommissions = () => {
     const today = new Date();
     const currentMonth = today.getMonth();
     const currentYear = today.getFullYear();
+    
+    const createDate = (day: number, monthOffset = 0) => {
+        const date = new Date(currentYear, currentMonth + monthOffset, day);
+        date.setHours(0, 0, 0, 0); // Normalize to start of the day
+        return date;
+    };
+
     return [
-        { id: 'com1', clientName: 'Global Tech Inc.', amount: 250.00, date: format(new Date(currentYear, currentMonth, 2), 'yyyy-MM-dd'), status: 'Pagada' },
-        { id: 'com2', clientName: 'Innovate Solutions', amount: 300.50, date: format(new Date(currentYear, currentMonth, 5), 'yyyy-MM-dd'), status: 'Pendiente' },
-        { id: 'com3', clientName: 'Quantum Industries', amount: 150.75, date: format(new Date(currentYear, currentMonth -1, 18), 'yyyy-MM-dd'), status: 'Pagada' },
-        { id: 'com4', clientName: 'Synergy Group', amount: 450.00, date: format(new Date(currentYear, currentMonth, 12), 'yyyy-MM-dd'), status: 'Pendiente' },
-        { id: 'com5', clientName: 'Global Tech Inc.', amount: 275.00, date: format(new Date(currentYear, currentMonth, 15), 'yyyy-MM-dd'), status: 'Pendiente' },
-        { id: 'com6', clientName: 'Eco Builders', amount: 500.25, date: format(new Date(currentYear, currentMonth -2, 22), 'yyyy-MM-dd'), status: 'Pagada' },
+        { id: 'com1', clientName: 'Global Tech Inc.', amount: 250.00, date: createDate(2), status: 'Pagada' },
+        { id: 'com2', clientName: 'Innovate Solutions', amount: 300.50, date: createDate(5), status: 'Pendiente' },
+        { id: 'com3', clientName: 'Quantum Industries', amount: 150.75, date: createDate(18, -1), status: 'Pagada' },
+        { id: 'com4', clientName: 'Synergy Group', amount: 450.00, date: createDate(12), status: 'Pendiente' },
+        { id: 'com5', clientName: 'Global Tech Inc.', amount: 275.00, date: createDate(15), status: 'Pendiente' },
+        { id: 'com6', clientName: 'Eco Builders', amount: 500.25, date: createDate(22, -2), status: 'Pagada' },
     ];
 };
 
@@ -77,7 +84,7 @@ function ClientsView() {
                         {referredClients.map(client => (
                             <TableRow key={client.id}>
                                 <TableCell className="font-medium">{client.name}</TableCell>
-                                <TableCell>{isClient && client.joinDate ? format(parseDateString(client.joinDate)!, 'dd/MM/yyyy') : '-'}</TableCell>
+                                <TableCell>{isClient ? format(parseDateString(client.joinDate)!, 'dd/MM/yyyy') : '-'}</TableCell>
                                 <TableCell>
                                     <Badge variant={client.status === 'Activo' ? 'default' : 'secondary'}>{client.status}</Badge>
                                 </TableCell>
@@ -103,13 +110,11 @@ function CommissionsView() {
         const paidDays: Date[] = [];
         const pendingDays: Date[] = [];
         commissions.forEach(c => {
-            const commissionDate = parseDateString(c.date);
-            if (commissionDate) {
-                if (c.status === 'Pagada') {
-                    paidDays.push(commissionDate);
-                } else {
-                    pendingDays.push(commissionDate);
-                }
+            const commissionDate = c.date; // Date is already a Date object
+            if (c.status === 'Pagada') {
+                paidDays.push(commissionDate);
+            } else {
+                pendingDays.push(commissionDate);
             }
         });
         return { paid: paidDays, pending: pendingDays };
@@ -122,16 +127,15 @@ function CommissionsView() {
 
     const filteredCommissions = useMemo(() => {
         const filterByDate = (c: typeof commissions[0]) => {
-            const commissionDate = parseDateString(c.date);
-            if (!commissionDate) return false;
-            
+            const commissionDate = startOfDay(c.date);
+
             if (dateRange?.from && dateRange?.to) {
-                return isWithinInterval(commissionDate, { start: dateRange.from, end: dateRange.to });
+                return isWithinInterval(commissionDate, { start: startOfDay(dateRange.from), end: startOfDay(dateRange.to) });
             }
             if (selectedDay) {
-                return format(commissionDate, 'yyyy-MM-dd') === format(selectedDay, 'yyyy-MM-dd');
+                return commissionDate.getTime() === startOfDay(selectedDay).getTime();
             }
-            return true; 
+            return true;
         };
         return commissions.filter(filterByDate);
     }, [dateRange, selectedDay]);
@@ -209,7 +213,7 @@ function CommissionsView() {
                                     <li key={c.id} className="flex justify-between items-center p-2 rounded-md bg-muted/50">
                                         <div>
                                             <p className="font-semibold">{c.clientName}</p>
-                                            <p className="text-xs text-muted-foreground">{isClient && c.date ? format(parseDateString(c.date)!, 'PPP', { locale: es }) : '-'}</p>
+                                            <p className="text-xs text-muted-foreground">{isClient ? format(c.date, 'PPP', { locale: es }) : '-'}</p>
                                         </div>
                                         <div className="text-right">
                                              <p className="font-semibold">${c.amount.toFixed(2)}</p>
@@ -253,7 +257,7 @@ function CommissionsView() {
                             {filteredCommissions.map(c => (
                                 <TableRow key={c.id}>
                                     <TableCell className="font-medium">{c.clientName}</TableCell>
-                                    <TableCell>{isClient && c.date ? format(parseDateString(c.date)!, 'PPP', { locale: es }) : '-'}</TableCell>
+                                    <TableCell>{isClient ? format(c.date, 'PPP', { locale: es }) : '-'}</TableCell>
                                     <TableCell>${c.amount.toFixed(2)}</TableCell>
                                     <TableCell>
                                         <Badge variant={c.status === 'Pagada' ? 'default' : 'secondary'} className={cn(c.status === 'Pagada' ? 'bg-blue-600 text-white' : 'bg-slate-500 text-white')}>{c.status}</Badge>
@@ -366,4 +370,5 @@ export default function PromoterPage() {
     
 
     
+
 
