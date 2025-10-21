@@ -105,14 +105,6 @@ export function UserNav() {
                   <span>Perfil</span>
                 </Link>
               </DropdownMenuItem>
-              {canViewAdmin && (
-                <DropdownMenuItem asChild>
-                    <Link href="/settings">
-                        <Users className="mr-2 h-4 w-4" />
-                        <span>Equipo y Permisos</span>
-                    </Link>
-                </DropdownMenuItem>
-              )}
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={() => initiateSignOut(auth)}>
                 <LogOut className="mr-2 h-4 w-4" />
@@ -138,3 +130,5 @@ export function UserNav() {
     </div>
   );
 }
+
+    

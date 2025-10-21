@@ -207,16 +207,8 @@ export default function SettingsPage() {
         description="Gestiona la configuración financiera, de equipo y los recursos del sistema."
       />
       <main className="flex-1 p-4 md:p-8">
-        <Tabs defaultValue="team" className="w-full">
-            <TabsList className="grid w-full grid-cols-4">
-                <TabsTrigger value="team">
-                    <Users className="mr-2 h-4 w-4" />
-                    Miembros del Equipo
-                </TabsTrigger>
-                <TabsTrigger value="permissions">
-                    <Shield className="mr-2 h-4 w-4" />
-                    Permisos por Rol
-                </TabsTrigger>
+        <Tabs defaultValue="finances" className="w-full">
+            <TabsList className="grid w-full grid-cols-2">
                 <TabsTrigger value="finances">
                     <Landmark className="mr-2 h-4 w-4" />
                     Finanzas
@@ -226,46 +218,6 @@ export default function SettingsPage() {
                     Documentos Internos
                 </TabsTrigger>
             </TabsList>
-
-            <TabsContent value="team" className="mt-6">
-                <Card>
-                    <CardHeader>
-                        <CardTitle>Gestionar Miembros del Equipo</CardTitle>
-                        <CardDescription>Añada, edite o elimine miembros de su equipo.</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                         <div className="text-center text-muted-foreground py-12">
-                            <Users className="mx-auto h-16 w-16 mb-4 text-gray-400" />
-                            <p className="text-lg font-semibold">
-                                La gestión de miembros del equipo se mostrará aquí.
-                            </p>
-                            <p className="text-sm mt-1">
-                                Podrá asignar roles y gestionar el acceso.
-                            </p>
-                        </div>
-                    </CardContent>
-                </Card>
-            </TabsContent>
-
-             <TabsContent value="permissions" className="mt-6">
-                <Card>
-                    <CardHeader>
-                        <CardTitle>Gestionar Permisos por Rol</CardTitle>
-                        <CardDescription>Defina lo que cada rol puede hacer en la aplicación: Director, Administrador, Colaborador.</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                         <div className="text-center text-muted-foreground py-12">
-                            <Shield className="mx-auto h-16 w-16 mb-4 text-gray-400" />
-                            <p className="text-lg font-semibold">
-                                La configuración de permisos por rol aparecerá aquí.
-                            </p>
-                            <p className="text-sm mt-1">
-                                Podrá personalizar el acceso para cada rol.
-                            </p>
-                        </div>
-                    </CardContent>
-                </Card>
-            </TabsContent>
 
             <TabsContent value="finances" className="mt-6">
                 <div className="grid lg:grid-cols-2 gap-6">
@@ -488,3 +440,5 @@ export default function SettingsPage() {
     </div>
   );
 }
+
+    
