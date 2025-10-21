@@ -176,7 +176,7 @@ export default function TasksPage() {
   
   const taskSections = [ { id: "overdue-tasks", title: "Tareas Atrasadas", tasks: overdueTasks, icon: AlertTriangle, color: "text-destructive", emptyMsg: "¡Ninguna tarea atrasada! Buen trabajo." }, { id: "today-tasks", title: "Tareas Para Hoy", tasks: todayTasks, icon: CheckCircle2, color: "text-green-500", emptyMsg: "No hay tareas programadas para hoy." }, { id: "upcoming-tasks", title: "Próximas Tareas", tasks: upcomingWeekTasks, icon: ListTodo, color: "text-blue-500", emptyMsg: "No hay más tareas para esta semana." } ];
 
-  const canCreateTask = currentUser?.permissions.donna.tasks_create ?? true; 
+  const canCreateTask = currentUser?.permissions.tasks_create ?? true; 
 
   return (
     <TooltipProvider>

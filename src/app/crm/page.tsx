@@ -68,7 +68,7 @@ export default function CrmConfigurationPage() {
   const [serviceToDelete, setServiceToDelete] = useState<ServiceWorkflow | null>(null);
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
 
-  const canEditWorkflow = currentUser?.permissions.donna.crm_edit ?? true;
+  const canEditWorkflow = currentUser?.permissions.crm_edit ?? true;
 
   useEffect(() => {
     if (!serviceWorkflows) return;

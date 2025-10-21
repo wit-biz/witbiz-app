@@ -68,7 +68,7 @@ export default function WorkflowConfigurationPage() {
 
   const [isSmartUploadDialogOpen, setIsSmartUploadDialogOpen] = useState(false);
 
-  const canEditWorkflow = currentUser?.permissions.donna.crm_edit ?? true;
+  const canEditWorkflow = currentUser?.permissions.crm_edit ?? true;
 
   useEffect(() => {
     if (!serviceWorkflows) return;

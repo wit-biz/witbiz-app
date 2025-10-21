@@ -69,9 +69,9 @@ export default function ReservationsPage() {
         setToday(todayDate);
     }, []);
   
-    const canCreateReservation = currentUser?.permissions.donna.reservations_create ?? true;
-    const canEditReservation = currentUser?.permissions.donna.reservations_edit ?? true;
-    const canDeleteReservation = currentUser?.permissions.donna.reservations_delete ?? true;
+    const canCreateReservation = currentUser?.permissions.reservations_create ?? true;
+    const canEditReservation = currentUser?.permissions.reservations_edit ?? true;
+    const canDeleteReservation = currentUser?.permissions.reservations_delete ?? true;
 
 
     const handleDataChange = useCallback((e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {

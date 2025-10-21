@@ -53,9 +53,9 @@ export default function ClientsPage() {
     setClientToDelete(null);
   }, [clientToDelete, deleteClient, toast]);
 
-  const canCreateClient = currentUser?.permissions.donna.clients_create ?? true;
-  const canEditClient = currentUser?.permissions.donna.clients_edit ?? true;
-  const canDeleteClient = currentUser?.permissions.donna.clients_delete ?? true;
+  const canCreateClient = currentUser?.permissions.clients_create ?? true;
+  const canEditClient = currentUser?.permissions.clients_edit ?? true;
+  const canDeleteClient = currentUser?.permissions.clients_delete ?? true;
 
   const handleDialogClose = () => {
       setDialogState({ open: false, client: null });
