@@ -1,38 +1,25 @@
 /**
- * @fileOverview
- * This ruleset enforces a strict user-ownership model for Leads, Contacts, and Tasks,
- * ensuring that each user can only access data associated with their own user ID.
+ * @file Firestore Security Rules for WitCRM application.
+ *
+ * @description This ruleset enforces a strict user-ownership model for Leads, Contacts, and Tasks.
+ * All data is nested under /users/{userId}, ensuring that only the authenticated user can access their own data.
  *
  * Data Structure:
- * All data is nested under /users/{userId}, with Leads, Contacts, and Tasks stored in
- * subcollections of each user's document. This hierarchical structure simplifies
- * authorization and improves query performance.
+ * - /users/{userId}/leads/{leadId}: Stores lead data for a specific user.
+ * - /users/{userId}/contacts/{contactId}: Stores contact data for a specific user.
+ * - /users/{userId}/tasks/{taskId}: Stores task data for a specific user.
  *
  * Key Security Decisions:
- * - User listing is disallowed.
- * - All write operations require the user to be authenticated and the owner of the
- *   resource being modified.
- * - Read operations are restricted to the owner of the data.
- * - Flexible data shapes: The rules do not enforce the exact schema of the data being written,
- *   allowing for rapid iteration and changes to the data model.
- *
- * Denormalization for Authorization:
- * The user-ownership model avoids the need for costly `get()` calls by relying on the
- * path-based structure. The userId is already encoded in the path, so we can easily
- * validate ownership using the `request.auth.uid`.
- *
- * Structural Segregation:
- * The data is already segregated by user ID, with each user having their own subcollections
- * for Leads, Contacts, and Tasks. This eliminates the need for boolean flags or complex
- * queries to filter data based on ownership.
+ * - Users can only access data nested under their own /users/{userId} path.
+ * - Listing other user's documents is disallowed.
  */
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // =====================================
-    // 🧩 BLOQUE GLOBAL DE CONDICIONES
-    // =====================================
+    // ======================================
+    // 🧠 Validation functions
+    // ======================================
     function isSignedIn() {
       return request.auth != null;
     }
@@ -45,137 +32,109 @@ service cloud.firestore {
       return isOwner(userId) && resource != null;
     }
 
-    // =====================================
-    // 👤 BLOQUE DE USUARIOS PRINCIPALES
-    // =====================================
+    // ======================================
+    // 👤 User access
+    // ======================================
+
     /**
-     * @description Controls access to user profile documents. Only the authenticated user can read or write their own profile.
+     * @description Allows a user to read and write their own profile document.
      * @path /users/{userId}
-     * @allow (read, write) if request.auth.uid == userId
-     * @deny (read, write) if request.auth.uid != userId
+     * @allow (read, write) if request.auth.uid == {userId}
+     * @deny (read, write) if request.auth.uid != {userId}
      * @principle Enforces document ownership for user profiles.
      */
     match /users/{userId} {
-      allow get, list: if false; // No listing of users.
+      allow get: if isOwner(userId);
+      allow list: if false;
       allow create: if isOwner(userId);
       allow update: if isExistingOwner(userId);
       allow delete: if isExistingOwner(userId);
 
-      // =====================================
-      // 📚 SUBCOLECCIONES DEL USUARIO
-      // =====================================
-      /**
-       * @description Controls access to subcollections within a user's document (leads, contacts, tasks). Only the owner can read, write, or delete their own documents in these subcollections.
-       * @path /users/{userId}/{subcollection}/{docId}
-       * @allow (get, list, create, update, delete) if request.auth.uid == userId
-       * @deny (get, list, create, update, delete) if request.auth.uid != userId
-       * @principle Restricts access to a user's own data tree.
-       */
-      match /{subcollection}/{docId} {
-        // --- LECTURA SEGURA (get y list) ---
-        allow get: if isOwner(userId);
-        allow list: if isOwner(userId);
-
-        // --- CREACIÓN DE DOCUMENTOS ---
-        allow create: if isOwner(userId);
-
-        // --- ACTUALIZACIÓN ---
-        allow update: if isExistingOwner(userId);
-
-        // --- ELIMINACIÓN ---
-        allow delete: if isExistingOwner(userId);
-
-        // =====================================
-        // 🪶 SUBCOLECCIONES ANIDADAS (profundidad variable)
-        // =====================================
-        /**
-         * @description Controls access to nested subcollections within a user's data tree. Only the owner can read or write data in these nested subcollections.
-         * @path /users/{userId}/{subcollection}/{docId}/{nested=**}
-         * @allow (read, write) if request.auth.uid == userId
-         * @deny (read, write) if request.auth.uid != userId
-         * @principle Restricts access to a user's own data tree (recursive).
-         */
-        match /{nested=**} {
-          allow get: if isOwner(userId);
-          allow list: if isOwner(userId);
-          allow create: if isOwner(userId);
-          allow update: if isExistingOwner(userId);
-          allow delete: if isExistingOwner(userId);
-        }
-      }
+      // ======================================
+      // 📁 User subcollections
+      // ======================================
 
       /**
-       * @description Controls access to leads within a user's document. Only the owner can read, write, or delete their own leads.
+       * @description Allows the user to read, create, update, and delete documents in their subcollections (leads, contacts, tasks).
        * @path /users/{userId}/leads/{leadId}
-       * @allow (get, list, create, update, delete) if request.auth.uid == userId
-       * @deny (get, list, create, update, delete) if request.auth.uid != userId
-       * @principle Restricts access to a user's own leads.
+       * @allow (get, list) if request.auth.uid == {userId}
+       * @allow (create) if request.auth.uid == {userId}
+       * @allow (update, delete) if request.auth.uid == {userId}
+       * @deny (get, list, create, update, delete) if request.auth.uid != {userId}
+       * @principle Enforces document ownership for subcollections.
        */
       match /leads/{leadId} {
-          allow get: if isOwner(userId);
-          allow list: if isOwner(userId);
-          allow create: if isOwner(userId);
-          allow update: if isExistingOwner(userId);
-          allow delete: if isExistingOwner(userId);
+        allow get: if isOwner(userId);
+        allow list: if isOwner(userId);
+        allow create: if isOwner(userId);
+        allow update: if isExistingOwner(userId);
+        allow delete: if isExistingOwner(userId);
       }
 
-      /**
-       * @description Controls access to contacts within a user's document. Only the owner can read, write, or delete their own contacts.
+            /**
+       * @description Allows the user to read, create, update, and delete documents in their subcollections (leads, contacts, tasks).
        * @path /users/{userId}/contacts/{contactId}
-       * @allow (get, list, create, update, delete) if request.auth.uid == userId
-       * @deny (get, list, create, update, delete) if request.auth.uid != userId
-       * @principle Restricts access to a user's own contacts.
+       * @allow (get, list) if request.auth.uid == {userId}
+       * @allow (create) if request.auth.uid == {userId}
+       * @allow (update, delete) if request.auth.uid == {userId}
+       * @deny (get, list, create, update, delete) if request.auth.uid != {userId}
+       * @principle Enforces document ownership for subcollections.
        */
       match /contacts/{contactId} {
-          allow get: if isOwner(userId);
-          allow list: if isOwner(userId);
-          allow create: if isOwner(userId);
-          allow update: if isExistingOwner(userId);
-          allow delete: if isExistingOwner(userId);
+        allow get: if isOwner(userId);
+        allow list: if isOwner(userId);
+        allow create: if isOwner(userId);
+        allow update: if isExistingOwner(userId);
+        allow delete: if isExistingOwner(userId);
       }
 
       /**
-       * @description Controls access to tasks within a user's document. Only the owner can read, write, or delete their own tasks.
+       * @description Allows the user to read, create, update, and delete documents in their subcollections (leads, contacts, tasks).
        * @path /users/{userId}/tasks/{taskId}
-       * @allow (get, list, create, update, delete) if request.auth.uid == userId
-       * @deny (get, list, create, update, delete) if request.auth.uid != userId
-       * @principle Restricts access to a user's own tasks.
+       * @allow (get, list) if request.auth.uid == {userId}
+       * @allow (create) if request.auth.uid == {userId}
+       * @allow (update, delete) if request.auth.uid == {userId}
+       * @deny (get, list, create, update, delete) if request.auth.uid != {userId}
+       * @principle Enforces document ownership for subcollections.
        */
       match /tasks/{taskId} {
-          allow get: if isOwner(userId);
-          allow list: if isOwner(userId);
-          allow create: if isOwner(userId);
-          allow update: if isExistingOwner(userId);
-          allow delete: if isExistingOwner(userId);
+        allow get: if isOwner(userId);
+        allow list: if isOwner(userId);
+        allow create: if isOwner(userId);
+        allow update: if isExistingOwner(userId);
+        allow delete: if isExistingOwner(userId);
+      }
+
+
+      // ======================================
+      // 📂 Additional sub-levels (variable depth)
+      // ======================================
+
+      /**
+       * @description Allows the user to read and write any deeply nested documents under their user ID.
+       * @path /users/{userId}/{document=**}
+       * @allow (read, write) if request.auth.uid == {userId}
+       * @deny (read, write) if request.auth.uid != {userId}
+       * @principle Enforces document ownership for all nested data.
+       */
+      match /{document=**} {
+        allow get: if isOwner(userId);
+        allow list: if false;
+        allow create: if isOwner(userId);
+        allow update: if isExistingOwner(userId);
+        allow delete: if isExistingOwner(userId);
       }
     }
 
-    // =====================================
-    // ⚙️ BLOQUE DE CONFIGURACIÓN GENERAL
-    // =====================================
-    /**
-     * @description Allows public read access to configuration documents.  No write access is allowed.
-     * @path /config/{docId}
-     * @allow (get, list) if true
-     * @deny (create, update, delete) always
-     * @principle Public read access for configuration.
-     */
-    match /config/{docId} {
-      // Solo lectura global (si aplica a configuraciones públicas)
-      allow get, list: if true;
-      allow create: if false;
-      allow update: if false;
-      allow delete: if false;
-    }
+    // ======================================
+    // 🚫 Deny everything not declared
+    // ======================================
 
-    // =====================================
-    // 🚫 BLOQUE POR DEFECTO (DENEGAR TODO)
-    // =====================================
     /**
-     * @description Catches all unmatched paths and denies all read and write access.
+     * @description Denies all read and write access to any path not explicitly allowed above.
      * @path /{document=**}
      * @deny (read, write) always
-     * @principle Default deny for unmatched paths.
+     * @principle Implements a default-deny security policy.
      */
     match /{document=**} {
       allow get: if false;
