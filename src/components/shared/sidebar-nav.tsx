@@ -17,6 +17,7 @@ import {
   Shield,
   ChevronDown,
   User,
+  DollarSign,
   type LucideIcon,
 } from "lucide-react";
 import {
@@ -44,6 +45,7 @@ const icons: { [key: string]: LucideIcon } = {
     Scale,
     Shield,
     User,
+    DollarSign
 };
 
 export function SidebarNav() {

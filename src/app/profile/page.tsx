@@ -23,6 +23,7 @@ import {
   UserCog,
   LogOut,
   Save,
+  DollarSign,
 } from "lucide-react";
 import { ThemeToggle } from "@/components/shared/theme-toggle";
 import { PasswordInput } from "@/components/shared/PasswordInput";
