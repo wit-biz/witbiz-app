@@ -152,7 +152,7 @@ export default function PromoterPage() {
                                             {referredClients.map(client => (
                                                 <TableRow key={client.id}>
                                                     <TableCell className="font-medium">{client.name}</TableCell>
-                                                    <TableCell>{isClient ? new Date(client.joinDate).toLocaleDateString('es-ES') : ''}</TableCell>
+                                                    <TableCell>{isClient ? new Date(client.joinDate).toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: 'numeric' }) : ''}</TableCell>
                                                     <TableCell className="text-right">
                                                         <Badge variant={client.status === 'Activo' ? 'default' : 'secondary'}>{client.status}</Badge>
                                                     </TableCell>
@@ -189,7 +189,7 @@ export default function PromoterPage() {
                                                             <TableCell className="font-medium">{com.clientName}</TableCell>
                                                             <TableCell>${com.saleAmount.toFixed(2)}</TableCell>
                                                             <TableCell className="font-semibold text-green-600">${com.commission.toFixed(2)}</TableCell>
-                                                            <TableCell>{isClient ? new Date(com.paymentDate).toLocaleDateString('es-ES') : ''}</TableCell>
+                                                            <TableCell>{isClient ? new Date(com.paymentDate).toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: 'numeric' }) : ''}</TableCell>
                                                             <TableCell className="text-right">
                                                                 <Badge variant={com.status === 'Pagada' ? 'default' : 'outline'} className={com.status === 'Pagada' ? 'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300' : ''}>{com.status}</Badge>
                                                             </TableCell>
@@ -343,5 +343,7 @@ export default function PromoterPage() {
         </div>
     );
 }
+
+    
 
     
