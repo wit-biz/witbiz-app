@@ -6,6 +6,7 @@ import {
   SidebarHeader,
   SidebarContent,
   SidebarFooter,
+  SidebarSeparator,
 } from '@/components/ui/sidebar';
 import { SidebarNav } from './shared/sidebar-nav';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
@@ -75,28 +76,33 @@ export function AppSidebar() {
           <Logo />
           <h1 className="text-xl font-bold text-foreground sr-only">WitBiz</h1>
         </div>
+        <div className="p-2">
+            <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                    <Button variant="outline" size="default" className="w-full h-10 group-data-[collapsible=icon]:w-10 group-data-[collapsible=icon]:h-10 group-data-[collapsible=icon]:p-2 transition-all duration-200">
+                        <Plus className="h-5 w-5 transition-transform duration-300 group-data-[collapsible=icon]:group-hover:rotate-90" />
+                        <span className="group-data-[collapsible=icon]:hidden ml-2">Nuevo...</span>
+                    </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent side="right" align="start" className="mb-2">
+                    <DropdownMenuItem onSelect={() => setIsSmartUploadDialogOpen(true)}>
+                        <UploadCloud className="mr-2 h-4 w-4" />
+                        <span>Subir Documento</span>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onSelect={() => setIsAddClientDialogOpen(true)}>
+                        <UserPlus className="mr-2 h-4 w-4" />
+                        <span>Crear Usuario</span>
+                    </DropdownMenuItem>
+                </DropdownMenuContent>
+            </DropdownMenu>
+        </div>
+        <SidebarSeparator />
       </SidebarHeader>
       <SidebarContent>
         <SidebarNav />
       </SidebarContent>
       <SidebarFooter className="mt-auto">
-        <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon" className="w-full h-10">
-                    <Plus className="h-5 w-5"/>
-                </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent side="right" align="end" className="mb-2">
-                <DropdownMenuItem onSelect={() => setIsSmartUploadDialogOpen(true)}>
-                    <UploadCloud className="mr-2 h-4 w-4" />
-                    <span>Subir Documento</span>
-                </DropdownMenuItem>
-                <DropdownMenuItem onSelect={() => setIsAddClientDialogOpen(true)}>
-                    <UserPlus className="mr-2 h-4 w-4" />
-                    <span>Crear Usuario</span>
-                </DropdownMenuItem>
-            </DropdownMenuContent>
-        </DropdownMenu>
+        
       </SidebarFooter>
     </Sidebar>
   );
