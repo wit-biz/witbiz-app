@@ -1,7 +1,7 @@
 
 'use client';
 
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, type FormEvent } from 'react';
 import { DateRange } from 'react-day-picker';
 import { format, isWithinInterval, startOfDay } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -11,12 +11,15 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Calendar } from '@/components/ui/calendar';
 import { Badge } from '@/components/ui/badge';
-import { LogOut, Users, CircleDollarSign, BookText, Download, BarChart } from 'lucide-react';
+import { LogOut, Users, CircleDollarSign, BookText, Download, BarChart, User, Save, Lock } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { Logo } from '@/components/shared/logo';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import { ChartsTab } from '@/components/shared/ChartsTab';
+import { Label } from '@/components/ui/label';
+import { Input } from '@/components/ui/input';
+import { PasswordInput } from '@/components/shared/PasswordInput';
 
 // --- Mock Data ---
 const referredClients = [
@@ -302,11 +305,57 @@ function ResourcesView() {
     );
 }
 
+function ProfileView() {
+    const { toast } = useToast();
+
+    const handlePasswordChange = (e: React.FormEvent<HTMLFormElement>) => {
+        e.preventDefault();
+        toast({
+            title: "Contraseña Actualizada",
+            description: "Tu contraseña ha sido cambiada exitosamente (simulación).",
+        });
+    };
+
+    return (
+        <Card className="max-w-2xl mx-auto">
+            <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                    <Lock className="h-5 w-5 text-accent" /> Cambiar Contraseña
+                </CardTitle>
+                <CardDescription>
+                    Para mayor seguridad, te recomendamos usar una contraseña única.
+                </CardDescription>
+            </CardHeader>
+            <CardContent>
+                <form onSubmit={handlePasswordChange} className="space-y-4">
+                    <div>
+                        <Label htmlFor="currentPassword">Contraseña Actual</Label>
+                        <PasswordInput id="currentPassword" placeholder="••••••••" />
+                    </div>
+                    <div>
+                        <Label htmlFor="newPassword">Nueva Contraseña</Label>
+                        <PasswordInput id="newPassword" placeholder="••••••••" />
+                    </div>
+                    <div>
+                        <Label htmlFor="confirmNewPassword">Confirmar Nueva Contraseña</Label>
+                        <PasswordInput id="confirmNewPassword" placeholder="••••••••" />
+                    </div>
+                    <Button type="submit">
+                        <Save className="mr-2 h-4 w-4" />
+                        Guardar Cambios
+                    </Button>
+                </form>
+            </CardContent>
+        </Card>
+    );
+}
+
 const navItems = [
     { id: 'clients', label: 'Clientes', icon: Users, component: ClientsView },
     { id: 'commissions', label: 'Comisiones', icon: CircleDollarSign, component: CommissionsView },
     { id: 'charts', label: 'Gráficos', icon: BarChart, component: ChartsTab },
     { id: 'resources', label: 'Recursos', icon: BookText, component: ResourcesView },
+    { id: 'profile', label: 'Perfil', icon: User, component: ProfileView },
 ];
 
 export default function PromoterPage() {
@@ -361,19 +410,5 @@ export default function PromoterPage() {
         </div>
     );
 }
-
-    
-
-
-
-
-    
-
-    
-
-
-
-
-    
 
     

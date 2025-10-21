@@ -27,6 +27,7 @@ const PasswordInput = forwardRef<HTMLInputElement, InputProps>(
           className="absolute top-0 right-0 h-full px-3 py-2 hover:bg-transparent"
           disabled={disabled}
           onClick={() => setShowPassword((prev) => !prev)}
+          aria-label={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
         >
           {showPassword && !disabled ? (
             <EyeOff className="h-4 w-4" aria-hidden="true" />
@@ -44,3 +45,5 @@ const PasswordInput = forwardRef<HTMLInputElement, InputProps>(
 PasswordInput.displayName = "PasswordInput";
 
 export { PasswordInput };
+
+    
