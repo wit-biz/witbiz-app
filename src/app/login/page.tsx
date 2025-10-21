@@ -133,11 +133,8 @@ export default function LoginPage() {
               </Button>
             </form>
           </Form>
-          <div className="mt-4 text-center text-sm">
-            ¿No tienes una cuenta?{' '}
-            <Link href="/register" className="underline">
-              Regístrate
-            </Link>
+          <div className="mt-4 text-center text-sm text-muted-foreground">
+            Crearemos una página sin contraseña para los promotores.
           </div>
         </CardContent>
       </Card>
