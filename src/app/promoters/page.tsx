@@ -5,10 +5,10 @@ import { Button } from '@/components/ui/button';
 import { useAuth } from '@/firebase';
 import { signOut } from 'firebase/auth';
 import { useRouter } from 'next/navigation';
-import { LogOut, Loader2 } from 'lucide-react';
+import { LogOut, Loader2, Users, CircleDollarSign, Download } from 'lucide-react';
 import { useState } from 'react';
-import { Header } from '@/components/header';
 import { Logo } from '@/components/shared/logo';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 export default function PromoterPage() {
     const auth = useAuth();
@@ -41,10 +41,43 @@ export default function PromoterPage() {
                         <h1 className="text-3xl font-bold tracking-tight">Panel de Promotores</h1>
                         <p className="text-muted-foreground">Bienvenido a su espacio exclusivo.</p>
                     </div>
-                    {/* Promoter-specific content will go here */}
-                     <div className="text-center text-muted-foreground py-10 border border-dashed rounded-lg">
-                        <p>Contenido para promotores próximamente.</p>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <Card>
+                            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                                <CardTitle className="text-sm font-medium">Clientes</CardTitle>
+                                <Users className="h-4 w-4 text-muted-foreground" />
+                            </CardHeader>
+                            <CardContent>
+                                <p className="text-xs text-muted-foreground">
+                                    Consulte los clientes que ha referido.
+                                </p>
+                            </CardContent>
+                        </Card>
+                        <Card>
+                            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                                <CardTitle className="text-sm font-medium">Comisiones</CardTitle>
+                                <CircleDollarSign className="h-4 w-4 text-muted-foreground" />
+                            </CardHeader>
+                            <CardContent>
+                                <p className="text-xs text-muted-foreground">
+                                    Vea el estado de sus comisiones generadas.
+                                </p>
+                            </CardContent>
+                        </Card>
+                        <Card>
+                            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                                <CardTitle className="text-sm font-medium">Descargas</CardTitle>
+                                <Download className="h-4 w-4 text-muted-foreground" />
+                            </CardHeader>
+                            <CardContent>
+                                <p className="text-xs text-muted-foreground">
+                                    Acceda a material de marketing y recursos.
+                                </p>
+                            </CardContent>
+                        </Card>
                     </div>
+
                 </div>
             </main>
         </div>
