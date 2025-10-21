@@ -22,7 +22,7 @@ import Link from "next/link";
 const userAvatar = PlaceHolderImages.find((img) => img.id === "user-avatar");
 
 const UserMenuIcon = () => (
-    <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor" className="user-nav-glow h-6 w-6">
+    <svg width="24" height="24" viewBox="0 0 24 24" className="user-nav-glow h-6 w-6">
         <circle cx="12" cy="6" r="1.5" />
         <circle cx="12" cy="12" r="1.5" />
         <circle cx="12" cy="18" r="1.5" />
