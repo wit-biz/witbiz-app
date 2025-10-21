@@ -119,10 +119,10 @@ export default function PromoterPage() {
     };
 
     const commissionsForSelectedDate = useMemo(() => {
-        if (!selectedDate) return [];
+        if (!selectedDate || !isClient) return [];
         const selectedDayString = format(selectedDate, 'yyyy-MM-dd');
         return commissions.filter(c => c.paymentDate === selectedDayString);
-    }, [selectedDate]);
+    }, [selectedDate, isClient]);
 
 
     return (
@@ -241,7 +241,10 @@ export default function PromoterPage() {
                                                                 <p className="font-semibold">{c.clientName}</p>
                                                                 <p className="text-sm text-muted-foreground">${c.commission.toFixed(2)}</p>
                                                             </div>
-                                                            <Badge variant={c.status === 'Pagada' ? 'default' : 'secondary'} className={cn(c.status === 'Pagada' && 'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300')}>{c.status}</Badge>
+                                                            <Badge variant={c.status === 'Pagada' ? 'default' : 'secondary'} className={cn(
+                                                                c.status === 'Pagada' && 'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300',
+                                                                c.status === 'Pendiente' && 'bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-300'
+                                                            )}>{c.status}</Badge>
                                                         </li>
                                                     ))}
                                                 </ul>
@@ -278,7 +281,10 @@ export default function PromoterPage() {
                                                     <TableCell className="font-semibold">${c.commission.toFixed(2)}</TableCell>
                                                     <TableCell>{isClient ? format(new Date(c.paymentDate.replace(/-/g, '/')), 'PPP', { locale: es }) : ''}</TableCell>
                                                     <TableCell className="text-right">
-                                                        <Badge variant={c.status === 'Pagada' ? 'default' : 'secondary'}  className={cn(c.status === 'Pagada' && 'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300')}>{c.status}</Badge>
+                                                        <Badge variant={c.status === 'Pagada' ? 'default' : 'secondary'}  className={cn(
+                                                            c.status === 'Pagada' && 'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300',
+                                                            c.status === 'Pendiente' && 'bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-300'
+                                                        )}>{c.status}</Badge>
                                                     </TableCell>
                                                 </TableRow>
                                             ))}
@@ -377,3 +383,5 @@ export default function PromoterPage() {
         </div>
     );
 }
+
+    
