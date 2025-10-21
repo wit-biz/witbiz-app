@@ -153,5 +153,4 @@ export interface NavItem {
   icon: LucideIcon | string;
   exactMatch?: boolean;
   requiredPermission: keyof AppPermissions;
-  subItems?: NavItem[];
 }
