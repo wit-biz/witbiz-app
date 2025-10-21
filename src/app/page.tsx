@@ -232,7 +232,7 @@ export default function InicioPage() {
             <CardDescription>Etapas clave en el ciclo de vida del Cliente y búsqueda rápida.</CardDescription>
         </CardHeader>
         <CardContent className="pt-0 space-y-4">
-            <div className="relative">
+            <div className="relative max-w-sm">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
                     value={searchTermDashboard}
