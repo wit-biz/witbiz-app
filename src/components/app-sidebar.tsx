@@ -63,7 +63,7 @@ export function AppSidebar() {
   return (
     <Sidebar>
       <SidebarHeader>
-        <div className="flex items-center gap-2.5">
+        <div className="flex items-center justify-center gap-2.5">
           <Logo />
           <h1 className="text-xl font-bold text-foreground sr-only">WitBiz</h1>
         </div>
