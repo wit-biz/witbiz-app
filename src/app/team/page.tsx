@@ -26,6 +26,8 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
+import { useCRMData } from "@/contexts/CRMDataContext";
+
 
 const allPermissions: { key: keyof AppPermissions; label: string }[] = [
     { key: "dashboard", label: "Ver Dashboard" },
@@ -45,6 +47,7 @@ const allPermissions: { key: keyof AppPermissions; label: string }[] = [
     { key: "crm_edit", label: "Editar Flujos CRM" },
     { key: "audit_view", label: "Ver Auditoría" },
     { key: "admin_view", label: "Ver Administración/Finanzas" },
+    { key: "team_invite", label: "Invitar Miembros" },
 ];
 
 
@@ -62,7 +65,7 @@ const initialRoles = [
             dashboard: true, clients_view: true, clients_create: true, clients_edit: true, clients_delete: true,
             tasks_view: true, tasks_create: true, tasks_edit: true, tasks_delete: true,
             reservations_view: true, reservations_create: true, reservations_edit: true, reservations_delete: true,
-            crm_view: true, crm_edit: true, audit_view: true, admin_view: true,
+            crm_view: true, crm_edit: true, audit_view: true, admin_view: true, team_invite: true,
         }
     },
     { 
@@ -72,7 +75,7 @@ const initialRoles = [
             dashboard: true, clients_view: true, clients_create: true, clients_edit: true, clients_delete: true,
             tasks_view: true, tasks_create: true, tasks_edit: true, tasks_delete: true,
             reservations_view: true, reservations_create: true, reservations_edit: false, reservations_delete: false,
-            crm_view: true, crm_edit: true, audit_view: false, admin_view: true,
+            crm_view: true, crm_edit: true, audit_view: false, admin_view: true, team_invite: true,
         }
     },
     { 
@@ -82,7 +85,7 @@ const initialRoles = [
             dashboard: true, clients_view: true, clients_create: false, clients_edit: false, clients_delete: false,
             tasks_view: true, tasks_create: true, tasks_edit: true, tasks_delete: false,
             reservations_view: true, reservations_create: true, reservations_edit: false, reservations_delete: false,
-            crm_view: true, crm_edit: false, audit_view: false, admin_view: false,
+            crm_view: true, crm_edit: false, audit_view: false, admin_view: false, team_invite: false,
         }
     },
     { 
@@ -92,7 +95,7 @@ const initialRoles = [
             dashboard: false, clients_view: false, clients_create: false, clients_edit: false, clients_delete: false,
             tasks_view: false, tasks_create: false, tasks_edit: false, tasks_delete: false,
             reservations_view: false, reservations_create: false, reservations_edit: false, reservations_delete: false,
-            crm_view: false, crm_edit: false, audit_view: false, admin_view: false,
+            crm_view: false, crm_edit: false, audit_view: false, admin_view: false, team_invite: false,
         }
     },
 ];
@@ -101,6 +104,9 @@ const initialRoles = [
 export default function TeamPage() {
     const [isInviteDialogOpen, setIsInviteDialogOpen] = useState(false);
     const [roles, setRoles] = useState(initialRoles);
+    const { currentUser } = useCRMData();
+
+    const canInvite = currentUser?.permissions?.team_invite ?? false;
 
     const sortedTeamMembers = useMemo(() => {
         const roleOrder = {
@@ -156,10 +162,12 @@ export default function TeamPage() {
                             Usuarios con acceso a la plataforma.
                         </CardDescription>
                     </div>
-                    <Button size="sm" onClick={() => setIsInviteDialogOpen(true)}>
-                        <PlusCircle className="mr-2 h-4 w-4" />
-                        Invitar Miembro
-                    </Button>
+                    {canInvite && (
+                        <Button size="sm" onClick={() => setIsInviteDialogOpen(true)}>
+                            <PlusCircle className="mr-2 h-4 w-4" />
+                            Invitar Miembro
+                        </Button>
+                    )}
                 </CardHeader>
                 <CardContent>
                     <Table>

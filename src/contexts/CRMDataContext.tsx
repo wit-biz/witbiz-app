@@ -129,7 +129,8 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
                   reservations_create: true,
                   reservations_edit: true,
                   reservations_delete: true,
-                  crm_edit: true
+                  crm_edit: true,
+                  team_invite: true,
                 },
             });
         } else {

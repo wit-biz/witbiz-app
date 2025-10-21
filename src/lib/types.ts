@@ -113,6 +113,7 @@ export type AppPermissions = {
     audit_view: boolean;
     admin_view: boolean;
     dashboard: boolean;
+    team_invite: boolean;
 }
 
 export type UserRole = {
