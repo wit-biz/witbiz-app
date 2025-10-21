@@ -1,7 +1,7 @@
 
 "use client";
 
-import React, { useState, useCallback, useMemo, type ChangeEvent, useEffect } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -15,34 +15,33 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Loader2, UploadCloud, File, AlertTriangle, Wand2, X } from 'lucide-react';
+import { Loader2, UploadCloud, File, X } from 'lucide-react';
 import { useDropzone } from 'react-dropzone';
 import { useCRMData, type DocumentType, type Client } from '@/contexts/CRMDataContext';
-import { useGlobalNotification } from '@/contexts/NotificationContext';
-import { useDialogs } from '@/contexts/DialogsContext';
+import { useToast } from '@/hooks/use-toast';
 
 const documentTypes: DocumentType[] = ["Contrato", "Factura", "Propuesta", "Informe", "Otro"];
 
 interface SmartDocumentUploadDialogProps {
+  isOpen: boolean;
+  onOpenChange: (isOpen: boolean) => void;
   onDocumentUploaded?: (docId: string) => void;
   onClientAdded?: (client: Client) => void;
   preselectedClientId?: string;
-  preselectedClientName?: string;
 }
 
 export function SmartDocumentUploadDialog({
+  isOpen,
+  onOpenChange,
   onDocumentUploaded,
   onClientAdded,
   preselectedClientId,
-  preselectedClientName,
 }: SmartDocumentUploadDialogProps) {
   const { clients, addClient, addDocument } = useCRMData();
-  const { showNotification } = useGlobalNotification();
-  const { isSmartUploadDialogOpen, setIsSmartUploadDialogOpen } = useDialogs();
+  const { toast } = useToast();
 
 
   const [file, setFile] = useState<File | null>(null);
-  const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedClientId, setSelectedClientId] = useState<string>('');
   const [documentType, setDocumentType] = useState<DocumentType | 'Otro'>('Otro');
@@ -53,7 +52,6 @@ export function SmartDocumentUploadDialog({
 
   const resetState = useCallback(() => {
     setFile(null);
-    setIsAnalyzing(false);
     setIsSubmitting(false);
     setSelectedClientId(preselectedClientId || '');
     setDocumentType('Otro');
@@ -62,18 +60,18 @@ export function SmartDocumentUploadDialog({
     setNewClientName('');
   }, [preselectedClientId]);
 
-  const handleOpenChange = (open: boolean) => {
+  const handleDialogChange = (open: boolean) => {
     if (!open) {
       resetState();
     }
-    setIsSmartUploadDialogOpen(open);
+    onOpenChange(open);
   };
   
   useEffect(() => {
-      if (isSmartUploadDialogOpen && preselectedClientId) {
+      if (isOpen && preselectedClientId) {
           setSelectedClientId(preselectedClientId);
       }
-  }, [isSmartUploadDialogOpen, preselectedClientId]);
+  }, [isOpen, preselectedClientId]);
 
   const onDrop = useCallback(async (acceptedFiles: File[]) => {
     const droppedFile = acceptedFiles[0];
@@ -93,7 +91,7 @@ export function SmartDocumentUploadDialog({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!file || (!selectedClientId && !isNewClient) || (isNewClient && !newClientName.trim()) || !finalDocumentType.trim()) {
-      showNotification('error', 'Faltan datos', 'Por favor, complete todos los campos requeridos.');
+      toast({ variant: "destructive", title: 'Faltan datos', description: 'Por favor, complete todos los campos requeridos.' });
       return;
     }
 
@@ -106,11 +104,11 @@ export function SmartDocumentUploadDialog({
             owner: '',
             category: 'General',
         });
-        if (newClient && typeof newClient !== 'boolean') {
+        if (newClient) {
             finalClientId = newClient.id;
             onClientAdded?.(newClient);
         } else {
-            showNotification('error', 'Error al crear usuario', 'No se pudo crear el nuevo usuario.');
+            toast({ variant: 'destructive', title: 'Error al crear usuario', description: 'No se pudo crear el nuevo usuario.' });
             setIsSubmitting(false);
             return;
         }
@@ -123,8 +121,9 @@ export function SmartDocumentUploadDialog({
             clientId: finalClientId,
         }, file);
         if (newDoc) {
+            toast({ title: 'Documento subido', description: `${file.name} ha sido subido correctamente.` });
             onDocumentUploaded?.(newDoc.id);
-            handleOpenChange(false);
+            handleDialogChange(false);
         }
     }
 
@@ -143,7 +142,7 @@ export function SmartDocumentUploadDialog({
 
 
   return (
-    <Dialog open={isSmartUploadDialogOpen} onOpenChange={handleOpenChange}>
+    <Dialog open={isOpen} onOpenChange={handleDialogChange}>
       <DialogContent className="sm:max-w-lg">
         <form onSubmit={handleSubmit}>
           <DialogHeader>
@@ -169,15 +168,8 @@ export function SmartDocumentUploadDialog({
                 <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setFile(null)}><X className="h-4 w-4" /></Button>
               </div>
             )}
-
-            {isAnalyzing && (
-              <div className="flex items-center justify-center text-sm text-muted-foreground">
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Analizando documento...
-              </div>
-            )}
             
-
-            {file && !isAnalyzing && (
+            {file && (
               <div className="space-y-4 pt-4 border-t">
                 <div>
                   <Label htmlFor="client-selector">Asociar a Usuario</Label>
@@ -244,7 +236,7 @@ export function SmartDocumentUploadDialog({
             <DialogClose asChild>
               <Button type="button" variant="outline" disabled={isSubmitting}>Cancelar</Button>
             </DialogClose>
-            <Button type="submit" disabled={!file || isAnalyzing || isSubmitting}>
+            <Button type="submit" disabled={!file || isSubmitting}>
               {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <UploadCloud className="mr-2 h-4 w-4"/>}
               Subir y Guardar
             </Button>
@@ -254,5 +246,3 @@ export function SmartDocumentUploadDialog({
     </Dialog>
   );
 }
-
-    

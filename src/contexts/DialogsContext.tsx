@@ -4,8 +4,6 @@
 import React, { createContext, useContext, useState, useMemo, type ReactNode } from 'react';
 
 interface DialogsContextType {
-  isAddClientDialogOpen: boolean;
-  setIsAddClientDialogOpen: (isOpen: boolean) => void;
   isSmartUploadDialogOpen: boolean;
   setIsSmartUploadDialogOpen: (isOpen: boolean) => void;
 }
@@ -13,15 +11,12 @@ interface DialogsContextType {
 const DialogsContext = createContext<DialogsContextType | undefined>(undefined);
 
 export function DialogsProvider({ children }: { children: ReactNode }) {
-  const [isAddClientDialogOpen, setIsAddClientDialogOpen] = useState(false);
   const [isSmartUploadDialogOpen, setIsSmartUploadDialogOpen] = useState(false);
 
   const value = useMemo(() => ({
-    isAddClientDialogOpen,
-    setIsAddClientDialogOpen,
     isSmartUploadDialogOpen,
     setIsSmartUploadDialogOpen,
-  }), [isAddClientDialogOpen, isSmartUploadDialogOpen]);
+  }), [isSmartUploadDialogOpen]);
 
   return (
     <DialogsContext.Provider value={value}>

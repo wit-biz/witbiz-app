@@ -68,7 +68,7 @@ const Logo = () => (
 
 
 export function AppSidebar() {
-  const { setIsAddClientDialogOpen, setIsSmartUploadDialogOpen } = useDialogs();
+  const { setIsSmartUploadDialogOpen } = useDialogs();
 
   return (
     <Sidebar>
@@ -97,10 +97,11 @@ export function AppSidebar() {
                         <UploadCloud className="mr-2 h-4 w-4" />
                         <span>Subir Documento</span>
                     </DropdownMenuItem>
-                    <DropdownMenuItem onSelect={() => setIsAddClientDialogOpen(true)}>
+                    {/* The AddEditClientDialog will be opened from the contacts page */}
+                    {/* <DropdownMenuItem onSelect={() => {}}>
                         <UserPlus className="mr-2 h-4 w-4" />
                         <span>Crear Usuario</span>
-                    </DropdownMenuItem>
+                    </DropdownMenuItem> */}
                 </DropdownMenuContent>
             </DropdownMenu>
         </div>
