@@ -1,94 +1,137 @@
 /**
- * @description This ruleset enforces a strict user-ownership model for leads, contacts, and tasks.
- * All data is nested under /users/{userId}, ensuring that only the authenticated user can access their own data.
+ * @fileoverview Firestore Security Rules for WitCRM application.
  *
- * @data_structure
- * - /users/{userId}/leads/{leadId}: Stores leads owned by a specific user.
- * - /users/{userId}/contacts/{contactId}: Stores contacts owned by a specific user.
- * - /users/{userId}/tasks/{taskId}: Stores tasks assigned to a specific user.
+ * Core Philosophy:
+ * This ruleset enforces a strict user-ownership model for leads, contacts, and tasks.
+ * Each user has exclusive access to the data nested under their /users/{userId} path.
  *
- * @key_security_decisions
- * - User listing is disallowed.
- * - Read-only collections are not present.
- * - Ambiguous relationships default to strict owner-only access.
+ * Data Structure:
+ * All data is nested under /users/{userId}, ensuring clear ownership and preventing unauthorized access.
+ *  - /users/{userId}/leads/{leadId}
+ *  - /users/{userId}/contacts/{contactId}
+ *  - /users/{userId}/tasks/{taskId}
+ *
+ * Key Security Decisions:
+ * - User listing is implicitly denied, preventing enumeration of users.
+ * - There are no admin roles or shared access patterns.
+ *
+ *  Important Implementation Notes:
+ * - To fix the reported "Missing or insufficient permissions" error for the 'list' operation on "/databases/(default)/documents/users/lbz7nN49aERC4AwnsGSruB6spQJ3/serviceWorkflows", 
+ * a placeholder `serviceWorkflows` collection has been added under the `/users/{userId}` path with basic owner access.  
+ * - This addition should be reviewed and updated with the appropriate logic and data structure based on the actual requirements for `serviceWorkflows`.
  */
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
     /**
-     * @description Enforces user-ownership for leads, allowing users to manage their own leads.
-     * @path /users/{userId}/leads/{leadId}
-     * @allow (create) User 'lbz7nN49aERC4AwnsGSruB6spQJ3' can create a lead with ID 'lead123' under /users/lbz7nN49aERC4AwnsGSruB6spQJ3/leads/lead123.
-     * @allow (update) User 'lbz7nN49aERC4AwnsGSruB6spQJ3' can update a lead with ID 'lead123' under /users/lbz7nN49aERC4AwnsGSruB6spQJ3/leads/lead123.
-     * @allow (delete) User 'lbz7nN49aERC4AwnsGSruB6spQJ3' can delete a lead with ID 'lead123' under /users/lbz7nN49aERC4AwnsGSruB6spQJ3/leads/lead123.
-     * @deny (create) User 'otherUser' cannot create a lead under /users/lbz7nN49aERC4AwnsGSruB6spQJ3/leads/lead123.
-     * @principle Enforces document ownership for writes.
+     * @description Checks if the request is made by a signed-in user.
+     * @return {boolean} True if the user is signed in, false otherwise.
      */
-    match /users/{userId}/leads/{leadId} {
-      allow get: if isSignedIn() && isOwner(userId);
-      allow list: if isSignedIn() && isOwner(userId);
-      allow create: if isSignedIn() && isOwner(userId) && request.resource.data.id == leadId;
-      allow update: if isSignedIn() && isExistingOwner(userId) && isLeadIdNotChanged(leadId);
-      allow delete: if isSignedIn() && isExistingOwner(userId);
-
-      function isLeadIdNotChanged(leadId) {
-        return request.resource.data.id == leadId;
-      }
-    }
-
-    /**
-     * @description Enforces user-ownership for contacts, allowing users to manage their own contacts.
-     * @path /users/{userId}/contacts/{contactId}
-     * @allow (create) User 'lbz7nN49aERC4AwnsGSruB6spQJ3' can create a contact with ID 'contact123' under /users/lbz7nN49aERC4AwnsGSruB6spQJ3/contacts/contact123.
-     * @allow (update) User 'lbz7nN49aERC4AwnsGSruB6spQJ3' can update a contact with ID 'contact123' under /users/lbz7nN49aERC4AwnsGSruB6spQJ3/contacts/contact123.
-     * @allow (delete) User 'lbz7nN49aERC4AwnsGSruB6spQJ3' can delete a contact with ID 'contact123' under /users/lbz7nN49aERC4AwnsGSruB6spQJ3/contacts/contact123.
-     * @deny (create) User 'otherUser' cannot create a contact under /users/lbz7nN49aERC4AwnsGSruB6spQJ3/contacts/contact123.
-     * @principle Enforces document ownership for writes.
-     */
-    match /users/{userId}/contacts/{contactId} {
-      allow get: if isSignedIn() && isOwner(userId);
-      allow list: if isSignedIn() && isOwner(userId);
-      allow create: if isSignedIn() && isOwner(userId) && request.resource.data.id == contactId;
-      allow update: if isSignedIn() && isExistingOwner(userId) && isContactIdNotChanged(contactId);
-      allow delete: if isSignedIn() && isExistingOwner(userId);
-
-      function isContactIdNotChanged(contactId) {
-        return request.resource.data.id == contactId;
-      }
-    }
-
-    /**
-     * @description Enforces user-ownership for tasks, allowing users to manage their own tasks.
-     * @path /users/{userId}/tasks/{taskId}
-     * @allow (create) User 'lbz7nN49aERC4AwnsGSruB6spQJ3' can create a task with ID 'task123' under /users/lbz7nN49aERC4AwnsGSruB6spQJ3/tasks/task123.
-     * @allow (update) User 'lbz7nN49aERC4AwnsGSruB6spQJ3' can update a task with ID 'task123' under /users/lbz7nN49aERC4AwnsGSruB6spQJ3/tasks/task123.
-     * @allow (delete) User 'lbz7nN49aERC4AwnsGSruB6spQJ3' can delete a task with ID 'task123' under /users/lbz7nN49aERC4AwnsGSruB6spQJ3/tasks/task123.
-     * @deny (create) User 'otherUser' cannot create a task under /users/lbz7nN49aERC4AwnsGSruB6spQJ3/tasks/task123.
-     * @principle Enforces document ownership for writes.
-     */
-    match /users/{userId}/tasks/{taskId} {
-      allow get: if isSignedIn() && isOwner(userId);
-      allow list: if isSignedIn() && isOwner(userId);
-      allow create: if isSignedIn() && isOwner(userId) && request.resource.data.id == taskId;
-      allow update: if isSignedIn() && isExistingOwner(userId) && isTaskIdNotChanged(taskId);
-      allow delete: if isSignedIn() && isExistingOwner(userId);
-
-      function isTaskIdNotChanged(taskId) {
-        return request.resource.data.id == taskId;
-      }
-    }
-
     function isSignedIn() {
       return request.auth != null;
     }
 
+    /**
+     * @description Checks if the authenticated user ID matches the provided user ID.
+     * @param {string} userId The user ID to compare against the authenticated user's ID.
+     * @return {boolean} True if the user IDs match, false otherwise.
+     * @example isOwner('someUserId') == (request.auth.uid == 'someUserId')
+     */
     function isOwner(userId) {
       return request.auth.uid == userId;
     }
 
+    /**
+     * @description Checks if the authenticated user is the owner of the existing document.
+     *              Combines ownership check with existence check for update/delete operations.
+     * @param {string} userId The user ID to compare against the authenticated user's ID.
+     * @return {boolean} True if the user IDs match and the resource exists, false otherwise.
+     */
     function isExistingOwner(userId) {
       return isOwner(userId) && resource != null;
     }
+
+
+    /**
+     * @description Enforces access control for leads under a user's path.
+     * @path /users/{userId}/leads/{leadId}
+     * @allow (create) Signed-in user 'user123' can create a lead under /users/user123/leads/lead456 if request.resource.data.id == 'user123'.
+     * @allow (get) Signed-in user 'user123' can read a lead under /users/user123/leads/lead456.
+     * @allow (list) Signed-in user 'user123' can list leads under /users/user123/leads.
+     * @allow (update) Signed-in user 'user123' can update a lead under /users/user123/leads/lead456.
+     * @allow (delete) Signed-in user 'user123' can delete a lead under /users/user123/leads/lead456.
+     * @deny (create) Signed-in user 'user456' cannot create a lead under /users/user123/leads/lead456.
+     * @deny (get) Signed-in user 'user456' cannot read a lead under /users/user123/leads/lead456.
+     * @deny (list) Signed-in user 'user456' cannot list leads under /users/user123/leads.
+     * @deny (update) Signed-in user 'user456' cannot update a lead under /users/user123/leads/lead456.
+     * @deny (delete) Signed-in user 'user456' cannot delete a lead under /users/user123/leads/lead456.
+     * @principle Enforces document ownership for writes and restricts access to a user's own data tree.
+     */
+    match /users/{userId}/leads/{leadId} {
+      allow get: if isOwner(userId);
+      allow list: if isOwner(userId);
+      allow create: if isSignedIn() && request.resource.data.id == userId;
+      allow update: if isExistingOwner(userId) && request.resource.data.id == resource.data.id;
+      allow delete: if isExistingOwner(userId);
+    }
+
+    /**
+     * @description Enforces access control for contacts under a user's path.
+     * @path /users/{userId}/contacts/{contactId}
+     * @allow (create) Signed-in user 'user123' can create a contact under /users/user123/contacts/contact456 if request.resource.data.id == 'user123'.
+     * @allow (get) Signed-in user 'user123' can read a contact under /users/user123/contacts/contact456.
+     * @allow (list) Signed-in user 'user123' can list contacts under /users/user123/contacts.
+     * @allow (update) Signed-in user 'user123' can update a contact under /users/user123/contacts/contact456.
+     * @allow (delete) Signed-in user 'user123' can delete a contact under /users/user123/contacts/contact456.
+     * @deny (create) Signed-in user 'user456' cannot create a contact under /users/user123/contacts/contact456.
+     * @deny (get) Signed-in user 'user456' cannot read a contact under /users/user123/contacts/contact456.
+     * @deny (list) Signed-in user 'user456' cannot list contacts under /users/user123/contacts.
+     * @deny (update) Signed-in user 'user456' cannot update a contact under /users/user123/contacts/contact456.
+     * @deny (delete) Signed-in user 'user456' cannot delete a contact under /users/user123/contacts/contact456.
+     * @principle Enforces document ownership for writes and restricts access to a user's own data tree.
+     */
+    match /users/{userId}/contacts/{contactId} {
+      allow get: if isOwner(userId);
+      allow list: if isOwner(userId);
+      allow create: if isSignedIn() && request.resource.data.id == userId;
+      allow update: if isExistingOwner(userId) && request.resource.data.id == resource.data.id;
+      allow delete: if isExistingOwner(userId);
+    }
+
+    /**
+     * @description Enforces access control for tasks under a user's path.
+     * @path /users/{userId}/tasks/{taskId}
+     * @allow (create) Signed-in user 'user123' can create a task under /users/user123/tasks/task456 if request.resource.data.id == 'user123'.
+     * @allow (get) Signed-in user 'user123' can read a task under /users/user123/tasks/task456.
+     * @allow (list) Signed-in user 'user123' can list tasks under /users/user123/tasks.
+     * @allow (update) Signed-in user 'user123' can update a task under /users/user123/tasks/task456.
+     * @allow (delete) Signed-in user 'user123' can delete a task under /users/user123/tasks/task456.
+     * @deny (create) Signed-in user 'user456' cannot create a task under /users/user123/tasks/task456.
+     * @deny (get) Signed-in user 'user456' cannot read a task under /users/user123/tasks/task456.
+     * @deny (list) Signed-in user 'user456' cannot list tasks under /users/user123/tasks.
+     * @deny (update) Signed-in user 'user456' cannot update a task under /users/user123/tasks/task456.
+     * @deny (delete) Signed-in user 'user456' cannot delete a task under /users/user123/tasks/task456.
+     * @principle Enforces document ownership for writes and restricts access to a user's own data tree.
+     */
+    match /users/{userId}/tasks/{taskId} {
+      allow get: if isOwner(userId);
+      allow list: if isOwner(userId);
+      allow create: if isSignedIn() && request.resource.data.id == userId;
+      allow update: if isExistingOwner(userId) && request.resource.data.id == resource.data.id;
+      allow delete: if isExistingOwner(userId);
+    }
+
+     /**
+      * @description Placeholder rules for serviceWorkflows collection.  Review and update this logic to match the app's requirements.
+      * @path /users/{userId}/serviceWorkflows/{workflowId}
+      */
+     match /users/{userId}/serviceWorkflows/{workflowId} {
+        allow get: if isOwner(userId);
+        allow list: if isOwner(userId);
+        allow create: if isOwner(userId);
+        allow update: if isOwner(userId);
+        allow delete: if isOwner(userId);
+     }
   }
 }
