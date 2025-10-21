@@ -7,6 +7,7 @@ import { Toaster } from '@/components/ui/toaster';
 import { TasksProvider } from '@/contexts/TasksContext';
 import { CRMDataProvider } from '@/contexts/CRMDataContext';
 import { GlobalNotificationProvider } from '@/contexts/NotificationContext';
+import { UserNav } from '@/components/shared/user-nav';
 
 export const metadata: Metadata = {
   title: 'WitBiz',
@@ -35,6 +36,7 @@ export default function RootLayout({
               <SidebarProvider>
                 <AppSidebar />
                 <SidebarInset>
+                  <UserNav />
                   {children}
                 </SidebarInset>
               </SidebarProvider>

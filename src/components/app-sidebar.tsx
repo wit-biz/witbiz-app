@@ -6,26 +6,8 @@ import {
   SidebarHeader,
   SidebarContent,
   SidebarFooter,
-  SidebarMenuButton,
 } from '@/components/ui/sidebar';
-import {
-  UserCircle,
-  LifeBuoy,
-  LogOut,
-} from 'lucide-react';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from './ui/dropdown-menu';
-import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
-import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { SidebarNav } from './shared/sidebar-nav';
-
-const userAvatar = PlaceHolderImages.find((img) => img.id === 'user-avatar');
 
 const Logo = () => (
     <svg
@@ -82,37 +64,7 @@ export function AppSidebar() {
         <SidebarNav />
       </SidebarContent>
       <SidebarFooter>
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <SidebarMenuButton
-              className="w-full justify-start"
-              tooltip="Perfil de Usuario"
-            >
-              <Avatar className="h-8 w-8">
-                {userAvatar && <AvatarImage src={userAvatar.imageUrl} data-ai-hint={userAvatar.imageHint}/>}
-                <AvatarFallback>U</AvatarFallback>
-              </Avatar>
-              <span className="text-sm font-medium">Perfil de Usuario</span>
-            </SidebarMenuButton>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent side="right" align="start" sideOffset={12}>
-            <DropdownMenuLabel>Mi Cuenta</DropdownMenuLabel>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem>
-              <UserCircle className="mr-2 h-4 w-4" />
-              <span>Perfil</span>
-            </DropdownMenuItem>
-            <DropdownMenuItem>
-              <LifeBuoy className="mr-2 h-4 w-4" />
-              <span>Soporte</span>
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem>
-              <LogOut className="mr-2 h-4 w-4" />
-              <span>Cerrar Sesión</span>
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+        {/* User profile dropdown has been moved to UserNav component */}
       </SidebarFooter>
     </Sidebar>
   );
