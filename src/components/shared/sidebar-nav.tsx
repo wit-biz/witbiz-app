@@ -61,13 +61,19 @@ export function SidebarNav() {
   }, [isMobile, setOpenMobile]);
 
   const userHasPermission = (permissionKey: NavItem['requiredPermission']) => {
-    if (!currentUser?.permissions?.donna) return false;
+    // While loading, assume permissions to avoid empty menu
+    if (!currentUser) return true;
+    
+    if (!currentUser.permissions?.donna) return false;
     if (permissionKey === 'dashboard') return true;
     
     if (permissionKey in currentUser.permissions.donna) {
-        return currentUser.permissions.donna[permissionKey as keyof typeof currentUser.permissions.donna];
+        const permissionValue = currentUser.permissions.donna[permissionKey as keyof typeof currentUser.permissions.donna];
+        // If permission is explicitly set, use its value. Otherwise, default to true during loading/initial state.
+        return permissionValue !== undefined ? permissionValue : true;
     }
-    return false;
+    // Default to true if not specified, can be changed to false for a more restrictive approach
+    return true;
   };
 
   const renderNavItem = (item: NavItem) => {
