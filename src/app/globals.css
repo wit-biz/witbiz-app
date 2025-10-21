@@ -313,14 +313,14 @@
 
   /* Futuristic button styles */
   .btn-futuristic {
-    @apply inline-flex items-center justify-center relative p-px font-semibold leading-6 text-foreground no-underline bg-background shadow-lg shadow-zinc-900/10 dark:shadow-zinc-900/30 rounded-lg;
+    @apply inline-flex items-center justify-center relative p-px font-semibold leading-6 text-foreground no-underline bg-transparent shadow-zinc-900/10 dark:shadow-zinc-900/30 rounded-lg;
     @apply transition-all duration-300 ease-in-out;
   }
 
   .btn-futuristic::before {
     content: '';
     @apply absolute -top-px -left-px -right-px -bottom-px rounded-lg;
-    background: conic-gradient(from 180deg at 50% 50%, hsl(var(--primary) / 0.8), hsl(var(--accent) / 0.8), hsl(var(--primary) / 0.8));
+    background: conic-gradient(from 180deg at 50% 50%, hsl(var(--primary) / 0.3), hsl(var(--accent) / 0.3), hsl(var(--primary) / 0.3));
     z-index: 0;
   }
   
@@ -337,6 +337,6 @@
   }
 
   .btn-futuristic:hover::before {
-    filter: blur(1px);
+    filter: blur(2px);
   }
 }

@@ -28,17 +28,11 @@ export function UserNav() {
     <div className="fixed top-4 right-4 z-50">
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            className={cn(
-              "h-9 w-9 rounded-full bg-background/60 backdrop-blur-sm transition-all hover:bg-muted/80",
-              "shadow-sm dark:shadow-lg dark:shadow-primary/10",
-              "hover:shadow-md hover:dark:shadow-primary/20"
-              )}
-            >
-             <MoreVertical className="h-5 w-5" />
-          </Button>
+          <button className="btn-futuristic rounded-full p-px">
+            <span className="flex h-9 w-9 items-center justify-center rounded-full bg-background/80 px-0 py-0 hover:bg-muted/90 backdrop-blur-sm">
+                <MoreVertical className="h-5 w-5" />
+            </span>
+          </button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
           <DropdownMenuLabel>
