@@ -11,7 +11,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Calendar } from '@/components/ui/calendar';
 import { Badge } from '@/components/ui/badge';
-import { LogOut, Users, CircleDollarSign, BookText, Download, BarChart, User, Save, Lock } from 'lucide-react';
+import { LogOut, Users, CircleDollarSign, BookText, Download, BarChart, User, Save, Lock, Mail, UserCircle } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { Logo } from '@/components/shared/logo';
 import { cn } from '@/lib/utils';
@@ -20,6 +20,7 @@ import { ChartsTab } from '@/components/shared/ChartsTab';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { PasswordInput } from '@/components/shared/PasswordInput';
+import { Separator } from '@/components/ui/separator';
 
 // --- Mock Data ---
 const referredClients = [
@@ -319,6 +320,27 @@ function ProfileView() {
     return (
         <Card className="max-w-2xl mx-auto">
             <CardHeader>
+                <CardTitle>Mi Perfil de Promotor</CardTitle>
+                <CardDescription>
+                    Información de tu cuenta y gestión de seguridad.
+                </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+                 <div className="space-y-2">
+                    <Label>Nombre Completo</Label>
+                    <Input value="Mariana Fernandez" disabled />
+                </div>
+                 <div className="space-y-2">
+                    <Label>Rol</Label>
+                    <Input value="Promotor" disabled />
+                </div>
+                 <div className="space-y-2">
+                    <Label>Correo Electrónico</Label>
+                    <Input value="mariana.f@email.com" disabled />
+                </div>
+            </CardContent>
+            <Separator />
+            <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                     <Lock className="h-5 w-5 text-accent" /> Cambiar Contraseña
                 </CardTitle>
@@ -355,7 +377,6 @@ const navItems = [
     { id: 'commissions', label: 'Comisiones', icon: CircleDollarSign, component: CommissionsView },
     { id: 'charts', label: 'Gráficos', icon: BarChart, component: ChartsTab },
     { id: 'resources', label: 'Recursos', icon: BookText, component: ResourcesView },
-    { id: 'profile', label: 'Perfil', icon: User, component: ProfileView },
 ];
 
 export default function PromoterPage() {
@@ -366,7 +387,7 @@ export default function PromoterPage() {
         router.push('/promoter-login');
     };
 
-    const ActiveComponent = navItems.find(item => item.id === activeView)?.component || (() => null);
+    const ActiveComponent = navItems.find(item => item.id === activeView)?.component || ProfileView;
 
     return (
         <div className="flex min-h-screen bg-muted/40">
@@ -375,7 +396,7 @@ export default function PromoterPage() {
                     <Logo />
                 </div>
                 <nav className="flex flex-col gap-2">
-                    {navItems.filter(item => item.id !== 'profile').map(item => {
+                    {navItems.map(item => {
                         const Icon = item.icon;
                         return (
                             <Button
@@ -409,7 +430,7 @@ export default function PromoterPage() {
             <div className="flex-1 flex flex-col">
                 <header className="sticky top-0 z-10 flex h-16 shrink-0 items-center justify-between gap-4 border-b bg-background/80 px-4 backdrop-blur-sm sm:px-6">
                     <h1 className="text-xl font-semibold">
-                        {navItems.find(item => item.id === activeView)?.label || 'Panel de Promotor'}
+                        {activeView === 'profile' ? 'Mi Perfil' : navItems.find(item => item.id === activeView)?.label || 'Panel de Promotor'}
                     </h1>
                 </header>
                 <main className="flex-1 p-4 md:p-8 overflow-y-auto">
