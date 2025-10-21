@@ -76,12 +76,12 @@ export function AppSidebar() {
           <Logo />
           <h1 className="text-xl font-bold text-foreground sr-only">WitBiz</h1>
         </div>
-        <div className="p-2">
+        <div className="p-2 flex justify-center">
             <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                    <Button variant="outline" size="default" className="w-full h-10 group-data-[collapsible=icon]:w-10 group-data-[collapsible=icon]:h-10 group-data-[collapsible=icon]:p-2 transition-all duration-200">
-                        <Plus className="h-5 w-5 transition-transform duration-300 group-data-[collapsible=icon]:group-hover:rotate-90" />
-                        <span className="group-data-[collapsible=icon]:hidden ml-2">Nuevo...</span>
+                    <Button variant="default" size="icon" className="rounded-full h-10 w-10 transition-all duration-300 group-data-[collapsible=icon]:h-10 group-data-[collapsible=icon]:w-10 group-data-[collapsible=icon]:p-2 group-data-[collapsible=icon]:group-hover:rotate-90">
+                        <Plus className="h-5 w-5" />
+                        <span className="sr-only">Nuevo...</span>
                     </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent side="right" align="start" className="mb-2">
