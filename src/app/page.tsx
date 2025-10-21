@@ -139,13 +139,7 @@ export default function InicioPage() {
     setSearchTermDashboard(client.name);
     setHighlightedStageId(client.currentWorkflowStageId || null);
     setIsPopoverOpenDashboard(false);
-
-    const stage = workflowStagesForDisplay.find(ws => ws.id === client.currentWorkflowStageId);
-    if (stage) {
-      setSelectedStage(stage);
-      setIsStageClientsDialogOpen(true);
-    }
-  }, [workflowStagesForDisplay]);
+  }, []);
 
   const todaysTasks = useMemo(() => {
     if (!tasks || !currentClientDateForDashboard) return [];
