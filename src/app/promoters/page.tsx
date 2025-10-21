@@ -17,19 +17,34 @@ import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Tooltip } from "recha
 import { ChartContainer, ChartTooltip, ChartTooltipContent, type ChartConfig } from "@/components/ui/chart"
 
 
+// Helper to get dates for the current month
+const getCurrentMonthDate = (day: number) => {
+    const date = new Date();
+    date.setDate(day);
+    return date.toISOString().split('T')[0];
+};
+
+const getLastMonthDate = (day: number) => {
+    const date = new Date();
+    date.setMonth(date.getMonth() - 1);
+    date.setDate(day);
+    return date.toISOString().split('T')[0];
+}
+
+
 // Mock Data
 const referredClients = [
-    { id: 'c1', name: 'Innovate Inc.', joinDate: '2024-05-15', status: 'Activo' },
-    { id: 'c2', name: 'Synergy Corp.', joinDate: '2024-05-20', status: 'Activo' },
-    { id: 'c3', name: 'Solutions LLC', joinDate: '2024-06-01', status: 'En Proceso' },
-    { id: 'c4', name: 'Global Net', joinDate: '2024-06-10', status: 'Activo' },
+    { id: 'c1', name: 'Innovate Inc.', joinDate: getLastMonthDate(15), status: 'Activo' },
+    { id: 'c2', name: 'Synergy Corp.', joinDate: getLastMonthDate(20), status: 'Activo' },
+    { id: 'c3', name: 'Solutions LLC', joinDate: getCurrentMonthDate(1), status: 'En Proceso' },
+    { id: 'c4', name: 'Global Net', joinDate: getCurrentMonthDate(5), status: 'Activo' },
 ];
 
 const commissions = [
-    { id: 'com1', clientName: 'Innovate Inc.', saleAmount: 500, commission: 50, paymentDate: '2024-06-02', status: 'Pagada' },
-    { id: 'com2', clientName: 'Synergy Corp.', saleAmount: 1200, commission: 120, paymentDate: '2024-06-16', status: 'Pagada' },
-    { id: 'com3', clientName: 'Global Net', saleAmount: 800, commission: 80, paymentDate: '2024-07-02', status: 'Pendiente' },
-    { id: 'com4', clientName: 'Innovate Inc.', saleAmount: 300, commission: 30, paymentDate: '2024-07-02', status: 'Pendiente' },
+    { id: 'com1', clientName: 'Innovate Inc.', saleAmount: 500, commission: 50, paymentDate: getLastMonthDate(28), status: 'Pagada' },
+    { id: 'com2', clientName: 'Synergy Corp.', saleAmount: 1200, commission: 120, paymentDate: getCurrentMonthDate(2), status: 'Pagada' },
+    { id: 'com3', clientName: 'Global Net', saleAmount: 800, commission: 80, paymentDate: getCurrentMonthDate(15), status: 'Pendiente' },
+    { id: 'com4', clientName: 'Innovate Inc.', saleAmount: 300, commission: 30, paymentDate: getCurrentMonthDate(25), status: 'Pendiente' },
 ];
 
 const resources = [
