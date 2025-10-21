@@ -164,8 +164,8 @@ export default function PromoterPage() {
                         <TabsList className="grid w-full grid-cols-4 mb-6">
                             <TabsTrigger value="clients"><Users className="mr-2 h-4 w-4"/>Mis Clientes</TabsTrigger>
                             <TabsTrigger value="commissions"><CircleDollarSign className="mr-2 h-4 w-4"/>Mis Comisiones</TabsTrigger>
-                            <TabsTrigger value="resources"><Download className="mr-2 h-4 w-4"/>Recursos</TabsTrigger>
                             <TabsTrigger value="stats"><TrendingUp className="mr-2 h-4 w-4"/>Estadísticas</TabsTrigger>
+                            <TabsTrigger value="resources"><Download className="mr-2 h-4 w-4"/>Recursos</TabsTrigger>
                         </TabsList>
                         
                         <TabsContent value="clients">
@@ -235,11 +235,11 @@ export default function PromoterPage() {
                                                 <style>
                                                 {`
                                                     .day-paid { 
-                                                        background-color: hsl(var(--primary) / 0.2) !important;
+                                                        background-color: hsl(210 100% 56% / 0.2) !important;
                                                         font-weight: bold;
                                                     }
                                                     .day-pending { 
-                                                        background-color: hsl(210 100% 56% / 0.2) !important; 
+                                                        background-color: hsl(0 0% 50% / 0.2) !important;
                                                     }
                                                     .rdp-day_today:not([disabled]):not(.day-paid):not(.day-pending) > .rdp-button {
                                                         font-weight: normal;
@@ -288,8 +288,8 @@ export default function PromoterPage() {
                                                     <TableCell>{isClient ? format(new Date(c.paymentDate.replace(/-/g, '/')), 'PPP', { locale: es }) : ''}</TableCell>
                                                     <TableCell className="text-right">
                                                         <Badge variant={c.status === 'Pagada' ? 'default' : 'secondary'}  className={cn(
-                                                            c.status === 'Pagada' && 'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300',
-                                                            c.status === 'Pendiente' && 'bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-300'
+                                                            c.status === 'Pagada' && 'bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-300',
+                                                            c.status === 'Pendiente' && 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'
                                                         )}>{c.status}</Badge>
                                                     </TableCell>
                                                 </TableRow>
