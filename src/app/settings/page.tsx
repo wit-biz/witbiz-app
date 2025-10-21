@@ -33,32 +33,13 @@ import {
   UserCog,
   LogOut,
   Save,
-  Eye,
-  EyeOff,
   Edit,
   Trash2,
   PlusCircle,
 } from "lucide-react";
 import { useState } from "react";
 import { ThemeToggle } from "@/components/shared/theme-toggle";
-
-const PasswordInput = ({ id, placeholder }: { id: string, placeholder: string }) => {
-    const [showPassword, setShowPassword] = useState(false);
-    return (
-        <div className="relative">
-            <Input type={showPassword ? "text" : "password"} id={id} placeholder={placeholder} />
-            <Button
-                type="button"
-                variant="ghost"
-                size="icon"
-                className="absolute top-1/2 right-2 -translate-y-1/2 h-7 w-7 text-muted-foreground"
-                onClick={() => setShowPassword(!showPassword)}
-            >
-                {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-            </Button>
-        </div>
-    );
-};
+import { PasswordInput } from "@/components/shared/PasswordInput";
 
 const teamMembers = [
     { name: "Admin User", email: "admin@witbiz.com", role: "Administrador", status: "Activo" },
@@ -164,7 +145,7 @@ export default function SettingsPage() {
                             </div>
                             <div>
                                 <Label htmlFor="currentPasswordEmail">Contraseña Actual</Label>
-                                <PasswordInput id="currentPasswordEmail" placeholder="••••••••" />
+                                <PasswordInput id="currentPasswordEmail" placeholder="••••••••" autoComplete="current-password" />
                             </div>
                             <Button><Save className="mr-2 h-4 w-4" />Guardar Correo</Button>
                         </CardContent>
@@ -179,15 +160,15 @@ export default function SettingsPage() {
                         <div className="grid sm:grid-cols-3 gap-4">
                             <div>
                                 <Label htmlFor="currentPassword">Contraseña Actual</Label>
-                                <PasswordInput id="currentPassword" placeholder="••••••••" />
+                                <PasswordInput id="currentPassword" placeholder="••••••••" autoComplete="current-password" />
                             </div>
                             <div>
                                 <Label htmlFor="newPassword">Nueva Contraseña</Label>
-                                <PasswordInput id="newPassword" placeholder="••••••••" />
+                                <PasswordInput id="newPassword" placeholder="••••••••" autoComplete="new-password"/>
                             </div>
                             <div>
                                 <Label htmlFor="confirmNewPassword">Confirmar Nueva Contraseña</Label>
-                                <PasswordInput id="confirmNewPassword" placeholder="••••••••" />
+                                <PasswordInput id="confirmNewPassword" placeholder="••••••••" autoComplete="new-password"/>
                             </div>
                         </div>
                         <Button><Save className="mr-2 h-4 w-4" />Guardar Contraseña</Button>

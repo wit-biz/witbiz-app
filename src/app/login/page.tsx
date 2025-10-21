@@ -19,6 +19,7 @@ import { useAuth } from "@/firebase";
 import { signInWithEmailAndPassword } from "firebase/auth";
 import { useToast } from "@/hooks/use-toast";
 import { Logo } from "@/components/shared/logo";
+import { PasswordInput } from "@/components/shared/PasswordInput";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("saidsaigar@gmail.com");
@@ -77,13 +78,13 @@ export default function LoginPage() {
               </div>
               <div className="grid gap-2">
                 <Label htmlFor="password">Contraseña</Label>
-                <Input
+                <PasswordInput
                   id="password"
-                  type="password"
                   required
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   disabled={isLoading}
+                  autoComplete="current-password"
                 />
               </div>
               <Button type="submit" className="w-full" disabled={isLoading}>
