@@ -22,6 +22,7 @@ import {
   Banknote,
   UploadCloud,
   FileText,
+  Download,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -64,6 +65,13 @@ type Payable = {
     receiptUploaded: boolean;
 };
 
+type InternalDocument = {
+    id: string;
+    name: string;
+    type: string;
+    uploadDate: string;
+};
+
 
 export default function SettingsPage() {
     const router = useRouter();
@@ -78,6 +86,12 @@ export default function SettingsPage() {
     
     const [generalTransactions, setGeneralTransactions] = useState<Transaction[]>([]);
     const [newGeneralTransaction, setNewGeneralTransaction] = useState({ description: '', amount: '', type: 'income' as 'income' | 'expense' });
+
+    const [internalDocs, setInternalDocs] = useState<InternalDocument[]>([
+        { id: 'doc-int-1', name: 'Acta Constitutiva.pdf', type: 'Legal', uploadDate: '2023-01-15' },
+        { id: 'doc-int-2', name: 'Registro de Marca.pdf', type: 'Propiedad Intelectual', uploadDate: '2023-03-22' },
+    ]);
+    const [docToDelete, setDocToDelete] = useState<InternalDocument | null>(null);
 
     const [isSmartUploadDialogOpen, setIsSmartUploadDialogOpen] = useState(false);
 
@@ -151,11 +165,9 @@ export default function SettingsPage() {
     };
 
     const handleUploadReceipt = (payableId: string) => {
-        // This is a simulation. In a real app, this would open a file dialog.
         setIsSmartUploadDialogOpen(true);
-        // We will mark it as uploaded on successful upload via the dialog's callback.
-        // For now, let's assume success for the simulation.
-        // setPayables(payables.map(p => p.id === payableId ? { ...p, receiptUploaded: true } : p));
+        // This is a simulation. The dialog needs to be wired up to a specific callback
+        // that receives the payableId to link the uploaded document.
     };
     
     const handleDeleteReceipt = (payableId: string) => {
@@ -179,6 +191,13 @@ export default function SettingsPage() {
         }
     };
 
+    const handleDeleteInternalDoc = () => {
+        if (docToDelete) {
+            setInternalDocs(internalDocs.filter(doc => doc.id !== docToDelete.id));
+            setDocToDelete(null);
+        }
+    };
+
   return (
     <div className="flex flex-col min-h-screen">
       <Header
@@ -187,7 +206,7 @@ export default function SettingsPage() {
       />
       <main className="flex-1 p-4 md:p-8">
         <Tabs defaultValue="banks" className="w-full">
-            <TabsList className="grid w-full grid-cols-2">
+            <TabsList className="grid w-full grid-cols-3">
                 <TabsTrigger value="banks">
                     <Landmark className="mr-2 h-4 w-4" />
                     Gestión de Bancos
@@ -195,6 +214,10 @@ export default function SettingsPage() {
                 <TabsTrigger value="expenses">
                     <Receipt className="mr-2 h-4 w-4" />
                     Registro de Gastos
+                </TabsTrigger>
+                 <TabsTrigger value="documents">
+                    <FileText className="mr-2 h-4 w-4" />
+                    Documentos Internos
                 </TabsTrigger>
             </TabsList>
 
@@ -343,6 +366,44 @@ export default function SettingsPage() {
                     </Card>
                </div>
             </TabsContent>
+            
+            <TabsContent value="documents" className="mt-6">
+                 <Card>
+                    <CardHeader>
+                        <CardTitle>Archivo de Documentos Internos</CardTitle>
+                        <CardDescription>Gestione los documentos legales y administrativos de la empresa.</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="flex justify-end mb-4">
+                            <Button onClick={() => setIsSmartUploadDialogOpen(true)}>
+                                <UploadCloud className="mr-2 h-4 w-4" />
+                                Subir Nuevo Documento
+                            </Button>
+                        </div>
+                        <div className="border rounded-md">
+                           <ul className="divide-y">
+                                {internalDocs.length > 0 ? internalDocs.map(doc => (
+                                    <li key={doc.id} className="flex items-center justify-between p-3">
+                                        <div className="flex items-center gap-3">
+                                            <FileText className="h-5 w-5 text-muted-foreground"/>
+                                            <div>
+                                                <p className="font-medium">{doc.name}</p>
+                                                <p className="text-sm text-muted-foreground">Subido: {doc.uploadDate} | Tipo: {doc.type}</p>
+                                            </div>
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            <Button variant="outline" size="sm"><Download className="mr-2 h-4 w-4"/>Descargar</Button>
+                                            <Button variant="ghost" size="icon" className="text-destructive" onClick={() => setDocToDelete(doc)}><Trash2 className="h-4 w-4"/></Button>
+                                        </div>
+                                    </li>
+                                )) : (
+                                     <li className="text-center text-muted-foreground p-8">No hay documentos internos.</li>
+                                )}
+                           </ul>
+                        </div>
+                    </CardContent>
+                </Card>
+            </TabsContent>
         </Tabs>
 
         <AlertDialog open={!!bankToDelete} onOpenChange={() => setBankToDelete(null)}>
@@ -356,6 +417,21 @@ export default function SettingsPage() {
                 <AlertDialogFooter>
                     <AlertDialogCancel>Cancelar</AlertDialogCancel>
                     <AlertDialogAction onClick={handleDeleteBank} className="bg-destructive hover:bg-destructive/90">Eliminar</AlertDialogAction>
+                </AlertDialogFooter>
+            </AlertDialogContent>
+        </AlertDialog>
+
+        <AlertDialog open={!!docToDelete} onOpenChange={() => setDocToDelete(null)}>
+            <AlertDialogContent>
+                <AlertDialogHeader>
+                    <AlertDialogTitle>¿Confirmar Eliminación?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                        Esta acción no se puede deshacer. ¿Está seguro de que desea eliminar el documento "{docToDelete?.name}"?
+                    </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                    <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                    <AlertDialogAction onClick={handleDeleteInternalDoc} className="bg-destructive hover:bg-destructive/90">Eliminar</AlertDialogAction>
                 </AlertDialogFooter>
             </AlertDialogContent>
         </AlertDialog>
