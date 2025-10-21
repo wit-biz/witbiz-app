@@ -22,12 +22,18 @@ function AppContent({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
 
   useEffect(() => {
-    if (!isUserLoading && !user && pathname !== '/login' && pathname !== '/register') {
-      router.push('/login');
+    if (!isUserLoading) {
+      const isAuthPage = pathname === '/login' || pathname === '/register';
+      if (!user && !isAuthPage) {
+        router.push('/login');
+      }
+      if (user && isAuthPage) {
+        router.push('/');
+      }
     }
   }, [isUserLoading, user, router, pathname]);
 
-  if (isUserLoading && pathname !== '/login' && pathname !== '/register') {
+  if (isUserLoading) {
     return (
       <div className="flex h-screen w-full items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin" />
@@ -35,23 +41,31 @@ function AppContent({ children }: { children: React.ReactNode }) {
     );
   }
 
-  if (!user && pathname !== '/login' && pathname !== '/register') {
-    return null; // O un componente de carga mientras redirige
+  const isAuthPage = pathname === '/login' || pathname === '/register';
+
+  if (isAuthPage) {
+    if (user) {
+      // Muestra un loader mientras redirige para evitar un parpadeo
+      return (
+        <div className="flex h-screen w-full items-center justify-center">
+          <Loader2 className="h-8 w-8 animate-spin" />
+        </div>
+      );
+    }
+    // Si no hay usuario y es una página de autenticación, muestra el contenido
+    return <>{children}</>;
   }
 
-  if ((pathname === '/login' || pathname === '/register') && user) {
-     router.push('/');
-     return (
+  if (!user) {
+    // Muestra un loader mientras redirige a login
+    return (
         <div className="flex h-screen w-full items-center justify-center">
             <Loader2 className="h-8 w-8 animate-spin" />
         </div>
-     )
+    );
   }
 
-  if ((pathname === '/login' || pathname === '/register') && !user) {
-    return <>{children}</>
-  }
-
+  // Si hay usuario y no es una página de autenticación, muestra el layout principal
   return (
     <SidebarProvider>
       <AppSidebar />
