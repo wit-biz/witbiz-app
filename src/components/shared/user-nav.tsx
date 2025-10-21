@@ -17,6 +17,7 @@ import {
   LogOut,
   Loader2,
   LogIn,
+  Settings,
 } from "lucide-react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
@@ -97,7 +98,7 @@ export function UserNav() {
               </DropdownMenuLabel>
               <DropdownMenuSeparator />
               <DropdownMenuItem asChild>
-                <Link href="/settings">
+                <Link href="/profile">
                   <UserCircle className="mr-2 h-4 w-4" />
                   <span>Perfil</span>
                 </Link>
