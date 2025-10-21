@@ -71,7 +71,7 @@ export default function SettingsPage() {
   return (
     <div className="flex flex-col min-h-screen">
       <Header
-        title="Mi Perfil y Configuración"
+        title="Administración"
         description="Gestiona tu información y las preferencias del sistema."
       />
       <main className="flex-1 p-4 md:p-8">

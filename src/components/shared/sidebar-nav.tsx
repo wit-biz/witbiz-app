@@ -9,6 +9,12 @@ import {
   ListTodo,
   Calendar,
   Settings,
+  Workflow,
+  ArrowRightLeft,
+  FileText,
+  Calculator,
+  Scale,
+  Shield,
   type LucideIcon,
 } from "lucide-react";
 import {
@@ -29,6 +35,12 @@ const icons: { [key: string]: LucideIcon } = {
     ListTodo,
     Calendar,
     Settings,
+    Workflow,
+    ArrowRightLeft,
+    FileText,
+    Calculator,
+    Scale,
+    Shield,
 };
 
 

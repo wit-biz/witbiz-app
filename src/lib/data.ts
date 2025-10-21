@@ -1,5 +1,5 @@
 
-import type { Client, Task, Document, Note, Reservation, WorkflowStage } from './types';
+import type { Client, Task, Document, Note, Reservation, WorkflowStage, NavItem } from './types';
 
 export const workflowStages: WorkflowStage[] = [
   { id: 'stage-1', title: 'Prospecto', order: 1, objectives: [] },
@@ -109,10 +109,15 @@ export const bookings: Reservation[] = [
     { id: 'B2', clientName: 'Synergy Corp.', date: new Date(new Date().getTime() + 1 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], clientId: '2', type: 'Cita', time: '14:30', details: 'Revisión de contrato', status: 'Confirmada' },
 ];
 
-export const navItems = [
+export const navItems: NavItem[] = [
     { href: '/', label: 'Inicio', icon: 'LayoutDashboard', exactMatch: true, requiredPermission: 'dashboard' },
+    { href: '/operations', label: 'Nueva Operación', icon: 'ArrowRightLeft', requiredPermission: 'operations_create' },
+    { href: '/quotes', label: 'Cotizaciones', icon: 'FileText', requiredPermission: 'quotes_view' },
+    { href: '/cash-management', label: 'Gestión de Caja', icon: 'Calculator', requiredPermission: 'cash_management_view' },
+    { href: '/audit', label: 'Auditoría', icon: 'Scale', requiredPermission: 'audit_view' },
     { href: '/contacts', label: 'Usuarios', icon: 'Users', requiredPermission: 'clients_view' },
     { href: '/tasks', label: 'Tareas', icon: 'ListTodo', requiredPermission: 'tasks_view' },
     { href: '/bookings', label: 'Reservaciones', icon: 'Calendar', requiredPermission: 'reservations_view' },
-    { href: '/crm', label: 'CRM', icon: 'Settings', requiredPermission: 'crm_view' },
+    { href: '/crm', label: 'CRM', icon: 'Workflow', requiredPermission: 'crm_view' },
+    { href: '/settings', label: 'Administración', icon: 'Shield', requiredPermission: 'admin_view' },
 ];
