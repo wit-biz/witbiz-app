@@ -235,10 +235,10 @@
 
   /* Styles for promoter calendar */
   .day-paid .rdp-button:not([disabled]):not([aria-selected="true"]) {
-    background-color: hsla(var(--promoter-paid-bg-raw), 0.3);
+    background-color: hsla(var(--promoter-paid-bg-raw), 0.3) !important;
   }
   .day-pending .rdp-button:not([disabled]):not([aria-selected="true"]) {
-    background-color: hsla(var(--promoter-pending-bg-raw), 0.3);
+    background-color: hsla(var(--promoter-pending-bg-raw), 0.3) !important;
   }
   
   /* Floating currency animation */
