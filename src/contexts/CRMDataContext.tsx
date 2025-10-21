@@ -17,37 +17,9 @@ import {
     type DocumentType,
     type DonnaPermissions,
 } from '@/lib/types';
-import { clients as mockClients, tasks as mockTasks, documents as mockDocs, notes as mockNotes, bookings as mockBookings, workflowStages as mockWorkflowStages } from '@/lib/data';
-
-// Datos Iniciales de Ejemplo
-const initialServiceWorkflows: ServiceWorkflow[] = [
-    {
-      id: 'sw-1',
-      name: 'Onboarding de Cliente Estándar',
-      stages: [], // No usado cuando hay sub-servicios
-      subServices: [
-        {
-          id: 'sub-1',
-          name: 'Fase de Venta',
-          stages: [
-            { id: 'stage-1', title: 'Prospecto', order: 1, objectives: [{ id: 'obj-1-1', description: 'Realizar contacto inicial', order: 1, subObjectives: [] }] },
-            { id: 'stage-2', title: 'Cualificación', order: 2, objectives: [{ id: 'obj-2-1', description: 'Completar análisis de necesidades técnicas', order: 1, subObjectives: [] }] },
-            { id: 'stage-3', title: 'Negociación', order: 3, objectives: [{ id: 'obj-3-1', description: 'Finalizar precios y términos del contrato', order: 1, requiredDocumentForCompletion: 'Contrato', subObjectives: [] }] },
-            { id: 'stage-4', title: 'Cierre', order: 4, objectives: [{ id: 'obj-4-1', description: 'Recibir contrato firmado', order: 1, subObjectives: [] }] },
-          ],
-        },
-      ],
-    },
-];
-
-const initialClients: Client[] = [
-    { id: '1', name: 'Innovate Inc.', owner: 'Tú', category: 'Tecnología', subscribedServiceIds: ['sw-1'], currentWorkflowStageId: 'stage-2', currentObjectiveId: 'obj-2-1', contactEmail: "contact@innovate.com", contactPhone: "123-456-7890", website: "innovate.com" },
-    { id: '2', name: 'Synergy Corp.', owner: 'Alex Smith', category: 'Finanzas', subscribedServiceIds: ['sw-1'], currentWorkflowStageId: 'stage-3', currentObjectiveId: 'obj-3-1', contactEmail: "contact@synergy.com", contactPhone: "123-456-7890", website: "synergy.com" },
-    { id: '3', name: 'Solutions LLC', owner: 'Tú', category: 'Salud', subscribedServiceIds: ['sw-1'], currentWorkflowStageId: 'stage-1', currentObjectiveId: 'obj-1-1', contactEmail: "contact@solutions.com", contactPhone: "123-456-7890", website: "solutions.com" },
-    { id: '4', name: 'Global Net', owner: 'Jane Doe', category: 'Logística', subscribedServiceIds: ['sw-1'], currentWorkflowStageId: 'stage-4', currentObjectiveId: 'obj-4-1', contactEmail: "contact@global.com", contactPhone: "123-456-7890", website: "global.com" },
-    { id: '5', name: 'Marketing Pro', owner: 'Tú', category: 'Marketing', subscribedServiceIds: ['sw-1'], currentWorkflowStageId: 'stage-1', currentObjectiveId: 'obj-1-1', contactEmail: "contact@marketing.com", contactPhone: "123-456-7890", website: "marketing.com" },
-];
-
+import { useUser, useCollection, useFirestore, useMemoFirebase } from '@/firebase';
+import { collection, doc, writeBatch } from 'firebase/firestore';
+import { setDocumentNonBlocking, addDocumentNonBlocking, updateDocumentNonBlocking, deleteDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 
 interface CRMContextType {
   currentUser: AuthenticatedUser | null;
@@ -60,7 +32,7 @@ interface CRMContextType {
   
   tasks: Task[];
   isLoadingTasks: boolean;
-  addTask: (newTaskData: Omit<Task, 'id'>) => Promise<Task | null>;
+  addTask: (newTaskData: Omit<Task, 'id' | 'status'>) => Promise<Task | null>;
   updateTask: (taskId: string, updates: Partial<Task>) => Promise<boolean>;
   deleteTask: (taskId: string) => Promise<boolean>;
   getTasksByClientId: (clientId: string) => Task[];
@@ -72,20 +44,20 @@ interface CRMContextType {
   deleteDocument: (documentId: string) => Promise<boolean>;
   getDocumentsByClientId: (clientId: string) => Document[];
 
-  clientNotes: Note[];
-  isLoadingClientNotes: boolean;
-  fetchClientNotes: (clientId: string) => void;
-  addClientNote: (clientId: string, text: string) => Promise<boolean>;
-  updateClientNote: (noteId: string, newText: string, clientId?: string) => Promise<boolean>;
-  deleteClientNote: (noteId: string, clientId?: string) => Promise<boolean>;
+  notes: Note[];
+  isLoadingNotes: boolean;
+  addNote: (clientId: string, text: string) => Promise<Note | null>;
+  updateNote: (noteId: string, newText: string, clientId?: string) => Promise<boolean>;
+  deleteNote: (noteId: string, clientId?: string) => Promise<boolean>;
 
   donnaReservations: Reservation[];
   isLoadingDonnaReservations: boolean;
-  addDonnaReservation: (newReservationData: Omit<Reservation, 'id'>) => Promise<boolean>;
+  addDonnaReservation: (newReservationData: Omit<Reservation, 'id'>) => Promise<Reservation | null>;
   updateDonnaReservation: (reservationId: string, updates: Partial<Reservation>) => Promise<boolean>;
   deleteDonnaReservation: (reservationId: string) => Promise<boolean>;
 
   serviceWorkflows: ServiceWorkflow[];
+  isLoadingWorkflows: boolean;
   addService: () => Promise<ServiceWorkflow | null>;
   updateService: (serviceId: string, updates: Partial<ServiceWorkflow>) => Promise<boolean>;
   deleteService: (serviceId: string) => Promise<boolean>;
@@ -106,287 +78,367 @@ const CRMContext = createContext<CRMContextType | undefined>(undefined);
 
 export function CRMDataProvider({ children }: { children: ReactNode }) {
     const { showNotification } = useGlobalNotification();
+    const { user, isUserLoading } = useUser();
+    const firestore = useFirestore();
 
-    const [currentUser, setCurrentUser] = useState<AuthenticatedUser | null>({
-        uid: 'user-123', email: 'usuario@ejemplo.com', displayName: 'Usuario de Prueba', photoURL: null,
-        permissions: { donna: { clients_create: true, clients_edit: true, clients_delete: true, clients_view: true, documents_create: true, documents_edit: true, documents_delete: true, documents_view: true, tasks_create: true, tasks_edit: true, tasks_delete: true, tasks_view: true, reservations_create: true, reservations_edit: true, reservations_delete: true, reservations_view: true, crm_edit: true, crm_view: true, reports_view: true } }
-    });
+    // This is a placeholder for a real permission system.
+    // In a real app, you'd fetch this from Firestore or custom claims.
+    const currentUser: AuthenticatedUser | null = user ? {
+        uid: user.uid,
+        email: user.email,
+        displayName: user.displayName || 'Usuario Anónimo',
+        photoURL: user.photoURL,
+        permissions: {
+            donna: {
+                clients_create: true, clients_edit: true, clients_delete: true, clients_view: true,
+                documents_create: true, documents_edit: true, documents_delete: true, documents_view: true,
+                tasks_create: true, tasks_edit: true, tasks_delete: true, tasks_view: true,
+                reservations_create: true, reservations_edit: true, reservations_delete: true, reservations_view: true,
+                crm_edit: true, crm_view: true, reports_view: true,
+                operations_create: true, quotes_view: true, cash_management_view: true, audit_view: true, admin_view: true,
+                dashboard: true,
+            }
+        }
+    } : null;
 
-    const [clients, setClients] = useState<Client[]>(initialClients);
-    const [tasks, setTasks] = useState<Task[]>(mockTasks);
-    const [documents, setDocuments] = useState<Document[]>(mockDocs);
-    const [clientNotes, setClientNotes] = useState<Note[]>(mockNotes);
-    const [donnaReservations, setDonnaReservations] = useState<Reservation[]>(mockBookings);
-    const [serviceWorkflows, setServiceWorkflows] = useState<ServiceWorkflow[]>(initialServiceWorkflows);
-    
-    const [isLoadingClients, setIsLoadingClients] = useState(false);
-    const [isLoadingTasks, setIsLoadingTasks] = useState(false);
-    const [isLoadingDocuments, setIsLoadingDocuments] = useState(false);
-    const [isLoadingClientNotes, setIsLoadingClientNotes] = useState(false);
-    const [isLoadingDonnaReservations, setIsLoadingDonnaReservations] = useState(false);
+    const clientsQuery = useMemoFirebase(() => user ? collection(firestore, 'users', user.uid, 'clients') : null, [firestore, user]);
+    const tasksQuery = useMemoFirebase(() => user ? collection(firestore, 'users', user.uid, 'tasks') : null, [firestore, user]);
+    const documentsQuery = useMemoFirebase(() => user ? collection(firestore, 'users', user.uid, 'documents') : null, [firestore, user]);
+    const notesQuery = useMemoFirebase(() => user ? collection(firestore, 'users', user.uid, 'notes') : null, [firestore, user]);
+    const reservationsQuery = useMemoFirebase(() => user ? collection(firestore, 'users', user.uid, 'bookings') : null, [firestore, user]);
+    const workflowsQuery = useMemoFirebase(() => user ? collection(firestore, 'users', user.uid, 'serviceWorkflows') : null, [firestore, user]);
 
-    // IMPLEMENTACIONES DE EJEMPLO (MOCK)
+    const { data: clients = [], isLoading: isLoadingClients } = useCollection<Client>(clientsQuery);
+    const { data: tasks = [], isLoading: isLoadingTasks } = useCollection<Task>(tasksQuery);
+    const { data: documents = [], isLoading: isLoadingDocuments } = useCollection<Document>(documentsQuery);
+    const { data: notes = [], isLoading: isLoadingNotes } = useCollection<Note>(notesQuery);
+    const { data: donnaReservations = [], isLoading: isLoadingDonnaReservations } = useCollection<Reservation>(reservationsQuery);
+    const { data: serviceWorkflows = [], isLoading: isLoadingWorkflows } = useCollection<ServiceWorkflow>(workflowsQuery);
+
+
     const addClient = async (data: Omit<Client, 'id'>) => {
-        const newClient: Client = { id: `C${Date.now()}`, ...data };
-        setClients(prev => [...prev, newClient]);
-        showNotification('success', 'Cliente añadido', `El cliente ${newClient.name} ha sido creado.`);
-        return newClient;
+        if (!user) {
+            showNotification('error', 'No autenticado', 'Debe iniciar sesión para añadir un cliente.');
+            return null;
+        }
+        const colRef = collection(firestore, 'users', user.uid, 'clients');
+        try {
+            const docRef = await addDocumentNonBlocking(colRef, data);
+            showNotification('success', 'Cliente añadido', `El cliente ${data.name} ha sido creado.`);
+            return { id: docRef.id, ...data };
+        } catch (error: any) {
+            showNotification('error', 'Error al crear cliente', error.message);
+            return null;
+        }
     };
     const updateClient = async (id: string, updates: Partial<Client>) => {
-        setClients(prev => prev.map(c => c.id === id ? {...c, ...updates} : c));
-        showNotification('success', 'Cliente actualizado', 'Los cambios han sido guardados.');
+        if (!user) return false;
+        const docRef = doc(firestore, 'users', user.uid, 'clients', id);
+        updateDocumentNonBlocking(docRef, updates);
+        showNotification('success', 'Cliente actualizado');
         return true;
-    }
+    };
     const deleteClient = async (id: string) => {
-        setClients(prev => prev.filter(c => c.id !== id));
+        if (!user) return false;
+        const docRef = doc(firestore, 'users', user.uid, 'clients', id);
+        deleteDocumentNonBlocking(docRef);
         showNotification('info', 'Cliente eliminado');
         return true;
-    }
-    const getClientById = (id: string) => clients.find(c => c.id === id);
-
-    const addTask = async (data: Omit<Task, 'id'>) => {
-        const clientName = clients.find(c => c.id === data.clientId)?.name || 'N/A';
-        const newTask: Task = { id: `T${Date.now()}`, ...data, clientName };
-        setTasks(prev => [...prev, newTask]);
-        showNotification('success', 'Tarea añadida', `La tarea "${newTask.title}" ha sido creada.`);
-        return newTask;
     };
+    const getClientById = useCallback((id: string) => clients.find(c => c.id === id), [clients]);
+
+    const addTask = async (data: Omit<Task, 'id' | 'status'>) => {
+        if (!user) {
+            showNotification('error', 'No autenticado');
+            return null;
+        }
+        const clientName = clients.find(c => c.id === data.clientId)?.name || 'N/A';
+        const newTaskData: Omit<Task, 'id'> = { ...data, status: 'Pendiente', clientName };
+        const colRef = collection(firestore, 'users', user.uid, 'tasks');
+        try {
+            const docRef = await addDocumentNonBlocking(colRef, newTaskData);
+            showNotification('success', 'Tarea añadida');
+            return { id: docRef.id, ...newTaskData };
+        } catch (error: any) {
+            showNotification('error', 'Error al añadir tarea', error.message);
+            return null;
+        }
+    };
+
     const updateTask = async (id: string, updates: Partial<Task>) => {
-        setTasks(prev => prev.map(t => t.id === id ? {...t, ...updates} : t));
+        if (!user) return false;
+        const docRef = doc(firestore, 'users', user.uid, 'tasks', id);
+        updateDocumentNonBlocking(docRef, updates);
         showNotification('success', 'Tarea actualizada');
         return true;
-    }
+    };
+
     const deleteTask = async (id: string) => {
-        setTasks(prev => prev.filter(t => t.id !== id));
+        if (!user) return false;
+        const docRef = doc(firestore, 'users', user.uid, 'tasks', id);
+        deleteDocumentNonBlocking(docRef);
         showNotification('info', 'Tarea eliminada');
         return true;
-    }
-    const getTasksByClientId = (clientId: string) => tasks.filter(t => t.clientId === clientId);
-    
-    const addDocument = async (data: Omit<Document, 'id' | 'uploadedAt' | 'downloadURL'>) => {
-        const newDoc: Document = { id: `D${Date.now()}`, uploadedAt: new Date(), downloadURL: '#', ...data };
-        setDocuments(prev => [...prev, newDoc]);
-        showNotification('success', 'Documento añadido', `El documento ${newDoc.name} ha sido subido.`);
-        return newDoc;
     };
-    const updateDocument = async (id: string, updates: Partial<Document>) => {
-        setDocuments(prev => prev.map(d => d.id === id ? {...d, ...updates} : d));
-        showNotification('success', 'Documento actualizado');
-        return true;
-    };
-    const deleteDocument = async (id: string) => {
-        setDocuments(prev => prev.filter(d => d.id !== id));
-        showNotification('info', 'Documento eliminado');
-        return true;
-    };
-    const getDocumentsByClientId = (clientId: string) => documents.filter(d => d.clientId === clientId);
 
-    const fetchClientNotes = (clientId: string) => {
-        setIsLoadingClientNotes(true);
-        setTimeout(() => {
-            setClientNotes(mockNotes.filter(n => n.clientId === clientId));
-            setIsLoadingClientNotes(false);
-        }, 300);
+    const getTasksByClientId = useCallback((clientId: string) => {
+        return tasks.filter(t => t.clientId === clientId);
+    }, [tasks]);
+
+    const addDocument = async (data: Omit<Document, 'id' | 'uploadedAt' | 'downloadURL'>) => {
+         if (!user) {
+            showNotification('error', 'No autenticado');
+            return null;
+        }
+        // In a real app, you would upload the file to Firebase Storage first and get the URL.
+        const newDocData: Omit<Document, 'id'> = { ...data, uploadedAt: new Date(), downloadURL: '#' };
+        const colRef = collection(firestore, 'users', user.uid, 'documents');
+        const docRef = await addDocumentNonBlocking(colRef, newDocData);
+        showNotification('success', 'Documento añadido');
+        return { id: docRef.id, ...newDocData };
     };
-    const addClientNote = async (clientId: string, text: string) => {
-        const newNote: Note = { id: `N${Date.now()}`, clientId, text: text, content: text, createdAt: new Date(), authorName: currentUser?.displayName || 'Usuario' };
-        setClientNotes(prev => [newNote, ...prev]);
+    
+    const updateDocument = async (id: string, updates: Partial<Document>) => {
+        if (!user) return false;
+        const docRef = doc(firestore, 'users', user.uid, 'documents', id);
+        updateDocumentNonBlocking(docRef, updates);
+        return true;
+    };
+    
+    const deleteDocument = async (id: string) => {
+        if (!user) return false;
+        const docRef = doc(firestore, 'users', user.uid, 'documents', id);
+        deleteDocumentNonBlocking(docRef);
+        return true;
+    };
+    
+    const getDocumentsByClientId = useCallback((clientId: string) => {
+        return documents.filter(d => d.clientId === clientId);
+    }, [documents]);
+    
+    const addNote = async (clientId: string, text: string) => {
+        if (!user) {
+            showNotification('error', 'No autenticado');
+            return null;
+        }
+        const newNoteData = { clientId, text, content: text, createdAt: new Date(), authorName: currentUser?.displayName || 'Usuario' };
+        const colRef = collection(firestore, 'users', user.uid, 'notes');
+        const docRef = await addDocumentNonBlocking(colRef, newNoteData);
         showNotification('success', 'Nota añadida');
+        return { id: docRef.id, ...newNoteData };
+    };
+    
+    const updateNote = async (noteId: string, newText: string, clientId?: string) => {
+        if (!user) return false;
+        const docRef = doc(firestore, 'users', user.uid, 'notes', noteId);
+        updateDocumentNonBlocking(docRef, { text: newText, content: newText, updatedAt: new Date() });
         return true;
     };
-    const updateClientNote = async (noteId: string, newText: string, clientId?: string) => {
-        setClientNotes(prev => prev.map(n => n.id === noteId ? {...n, text: newText, content: newText, updatedAt: new Date()} : n));
-        showNotification('success', 'Nota actualizada');
-        return true;
-    };
-    const deleteClientNote = async (noteId: string, clientId?: string) => {
-        setClientNotes(prev => prev.filter(n => n.id !== noteId));
-        showNotification('info', 'Nota eliminada');
+    
+    const deleteNote = async (noteId: string, clientId?: string) => {
+        if (!user) return false;
+        const docRef = doc(firestore, 'users', user.uid, 'notes', noteId);
+        deleteDocumentNonBlocking(docRef);
         return true;
     };
     
     const addDonnaReservation = async (data: Omit<Reservation, 'id'>) => {
-        const newRes: Reservation = { id: `R${Date.now()}`, ...data };
-        setDonnaReservations(prev => [...prev, newRes]);
+        if (!user) { showNotification('error', 'No autenticado'); return null; }
+        const colRef = collection(firestore, 'users', user.uid, 'bookings');
+        const docRef = await addDocumentNonBlocking(colRef, data);
         showNotification('success', 'Reservación creada');
-        return true;
+        return { id: docRef.id, ...data };
     };
+
     const updateDonnaReservation = async (id: string, updates: Partial<Reservation>) => {
-        setDonnaReservations(prev => prev.map(r => r.id === id ? {...r, ...updates} : r));
-        showNotification('success', 'Reservación actualizada');
+        if (!user) return false;
+        const docRef = doc(firestore, 'users', user.uid, 'bookings', id);
+        updateDocumentNonBlocking(docRef, updates);
         return true;
     };
+    
     const deleteDonnaReservation = async (id: string) => {
-        setDonnaReservations(prev => prev.filter(r => r.id !== id));
-        showNotification('info', 'Reservación eliminada');
+        if (!user) return false;
+        const docRef = doc(firestore, 'users', user.uid, 'bookings', id);
+        deleteDocumentNonBlocking(docRef);
         return true;
     };
-
-    // MOCKS DE FLUJOS DE TRABAJO
+    
     const addService = async () => {
-        const newService: ServiceWorkflow = { id: `sw-${Date.now()}`, name: "Nuevo Servicio (sin título)", stages: [], subServices: [] };
-        setServiceWorkflows(prev => [...prev, newService]);
-        return newService;
+        if (!user) return null;
+        const newService: Omit<ServiceWorkflow, 'id'> = { name: "Nuevo Servicio (sin título)", stages: [], subServices: [] };
+        const colRef = collection(firestore, 'users', user.uid, 'serviceWorkflows');
+        const docRef = await addDocumentNonBlocking(colRef, newService);
+        return { id: docRef.id, ...newService };
     };
+    
     const updateService = async (serviceId: string, updates: Partial<ServiceWorkflow>) => {
-        setServiceWorkflows(prev => prev.map(s => s.id === serviceId ? {...s, ...updates} : s));
+        if (!user) return false;
+        const docRef = doc(firestore, 'users', user.uid, 'serviceWorkflows', serviceId);
+        updateDocumentNonBlocking(docRef, updates);
         return true;
     };
+    
     const deleteService = async (serviceId: string) => {
-        setServiceWorkflows(prev => prev.filter(s => s.id !== serviceId));
+        if (!user) return false;
+        const docRef = doc(firestore, 'users', user.uid, 'serviceWorkflows', serviceId);
+        deleteDocumentNonBlocking(docRef);
         return true;
     };
+
     const addSubServiceToService = async (serviceId: string) => {
-        setServiceWorkflows(prev => prev.map(s => {
-            if (s.id === serviceId) {
-                const newSub: SubService = { id: `sub-${Date.now()}`, name: 'Nuevo Sub-Servicio', stages: [] };
-                return {...s, subServices: [...s.subServices, newSub] };
-            }
-            return s;
-        }));
-        return true;
-    };
-    const updateSubServiceName = async (serviceId: string, subServiceId: string, newName: string) => {
-        setServiceWorkflows(prev => prev.map(s => {
-            if (s.id === serviceId) {
-                const newSubs = s.subServices.map(sub => sub.id === subServiceId ? {...sub, name: newName} : sub);
-                return {...s, subServices: newSubs };
-            }
-            return s;
-        }));
-        return true;
-    };
-    const deleteSubServiceFromService = async (serviceId: string, subServiceId: string) => {
-        setServiceWorkflows(prev => prev.map(s => {
-            if (s.id === serviceId) {
-                return {...s, subServices: s.subServices.filter(sub => sub.id !== subServiceId)};
-            }
-            return s;
-        }));
-        return true;
-    };
-
-    const findParentSubService = (serviceId: string, subServiceId: string | null): [ServiceWorkflow | undefined, SubService | undefined] => {
+        // This is complex with subcollections. For simplicity, we'll read, update, and write the whole service doc.
         const service = serviceWorkflows.find(s => s.id === serviceId);
-        if (!service) return [undefined, undefined];
-        const subService = subServiceId ? service.subServices.find(sub => sub.id === subServiceId) : service.subServices[0];
-        return [service, subService];
+        if (!user || !service) return false;
+        const newSub: SubService = { id: `sub-${Date.now()}`, name: 'Nuevo Sub-Servicio', stages: [] };
+        const updatedSubServices = [...(service.subServices || []), newSub];
+        updateDocumentNonBlocking(doc(firestore, 'users', user.uid, 'serviceWorkflows', serviceId), { subServices: updatedSubServices });
+        return true;
     };
     
-    const addStageToSubService = async (serviceId: string, subServiceId: string | null) => {
-        setServiceWorkflows(prev => prev.map(s => {
-            if (s.id === serviceId) {
-                const newSubs = s.subServices.map(sub => {
-                    if ((subServiceId && sub.id === subServiceId) || (!subServiceId && s.subServices.indexOf(sub) === 0)) {
-                        const newStage: WorkflowStage = { id: `stage-${Date.now()}`, title: 'Nueva Etapa', order: sub.stages.length + 1, objectives: [] };
-                        return {...sub, stages: [...sub.stages, newStage] };
-                    }
-                    return sub;
-                });
-                return {...s, subServices: newSubs };
-            }
-            return s;
-        }));
-        return true;
-    };
-    const updateStageInSubService = async (serviceId: string, subServiceId: string | null, stageId: string, updates: Partial<WorkflowStage>) => {
-        setServiceWorkflows(prev => prev.map(s => {
-            if (s.id === serviceId) {
-                const newSubs = s.subServices.map(sub => {
-                    if ((subServiceId && sub.id === subServiceId) || (!subServiceId && s.subServices.indexOf(sub) === 0)) {
-                        const newStages = sub.stages.map(st => st.id === stageId ? {...st, ...updates} : st);
-                        return {...sub, stages: newStages };
-                    }
-                    return sub;
-                });
-                return {...s, subServices: newSubs };
-            }
-            return s;
-        }));
-        return true;
-    };
-    const deleteStageFromSubService = async (serviceId: string, subServiceId: string | null, stageId: string) => {
-        setServiceWorkflows(prev => prev.map(s => {
-            if (s.id === serviceId) {
-                const newSubs = s.subServices.map(sub => {
-                    if ((subServiceId && sub.id === subServiceId) || (!subServiceId && s.subServices.indexOf(sub) === 0)) {
-                        return {...sub, stages: sub.stages.filter(st => st.id !== stageId)};
-                    }
-                    return sub;
-                });
-                return {...s, subServices: newSubs };
-            }
-            return s;
-        }));
+    const updateSubServiceName = async (serviceId: string, subServiceId: string, newName: string) => {
+        const service = serviceWorkflows.find(s => s.id === serviceId);
+        if (!user || !service) return false;
+        const updatedSubServices = service.subServices.map(sub => sub.id === subServiceId ? { ...sub, name: newName } : sub);
+        updateDocumentNonBlocking(doc(firestore, 'users', user.uid, 'serviceWorkflows', serviceId), { subServices: updatedSubServices });
         return true;
     };
 
-    const addObjectiveToStage = async (serviceId: string, subServiceId: string | null, stageId: string) => {
-        setServiceWorkflows(prev => prev.map(s => {
-            if (s.id === serviceId) {
-                const newSubs = s.subServices.map(sub => {
-                    if ((subServiceId && sub.id === subServiceId) || (!subServiceId && s.subServices.indexOf(sub) === 0)) {
-                        const newStages = sub.stages.map(st => {
-                            if (st.id === stageId) {
-                                const newObj: WorkflowStageObjective = { id: `obj-${Date.now()}`, description: 'Nuevo Objetivo', order: st.objectives.length + 1, subObjectives: [] };
-                                return {...st, objectives: [...st.objectives, newObj] };
-                            }
-                            return st;
-                        });
-                        return {...sub, stages: newStages };
-                    }
-                    return sub;
-                });
-                return {...s, subServices: newSubs };
-            }
-            return s;
-        }));
-        return true;
-    };
-    const updateObjectiveInStage = async (serviceId: string, subServiceId: string | null, stageId: string, objectiveId: string, updates: Partial<WorkflowStageObjective>) => {
-        setServiceWorkflows(prev => prev.map(s => {
-            if (s.id === serviceId) {
-                const newSubs = s.subServices.map(sub => {
-                    if ((subServiceId && sub.id === subServiceId) || (!subServiceId && s.subServices.indexOf(sub) === 0)) {
-                        const newStages = sub.stages.map(st => {
-                            if (st.id === stageId) {
-                                const newObjectives = st.objectives.map(o => o.id === objectiveId ? {...o, ...updates} : o);
-                                return {...st, objectives: newObjectives };
-                            }
-                            return st;
-                        });
-                        return {...sub, stages: newStages };
-                    }
-                    return sub;
-                });
-                return {...s, subServices: newSubs };
-            }
-            return s;
-        }));
-        return true;
-    };
-    const deleteObjectiveFromStage = async (serviceId: string, subServiceId: string | null, stageId: string, objectiveId: string) => {
-        setServiceWorkflows(prev => prev.map(s => {
-            if (s.id === serviceId) {
-                const newSubs = s.subServices.map(sub => {
-                    if ((subServiceId && sub.id === subServiceId) || (!subServiceId && s.subServices.indexOf(sub) === 0)) {
-                        const newStages = sub.stages.map(st => {
-                            if (st.id === stageId) {
-                                return {...st, objectives: st.objectives.filter(o => o.id !== objectiveId) };
-                            }
-                            return st;
-                        });
-                        return {...sub, stages: newStages };
-                    }
-                    return sub;
-                });
-                return {...s, subServices: newSubs };
-            }
-            return s;
-        }));
+    const deleteSubServiceFromService = async (serviceId: string, subServiceId: string) => {
+        const service = serviceWorkflows.find(s => s.id === serviceId);
+        if (!user || !service) return false;
+        const updatedSubServices = service.subServices.filter(sub => sub.id !== subServiceId);
+        updateDocumentNonBlocking(doc(firestore, 'users', user.uid, 'serviceWorkflows', serviceId), { subServices: updatedSubServices });
         return true;
     };
     
+    const updateStagesInService = async (serviceId: string, subServiceId: string | null, newStages: WorkflowStage[]) => {
+        const service = serviceWorkflows.find(s => s.id === serviceId);
+        if (!user || !service) return false;
+        
+        let updatedSubServices;
+        if(subServiceId) {
+             updatedSubServices = service.subServices.map(sub => 
+                sub.id === subServiceId ? { ...sub, stages: newStages } : sub
+            );
+        } else if (service.subServices.length > 0) {
+            updatedSubServices = [{ ...service.subServices[0], stages: newStages }, ...service.subServices.slice(1)];
+        } else {
+            // Handle case where there are no subservices (should not happen with new logic)
+            updatedSubServices = service.subServices;
+        }
+
+        updateDocumentNonBlocking(doc(firestore, 'users', user.uid, 'serviceWorkflows', serviceId), { subServices: updatedSubServices });
+        return true;
+    };
+
+
+    const addStageToSubService = async (serviceId: string, subServiceId: string | null) => {
+        const service = serviceWorkflows.find(s => s.id === serviceId);
+        if (!user || !service) return false;
+
+        const newStage: WorkflowStage = { id: `stage-${Date.now()}`, title: 'Nueva Etapa', order: 0, objectives: [] };
+
+        let targetSubService = subServiceId ? service.subServices.find(s => s.id === subServiceId) : service.subServices[0];
+        
+        // If no subservice, create one.
+        if (!targetSubService && !subServiceId) {
+            targetSubService = { id: `sub-${Date.now()}`, name: 'General', stages: []};
+            service.subServices.push(targetSubService);
+        }
+        
+        if (targetSubService) {
+            newStage.order = targetSubService.stages.length + 1;
+            targetSubService.stages.push(newStage);
+        }
+
+        updateDocumentNonBlocking(doc(firestore, 'users', user.uid, 'serviceWorkflows', serviceId), { subServices: service.subServices });
+        return true;
+    };
+    
+    const updateStageInSubService = async (serviceId: string, subServiceId: string | null, stageId: string, updates: Partial<WorkflowStage>) => {
+        const service = serviceWorkflows.find(s => s.id === serviceId);
+        if (!user || !service) return false;
+
+        const targetSubService = subServiceId ? service.subServices.find(s => s.id === subServiceId) : service.subServices[0];
+
+        if(targetSubService) {
+            targetSubService.stages = targetSubService.stages.map(st => st.id === stageId ? { ...st, ...updates } : st);
+        }
+
+        updateDocumentNonBlocking(doc(firestore, 'users', user.uid, 'serviceWorkflows', serviceId), { subServices: service.subServices });
+        return true;
+    };
+    
+    const deleteStageFromSubService = async (serviceId: string, subServiceId: string | null, stageId: string) => {
+        const service = serviceWorkflows.find(s => s.id === serviceId);
+        if (!user || !service) return false;
+
+        const targetSubService = subServiceId ? service.subServices.find(s => s.id === subServiceId) : service.subServices[0];
+
+        if (targetSubService) {
+            targetSubService.stages = targetSubService.stages.filter(st => st.id !== stageId);
+        }
+
+        updateDocumentNonBlocking(doc(firestore, 'users', user.uid, 'serviceWorkflows', serviceId), { subServices: service.subServices });
+        return true;
+    };
+    
+    const addObjectiveToStage = async (serviceId: string, subServiceId: string | null, stageId: string) => {
+        const service = serviceWorkflows.find(s => s.id === serviceId);
+        if (!user || !service) return false;
+
+        const newObjective: WorkflowStageObjective = { id: `obj-${Date.now()}`, description: 'Nuevo Objetivo', order: 0, subObjectives: [] };
+        
+        const targetSubService = subServiceId ? service.subServices.find(s => s.id === subServiceId) : service.subServices[0];
+        
+        if (targetSubService) {
+            const targetStage = targetSubService.stages.find(st => st.id === stageId);
+            if (targetStage) {
+                newObjective.order = targetStage.objectives.length + 1;
+                targetStage.objectives.push(newObjective);
+            }
+        }
+        
+        updateDocumentNonBlocking(doc(firestore, 'users', user.uid, 'serviceWorkflows', serviceId), { subServices: service.subServices });
+        return true;
+    };
+
+    const updateObjectiveInStage = async (serviceId: string, subServiceId: string | null, stageId: string, objectiveId: string, updates: Partial<WorkflowStageObjective>) => {
+        const service = serviceWorkflows.find(s => s.id === serviceId);
+        if (!user || !service) return false;
+
+        const targetSubService = subServiceId ? service.subServices.find(s => s.id === subServiceId) : service.subServices[0];
+        
+        if (targetSubService) {
+            const targetStage = targetSubService.stages.find(st => st.id === stageId);
+            if (targetStage) {
+                targetStage.objectives = targetStage.objectives.map(obj => obj.id === objectiveId ? { ...obj, ...updates } : obj);
+            }
+        }
+        
+        updateDocumentNonBlocking(doc(firestore, 'users', user.uid, 'serviceWorkflows', serviceId), { subServices: service.subServices });
+        return true;
+    };
+    
+    const deleteObjectiveFromStage = async (serviceId: string, subServiceId: string | null, stageId: string, objectiveId: string) => {
+        const service = serviceWorkflows.find(s => s.id === serviceId);
+        if (!user || !service) return false;
+        
+        const targetSubService = subServiceId ? service.subServices.find(s => s.id === subServiceId) : service.subServices[0];
+
+        if (targetSubService) {
+            const targetStage = targetSubService.stages.find(st => st.id === stageId);
+            if (targetStage) {
+                targetStage.objectives = targetStage.objectives.filter(obj => obj.id !== objectiveId);
+            }
+        }
+        
+        updateDocumentNonBlocking(doc(firestore, 'users', user.uid, 'serviceWorkflows', serviceId), { subServices: service.subServices });
+        return true;
+    };
+
+
     const getObjectiveById = useCallback((objectiveId: string): WorkflowStageObjective | null => {
         for (const service of serviceWorkflows) {
             for (const subService of service.subServices) {
@@ -398,7 +450,6 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
         }
         return null;
     }, [serviceWorkflows]);
-
 
     const completeClientObjective = useCallback(async (clientId: string): Promise<{ nextObjective: WorkflowStageObjective | null; updatedClient: Client | null; }> => {
         const client = clients.find(c => c.id === clientId);
@@ -453,23 +504,38 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
         }
     }, [clients, serviceWorkflows, updateClient, showNotification]);
 
+    // This hook is used to get the notes for a specific client.
+    const useClientNotes = (clientId: string | null) => {
+        const notesQuery = useMemoFirebase(() => {
+            if (!user || !clientId) return null;
+            return collection(firestore, 'users', user.uid, 'notes'); // Simplified: fetches all notes
+        }, [firestore, user, clientId]);
+    
+        const { data: allNotes, isLoading: isLoadingNotes } = useCollection<Note>(notesQuery);
+    
+        const clientNotes = useMemo(() => {
+            return allNotes ? allNotes.filter(note => note.clientId === clientId) : [];
+        }, [allNotes, clientId]);
+    
+        return { notes: clientNotes, isLoading: isLoadingNotes };
+    };
+
     const value = useMemo(() => ({
         currentUser, clients, isLoadingClients, addClient, updateClient, deleteClient, getClientById,
         tasks, isLoadingTasks, addTask, updateTask, deleteTask, getTasksByClientId,
         documents, isLoadingDocuments, addDocument, updateDocument, deleteDocument, getDocumentsByClientId,
-        clientNotes, isLoadingClientNotes, fetchClientNotes, addClientNote, updateClientNote, deleteClientNote,
+        notes, isLoadingNotes, addNote, updateNote, deleteNote,
         donnaReservations, isLoadingDonnaReservations, addDonnaReservation, updateDonnaReservation, deleteDonnaReservation,
-        serviceWorkflows, addService, updateService, deleteService, addSubServiceToService, updateSubServiceName, deleteSubServiceFromService, addStageToSubService, updateStageInSubService, deleteStageFromSubService, addObjectiveToStage, updateObjectiveInStage, deleteObjectiveFromStage,
+        serviceWorkflows, isLoadingWorkflows, addService, updateService, deleteService, addSubServiceToService, updateSubServiceName, deleteSubServiceFromService, addStageToSubService, updateStageInSubService, deleteStageFromSubService, addObjectiveToStage, updateObjectiveInStage, deleteObjectiveFromStage,
         getObjectiveById, completeClientObjective
     }), [
         currentUser, clients, isLoadingClients, getClientById,
         tasks, isLoadingTasks, getTasksByClientId,
         documents, isLoadingDocuments, getDocumentsByClientId,
-
-        clientNotes, isLoadingClientNotes,
+        notes, isLoadingNotes,
         donnaReservations, isLoadingDonnaReservations,
-        serviceWorkflows,
-        getObjectiveById, completeClientObjective, addClient, updateClient, deleteClient, addTask, updateTask, deleteTask, addDocument, updateDocument, deleteDocument, fetchClientNotes, addClientNote, updateClientNote, deleteClientNote, addDonnaReservation, updateDonnaReservation, deleteDonnaReservation, addService, updateService, deleteService, addSubServiceToService, updateSubServiceName, deleteSubServiceFromService, addStageToSubService, updateStageInSubService, deleteStageFromSubService, addObjectiveToStage, updateObjectiveInStage, deleteObjectiveFromStage
+        serviceWorkflows, isLoadingWorkflows,
+        getObjectiveById, completeClientObjective, addClient, updateClient, deleteClient, addTask, updateTask, deleteTask, addDocument, updateDocument, deleteDocument, addNote, updateNote, deleteNote, addDonnaReservation, updateDonnaReservation, deleteDonnaReservation, addService, updateService, deleteService, addSubServiceToService, updateSubServiceName, deleteSubServiceFromService, addStageToSubService, updateStageInSubService, deleteStageFromSubService, addObjectiveToStage, updateObjectiveInStage, deleteObjectiveFromStage
     ]);
 
     return (
@@ -486,5 +552,3 @@ export function useCRMData() {
   }
   return context;
 }
-
-    

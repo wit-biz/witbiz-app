@@ -1,24 +1,18 @@
 
 "use client";
 
-import type { Metadata } from 'next';
 import './globals.css';
 import { SidebarProvider, SidebarInset } from '@/components/ui/sidebar';
 import { AppSidebar } from '@/components/app-sidebar';
 import { Toaster } from '@/components/ui/toaster';
-import { TasksProvider } from '@/contexts/TasksContext';
-import { CRMDataProvider } from '@/contexts/CRMDataContext';
 import { GlobalNotificationProvider } from '@/contexts/NotificationContext';
 import { DialogsProvider } from '@/contexts/DialogsContext';
 import { UserNav } from '@/components/shared/user-nav';
 import { ThemeProvider } from '@/components/theme-provider';
 import { useEffect, useState } from 'react';
+import { FirebaseClientProvider } from '@/firebase';
+import { CRMDataProvider } from '@/contexts/CRMDataContext';
 
-// No podemos exportar metadata en un client component
-// export const metadata: Metadata = {
-//   title: 'WitBiz',
-//   description: 'Un CRM para el equipo de ventas moderno.',
-// };
 
 export default function RootLayout({
   children,
@@ -51,27 +45,27 @@ export default function RootLayout({
           disableTransitionOnChange
         >
           <GlobalNotificationProvider>
-            <CRMDataProvider>
-              <TasksProvider>
-                <DialogsProvider>
-                  <SidebarProvider>
-                    {isClient ? (
-                      <>
-                        <AppSidebar />
-                        <SidebarInset>
-                          <UserNav />
-                          {children}
-                        </SidebarInset>
-                      </>
-                    ) : (
-                      <div className="flex h-screen w-full items-center justify-center">
-                        {/* Puedes poner un spinner o un loader aquí */}
-                      </div>
-                    )}
-                  </SidebarProvider>
-                </DialogsProvider>
-              </TasksProvider>
-            </CRMDataProvider>
+            <FirebaseClientProvider>
+                <CRMDataProvider>
+                    <DialogsProvider>
+                      <SidebarProvider>
+                        {isClient ? (
+                          <>
+                            <AppSidebar />
+                            <SidebarInset>
+                              <UserNav />
+                              {children}
+                            </SidebarInset>
+                          </>
+                        ) : (
+                          <div className="flex h-screen w-full items-center justify-center">
+                            {/* Puedes poner un spinner o un loader aquí */}
+                          </div>
+                        )}
+                      </SidebarProvider>
+                    </DialogsProvider>
+                </CRMDataProvider>
+            </FirebaseClientProvider>
           </GlobalNotificationProvider>
           <Toaster />
         </ThemeProvider>

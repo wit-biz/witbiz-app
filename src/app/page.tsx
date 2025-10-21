@@ -39,7 +39,6 @@ import {
   Briefcase
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { tasks as allTasks, clients as allClients, workflowStages } from '@/lib/data';
 import type { Client, Task, WorkflowStage } from '@/lib/types';
 import { useTasksContext } from "@/contexts/TasksContext";
 import { TaskDetailDialog } from "@/components/shared/TaskDetailDialog";
@@ -61,7 +60,7 @@ const StageNumberIcon = ({ index, variant = 'default' }: { index: number, varian
 
 
 export default function InicioPage() {
-  const { clients, isLoadingClients, tasks } = useCRMData();
+  const { clients, isLoadingClients, tasks, serviceWorkflows, isLoadingWorkflows } = useCRMData();
   const { setHasTasksForToday } = useTasksContext();
 
   const [currentClientDateForDashboard, setCurrentClientDateForDashboard] = useState<Date | null>(null);
@@ -73,11 +72,7 @@ export default function InicioPage() {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     setCurrentClientDateForDashboard(today);
-    if (tasks && tasks.length > 0) {
-      const hasToday = tasks.some(t => t.status === 'Pendiente' && new Date(t.dueDate).toDateString() === today.toDateString());
-      setHasTasksForToday(hasToday);
-    }
-  }, [tasks, setHasTasksForToday]);
+  }, []);
 
   const [selectedStage, setSelectedStage] = useState<WorkflowStage | null>(null);
   const [isStageClientsDialogOpen, setIsStageClientsDialogOpen] = useState(false);
@@ -87,13 +82,17 @@ export default function InicioPage() {
   const [highlightedStageId, setHighlightedStageId] = useState<string | null>(null);
   const inputRefDashboard = useRef<HTMLInputElement>(null);
   
-  const workflowStagesForDisplay: WorkflowStage[] = workflowStages;
+  const workflowStagesForDisplay: WorkflowStage[] = useMemo(() => {
+      if (!serviceWorkflows || serviceWorkflows.length === 0) return [];
+      // Flatten all stages from all sub-services of all services
+      return serviceWorkflows.flatMap(sw => sw.subServices.flatMap(ss => ss.stages)).sort((a,b) => a.order - b.order);
+  }, [serviceWorkflows]);
 
   const clientsInSelectedStageWithDetails = useMemo(() => {
     if (!selectedStage || isLoadingClients || !clients ) return [];
 
     return clients
-      .filter(client => client.stage === selectedStage.title)
+      .filter(client => client.currentWorkflowStageId === selectedStage.id)
       .map(client => {
         const clientTasks = tasks.filter(t => t.clientId === client.id);
         const pendingTask = clientTasks.find(task => task.status === 'Pendiente');
@@ -129,21 +128,21 @@ export default function InicioPage() {
 
   const populatedStageIds = useMemo(() => {
     if (isLoadingClients || !clients) return new Set<string>();
-    return new Set(clients.map(client => client.stage || ''));
+    return new Set(clients.map(client => client.currentWorkflowStageId || ''));
   }, [clients, isLoadingClients]);
 
 
   const handleClientSearchSelection = useCallback((client: Client) => {
     setSearchTermDashboard(client.name);
-    setHighlightedStageId(client.stage || null);
+    setHighlightedStageId(client.currentWorkflowStageId || null);
     setIsPopoverOpenDashboard(false);
 
-    const stage = workflowStages.find(ws => ws.title === client.stage);
+    const stage = workflowStagesForDisplay.find(ws => ws.id === client.currentWorkflowStageId);
     if (stage) {
       setSelectedStage(stage);
       setIsStageClientsDialogOpen(true);
     }
-  }, []);
+  }, [workflowStagesForDisplay]);
 
   const todaysTasks = useMemo(() => {
     if (!tasks || !currentClientDateForDashboard) return [];
@@ -181,7 +180,9 @@ export default function InicioPage() {
           <CardDescription>Estas son las tareas que requieren su atención hoy.</CardDescription>
         </CardHeader>
         <CardContent className="pt-0">
-          {tasks.length === 0 && !isLoadingClients ? (
+          {isLoadingTasks ? (
+              <div className="flex items-center justify-center p-12"><Loader2 className="h-8 w-8 animate-spin text-primary"/></div>
+          ) : tasks.length === 0 ? (
             <div className="flex flex-col items-center justify-center text-center text-muted-foreground py-10">
                 <CheckSquare className="h-12 w-12 mb-4 text-green-500" />
                 <p className="text-lg font-semibold">¡Todo al día!</p>
@@ -238,7 +239,7 @@ export default function InicioPage() {
                     <Button variant="outline" className="h-8 px-2 py-1 text-xs w-full sm:w-40">
                     <Search className="h-3 w-3 mr-1.5 text-muted-foreground" />
                     <span className="text-muted-foreground truncate max-w-[100px] sm:max-w-[120px]">
-                        {highlightedStageId && clients.find(c => c.stage === highlightedStageId && c.name === searchTermDashboard) ? searchTermDashboard : "Buscar Cliente..."}
+                        {highlightedStageId && clients.find(c => c.currentWorkflowStageId === highlightedStageId && c.name === searchTermDashboard) ? searchTermDashboard : "Buscar Cliente..."}
                     </span>
                     </Button>
                 </PopoverTrigger>
@@ -288,10 +289,14 @@ export default function InicioPage() {
             </div>
         </CardHeader>
         <CardContent className="pt-0">
+            {isLoadingWorkflows ? (
+                <div className="flex items-center justify-center p-12"><Loader2 className="h-8 w-8 animate-spin text-primary"/></div>
+            ) : (
+            <>
             {/* Mobile: Vertical flow */}
             <div className="flex flex-col items-center gap-2 sm:hidden">
                 {workflowStagesForDisplay.map((stage, index) => {
-                const isPopulated = populatedStageIds.has(stage.title);
+                const isPopulated = populatedStageIds.has(stage.id);
                 const isHighlighted = stage.id === highlightedStageId;
                 let currentStatusForStyling: 'locked' | 'active' | 'completed' = 'locked';
 
@@ -345,7 +350,7 @@ export default function InicioPage() {
             {/* Desktop: Horizontal wrap flow */}
             <div className="hidden sm:flex flex-wrap items-start gap-2">
                 {workflowStagesForDisplay.map((stage, index) => {
-                 const isPopulated = populatedStageIds.has(stage.title);
+                 const isPopulated = populatedStageIds.has(stage.id);
                  const isHighlighted = stage.id === highlightedStageId;
                  let currentStatusForStyling: 'locked' | 'active' | 'completed' = 'locked';
                 
@@ -398,6 +403,8 @@ export default function InicioPage() {
                 );
                 })}
             </div>
+            </>
+            )}
         </CardContent>
       </Card>
 
@@ -407,7 +414,7 @@ export default function InicioPage() {
           <DialogContent className="sm:max-w-lg md:max-w-xl">
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2 text-lg">
-                <StageNumberIcon index={workflowStagesForDisplay.findIndex(s => s.title === selectedStage.title)} variant="dialog" />
+                <StageNumberIcon index={workflowStagesForDisplay.findIndex(s => s.id === selectedStage.id)} variant="dialog" />
                 Clientes en Etapa: {selectedStage.title}
               </DialogTitle>
               <DialogDescription>

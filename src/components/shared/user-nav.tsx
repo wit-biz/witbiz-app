@@ -15,10 +15,13 @@ import {
   UserCircle,
   LifeBuoy,
   LogOut,
+  Loader2,
 } from "lucide-react";
 import { PlaceHolderImages } from "@/lib/placeholder-images";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
+import { useFirebase } from "@/firebase";
+import { SidebarTrigger } from "../ui/sidebar";
 
 const userAvatar = PlaceHolderImages.find((img) => img.id === "user-avatar");
 
@@ -30,10 +33,22 @@ const UserMenuIcon = () => (
     </svg>
 );
 
-
 export function UserNav() {
+  const { user, isUserLoading } = useFirebase();
+
+  if (isUserLoading) {
+    return (
+      <div className="fixed top-4 right-4 z-50">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
   return (
-    <div className="fixed top-4 right-4 z-50">
+    <div className="fixed top-4 right-4 z-50 flex items-center gap-2">
+      <div className="md:hidden">
+        <SidebarTrigger />
+      </div>
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button
@@ -44,41 +59,64 @@ export function UserNav() {
               "sidebar-glowing-border"
             )}
           >
-            <UserMenuIcon />
+            {user ? (
+              <Avatar className="h-8 w-8">
+                {user.photoURL ? (
+                  <AvatarImage src={user.photoURL} alt={user.displayName || 'User'}/>
+                ) : (
+                  <AvatarFallback>{user.displayName?.charAt(0).toUpperCase() || 'U'}</AvatarFallback>
+                )}
+              </Avatar>
+            ) : (
+              <UserMenuIcon />
+            )}
             <span className="sr-only">Abrir menú de usuario</span>
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
-          <DropdownMenuLabel>
-            <div className="flex items-center gap-3">
-              <Avatar className="h-9 w-9">
-                {userAvatar && <AvatarImage src={userAvatar.imageUrl} data-ai-hint={userAvatar.imageHint}/>}
-                <AvatarFallback>U</AvatarFallback>
-              </Avatar>
-              <div>
-                <p className="text-sm font-medium leading-none">Usuario</p>
-                <p className="text-xs leading-none text-muted-foreground">
-                  usuario@ejemplo.com
-                </p>
-              </div>
-            </div>
-          </DropdownMenuLabel>
-          <DropdownMenuSeparator />
-          <DropdownMenuItem asChild>
-            <Link href="/settings">
-              <UserCircle className="mr-2 h-4 w-4" />
-              <span>Perfil</span>
-            </Link>
-          </DropdownMenuItem>
-          <DropdownMenuItem>
-            <LifeBuoy className="mr-2 h-4 w-4" />
-            <span>Soporte</span>
-          </DropdownMenuItem>
-          <DropdownMenuSeparator />
-          <DropdownMenuItem>
-            <LogOut className="mr-2 h-4 w-4" />
-            <span>Cerrar Sesión</span>
-          </DropdownMenuItem>
+          {user ? (
+            <>
+              <DropdownMenuLabel>
+                <div className="flex items-center gap-3">
+                  <Avatar className="h-9 w-9">
+                    {user.photoURL ? (
+                      <AvatarImage src={user.photoURL} alt={user.displayName || 'User'}/>
+                    ) : (
+                      <AvatarFallback>{user.displayName?.charAt(0).toUpperCase() || 'U'}</AvatarFallback>
+                    )}
+                  </Avatar>
+                  <div>
+                    <p className="text-sm font-medium leading-none">{user.displayName || 'Usuario'}</p>
+                    <p className="text-xs leading-none text-muted-foreground">
+                      {user.email || 'No email'}
+                    </p>
+                  </div>
+                </div>
+              </DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem asChild>
+                <Link href="/settings">
+                  <UserCircle className="mr-2 h-4 w-4" />
+                  <span>Perfil</span>
+                </Link>
+              </DropdownMenuItem>
+              <DropdownMenuItem>
+                <LifeBuoy className="mr-2 h-4 w-4" />
+                <span>Soporte</span>
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => {
+                // Here you would call your sign-out function
+              }}>
+                <LogOut className="mr-2 h-4 w-4" />
+                <span>Cerrar Sesión</span>
+              </DropdownMenuItem>
+            </>
+          ) : (
+             <DropdownMenuLabel>
+                <p>No autenticado</p>
+             </DropdownMenuLabel>
+          )}
         </DropdownMenuContent>
       </DropdownMenu>
     </div>

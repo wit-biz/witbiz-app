@@ -19,10 +19,10 @@ import { Tooltip, TooltipProvider, TooltipContent, TooltipTrigger } from "@/comp
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import { Checkbox } from "@/components/ui/checkbox";
-import { clients as mockClients, tasks as mockTasks, documents as mockDocs, notes as mockNotes } from '@/lib/data';
 import type { Client, Task, Document, Note, Booking, WorkflowStage, WorkflowStageObjective } from '@/lib/types';
-import { useToast } from "@/hooks/use-toast";
+import { useGlobalNotification } from "@/contexts/NotificationContext";
 import { useDialogs } from "@/contexts/DialogsContext";
+import { useCRMData } from "@/contexts/CRMDataContext";
 
 const documentTypes = ["Contrato", "Factura", "Propuesta", "Informe", "Otro"];
 
@@ -41,15 +41,17 @@ const DetailItem = ({ icon: Icon, label, value, children }: { icon?: React.Eleme
 };
 
 export default function ClientsPage() {
-  const { toast } = useToast();
+  const { showNotification } = useGlobalNotification();
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  const [clients, setClients] = useState<Client[]>(mockClients);
-  const [tasks, setTasks] = useState<Task[]>(mockTasks);
-  const [documents, setDocuments] = useState<Document[]>(mockDocs);
-  const [notes, setNotes] = useState<Note[]>(mockNotes);
-  const [isLoadingClients, setIsLoadingClients] = useState(false);
+  const {
+      clients, isLoadingClients, updateClient, deleteClient, getClientById,
+      tasks, getTasksByClientId,
+      documents, getDocumentsByClientId,
+      notes, isLoadingNotes, addNote,
+      currentUser
+  } = useCRMData();
 
   const { isAddClientDialogOpen, setIsAddClientDialogOpen } = useDialogs();
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
@@ -66,15 +68,10 @@ export default function ClientsPage() {
   
   const handleRowClick = useCallback((client: Client) => { setSelectedClient(client); setEditableClientData({ ...client }); setIsEditingClient(false); setActiveTab("details"); setIsClientDetailDialogOpen(true); }, []);
 
-  const getClientById = useCallback((id: string) => clients.find(c => c.id === id), [clients]);
-
   useEffect(() => { const clientIdToOpen = searchParams.get('openClient'); if (clientIdToOpen && clients && clients.length > 0 && getClientById) { const client = getClientById(clientIdToOpen); if (client) { handleRowClick(client); } } }, [searchParams, clients, getClientById, router, handleRowClick]);
   
-  const getDocumentsByClientId = useCallback((clientId: string) => documents.filter(d => d.clientId === clientId), [documents]);
-  const getTasksByClientId = useCallback((clientId: string) => tasks.filter(t => t.clientId === clientId), [tasks]);
-
-  const clientDocuments = useMemo(() => { if (!selectedClient || !getDocumentsByClientId) return []; return getDocumentsByClientId(selectedClient.id); }, [selectedClient, getDocumentsByClientId]);
-  const clientTasks = useMemo(() => { if (!selectedClient || !getTasksByClientId) return []; return getTasksByClientId(selectedClient.id); }, [selectedClient, getTasksByClientId]);
+  const clientDocuments = useMemo(() => { if (!selectedClient) return []; return getDocumentsByClientId(selectedClient.id); }, [selectedClient, getDocumentsByClientId]);
+  const clientTasks = useMemo(() => { if (!selectedClient) return []; return getTasksByClientId(selectedClient.id); }, [selectedClient, getTasksByClientId]);
   const clientNotes = useMemo(() => { if (!selectedClient) return []; return notes.filter(n => n.clientId === selectedClient.id); }, [selectedClient, notes]);
   
   const groupedClientDocuments = useMemo(() => { if (!clientDocuments) return {}; return clientDocuments.reduce((acc, doc) => { const typeKey = doc.type || "Otro"; if (!acc[typeKey]) { acc[typeKey] = []; } acc[typeKey].push(doc); return acc; }, {} as Record<string, Document[]>); }, [clientDocuments]);
@@ -82,17 +79,13 @@ export default function ClientsPage() {
   const handleEditableClientChange = useCallback((e: ChangeEvent<HTMLInputElement>) => { const { name, value } = e.target; setEditableClientData(prev => prev ? { ...prev, [name]: value } : {}); }, []);
 
   const handleSaveChangesClient = useCallback(async () => {
-    if (!editableClientData || !editableClientData.id || !editableClientData.name?.trim()) { toast({ title: "Error", description: "Nombre de usuario inválido.", variant: "destructive" }); return; }
+    if (!editableClientData || !editableClientData.id || !editableClientData.name?.trim()) { showNotification("error", "Error", "Nombre de usuario inválido."); return; }
     setIsSubmittingClient(true);
-    // Mock update
-    setTimeout(() => {
-      setClients(clients.map(c => c.id === editableClientData.id ? {...c, ...editableClientData} as Client : c));
-      if (selectedClient && selectedClient.id === editableClientData.id) { setSelectedClient(prev => prev ? { ...prev, ...editableClientData } as Client : null); }
-      setIsSubmittingClient(false);
-      setIsEditingClient(false);
-      toast({ title: "Éxito", description: "Cliente actualizado." });
-    }, 500);
-  }, [editableClientData, clients, selectedClient, toast]);
+    await updateClient(editableClientData.id, editableClientData);
+    if (selectedClient && selectedClient.id === editableClientData.id) { setSelectedClient(prev => prev ? { ...prev, ...editableClientData } as Client : null); }
+    setIsSubmittingClient(false);
+    setIsEditingClient(false);
+  }, [editableClientData, updateClient, selectedClient, showNotification]);
 
   const handleCancelEditClient = useCallback(() => { if (selectedClient) setEditableClientData({ ...selectedClient }); setIsEditingClient(false); }, [selectedClient]);
   const openDeleteClientConfirmation = useCallback((client: Client) => { setClientToDelete(client); setIsDeletingClient(true); }, []);
@@ -100,26 +93,21 @@ export default function ClientsPage() {
   const confirmDeleteClient = useCallback(async () => {
     if (!clientToDelete) return;
     setIsSubmittingClient(true);
-    // Mock delete
-    setTimeout(() => {
-      setClients(clients.filter(c => c.id !== clientToDelete.id));
-      setIsSubmittingClient(false);
-      setIsClientDetailDialogOpen(false); setSelectedClient(null); setIsDeletingClient(false); setClientToDelete(null);
-      toast({ title: "Éxito", description: "Cliente eliminado." });
-    }, 500);
-  }, [clientToDelete, clients, toast]);
+    await deleteClient(clientToDelete.id);
+    setIsSubmittingClient(false);
+    setIsClientDetailDialogOpen(false); setSelectedClient(null); setIsDeletingClient(false); setClientToDelete(null);
+  }, [clientToDelete, deleteClient]);
 
-  // Dummy values for permissions
-  const canCreateClient = true;
-  const canEditClient = true;
-  const canDeleteClient = true;
-  const canCreateDocument = true;
-  const canEditDocument = true;
-  const canDeleteDocument = true;
-  const canCreateTask = true;
-  const canCreateNote = true;
-  const canEditNote = true;
-  const canDeleteNote = true;
+  const canCreateClient = currentUser?.permissions.donna.clients_create ?? false;
+  const canEditClient = currentUser?.permissions.donna.clients_edit ?? false;
+  const canDeleteClient = currentUser?.permissions.donna.clients_delete ?? false;
+  const canCreateDocument = currentUser?.permissions.donna.documents_create ?? false;
+  const canEditDocument = currentUser?.permissions.donna.documents_edit ?? false;
+  const canDeleteDocument = currentUser?.permissions.donna.documents_delete ?? false;
+  const canCreateTask = currentUser?.permissions.donna.tasks_create ?? false;
+  const canCreateNote = currentUser?.permissions.donna.clients_edit ?? false; // Assuming notes are part of client editing
+  const canEditNote = currentUser?.permissions.donna.clients_edit ?? false;
+  const canDeleteNote = currentUser?.permissions.donna.clients_edit ?? false;
   
   return (
     <TooltipProvider>
@@ -143,7 +131,9 @@ export default function ClientsPage() {
             <CardDescription>{(sortedClients && sortedClients.length > 0) ? `Mostrando ${sortedClients.length} usuario(s). Haga clic en una fila para ver los detalles.` : "Actualmente no hay usuarios registrados en el sistema."}</CardDescription>
         </CardHeader>
         <CardContent className="px-0 pt-0 pb-2 sm:px-6 sm:pt-0 sm:pb-6">
-            {(sortedClients && sortedClients.length > 0) ? (
+            {isLoadingClients ? (
+                <div className="flex items-center justify-center p-12"><Loader2 className="h-8 w-8 animate-spin text-primary"/></div>
+            ) : (sortedClients && sortedClients.length > 0) ? (
                 <div className="relative w-full overflow-auto">
                     <Table>
                         <TableHeader>
@@ -261,7 +251,7 @@ export default function ClientsPage() {
                     </CardContent>
                   </Card>
                 </TabsContent>
-                <TabsContent value="tasks" className="min-h-0"><Card className="border-none shadow-none"><CardHeader className="px-0 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2"><div className="w-full sm:w-auto"> <CardTitle className="flex items-center gap-2 text-lg"><ListChecks className="h-4 w-4 text-accent" /> Tareas para {selectedClient.name}</CardTitle> <CardDescription className="text-xs mt-0.5 sm:mt-0">{(clientTasks && clientTasks.length > 0) ? `Mostrando ${clientTasks.length} tarea(s).` : `Este usuario no tiene tareas asignadas.`}</CardDescription></div>{ canCreateTask && ( <Button size="sm" disabled={isSubmittingClient} className="w-full mt-2 sm:mt-0 sm:w-auto"><PlusCircle className="mr-2 h-4 w-4" />Añadir Tarea</Button> )}</CardHeader><CardContent className="space-y-3 px-0">{(clientTasks && clientTasks.length > 0) ? ( clientTasks.map(task => ( <div key={task.id} className="p-2.5 border rounded-md text-xs bg-secondary/30"> <p className="font-semibold text-foreground">{task.title}</p> <div className="flex justify-between items-center mt-1 text-muted-foreground"> <span>Vence: {formatDateString(task.dueDate)}</span> <span className={`px-2 py-0.5 rounded-full text-xs ${task.status === 'Done' ? 'bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-300 dark:border-green-700' : 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/50 dark:text-yellow-300 dark:border-yellow-700'}`}>{task.status}</span></div></div> )) ) : ( <div className="text-center text-muted-foreground py-6"><ListChecks className="mx-auto h-8 w-8 mb-2" /><p className="text-sm">No hay tareas asignadas a este usuario.</p></div> )}</CardContent></Card></TabsContent>
+                <TabsContent value="tasks" className="min-h-0"><Card className="border-none shadow-none"><CardHeader className="px-0 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2"><div className="w-full sm:w-auto"> <CardTitle className="flex items-center gap-2 text-lg"><ListChecks className="h-4 w-4 text-accent" /> Tareas para {selectedClient.name}</CardTitle> <CardDescription className="text-xs mt-0.5 sm:mt-0">{(clientTasks && clientTasks.length > 0) ? `Mostrando ${clientTasks.length} tarea(s).` : `Este usuario no tiene tareas asignadas.`}</CardDescription></div>{ canCreateTask && ( <Button size="sm" disabled={isSubmittingClient} className="w-full mt-2 sm:mt-0 sm:w-auto"><PlusCircle className="mr-2 h-4 w-4" />Añadir Tarea</Button> )}</CardHeader><CardContent className="space-y-3 px-0">{(clientTasks && clientTasks.length > 0) ? ( clientTasks.map(task => ( <div key={task.id} className="p-2.5 border rounded-md text-xs bg-secondary/30"> <p className="font-semibold text-foreground">{task.title}</p> <div className="flex justify-between items-center mt-1 text-muted-foreground"> <span>Vence: {task.dueDate}</span> <span className={`px-2 py-0.5 rounded-full text-xs ${task.status === 'Completada' ? 'bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-300 dark:border-green-700' : 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/50 dark:text-yellow-300 dark:border-yellow-700'}`}>{task.status}</span></div></div> )) ) : ( <div className="text-center text-muted-foreground py-6"><ListChecks className="mx-auto h-8 w-8 mb-2" /><p className="text-sm">No hay tareas asignadas a este usuario.</p></div> )}</CardContent></Card></TabsContent>
                 <TabsContent value="notes" className="h-full flex flex-col min-h-0">
                   <Card className="border-none shadow-none flex flex-col flex-grow min-h-0">
                     <CardHeader className="px-0 flex flex-col sm:flex-row justify-between items-center flex-shrink-0">
@@ -281,9 +271,9 @@ export default function ClientsPage() {
                     </CardHeader>
                     <CardContent className="space-y-3 px-0 flex-grow overflow-y-auto min-h-0">
                       <div className="space-y-3">
-                        {isLoadingClients && ( <div className="flex items-center justify-center py-4"><Loader2 className="h-5 w-5 animate-spin text-accent mr-2" /><p className="text-sm text-muted-foreground">Cargando notas...</p></div> )}
-                        {!isLoadingClients && clientNotes.length === 0 && ( <p className="text-sm text-muted-foreground text-center py-4">No hay notas para este usuario.</p> )}
-                        {!isLoadingClients && clientNotes.map(note => ( 
+                        {isLoadingNotes && ( <div className="flex items-center justify-center py-4"><Loader2 className="h-5 w-5 animate-spin text-accent mr-2" /><p className="text-sm text-muted-foreground">Cargando notas...</p></div> )}
+                        {!isLoadingNotes && clientNotes.length === 0 && ( <p className="text-sm text-muted-foreground text-center py-4">No hay notas para este usuario.</p> )}
+                        {!isLoadingNotes && clientNotes.map(note => ( 
                           <div key={note.id} className="p-2.5 border rounded-md text-xs bg-secondary/30"> 
                             <p className="whitespace-pre-wrap break-words">{note.content}</p> 
                             <div className="flex justify-between items-center mt-1.5"> 
