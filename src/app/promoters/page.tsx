@@ -2,9 +2,8 @@
 'use client';
 
 import React, { useState, useMemo, useEffect } from 'react';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { DateRange } from 'react-day-picker';
-import { format, isWithinInterval, startOfMonth, endOfMonth, parseISO, addMonths } from 'date-fns';
+import { format, isWithinInterval, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';
 
 import { Button } from '@/components/ui/button';
@@ -13,7 +12,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Calendar } from '@/components/ui/calendar';
 import { Badge } from '@/components/ui/badge';
-import { LogOut, Users, CircleDollarSign, LineChart as LineChartIcon, BookText, Download, AlertCircle } from 'lucide-react';
+import { LogOut, Users, CircleDollarSign, BookText, Download } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { Logo } from '@/components/shared/logo';
 import { cn, parseDateString } from '@/lib/utils';
@@ -252,66 +251,6 @@ function CommissionsTab() {
     );
 }
 
-function StatsTab() {
-    const [isClient, setIsClient] = useState(false);
-    useEffect(() => setIsClient(true), []);
-
-    const chartData = useMemo(() => {
-        const monthlyTotals: { [key: string]: number } = {};
-        const year = new Date().getFullYear();
-
-        // Initialize months
-        for (let i = 0; i < 12; i++) {
-            const monthName = format(new Date(year, i, 1), 'MMM', { locale: es });
-            monthlyTotals[monthName] = 0;
-        }
-
-        commissions.forEach(c => {
-             const commissionDate = parseISO(c.date);
-             if (commissionDate.getFullYear() === year) {
-                const monthName = format(commissionDate, 'MMM', { locale: es });
-                monthlyTotals[monthName] += c.amount;
-             }
-        });
-        
-        return Object.entries(monthlyTotals).map(([name, total]) => ({ name, total }));
-    }, []);
-
-    const totalAnnual = chartData.reduce((sum, item) => sum + item.total, 0);
-
-    return (
-        <Card>
-            <CardHeader>
-                <CardTitle>Estadísticas de Comisiones</CardTitle>
-                <CardDescription>Rendimiento mensual y anual de tus comisiones.</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-                <div className="text-center">
-                    <p className="text-muted-foreground">Total Anual ({new Date().getFullYear()})</p>
-                    <p className="text-3xl font-bold">${totalAnnual.toFixed(2)}</p>
-                </div>
-                <div>
-                    <h3 className="font-semibold mb-4 text-center">Comisiones por Mes</h3>
-                     <div className="h-[300px] w-full">
-                        {isClient && (
-                            <ResponsiveContainer width="100%" height="100%">
-                                <BarChart data={chartData}>
-                                    <CartesianGrid strokeDasharray="3 3" />
-                                    <XAxis dataKey="name" />
-                                    <YAxis />
-                                    <Tooltip formatter={(value: number) => `$${value.toFixed(2)}`} />
-                                    <Legend />
-                                    <Bar dataKey="total" fill="hsl(var(--primary))" name="Total Comisiones" />
-                                </BarChart>
-                            </ResponsiveContainer>
-                        )}
-                    </div>
-                </div>
-            </CardContent>
-        </Card>
-    );
-}
-
 function ResourcesTab() {
     const { toast } = useToast();
 
@@ -346,7 +285,6 @@ export default function PromoterPage() {
     const router = useRouter();
     
     const handleLogout = () => {
-        // Since there is no real auth, just redirect to the login page
         router.push('/promoter-login');
     };
 
@@ -361,10 +299,9 @@ export default function PromoterPage() {
             </header>
             <main className="flex-1 p-4 md:p-8">
                  <Tabs defaultValue="commissions" className="w-full">
-                    <TabsList className="grid w-full grid-cols-4">
+                    <TabsList className="grid w-full grid-cols-3">
                         <TabsTrigger value="clients"><Users className="mr-2 h-4 w-4" />Clientes</TabsTrigger>
                         <TabsTrigger value="commissions"><CircleDollarSign className="mr-2 h-4 w-4" />Comisiones</TabsTrigger>
-                        <TabsTrigger value="stats"><LineChartIcon className="mr-2 h-4 w-4" />Estadísticas</TabsTrigger>
                         <TabsTrigger value="resources"><BookText className="mr-2 h-4 w-4" />Recursos</TabsTrigger>
                     </TabsList>
                     <TabsContent value="clients" className="mt-6">
@@ -372,9 +309,6 @@ export default function PromoterPage() {
                     </TabsContent>
                     <TabsContent value="commissions" className="mt-6">
                         <CommissionsTab />
-                    </TabsContent>
-                    <TabsContent value="stats" className="mt-6">
-                        <StatsTab />
                     </TabsContent>
                     <TabsContent value="resources" className="mt-6">
                         <ResourcesTab />
