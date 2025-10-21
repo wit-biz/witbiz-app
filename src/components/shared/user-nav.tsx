@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import { PlaceHolderImages } from "@/lib/placeholder-images";
 import Link from "next/link";
+import { cn } from "@/lib/utils";
 
 const userAvatar = PlaceHolderImages.find((img) => img.id === "user-avatar");
 
@@ -27,7 +28,15 @@ export function UserNav() {
     <div className="fixed top-4 right-4 z-50">
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full">
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            className={cn(
+              "h-9 w-9 rounded-full bg-background/60 backdrop-blur-sm transition-all hover:bg-muted/80",
+              "shadow-sm dark:shadow-lg dark:shadow-primary/10",
+              "hover:shadow-md hover:dark:shadow-primary/20"
+              )}
+            >
              <MoreVertical className="h-5 w-5" />
           </Button>
         </DropdownMenuTrigger>
