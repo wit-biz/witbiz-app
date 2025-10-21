@@ -13,11 +13,10 @@ import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   UserCircle,
-  LifeBuoy,
   LogOut,
   Loader2,
   LogIn,
-  Settings,
+  Users,
 } from "lucide-react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
@@ -37,6 +36,7 @@ const UserMenuIcon = () => (
 
 export function UserNav() {
   const { user, isUserLoading } = useUser();
+  const { currentUser } = useCRMData();
   const auth = useAuth();
 
   if (isUserLoading) {
@@ -46,6 +46,8 @@ export function UserNav() {
       </div>
     );
   }
+
+  const canViewAdmin = currentUser?.permissions.admin_view ?? false;
 
   return (
     <div className="fixed top-4 right-4 z-50 flex items-center gap-2">
@@ -103,6 +105,14 @@ export function UserNav() {
                   <span>Perfil</span>
                 </Link>
               </DropdownMenuItem>
+              {canViewAdmin && (
+                <DropdownMenuItem asChild>
+                    <Link href="/settings">
+                        <Users className="mr-2 h-4 w-4" />
+                        <span>Equipo y Permisos</span>
+                    </Link>
+                </DropdownMenuItem>
+              )}
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={() => initiateSignOut(auth)}>
                 <LogOut className="mr-2 h-4 w-4" />

@@ -23,6 +23,8 @@ import {
   UploadCloud,
   FileText,
   Download,
+  Users,
+  Shield,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -202,18 +204,22 @@ export default function SettingsPage() {
     <div className="flex flex-col min-h-screen">
       <Header
         title="Administración"
-        description="Gestiona la configuración financiera y los recursos del sistema."
+        description="Gestiona la configuración financiera, de equipo y los recursos del sistema."
       />
       <main className="flex-1 p-4 md:p-8">
-        <Tabs defaultValue="banks" className="w-full">
-            <TabsList className="grid w-full grid-cols-3">
-                <TabsTrigger value="banks">
-                    <Landmark className="mr-2 h-4 w-4" />
-                    Gestión de Bancos
+        <Tabs defaultValue="team" className="w-full">
+            <TabsList className="grid w-full grid-cols-4">
+                <TabsTrigger value="team">
+                    <Users className="mr-2 h-4 w-4" />
+                    Miembros del Equipo
                 </TabsTrigger>
-                <TabsTrigger value="expenses">
-                    <Receipt className="mr-2 h-4 w-4" />
-                    Registro de Gastos
+                <TabsTrigger value="permissions">
+                    <Shield className="mr-2 h-4 w-4" />
+                    Permisos por Rol
+                </TabsTrigger>
+                <TabsTrigger value="finances">
+                    <Landmark className="mr-2 h-4 w-4" />
+                    Finanzas
                 </TabsTrigger>
                  <TabsTrigger value="documents">
                     <FileText className="mr-2 h-4 w-4" />
@@ -221,7 +227,47 @@ export default function SettingsPage() {
                 </TabsTrigger>
             </TabsList>
 
-            <TabsContent value="banks" className="mt-6">
+            <TabsContent value="team" className="mt-6">
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Gestionar Miembros del Equipo</CardTitle>
+                        <CardDescription>Añada, edite o elimine miembros de su equipo.</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                         <div className="text-center text-muted-foreground py-12">
+                            <Users className="mx-auto h-16 w-16 mb-4 text-gray-400" />
+                            <p className="text-lg font-semibold">
+                                La gestión de miembros del equipo se mostrará aquí.
+                            </p>
+                            <p className="text-sm mt-1">
+                                Podrá asignar roles y gestionar el acceso.
+                            </p>
+                        </div>
+                    </CardContent>
+                </Card>
+            </TabsContent>
+
+             <TabsContent value="permissions" className="mt-6">
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Gestionar Permisos por Rol</CardTitle>
+                        <CardDescription>Defina lo que cada rol puede hacer en la aplicación: Director, Administrador, Colaborador.</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                         <div className="text-center text-muted-foreground py-12">
+                            <Shield className="mx-auto h-16 w-16 mb-4 text-gray-400" />
+                            <p className="text-lg font-semibold">
+                                La configuración de permisos por rol aparecerá aquí.
+                            </p>
+                            <p className="text-sm mt-1">
+                                Podrá personalizar el acceso para cada rol.
+                            </p>
+                        </div>
+                    </CardContent>
+                </Card>
+            </TabsContent>
+
+            <TabsContent value="finances" className="mt-6">
                 <div className="grid lg:grid-cols-2 gap-6">
                     <Card>
                         <CardHeader>
@@ -270,101 +316,96 @@ export default function SettingsPage() {
                             )}
                         </CardContent>
                     </Card>
-                </div>
-            </TabsContent>
-
-            <TabsContent value="expenses" className="mt-6">
-               <div className="grid lg:grid-cols-2 gap-6">
-                    <Card>
+                     <Card className="lg:col-span-2">
                         <CardHeader>
-                            <CardTitle>Cuentas por Pagar</CardTitle>
-                            <CardDescription>Añada y gestione sus gastos recurrentes o fijos.</CardDescription>
+                            <CardTitle>Cuentas por Pagar y Transacciones Generales</CardTitle>
+                            <CardDescription>Añada y gestione sus gastos fijos y registre transacciones no bancarias.</CardDescription>
                         </CardHeader>
                         <CardContent>
-                            <form onSubmit={handleAddPayable} className="space-y-4">
-                                <div>
-                                    <Label htmlFor="payable-desc">Descripción del Gasto</Label>
-                                    <Input id="payable-desc" value={newPayableDesc} onChange={e => setNewPayableDesc(e.target.value)} placeholder="Ej. Renta, Salarios, Luz" />
-                                </div>
-                                <div>
-                                    <Label htmlFor="payable-amount">Monto</Label>
-                                     <div className="relative">
-                                         <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                                         <Input id="payable-amount" type="number" value={newPayableAmount} onChange={e => setNewPayableAmount(e.target.value)} placeholder="0.00" className="pl-8" />
-                                     </div>
-                                </div>
-                                <Button type="submit" className="w-full"><PlusCircle className="mr-2 h-4 w-4"/>Añadir Gasto a Pagar</Button>
-                            </form>
-                            <div className="space-y-2 pt-4 mt-4 border-t">
-                                <h4 className="text-sm font-medium">Lista de Gastos</h4>
-                                <div className="border rounded-md p-2 space-y-2 max-h-48 overflow-y-auto">
-                                    {payables.length > 0 ? payables.map(p => (
-                                        <div key={p.id} className="text-sm flex justify-between items-center p-2 bg-background rounded-md">
-                                            <div>
-                                                <p className="font-medium">{p.description}</p>
-                                                <p className="text-muted-foreground">${p.amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
-                                            </div>
-                                            <div className="flex items-center gap-1">
-                                                {p.receiptUploaded ? (
-                                                    <Button size="xs" variant="secondary" onClick={() => handleDeleteReceipt(p.id)}><FileText className="h-3 w-3 mr-1"/>Borrar</Button>
-                                                ) : (
-                                                    <Button size="xs" variant="outline" onClick={() => handleUploadReceipt(p.id)}><UploadCloud className="h-3 w-3 mr-1"/>Recibo</Button>
-                                                )}
-                                                {p.status === 'pending' ? (
-                                                    <Button size="xs" variant="outline" onClick={() => handleMarkAsPaid(p.id)}>Marcar Pagado</Button>
-                                                ) : (
-                                                    <Badge variant="default" className="bg-green-100 text-green-800">Pagado</Badge>
-                                                )}
-                                            </div>
+                           <div className="grid md:grid-cols-2 gap-6">
+                            <div>
+                                <h4 className="font-semibold mb-2">Añadir Gasto a Pagar</h4>
+                                <form onSubmit={handleAddPayable} className="space-y-4">
+                                    <div>
+                                        <Label htmlFor="payable-desc">Descripción del Gasto</Label>
+                                        <Input id="payable-desc" value={newPayableDesc} onChange={e => setNewPayableDesc(e.target.value)} placeholder="Ej. Renta, Salarios, Luz" />
+                                    </div>
+                                    <div>
+                                        <Label htmlFor="payable-amount">Monto</Label>
+                                        <div className="relative">
+                                            <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                                            <Input id="payable-amount" type="number" value={newPayableAmount} onChange={e => setNewPayableAmount(e.target.value)} placeholder="0.00" className="pl-8" />
                                         </div>
-                                    )) : <p className="text-muted-foreground text-center py-4">No hay gastos por pagar.</p>}
-                                </div>
-                            </div>
-                        </CardContent>
-                    </Card>
-                     <Card>
-                        <CardHeader>
-                            <CardTitle>Ingresos y Egresos Generales</CardTitle>
-                            <CardDescription>Registre transacciones que no están asociadas a un banco específico.</CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                            <form onSubmit={handleAddGeneralTransaction} className="space-y-4">
-                                <div className="grid grid-cols-2 gap-2">
-                                     <Button type="button" variant={newGeneralTransaction.type === 'income' ? 'default' : 'outline'} onClick={() => setNewGeneralTransaction(prev => ({...prev, type: 'income'}))}>Ingreso</Button>
-                                     <Button type="button" variant={newGeneralTransaction.type === 'expense' ? 'destructive' : 'outline'} onClick={() => setNewGeneralTransaction(prev => ({...prev, type: 'expense'}))}>Egreso</Button>
-                                </div>
-                                <div>
-                                    <Label htmlFor="gen-tx-desc">Descripción</Label>
-                                    <Input id="gen-tx-desc" value={newGeneralTransaction.description} onChange={e => setNewGeneralTransaction(prev => ({...prev, description: e.target.value}))} placeholder="Ej. Venta de activos" />
-                                </div>
-                                <div>
-                                    <Label htmlFor="gen-tx-amount">Monto</Label>
-                                    <div className="relative">
-                                        <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                                        <Input id="gen-tx-amount" type="number" value={newGeneralTransaction.amount} onChange={e => setNewGeneralTransaction(prev => ({...prev, amount: e.target.value}))} placeholder="0.00" className="pl-8" />
+                                    </div>
+                                    <Button type="submit" className="w-full"><PlusCircle className="mr-2 h-4 w-4"/>Añadir Gasto</Button>
+                                </form>
+                                <div className="space-y-2 pt-4 mt-4 border-t">
+                                    <h4 className="text-sm font-medium">Lista de Gastos</h4>
+                                    <div className="border rounded-md p-2 space-y-2 max-h-48 overflow-y-auto">
+                                        {payables.length > 0 ? payables.map(p => (
+                                            <div key={p.id} className="text-sm flex justify-between items-center p-2 bg-background rounded-md">
+                                                <div>
+                                                    <p className="font-medium">{p.description}</p>
+                                                    <p className="text-muted-foreground">${p.amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+                                                </div>
+                                                <div className="flex items-center gap-1">
+                                                    {p.receiptUploaded ? (
+                                                        <Button size="xs" variant="secondary" onClick={() => handleDeleteReceipt(p.id)}><FileText className="h-3 w-3 mr-1"/>Borrar</Button>
+                                                    ) : (
+                                                        <Button size="xs" variant="outline" onClick={() => handleUploadReceipt(p.id)}><UploadCloud className="h-3 w-3 mr-1"/>Recibo</Button>
+                                                    )}
+                                                    {p.status === 'pending' ? (
+                                                        <Button size="xs" variant="outline" onClick={() => handleMarkAsPaid(p.id)}>Marcar Pagado</Button>
+                                                    ) : (
+                                                        <Badge variant="default" className="bg-green-100 text-green-800">Pagado</Badge>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        )) : <p className="text-muted-foreground text-center py-4">No hay gastos por pagar.</p>}
                                     </div>
                                 </div>
-                                <Button type="submit" className="w-full"><PlusCircle className="mr-2"/>Registrar Transacción</Button>
-                            </form>
-                             <div className="space-y-2 pt-4 mt-4 border-t">
-                                <h4 className="text-sm font-medium">Historial General</h4>
-                                <div className="border rounded-md p-2 space-y-2 max-h-48 overflow-y-auto">
-                                   {generalTransactions.length > 0 ? generalTransactions.map(tx => (
-                                        <div key={tx.id} className="text-xs flex justify-between items-center p-1 bg-background rounded">
-                                            <div>
-                                                <p className="text-muted-foreground">{tx.description}</p>
-                                                <p className="text-xs text-muted-foreground/80">{tx.date}</p>
-                                            </div>
-                                            <p className={`font-semibold ${tx.type === 'income' ? 'text-green-600' : 'text-red-600'}`}>
-                                                {tx.type === 'income' ? '+' : '-'}${tx.amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                                            </p>
+                            </div>
+                             <div>
+                               <h4 className="font-semibold mb-2">Registrar Ingreso/Egreso General</h4>
+                                <form onSubmit={handleAddGeneralTransaction} className="space-y-4">
+                                    <div className="grid grid-cols-2 gap-2">
+                                        <Button type="button" variant={newGeneralTransaction.type === 'income' ? 'default' : 'outline'} onClick={() => setNewGeneralTransaction(prev => ({...prev, type: 'income'}))}>Ingreso</Button>
+                                        <Button type="button" variant={newGeneralTransaction.type === 'expense' ? 'destructive' : 'outline'} onClick={() => setNewGeneralTransaction(prev => ({...prev, type: 'expense'}))}>Egreso</Button>
+                                    </div>
+                                    <div>
+                                        <Label htmlFor="gen-tx-desc">Descripción</Label>
+                                        <Input id="gen-tx-desc" value={newGeneralTransaction.description} onChange={e => setNewGeneralTransaction(prev => ({...prev, description: e.target.value}))} placeholder="Ej. Venta de activos" />
+                                    </div>
+                                    <div>
+                                        <Label htmlFor="gen-tx-amount">Monto</Label>
+                                        <div className="relative">
+                                            <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                                            <Input id="gen-tx-amount" type="number" value={newGeneralTransaction.amount} onChange={e => setNewGeneralTransaction(prev => ({...prev, amount: e.target.value}))} placeholder="0.00" className="pl-8" />
                                         </div>
-                                    )) : <p className="text-muted-foreground text-center py-4">No hay transacciones generales.</p>}
+                                    </div>
+                                    <Button type="submit" className="w-full"><PlusCircle className="mr-2"/>Registrar Transacción</Button>
+                                </form>
+                                <div className="space-y-2 pt-4 mt-4 border-t">
+                                    <h4 className="text-sm font-medium">Historial General</h4>
+                                    <div className="border rounded-md p-2 space-y-2 max-h-48 overflow-y-auto">
+                                    {generalTransactions.length > 0 ? generalTransactions.map(tx => (
+                                            <div key={tx.id} className="text-xs flex justify-between items-center p-1 bg-background rounded">
+                                                <div>
+                                                    <p className="text-muted-foreground">{tx.description}</p>
+                                                    <p className="text-xs text-muted-foreground/80">{tx.date}</p>
+                                                </div>
+                                                <p className={`font-semibold ${tx.type === 'income' ? 'text-green-600' : 'text-red-600'}`}>
+                                                    {tx.type === 'income' ? '+' : '-'}${tx.amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                                </p>
+                                            </div>
+                                        )) : <p className="text-muted-foreground text-center py-4">No hay transacciones generales.</p>}
+                                    </div>
                                 </div>
                             </div>
+                           </div>
                         </CardContent>
                     </Card>
-               </div>
+                </div>
             </TabsContent>
             
             <TabsContent value="documents" className="mt-6">
