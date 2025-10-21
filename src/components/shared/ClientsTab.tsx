@@ -11,18 +11,21 @@ import { useCRMData } from "@/contexts/CRMDataContext";
 import type { Client } from '@/lib/types';
 import { useToast } from "@/hooks/use-toast";
 import { AddEditClientDialog } from "@/components/shared/AddEditClientDialog";
+import { cn } from "@/lib/utils";
 
 interface ClientsTabProps {
     clients: Client[];
     isLoading: boolean;
+    onClientSelect: (client: Client) => void;
+    selectedClientId: string | null;
 }
 
-export function ClientsTab({ clients, isLoading }: ClientsTabProps) {
+export function ClientsTab({ clients, isLoading, onClientSelect, selectedClientId }: ClientsTabProps) {
   const { toast } = useToast();
 
   const { deleteClient, currentUser } = useCRMData();
 
-  const [dialogState, setDialogState] = useState<{ open: boolean; client: Client | null }>({ open: false, client: null });
+  const [editDialogState, setEditDialogState] = useState<{ open: boolean; client: Client | null }>({ open: false, client: null });
   const [clientToDelete, setClientToDelete] = useState<Client | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
 
@@ -31,8 +34,9 @@ export function ClientsTab({ clients, isLoading }: ClientsTabProps) {
     return [...clients].sort((a, b) => a.name.localeCompare(b.name));
   }, [clients]);
 
-  const handleRowClick = useCallback((client: Client) => {
-    setDialogState({ open: true, client: client });
+  const handleEditClick = useCallback((e: React.MouseEvent, client: Client) => {
+      e.stopPropagation();
+      setEditDialogState({ open: true, client });
   }, []);
   
   const openDeleteConfirmation = useCallback((e: React.MouseEvent, client: Client) => {
@@ -51,34 +55,17 @@ export function ClientsTab({ clients, isLoading }: ClientsTabProps) {
     setClientToDelete(null);
   }, [clientToDelete, deleteClient, toast]);
 
-  const canCreateClient = currentUser?.permissions.clients_create ?? true;
   const canEditClient = currentUser?.permissions.clients_edit ?? true;
   const canDeleteClient = currentUser?.permissions.clients_delete ?? true;
 
   const handleDialogClose = () => {
-      setDialogState({ open: false, client: null });
+      setEditDialogState({ open: false, client: null });
   }
 
   return (
       <>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between">
-            <div>
-              <CardTitle>Listado de Clientes</CardTitle>
-              <CardDescription>
-                {isLoading
-                  ? "Cargando clientes..."
-                  : `${sortedClients.length} cliente(s) encontrado(s).`}
-              </CardDescription>
-            </div>
-            {canCreateClient && (
-              <Button onClick={() => setDialogState({ open: true, client: null })} size="sm">
-                <PlusCircle className="mr-2 h-4 w-4" />
-                Añadir Nuevo Cliente
-              </Button>
-            )}
-          </CardHeader>
-          <CardContent>
+        <Card className="shadow-none border-none">
+          <CardContent className="p-0">
             {isLoading ? (
               <div className="flex items-center justify-center p-12">
                 <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -98,13 +85,15 @@ export function ClientsTab({ clients, isLoading }: ClientsTabProps) {
                     {sortedClients.map((client) => (
                       <TableRow
                         key={client.id}
+                        onClick={() => onClientSelect(client)}
+                        className={cn("cursor-pointer", selectedClientId === client.id && "bg-secondary hover:bg-secondary/90")}
                       >
                         <TableCell className="font-medium">{client.name}</TableCell>
                         <TableCell className="hidden sm:table-cell">{client.owner || 'N/A'}</TableCell>
                         <TableCell className="hidden md:table-cell">{client.category || 'N/A'}</TableCell>
                         <TableCell className="text-right">
                             {canEditClient && (
-                                <Button variant="ghost" size="icon" onClick={() => handleRowClick(client)}>
+                                <Button variant="ghost" size="icon" onClick={(e) => handleEditClick(e, client)}>
                                     <Edit3 className="h-4 w-4" />
                                 </Button>
                             )}
@@ -123,20 +112,18 @@ export function ClientsTab({ clients, isLoading }: ClientsTabProps) {
               <div className="flex flex-col items-center justify-center text-center text-muted-foreground py-12">
                 <Users className="h-16 w-16 mb-4 text-gray-400" />
                 <p className="text-lg font-semibold">No se encontraron clientes.</p>
-                {canCreateClient && (
-                  <p className="text-sm mt-1">
-                    Intente añadir un nuevo cliente utilizando el botón de arriba.
-                  </p>
-                )}
+                <p className="text-sm mt-1">
+                    Intente añadir un nuevo cliente.
+                </p>
               </div>
             )}
           </CardContent>
         </Card>
 
-      {dialogState.open && (
+      {editDialogState.open && (
            <AddEditClientDialog
-              client={dialogState.client}
-              isOpen={dialogState.open}
+              client={editDialogState.client}
+              isOpen={editDialogState.open}
               onClose={handleDialogClose}
            />
       )}
