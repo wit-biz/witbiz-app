@@ -14,6 +14,7 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
+  CardFooter,
 } from '@/components/ui/card';
 import {
   Form,
@@ -27,7 +28,7 @@ import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { PasswordInput } from '@/components/shared/PasswordInput';
 import { Logo } from '@/components/shared/logo';
-import { Loader2, LogIn } from 'lucide-react';
+import { Loader2, LogIn, Users } from 'lucide-react';
 import { initiateEmailSignIn } from '@/firebase/non-blocking-login';
 import { useAuth } from '@/firebase';
 
@@ -133,10 +134,16 @@ export default function LoginPage() {
               </Button>
             </form>
           </Form>
-          <div className="mt-4 text-center text-sm text-muted-foreground">
-            Crearemos una página sin contraseña para los promotores.
-          </div>
         </CardContent>
+        <CardFooter className="flex-col items-center justify-center pt-4">
+            <p className="text-sm text-muted-foreground mb-3">¿Eres promotor?</p>
+            <Button variant="outline" asChild>
+                <Link href="/promoter-login">
+                    <Users className="mr-2 h-4 w-4" />
+                    Acceso para Promotores
+                </Link>
+            </Button>
+        </CardFooter>
       </Card>
     </div>
   );
