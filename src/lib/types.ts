@@ -99,8 +99,8 @@ export type DonnaPermissions = {
     reservations_edit: boolean;
     reservations_delete: boolean;
     reservations_view: boolean;
-    workflows_edit: boolean;
-    workflows_view: boolean;
+    crm_edit: boolean;
+    crm_view: boolean;
     reports_view: boolean;
 }
 

@@ -29,7 +29,7 @@ const StageNumberIcon = ({ index }: { index: number }) => {
 };
 
 
-export default function WorkflowConfigurationPage() {
+export default function CrmConfigurationPage() {
   const { 
     currentUser,
     serviceWorkflows, 

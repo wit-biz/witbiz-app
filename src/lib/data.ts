@@ -114,5 +114,5 @@ export const navItems = [
     { href: '/contacts', label: 'Usuarios', icon: 'Users', requiredPermission: 'clients_view' },
     { href: '/tasks', label: 'Tareas', icon: 'ListTodo', requiredPermission: 'tasks_view' },
     { href: '/bookings', label: 'Reservaciones', icon: 'Calendar', requiredPermission: 'reservations_view' },
-    { href: '/workflows', label: 'Flujos', icon: 'Settings', requiredPermission: 'workflows_view' },
+    { href: '/crm', label: 'CRM', icon: 'Settings', requiredPermission: 'crm_view' },
 ];

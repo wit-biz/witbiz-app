@@ -109,7 +109,7 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
 
     const [currentUser, setCurrentUser] = useState<AuthenticatedUser | null>({
         uid: 'user-123', email: 'usuario@ejemplo.com', displayName: 'Usuario de Prueba', photoURL: null,
-        permissions: { donna: { clients_create: true, clients_edit: true, clients_delete: true, clients_view: true, documents_create: true, documents_edit: true, documents_delete: true, documents_view: true, tasks_create: true, tasks_edit: true, tasks_delete: true, tasks_view: true, reservations_create: true, reservations_edit: true, reservations_delete: true, reservations_view: true, workflows_edit: true, workflows_view: true, reports_view: true } }
+        permissions: { donna: { clients_create: true, clients_edit: true, clients_delete: true, clients_view: true, documents_create: true, documents_edit: true, documents_delete: true, documents_view: true, tasks_create: true, tasks_edit: true, tasks_delete: true, tasks_view: true, reservations_create: true, reservations_edit: true, reservations_delete: true, reservations_view: true, crm_edit: true, crm_view: true, reports_view: true } }
     });
 
     const [clients, setClients] = useState<Client[]>(initialClients);

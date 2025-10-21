@@ -229,7 +229,7 @@ export default function InicioPage() {
       <Card className="w-full">
          <CardHeader className="flex flex-row justify-between items-center w-full">
             <div className="flex-grow text-left">
-                <CardTitle className="flex items-center gap-2">Flujo de WitBiz</CardTitle>
+                <CardTitle className="flex items-center gap-2">CRM de WitBiz</CardTitle>
                 <CardDescription>Etapas clave en el ciclo de vida del Cliente.</CardDescription>
             </div>
             <div className="ml-auto flex-shrink-0 relative" onClick={(e) => e.stopPropagation()}>
