@@ -24,14 +24,14 @@ import { cn } from '@/lib/utils';
 const getCurrentMonthDate = (day: number) => {
     const date = new Date();
     date.setDate(day);
-    return date.toISOString().split('T')[0];
+    return format(date, 'yyyy-MM-dd');
 };
 
 const getLastMonthDate = (day: number) => {
     const date = new Date();
     date.setMonth(date.getMonth() - 1);
     date.setDate(day);
-    return date.toISOString().split('T')[0];
+    return format(date, 'yyyy-MM-dd');
 }
 
 
@@ -104,8 +104,8 @@ export default function PromoterPage() {
     };
     
     const dayModifiers = useMemo(() => {
-        const paidDays = commissions.filter(c => c.status === 'Pagada').map(c => new Date(c.paymentDate));
-        const pendingDays = commissions.filter(c => c.status === 'Pendiente').map(c => new Date(c.paymentDate));
+        const paidDays = commissions.filter(c => c.status === 'Pagada').map(c => new Date(c.paymentDate.replace(/-/g, '/')));
+        const pendingDays = commissions.filter(c => c.status === 'Pendiente').map(c => new Date(c.paymentDate.replace(/-/g, '/')));
         return {
             paid: paidDays,
             pending: pendingDays,
@@ -167,7 +167,7 @@ export default function PromoterPage() {
                                             {referredClients.map((client) => (
                                                 <TableRow key={client.id}>
                                                     <TableCell className="font-medium">{client.name}</TableCell>
-                                                    <TableCell>{isClient ? new Date(client.joinDate).toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: 'numeric' }) : ''}</TableCell>
+                                                    <TableCell>{isClient ? format(new Date(client.joinDate.replace(/-/g, '/')), 'PPP', { locale: es }) : ''}</TableCell>
                                                     <TableCell className="text-right">
                                                         <Badge variant={client.status === 'Activo' ? 'default' : 'secondary'}>{client.status}</Badge>
                                                     </TableCell>
@@ -194,13 +194,13 @@ export default function PromoterPage() {
                                           <style>
                                             {`
                                                 .day-paid { 
-                                                    background-color: hsl(var(--primary) / 0.2);
+                                                    background-color: hsl(var(--primary) / 0.2) !important;
                                                     font-weight: bold;
                                                 }
                                                 .day-pending { 
-                                                    background-color: hsl(210 100% 56% / 0.2); 
+                                                    background-color: hsl(210 100% 56% / 0.2) !important; 
                                                 }
-                                                .rdp-day_today:not([disabled]):not(.day-paid):not(.day-pending) {
+                                                .rdp-day_today:not([disabled]):not(.day-paid):not(.day-pending) > .rdp-button {
                                                     font-weight: normal;
                                                     background-color: hsl(var(--accent) / 0.5);
                                                 }
@@ -269,7 +269,7 @@ export default function PromoterPage() {
                                                     <TableCell className="font-medium">{c.clientName}</TableCell>
                                                     <TableCell>${c.saleAmount.toFixed(2)}</TableCell>
                                                     <TableCell className="font-semibold">${c.commission.toFixed(2)}</TableCell>
-                                                    <TableCell>{isClient ? format(new Date(c.paymentDate), 'PPP', { locale: es }) : ''}</TableCell>
+                                                    <TableCell>{isClient ? format(new Date(c.paymentDate.replace(/-/g, '/')), 'PPP', { locale: es }) : ''}</TableCell>
                                                     <TableCell className="text-right">
                                                         <Badge variant={c.status === 'Pagada' ? 'default' : 'secondary'}  className={cn(c.status === 'Pagada' && 'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300')}>{c.status}</Badge>
                                                     </TableCell>
@@ -370,4 +370,3 @@ export default function PromoterPage() {
         </div>
     );
 }
-
