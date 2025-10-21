@@ -12,8 +12,8 @@ import { SidebarNav } from './shared/sidebar-nav';
 const Logo = () => (
   <svg
     xmlns="http://www.w3.org/2000/svg"
-    viewBox="0 0 160 40" // Adjusted viewBox for a wider logo
-    className="h-8 w-auto" // Auto width to maintain aspect ratio
+    viewBox="0 0 160 40"
+    className="h-8 w-auto"
     aria-label="WitBiz Logo"
   >
     <rect className="logo-rect" x="0" y="0" width="80" height="40" fill="black" />
@@ -21,25 +21,25 @@ const Logo = () => (
     <text
       className="logo-wit-text"
       x="40"
-      y="27" // Vertically centered
-      fontFamily="Montserrat, sans-serif"
+      y="27"
       fontSize="20"
       fill="white"
       textAnchor="middle"
       fontWeight="bold"
+      style={{ fontFamily: 'Montserrat, sans-serif' }}
     >
       WIT
     </text>
     
     <text
-      x="120" // Positioned to the right of the box
-      y="27" // Vertically centered
-      fontFamily="Montserrat, sans-serif"
+      x="120"
+      y="27"
       fontSize="20"
-      fill="black" // Black text for dark mode compatibility
+      fill="black"
       textAnchor="middle"
       fontWeight="bold"
       className="logo-biz-text"
+      style={{ fontFamily: 'Montserrat, sans-serif' }}
     >
       BIZ
     </text>
