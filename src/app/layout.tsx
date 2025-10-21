@@ -12,6 +12,7 @@ import { ThemeProvider } from '@/components/theme-provider';
 import { useEffect, useState } from 'react';
 import { FirebaseClientProvider } from '@/firebase';
 import { CRMDataProvider } from '@/contexts/CRMDataContext';
+import { TasksProvider } from '@/contexts/TasksContext';
 
 
 export default function RootLayout({
@@ -47,6 +48,7 @@ export default function RootLayout({
           <GlobalNotificationProvider>
             <FirebaseClientProvider>
                 <CRMDataProvider>
+                  <TasksProvider>
                     <DialogsProvider>
                       <SidebarProvider>
                         {isClient ? (
@@ -64,6 +66,7 @@ export default function RootLayout({
                         )}
                       </SidebarProvider>
                     </DialogsProvider>
+                  </TasksProvider>
                 </CRMDataProvider>
             </FirebaseClientProvider>
           </GlobalNotificationProvider>

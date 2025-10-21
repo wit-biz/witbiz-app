@@ -60,7 +60,7 @@ const StageNumberIcon = ({ index, variant = 'default' }: { index: number, varian
 
 
 export default function InicioPage() {
-  const { clients, isLoadingClients, tasks, serviceWorkflows, isLoadingWorkflows } = useCRMData();
+  const { clients, isLoadingClients, tasks, isLoadingTasks, serviceWorkflows, isLoadingWorkflows } = useCRMData();
   const { setHasTasksForToday } = useTasksContext();
 
   const [currentClientDateForDashboard, setCurrentClientDateForDashboard] = useState<Date | null>(null);
