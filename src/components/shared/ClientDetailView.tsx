@@ -2,15 +2,16 @@
 "use client";
 
 import React, { useState, useCallback } from "react";
-import { type Client, type Document } from "@/lib/types";
+import { type Client, type Document, type Task } from "@/lib/types";
 import { useCRMData } from "@/contexts/CRMDataContext";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { X, Edit, Trash2, Plus, Download, FileText, UploadCloud, Info, Users, Target } from "lucide-react";
+import { X, Edit, Trash2, Plus, Download, FileText, UploadCloud, Info, Users, Target, ListTodo, CheckCircle2 } from "lucide-react";
 import { AddEditClientDialog } from "./AddEditClientDialog";
 import { useToast } from "@/hooks/use-toast";
 import { SmartDocumentUploadDialog } from "./SmartDocumentUploadDialog";
 import { DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { formatDateString } from "@/lib/utils";
 
 interface ClientDetailViewProps {
   client: Client | null;
@@ -50,6 +51,7 @@ export function ClientDetailView({ client, onClose }: ClientDetailViewProps) {
     
     const clientDocuments = getDocumentsByClientId(client.id);
     const clientTasks = getTasksByClientId(client.id);
+    const pendingTasks = clientTasks.filter(task => task.status === 'Pendiente');
     const currentStageObjective = client?.currentObjectiveId ? getObjectiveById(client.currentObjectiveId) : null;
 
     const handleDownload = (doc: Document) => {
@@ -101,6 +103,34 @@ export function ClientDetailView({ client, onClose }: ClientDetailViewProps) {
                             </CardContent>
                         </Card>
                     )}
+
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Tareas Pendientes</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            {pendingTasks.length > 0 ? (
+                                <ul className="space-y-2">
+                                    {pendingTasks.map(task => (
+                                        <li key={task.id} className="flex items-center justify-between p-2 rounded-md bg-secondary/30">
+                                            <div className="flex items-center gap-2 min-w-0">
+                                                <ListTodo className="h-4 w-4 text-muted-foreground flex-shrink-0"/>
+                                                <div className="truncate">
+                                                    <p className="text-sm font-medium truncate" title={task.title}>{task.title}</p>
+                                                    <p className="text-xs text-muted-foreground">Vence: {formatDateString(task.dueDate)}</p>
+                                                </div>
+                                            </div>
+                                        </li>
+                                    ))}
+                                </ul>
+                            ) : (
+                                <div className="text-center text-muted-foreground py-6">
+                                    <CheckCircle2 className="mx-auto h-8 w-8 text-green-500 mb-2" />
+                                    <p className="text-sm">No hay tareas pendientes para este cliente.</p>
+                                </div>
+                            )}
+                        </CardContent>
+                    </Card>
 
                     <Card>
                         <CardHeader>
