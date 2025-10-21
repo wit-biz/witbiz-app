@@ -1,139 +1,156 @@
 /**
-  * @description This ruleset enforces a strict user-ownership model for a CRM application. Each user has a dedicated data tree under `/users/{userId}`, and only the authenticated user matching the `userId` can access their data.
-  * @dataStructure
-  *   - /users/{userId}: Stores user profile data. The `userId` must match the authenticated user's UID.
-  *   - /users/{userId}/leads/{leadId}: Stores leads owned by the user.
-  *   - /users/{userId}/contacts/{contactId}: Stores contacts owned by the user.
-  *   - /users/{userId}/tasks/{taskId}: Stores tasks assigned to the user.
-  * @keySecurityDecisions
-  *   - User listing is disallowed.
-  *   - All data is private to the user, accessible only via their `userId`.
-  * @denormalizationForAuthorization  Path-based ownership is enforced.  The `userId` is derived from the path, not read from the document, simplifying and strengthening authorization. The `assignedTo` field in `Lead` and `Task` documents is used for relationship purposes, but the actual ownership and access control are enforced by the path structure.
-  * @structuralSegregation User-specific data (leads, contacts, tasks) is segregated into subcollections under the user's document.
-  */
- 
-
- rules_version = '2';
- service cloud.firestore {
+ * @file Overview
+ * This ruleset enforces a strict user-ownership model for all data within the WitCRM application.
+ * All data is nested under /users/{userId}, ensuring that users can only access their own data.
+ *
+ * Data Structure:
+ * - /users/{userId}: Stores user profile information.
+ * - /users/{userId}/leads/{leadId}: Stores leads owned by the user.
+ * - /users/{userId}/contacts/{contactId}: Stores contacts owned by the user.
+ * - /users/{userId}/tasks/{taskId}: Stores tasks assigned to the user.
+ *
+ * Key Security Decisions:
+ * - Users can only create, read, update, and delete data within their own /users/{userId} data tree.
+ * - Listing of user documents and subcollection documents is restricted to the owner.
+ *
+ * Denormalization for Authorization: N/A - Path-based ownership is used.
+ */
+rules_version = '2';
+service cloud.firestore {
   match /databases/{database}/documents {
- 
 
-  /**
-   * @description Defines helper function to check if the current user is signed in.
-   * @principle Ensures that only authenticated users can perform certain operations.
-   */
-  function isSignedIn() {
-  return request.auth != null;
-  }
- 
+    /**
+     * @description Checks if the request is authenticated.
+     */
+    function isSignedIn() {
+      return request.auth != null;
+    }
 
-  /**
-   * @description Defines a helper function to check if the request is made by the owner of the resource.
-   * @principle Enforces document ownership for all operations.
-   * @param {string} userId - The user ID to compare with the authenticated user's UID.
-   * @returns {boolean} - True if the user ID matches the authenticated user's UID, false otherwise.
-   */
-  function isOwner(userId) {
-  return request.auth.uid == userId;
-  }
- 
+    /**
+     * @description Checks if the request is made by the owner of the resource.
+     */
+    function isOwner(userId) {
+      return request.auth.uid == userId;
+    }
 
-  /**
-   * @description Defines a helper function to check if the request is made by the existing owner of the resource and that the resource exists.
-   * @principle Enforces document ownership for updates and deletes, ensuring the document exists.
-   * @param {string} userId - The user ID to compare with the authenticated user's UID.
-   * @returns {boolean} - True if the user ID matches the authenticated user's UID and the document exists, false otherwise.
-   */
-  function isExistingOwner(userId) {
-  return isOwner(userId) && existsAfter(resource);
-  }
- 
+    /**
+     * @description Checks if the request is made by the existing owner of the resource.
+     * The document must exist for this check to pass.
+     */
+    function isExistingOwner(userId) {
+        return isOwner(userId) && exists(resource);
+    }
 
-  /**
-   * @description Enforces that the user ID in the path matches the user ID in the request.
-   * @path /users/{userId}
-   * @allow (create) request.auth.uid: Creates a new user with ID matching their auth UID.
-   * @deny (create) request.auth.uid: Creates a new user with ID not matching their auth UID.
-   * @allow (get) request.auth.uid: Gets their own user document.
-   * @deny (get) request.auth.uid: Gets another user's document.
-   * @allow (update) request.auth.uid: Updates their own user document.
-   * @deny (update) request.auth.uid: Updates another user's document.
-   * @allow (delete) request.auth.uid: Deletes their own user document.
-   * @deny (delete) request.auth.uid: Deletes another user's document.
-   * @principle Enforces user-level access control.
-   */
-  match /users/{userId} {
-  allow get: if isOwner(userId);
-  allow list: if false;
-  allow create: if isOwner(userId);
-  allow update: if isExistingOwner(userId);
-  allow delete: if isExistingOwner(userId);
-  }
- 
+    /**
+     * @description Enforces that the `id` field in the incoming data matches the `userId` in the path.
+     * Used during `create` operations to establish ownership.
+     */
+    function isValidOwnerIdOnCreate(userId) {
+      return request.resource.data.id == userId;
+    }
 
-  /**
-   * @description Enforces that only the owner of a lead can create, read, update, or delete it.
-   * @path /users/{userId}/leads/{leadId}
-   * @allow (create) request.auth.uid: Creates a lead under their own user ID.
-   * @deny (create) request.auth.uid: Creates a lead under another user's ID.
-   * @allow (get) request.auth.uid: Gets a lead under their own user ID.
-   * @deny (get) request.auth.uid: Gets a lead under another user's ID.
-   * @allow (update) request.auth.uid: Updates a lead under their own user ID.
-   * @deny (update) request.auth.uid: Updates a lead under another user's ID.
-   * @allow (delete) request.auth.uid: Deletes a lead under their own user ID.
-   * @deny (delete) request.auth.uid: Deletes a lead under another user's ID.
-   * @principle Enforces user-level access control for leads.
-   */
-  match /users/{userId}/leads/{leadId} {
-  allow get: if isOwner(userId);
-  allow list: if false;
-  allow create: if isOwner(userId);
-  allow update: if isExistingOwner(userId);
-  allow delete: if isExistingOwner(userId);
-  }
- 
+    /**
+     * @description Enforces that the `id` field is immutable and matches the `userId` in the path.
+     * Used during `update` operations to prevent ownership changes.
+     */
+    function isValidOwnerIdOnUpdate(userId) {
+      return request.resource.data.id == resource.data.id;
+    }
+    
+    /**
+     * @description
+     * This rule governs access to user profile documents.
+     * Only the authenticated user matching the 'userId' can read, update, or delete their profile.
+     * Anyone can create a user profile, but only if the uid matches the document id.
+     * @path /users/{userId}
+     * @allow (create) User with UID 'test_user' can create a document at /users/test_user if request.auth.uid == 'test_user' and the document id is set to 'test_user'.
+     * @allow (get, update, delete) User with UID 'test_user' can read, update, or delete the document at /users/test_user.
+     * @deny (create) User with UID 'test_user' cannot create a document at /users/another_user.
+     * @deny (get, update, delete) User with UID 'test_user' cannot read, update, or delete the document at /users/another_user.
+     * @principle Enforces user-ownership for profile data.
+     */
+    match /users/{userId} {
+      allow get: if isOwner(userId);
+      allow list: if false;
+      allow create: if isSignedIn() && isOwner(userId);
+      allow update: if isSignedIn() && isOwner(userId);
+      allow delete: if isSignedIn() && isOwner(userId);
+    }
 
-  /**
-   * @description Enforces that only the owner of a contact can create, read, update, or delete it.
-   * @path /users/{userId}/contacts/{contactId}
-   * @allow (create) request.auth.uid: Creates a contact under their own user ID.
-   * @deny (create) request.auth.uid: Creates a contact under another user's ID.
-   * @allow (get) request.auth.uid: Gets a contact under their own user ID.
-   * @deny (get) request.auth.uid: Gets a contact under another user's ID.
-   * @allow (update) request.auth.uid: Updates a contact under their own user ID.
-   * @deny (update) request.auth.uid: Updates a contact under another user's ID.
-   * @allow (delete) request.auth.uid: Deletes a contact under their own user ID.
-   * @deny (delete) request.auth.uid: Deletes a contact under another user's ID.
-   * @principle Enforces user-level access control for contacts.
-   */
-  match /users/{userId}/contacts/{contactId} {
-  allow get: if isOwner(userId);
-  allow list: if false;
-  allow create: if isOwner(userId);
-  allow update: if isExistingOwner(userId);
-  allow delete: if isExistingOwner(userId);
-  }
- 
+    /**
+     * @description
+     * This rule governs access to leads owned by a specific user.
+     * Only the user matching the 'userId' can create, read, update, or delete leads under their user ID.
+     * @path /users/{userId}/leads/{leadId}
+     * @allow (create) User with UID 'test_user' can create a lead at /users/test_user/leads/test_lead.
+     * @allow (get, update, delete) User with UID 'test_user' can read, update, or delete the lead at /users/test_user/leads/test_lead.
+     * @deny (create) User with UID 'test_user' cannot create a lead at /users/another_user/leads/test_lead.
+     * @deny (get, update, delete) User with UID 'test_user' cannot read, update, or delete the lead at /users/another_user/leads/test_lead.
+     * @principle Enforces user-ownership for leads.
+     */
+    match /users/{userId}/leads/{leadId} {
+      allow get: if isOwner(userId);
+      allow list: if false;
+      allow create: if isSignedIn() && isOwner(userId);
+      allow update: if isSignedIn() && isOwner(userId);
+      allow delete: if isSignedIn() && isOwner(userId);
+    }
 
-  /**
-   * @description Enforces that only the owner of a task can create, read, update, or delete it.
-   * @path /users/{userId}/tasks/{taskId}
-   * @allow (create) request.auth.uid: Creates a task under their own user ID.
-   * @deny (create) request.auth.uid: Creates a task under another user's ID.
-   * @allow (get) request.auth.uid: Gets a task under their own user ID.
-   * @deny (get) request.auth.uid: Gets a task under another user's ID.
-   * @allow (update) request.auth.uid: Updates a task under their own user ID.
-   * @deny (update) request.auth.uid: Updates a task under another user's ID.
-   * @allow (delete) request.auth.uid: Deletes a task under their own user ID.
-   * @deny (delete) request.auth.uid: Deletes a task under another user's ID.
-   * @principle Enforces user-level access control for tasks.
-   */
-  match /users/{userId}/tasks/{taskId} {
-  allow get: if isOwner(userId);
-  allow list: if false;
-  allow create: if isOwner(userId);
-  allow update: if isExistingOwner(userId);
-  allow delete: if isExistingOwner(userId);
+    /**
+     * @description
+     * This rule governs access to contacts owned by a specific user.
+     * Only the user matching the 'userId' can create, read, update, or delete contacts under their user ID.
+     * @path /users/{userId}/contacts/{contactId}
+     * @allow (create) User with UID 'test_user' can create a contact at /users/test_user/contacts/test_contact.
+     * @allow (get, update, delete) User with UID 'test_user' can read, update, or delete the contact at /users/test_user/contacts/test_contact.
+     * @deny (create) User with UID 'test_user' cannot create a contact at /users/another_user/contacts/test_contact.
+     * @deny (get, update, delete) User with UID 'test_user' cannot read, update, or delete the contact at /users/another_user/contacts/test_contact.
+     * @principle Enforces user-ownership for contacts.
+     */
+    match /users/{userId}/contacts/{contactId} {
+      allow get: if isOwner(userId);
+      allow list: if false;
+      allow create: if isSignedIn() && isOwner(userId);
+      allow update: if isSignedIn() && isOwner(userId);
+      allow delete: if isSignedIn() && isOwner(userId);
+    }
+
+    /**
+     * @description
+     * This rule governs access to tasks assigned to a specific user.
+     * Only the user matching the 'userId' can create, read, update, or delete tasks under their user ID.
+     * @path /users/{userId}/tasks/{taskId}
+     * @allow (create) User with UID 'test_user' can create a task at /users/test_user/tasks/test_task.
+     * @allow (get, update, delete) User with UID 'test_user' can read, update, or delete the task at /users/test_user/tasks/test_task.
+     * @deny (create) User with UID 'test_user' cannot create a task at /users/another_user/tasks/test_task.
+     * @deny (get, update, delete) User with UID 'test_user' cannot read, update, or delete the task at /users/another_user/tasks/test_task.
+     * @principle Enforces user-ownership for tasks.
+     */
+    match /users/{userId}/tasks/{taskId} {
+      allow get: if isOwner(userId);
+      allow list: if false;
+      allow create: if isSignedIn() && isOwner(userId);
+      allow update: if isSignedIn() && isOwner(userId);
+      allow delete: if isSignedIn() && isOwner(userId);
+    }
+    
+     /**
+     * @description
+     * This rule governs access to serviceWorkflows owned by a specific user.
+     * Only the user matching the 'userId' can create, read, update, or delete serviceWorkflows under their user ID.
+     * @path /users/{userId}/serviceWorkflows/{serviceWorkflowId}
+     * @allow (create) User with UID 'test_user' can create a serviceWorkflow at /users/test_user/serviceWorkflows/test_serviceWorkflow.
+     * @allow (get, update, delete) User with UID 'test_user' can read, update, or delete the serviceWorkflow at /users/test_user/serviceWorkflows/test_serviceWorkflow.
+     * @deny (create) User with UID 'test_user' cannot create a serviceWorkflow at /users/another_user/serviceWorkflows/test_serviceWorkflow.
+     * @deny (get, update, delete) User with UID 'test_user' cannot read, update, or delete the serviceWorkflow at /users/another_user/serviceWorkflows/test_serviceWorkflow.
+     * @principle Enforces user-ownership for serviceWorkflows.
+     */
+     match /users/{userId}/serviceWorkflows/{serviceWorkflowId} {
+      allow get: if isOwner(userId);
+      allow list: if false;
+      allow create: if isSignedIn() && isOwner(userId);
+      allow update: if isSignedIn() && isOwner(userId);
+      allow delete: if isSignedIn() && isOwner(userId);
+    }
   }
-  }
- }
+}
