@@ -18,6 +18,7 @@ import {
   LogOut,
 } from "lucide-react";
 import { PlaceHolderImages } from "@/lib/placeholder-images";
+import Link from "next/link";
 
 const userAvatar = PlaceHolderImages.find((img) => img.id === "user-avatar");
 
@@ -46,9 +47,11 @@ export function UserNav() {
             </div>
           </DropdownMenuLabel>
           <DropdownMenuSeparator />
-          <DropdownMenuItem>
-            <UserCircle className="mr-2 h-4 w-4" />
-            <span>Perfil</span>
+          <DropdownMenuItem asChild>
+            <Link href="/settings">
+              <UserCircle className="mr-2 h-4 w-4" />
+              <span>Perfil</span>
+            </Link>
           </DropdownMenuItem>
           <DropdownMenuItem>
             <LifeBuoy className="mr-2 h-4 w-4" />
