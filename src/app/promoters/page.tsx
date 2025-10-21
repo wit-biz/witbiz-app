@@ -6,7 +6,7 @@ import { useAuth } from '@/firebase';
 import { signOut } from 'firebase/auth';
 import { useRouter } from 'next/navigation';
 import { LogOut, Loader2, Users, CircleDollarSign, Download, CalendarDays, HardDriveDownload, Presentation, Image as ImageIcon } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Logo } from '@/components/shared/logo';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Calendar } from '@/components/ui/calendar';
@@ -40,6 +40,11 @@ export default function PromoterPage() {
     const router = useRouter();
     const [isLoggingOut, setIsLoggingOut] = useState(false);
     const [date, setDate] = useState<Date | undefined>(new Date());
+    const [isClient, setIsClient] = useState(false);
+
+    useEffect(() => {
+        setIsClient(true);
+    }, []);
     
     const paymentDays = commissions.filter(c => c.status === 'Pagada').map(c => new Date(c.paymentDate));
     const pendingPaymentDays = commissions.filter(c => c.status === 'Pendiente').map(c => new Date(c.paymentDate));
@@ -97,7 +102,7 @@ export default function PromoterPage() {
                                             {referredClients.map(client => (
                                                 <TableRow key={client.id}>
                                                     <TableCell className="font-medium">{client.name}</TableCell>
-                                                    <TableCell>{new Date(client.joinDate).toLocaleDateString()}</TableCell>
+                                                    <TableCell>{isClient ? new Date(client.joinDate).toLocaleDateString() : ''}</TableCell>
                                                     <TableCell className="text-right">
                                                         <Badge variant={client.status === 'Activo' ? 'default' : 'secondary'}>{client.status}</Badge>
                                                     </TableCell>
@@ -134,7 +139,7 @@ export default function PromoterPage() {
                                                             <TableCell className="font-medium">{com.clientName}</TableCell>
                                                             <TableCell>${com.saleAmount.toFixed(2)}</TableCell>
                                                             <TableCell className="font-semibold text-green-600">${com.commission.toFixed(2)}</TableCell>
-                                                            <TableCell>{new Date(com.paymentDate).toLocaleDateString()}</TableCell>
+                                                            <TableCell>{isClient ? new Date(com.paymentDate).toLocaleDateString() : ''}</TableCell>
                                                             <TableCell className="text-right">
                                                                 <Badge variant={com.status === 'Pagada' ? 'default' : 'outline'}>{com.status}</Badge>
                                                             </TableCell>
