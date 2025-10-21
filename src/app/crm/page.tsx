@@ -1,7 +1,7 @@
 
 "use client";
 
-import React, { useMemo } from "react";
+import React, { useMemo, useState } from "react";
 import Link from "next/link";
 import { Header } from "@/components/header";
 import {
@@ -21,6 +21,7 @@ import {
 import { cn } from "@/lib/utils";
 import type { Client, WorkflowStage, ServiceWorkflow } from '@/lib/types';
 import { useCRMData } from "@/contexts/CRMDataContext";
+import { ClientStageDetailDialog } from "@/components/shared/ClientStageDetailDialog";
 
 const StageNumberIcon = ({ index }: { index: number }) => {
   return (
@@ -32,6 +33,10 @@ const StageNumberIcon = ({ index }: { index: number }) => {
 
 export default function CrmPage() {
   const { clients, isLoadingClients, serviceWorkflows, isLoadingWorkflows } = useCRMData();
+
+  const [selectedClientForDialog, setSelectedClientForDialog] = useState<Client | null>(null);
+  const [selectedStageForDialog, setSelectedStageForDialog] = useState<WorkflowStage | null>(null);
+  const [isDetailDialogOpen, setIsDetailDialogOpen] = useState(false);
 
   const clientsByStage = useMemo(() => {
     if (isLoadingClients || !clients) return new Map<string, Client[]>();
@@ -48,6 +53,18 @@ export default function CrmPage() {
     return map;
   }, [clients, isLoadingClients]);
 
+  const allStages = useMemo(() => {
+    return serviceWorkflows.flatMap(s => s.subServices.flatMap(ss => ss.stages));
+  }, [serviceWorkflows]);
+
+  const handleClientClick = (client: Client) => {
+    const stage = allStages.find(s => s.id === client.currentWorkflowStageId);
+    if (stage) {
+        setSelectedClientForDialog(client);
+        setSelectedStageForDialog(stage);
+        setIsDetailDialogOpen(true);
+    }
+  };
 
   if (isLoadingWorkflows || isLoadingClients) {
     return (
@@ -104,12 +121,14 @@ export default function CrmPage() {
                             <CardContent className="flex-grow space-y-2 overflow-y-auto">
                                 {clientsInStage.length > 0 ? (
                                 clientsInStage.map(client => (
-                                    <Link key={client.id} href={`/contacts?openClient=${client.id}`} passHref>
-                                        <div className="p-2 border rounded-md cursor-pointer hover:bg-secondary/50 transition-all bg-background">
-                                            <p className="font-semibold text-sm truncate">{client.name}</p>
-                                            <p className="text-xs text-muted-foreground truncate">{client.category}</p>
-                                        </div>
-                                    </Link>
+                                    <div 
+                                        key={client.id}
+                                        onClick={() => handleClientClick(client)}
+                                        className="p-2 border rounded-md cursor-pointer hover:bg-secondary/50 transition-all bg-background"
+                                    >
+                                        <p className="font-semibold text-sm truncate">{client.name}</p>
+                                        <p className="text-xs text-muted-foreground truncate">{client.category}</p>
+                                    </div>
                                 ))
                                 ) : (
                                 <div className="text-center text-muted-foreground py-6 text-sm flex flex-col items-center">
@@ -126,6 +145,13 @@ export default function CrmPage() {
             </Card>
         ))}
       </main>
+      
+      <ClientStageDetailDialog
+        isOpen={isDetailDialogOpen}
+        onClose={() => setIsDetailDialogOpen(false)}
+        client={selectedClientForDialog}
+        stage={selectedStageForDialog}
+      />
     </div>
   );
 }
