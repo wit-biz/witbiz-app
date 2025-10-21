@@ -8,6 +8,7 @@ import { TasksProvider } from '@/contexts/TasksContext';
 import { CRMDataProvider } from '@/contexts/CRMDataContext';
 import { GlobalNotificationProvider } from '@/contexts/NotificationContext';
 import { UserNav } from '@/components/shared/user-nav';
+import { ThemeProvider } from '@/components/theme-provider';
 
 export const metadata: Metadata = {
   title: 'WitBiz',
@@ -30,20 +31,27 @@ export default function RootLayout({
         />
       </head>
       <body className="antialiased" style={{ fontFamily: 'Montserrat, sans-serif' }}>
-        <GlobalNotificationProvider>
-          <CRMDataProvider>
-            <TasksProvider>
-              <SidebarProvider>
-                <AppSidebar />
-                <SidebarInset>
-                  <UserNav />
-                  {children}
-                </SidebarInset>
-              </SidebarProvider>
-            </TasksProvider>
-          </CRMDataProvider>
-        </GlobalNotificationProvider>
-        <Toaster />
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="system"
+          enableSystem
+          disableTransitionOnChange
+        >
+          <GlobalNotificationProvider>
+            <CRMDataProvider>
+              <TasksProvider>
+                <SidebarProvider>
+                  <AppSidebar />
+                  <SidebarInset>
+                    <UserNav />
+                    {children}
+                  </SidebarInset>
+                </SidebarProvider>
+              </TasksProvider>
+            </CRMDataProvider>
+          </GlobalNotificationProvider>
+          <Toaster />
+        </ThemeProvider>
       </body>
     </html>
   );

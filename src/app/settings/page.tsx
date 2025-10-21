@@ -28,6 +28,7 @@ import {
   EyeOff,
 } from "lucide-react";
 import { useState } from "react";
+import { ThemeToggle } from "@/components/shared/theme-toggle";
 
 const PasswordInput = ({ id, placeholder }: { id: string, placeholder: string }) => {
     const [showPassword, setShowPassword] = useState(false);
@@ -185,9 +186,7 @@ export default function SettingsPage() {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <p className="text-muted-foreground">
-                  Aquí podrás cambiar entre el tema claro y oscuro.
-                </p>
+                <ThemeToggle />
               </CardContent>
             </Card>
           </TabsContent>
