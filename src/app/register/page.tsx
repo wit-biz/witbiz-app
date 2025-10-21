@@ -15,20 +15,19 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Loader2 } from "lucide-react";
-import { useAuth } from "@/firebase";
-import { createUserWithEmailAndPassword, updateProfile } from "firebase/auth";
 import { useToast } from "@/hooks/use-toast";
 import { Logo } from "@/components/shared/logo";
 import { PasswordInput } from "@/components/shared/PasswordInput";
+import { useCRMData } from "@/contexts/CRMDataContext";
 
 export default function RegisterPage() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const auth = useAuth();
   const router = useRouter();
   const { toast } = useToast();
+  const { registerUser } = useCRMData();
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -42,20 +41,19 @@ export default function RegisterPage() {
     }
     setIsLoading(true);
     try {
-      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-      if (userCredential.user) {
-        await updateProfile(userCredential.user, {
-            displayName: name,
-        });
-      }
-      toast({ title: "Registro exitoso", description: "Su cuenta ha sido creada." });
-      router.push("/");
+      await registerUser(name, email, password);
+      toast({ title: "Registro exitoso", description: "Su cuenta ha sido creada. Por favor, inicie sesión." });
+      router.push("/login");
     } catch (error: any) {
       console.error("Registration failed:", error);
+      let description = "No se pudo crear la cuenta. Inténtelo más tarde.";
+      if (error.code === 'auth/email-already-in-use') {
+          description = "Este correo electrónico ya está en uso."
+      }
       toast({
         variant: "destructive",
         title: "Error en el registro",
-        description: error.message || "No se pudo crear la cuenta.",
+        description: description,
       });
       setIsLoading(false);
     }

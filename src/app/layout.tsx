@@ -11,13 +11,13 @@ import { UserNav } from '@/components/shared/user-nav';
 import { ThemeProvider } from '@/components/theme-provider';
 import { useEffect, useState } from 'react';
 import { FirebaseClientProvider, useUser } from '@/firebase';
-import { CRMDataProvider } from '@/contexts/CRMDataContext';
+import { CRMDataProvider, useCRMData } from '@/contexts/CRMDataContext';
 import { TasksProvider } from '@/contexts/TasksContext';
 import { usePathname, useRouter } from 'next/navigation';
 import { Loader2 } from 'lucide-react';
 
 function AppContent({ children }: { children: React.ReactNode }) {
-  const { user, isUserLoading } = useUser();
+  const { currentUser, isLoadingCurrentUser } = useCRMData();
   const router = useRouter();
   const pathname = usePathname();
   const [isClient, setIsClient] = useState(false);
@@ -27,12 +27,12 @@ function AppContent({ children }: { children: React.ReactNode }) {
   }, []);
   
   useEffect(() => {
-    if (!isUserLoading && !user && pathname !== '/login' && pathname !== '/register') {
+    if (!isLoadingCurrentUser && !currentUser && pathname !== '/login' && pathname !== '/register') {
       router.push('/login');
     }
-  }, [user, isUserLoading, pathname, router]);
+  }, [currentUser, isLoadingCurrentUser, pathname, router]);
 
-  if (isUserLoading || !isClient) {
+  if (isLoadingCurrentUser || !isClient) {
     return (
       <div className="flex h-screen w-full items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin" />
@@ -46,8 +46,7 @@ function AppContent({ children }: { children: React.ReactNode }) {
     return <>{children}</>;
   }
 
-  if (!user) {
-    // This can happen briefly during redirection
+  if (!currentUser) {
     return (
         <div className="flex h-screen w-full items-center justify-center">
             <Loader2 className="h-8 w-8 animate-spin" />

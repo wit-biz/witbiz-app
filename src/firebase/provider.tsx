@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { DependencyList, createContext, useContext, ReactNode, useMemo, useState, useEffect } from 'react';
@@ -47,6 +48,7 @@ export interface UserHookResult { // Renamed from UserAuthHookResult for consist
   user: User | null;
   isUserLoading: boolean;
   userError: Error | null;
+  auth: Auth;
 }
 
 // React Context
@@ -170,7 +172,10 @@ export function useMemoFirebase<T>(factory: () => T, deps: DependencyList): T | 
  * This provides the User object, loading status, and any auth errors.
  * @returns {UserHookResult} Object with user, isUserLoading, userError.
  */
-export const useUser = (): UserHookResult => { // Renamed from useAuthUser
-  const { user, isUserLoading, userError } = useFirebase(); // Leverages the main hook
-  return { user, isUserLoading, userError };
+export const useUser = (useAuthInstance = false): UserHookResult => {
+  const { user, isUserLoading, userError, auth } = useFirebase();
+  if(useAuthInstance) {
+    return { user, isUserLoading, userError, auth };
+  }
+  return { user, isUserLoading, userError, auth };
 };

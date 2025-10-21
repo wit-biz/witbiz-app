@@ -104,12 +104,19 @@ export type DonnaPermissions = {
     reports_view: boolean;
     audit_view: boolean;
     admin_view: boolean;
+    dashboard: boolean;
 }
 
 export type UserRole = {
     id: string;
     name: string;
-    permissions: DonnaPermissions;
+    permissions: Partial<DonnaPermissions>;
+}
+
+export interface AppUser {
+    uid: string;
+    roleId: string;
+    // ... otros campos del perfil de usuario
 }
 
 export interface AuthenticatedUser {
@@ -117,9 +124,8 @@ export interface AuthenticatedUser {
   email: string | null;
   displayName: string | null;
   photoURL: string | null;
-  permissions: {
-    donna: Partial<DonnaPermissions>;
-  };
+  roleId?: string;
+  permissions: Partial<DonnaPermissions>;
 }
 
 export interface Service {
@@ -146,5 +152,5 @@ export interface NavItem {
   label: string;
   icon: LucideIcon | string;
   exactMatch?: boolean;
-  requiredPermission: 'dashboard' | keyof DonnaPermissions;
+  requiredPermission: keyof DonnaPermissions;
 }

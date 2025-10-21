@@ -47,7 +47,7 @@ const icons: { [key: string]: LucideIcon } = {
 export function SidebarNav() {
   const pathname = usePathname();
   const { state: sidebarState, isMobile, setOpenMobile } = useSidebar();
-  const { currentUser } = useCRMData(); 
+  const { currentUser, isLoadingCurrentUser } = useCRMData(); 
 
   const navItems: NavItem[] = navData.map(item => ({
       ...item,
@@ -61,26 +61,17 @@ export function SidebarNav() {
   }, [isMobile, setOpenMobile]);
 
   const userHasPermission = (permissionKey: NavItem['requiredPermission']) => {
-    // While loading, assume permissions to avoid empty menu
-    if (!currentUser) return true;
-    
-    if (!currentUser.permissions?.donna) return false;
-    if (permissionKey === 'dashboard') return true;
-    
-    if (permissionKey in currentUser.permissions.donna) {
-        const permissionValue = currentUser.permissions.donna[permissionKey as keyof typeof currentUser.permissions.donna];
-        // If permission is explicitly set, use its value. Otherwise, default to true during loading/initial state.
-        return permissionValue !== undefined ? permissionValue : true;
+    if (isLoadingCurrentUser || !currentUser) {
+      return permissionKey === 'dashboard';
     }
-    // Default to true if not specified, can be changed to false for a more restrictive approach
-    return true;
+    return currentUser.permissions[permissionKey] === true;
   };
 
   const renderNavItem = (item: NavItem) => {
     if (!userHasPermission(item.requiredPermission)) {
       return null;
     }
-    const isActive = item.exactMatch ? pathname === item.href : pathname.startsWith(item.href) && item.href !== '/';
+    const isActive = item.href === '/' ? pathname === '/' : pathname.startsWith(item.href) && item.href !== '/';
     const Icon = item.icon;
 
     return (

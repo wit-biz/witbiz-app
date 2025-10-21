@@ -16,13 +16,17 @@ import {
     type WorkflowStageObjective,
     type DocumentType,
     type DonnaPermissions,
+    type AppUser,
+    type UserRole,
 } from '@/lib/types';
 import { useUser, useCollection, useFirestore, useMemoFirebase, useDoc } from '@/firebase';
-import { collection, doc, writeBatch } from 'firebase/firestore';
+import { collection, doc, writeBatch, setDoc } from 'firebase/firestore';
 import { setDocumentNonBlocking, addDocumentNonBlocking, updateDocumentNonBlocking, deleteDocumentNonBlocking } from '@/firebase/non-blocking-updates';
+import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
 
 interface CRMContextType {
   currentUser: AuthenticatedUser | null;
+  isLoadingCurrentUser: boolean;
   clients: Client[];
   isLoadingClients: boolean;
   addClient: (newClientData: Omit<Client, 'id'>) => Promise<Client | null>;
@@ -72,41 +76,68 @@ interface CRMContextType {
   deleteObjectiveFromStage: (serviceId: string, subServiceId: string | null, stageId: string, objectiveId: string) => Promise<boolean>;
   getObjectiveById: (objectiveId: string) => WorkflowStageObjective | null;
   completeClientObjective: (clientId: string) => Promise<{ nextObjective: WorkflowStageObjective | null; updatedClient: Client | null; }>;
+  registerUser: (name: string, email: string, pass: string) => Promise<any>;
 }
 
 const CRMContext = createContext<CRMContextType | undefined>(undefined);
 
+const defaultPermissions: Partial<DonnaPermissions> = {
+    dashboard: true,
+    clients_view: false, clients_create: false, clients_edit: false, clients_delete: false,
+    tasks_view: false, tasks_create: false, tasks_edit: false, tasks_delete: false,
+    reservations_view: false, reservations_create: false, reservations_edit: false, reservations_delete: false,
+    documents_view: false, documents_create: false, documents_edit: false, documents_delete: false,
+    crm_view: false, crm_edit: false,
+    reports_view: false,
+    audit_view: false,
+    admin_view: false,
+};
+
 export function CRMDataProvider({ children }: { children: ReactNode }) {
     const { showNotification } = useGlobalNotification();
-    const { user, isUserLoading } = useUser();
+    const { user: authUser, isUserLoading: isAuthUserLoading, auth } = useUser(true);
     const firestore = useFirestore();
+    
+    const [currentUser, setCurrentUser] = useState<AuthenticatedUser | null>(null);
+    const [isLoadingCurrentUser, setIsLoadingCurrentUser] = useState(true);
 
-    const currentUser: AuthenticatedUser | null = user ? {
-        uid: user.uid,
-        email: user.email,
-        displayName: user.displayName || 'Usuario Anónimo',
-        photoURL: user.photoURL,
-        permissions: {
-            donna: {
-                clients_create: true, clients_edit: true, clients_delete: true, clients_view: true,
-                documents_create: true, documents_edit: true, documents_delete: true, documents_view: true,
-                tasks_create: true, tasks_edit: true, tasks_delete: true, tasks_view: true,
-                reservations_create: true, reservations_edit: true, reservations_delete: true, reservations_view: true,
-                crm_edit: true, crm_view: true, reports_view: true,
-                audit_view: true, admin_view: true,
-                dashboard: true,
-            }
+    const appUserDocRef = useMemoFirebase(() => authUser ? doc(firestore, 'users', authUser.uid) : null, [firestore, authUser]);
+    const { data: appUser, isLoading: isLoadingAppUser } = useDoc<AppUser>(appUserDocRef);
+    
+    const roleDocRef = useMemoFirebase(() => appUser?.roleId ? doc(firestore, 'roles', appUser.roleId) : null, [firestore, appUser]);
+    const { data: userRole, isLoading: isLoadingUserRole } = useDoc<UserRole>(roleDocRef);
+
+    useEffect(() => {
+        setIsLoadingCurrentUser(isAuthUserLoading || isLoadingAppUser || isLoadingUserRole);
+        if (isAuthUserLoading) return;
+        
+        if (!authUser) {
+            setCurrentUser(null);
+            return;
         }
-    } : null;
 
-    const userDocRef = useMemoFirebase(() => user ? doc(firestore, 'users', user.uid) : null, [firestore, user]);
+        const permissions = userRole ? { ...defaultPermissions, ...userRole.permissions } : defaultPermissions;
+        
+        setCurrentUser({
+            uid: authUser.uid,
+            email: authUser.email,
+            displayName: authUser.displayName,
+            photoURL: authUser.photoURL,
+            roleId: appUser?.roleId,
+            permissions,
+        });
 
-    const clientsQuery = useMemoFirebase(() => userDocRef ? collection(userDocRef, 'clients') : null, [userDocRef]);
-    const tasksQuery = useMemoFirebase(() => userDocRef ? collection(userDocRef, 'tasks') : null, [userDocRef]);
-    const documentsQuery = useMemoFirebase(() => userDocRef ? collection(userDocRef, 'documents') : null, [userDocRef]);
-    const notesQuery = useMemoFirebase(() => userDocRef ? collection(userDocRef, 'notes') : null, [userDocRef]);
-    const reservationsQuery = useMemoFirebase(() => userDocRef ? collection(userDocRef, 'bookings') : null, [userDocRef]);
-    const workflowsQuery = useMemoFirebase(() => userDocRef ? collection(userDocRef, 'serviceWorkflows') : null, [userDocRef]);
+    }, [authUser, isAuthUserLoading, appUser, isLoadingAppUser, userRole, isLoadingUserRole]);
+    
+
+    const userBasedCollection = (collectionName: string) => useMemoFirebase(() => currentUser?.uid ? collection(firestore, 'users', currentUser.uid, collectionName) : null, [currentUser]);
+
+    const clientsQuery = userBasedCollection('clients');
+    const tasksQuery = userBasedCollection('tasks');
+    const documentsQuery = userBasedCollection('documents');
+    const notesQuery = userBasedCollection('notes');
+    const reservationsQuery = userBasedCollection('bookings');
+    const workflowsQuery = userBasedCollection('serviceWorkflows');
 
     const { data: clients = [], isLoading: isLoadingClients } = useCollection<Client>(clientsQuery);
     const { data: tasks = [], isLoading: isLoadingTasks } = useCollection<Task>(tasksQuery);
@@ -117,63 +148,42 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
 
 
     const addClient = async (data: Omit<Client, 'id'>) => {
-        if (!user) {
-            showNotification('error', 'No autenticado', 'Debe iniciar sesión para añadir un cliente.');
-            return null;
-        }
-        if (!clientsQuery) return null;
-        try {
-            const docRef = await addDocumentNonBlocking(clientsQuery, data);
-            showNotification('success', 'Cliente añadido', `El cliente ${data.name} ha sido creado.`);
-            return { id: docRef.id, ...data };
-        } catch (error: any) {
-            showNotification('error', 'Error al crear cliente', error.message);
-            return null;
-        }
+        if (!currentUser || !clientsQuery) return null;
+        const docRef = await addDocumentNonBlocking(clientsQuery, data);
+        return { id: docRef.id, ...data };
     };
     const updateClient = async (id: string, updates: Partial<Client>) => {
-        if (!user) return false;
-        const docRef = doc(firestore, 'users', user.uid, 'clients', id);
+        if (!currentUser) return false;
+        const docRef = doc(firestore, 'users', currentUser.uid, 'clients', id);
         updateDocumentNonBlocking(docRef, updates);
-        showNotification('success', 'Cliente actualizado');
         return true;
     };
     const deleteClient = async (id: string) => {
-        if (!user) return false;
-        const docRef = doc(firestore, 'users', user.uid, 'clients', id);
+        if (!currentUser) return false;
+        const docRef = doc(firestore, 'users', currentUser.uid, 'clients', id);
         deleteDocumentNonBlocking(docRef);
-        showNotification('info', 'Cliente eliminado');
         return true;
     };
     const getClientById = useCallback((id: string) => clients.find(c => c.id === id), [clients]);
 
     const addTask = async (data: Omit<Task, 'id' | 'status'>) => {
-        if (!user || !tasksQuery) {
-            showNotification('error', 'No autenticado');
-            return null;
-        }
+        if (!currentUser || !tasksQuery) return null;
         const clientName = clients.find(c => c.id === data.clientId)?.name || 'N/A';
         const newTaskData: Omit<Task, 'id'> = { ...data, status: 'Pendiente', clientName };
-        try {
-            const docRef = await addDocumentNonBlocking(tasksQuery, newTaskData);
-            showNotification('success', 'Tarea añadida');
-            return { id: docRef.id, ...newTaskData };
-        } catch (error: any) {
-            showNotification('error', 'Error al añadir tarea', error.message);
-            return null;
-        }
+        const docRef = await addDocumentNonBlocking(tasksQuery, newTaskData);
+        return { id: docRef.id, ...newTaskData };
     };
 
     const updateTask = async (id: string, updates: Partial<Task>) => {
-        if (!user) return false;
-        const docRef = doc(firestore, 'users', user.uid, 'tasks', id);
+        if (!currentUser) return false;
+        const docRef = doc(firestore, 'users', currentUser.uid, 'tasks', id);
         updateDocumentNonBlocking(docRef, updates);
         return true;
     };
     
     const deleteTask = async (id: string) => {
-        if (!user) return false;
-        const docRef = doc(firestore, 'users', user.uid, 'tasks', id);
+        if (!currentUser) return false;
+        const docRef = doc(firestore, 'users', currentUser.uid, 'tasks', id);
         deleteDocumentNonBlocking(docRef);
         return true;
     };
@@ -183,27 +193,22 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
     }, [tasks]);
 
     const addDocument = async (data: Omit<Document, 'id' | 'uploadedAt' | 'downloadURL'>) => {
-         if (!user || !documentsQuery) {
-            showNotification('error', 'No autenticado');
-            return null;
-        }
-        // In a real app, you would upload the file to Firebase Storage first and get the URL.
+         if (!currentUser || !documentsQuery) return null;
         const newDocData: Omit<Document, 'id'> = { ...data, uploadedAt: new Date(), downloadURL: '#' };
         const docRef = await addDocumentNonBlocking(documentsQuery, newDocData);
-        showNotification('success', 'Documento añadido');
         return { id: docRef.id, ...newDocData };
     };
     
     const updateDocument = async (id: string, updates: Partial<Document>) => {
-        if (!user) return false;
-        const docRef = doc(firestore, 'users', user.uid, 'documents', id);
+        if (!currentUser) return false;
+        const docRef = doc(firestore, 'users', currentUser.uid, 'documents', id);
         updateDocumentNonBlocking(docRef, updates);
         return true;
     };
     
     const deleteDocument = async (id: string) => {
-        if (!user) return false;
-        const docRef = doc(firestore, 'users', user.uid, 'documents', id);
+        if (!currentUser) return false;
+        const docRef = doc(firestore, 'users', currentUser.uid, 'documents', id);
         deleteDocumentNonBlocking(docRef);
         return true;
     };
@@ -213,100 +218,95 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
     }, [documents]);
     
     const addNote = async (clientId: string, text: string) => {
-        if (!user || !notesQuery) {
-            showNotification('error', 'No autenticado');
-            return null;
-        }
+        if (!currentUser || !notesQuery) return null;
         const newNoteData = { clientId, text, content: text, createdAt: new Date(), authorName: currentUser?.displayName || 'Usuario' };
         const docRef = await addDocumentNonBlocking(notesQuery, newNoteData);
-        showNotification('success', 'Nota añadida');
         return { id: docRef.id, ...newNoteData };
     };
     
     const updateNote = async (noteId: string, newText: string, clientId?: string) => {
-        if (!user) return false;
-        const docRef = doc(firestore, 'users', user.uid, 'notes', noteId);
+        if (!currentUser) return false;
+        const docRef = doc(firestore, 'users', currentUser.uid, 'notes', noteId);
         updateDocumentNonBlocking(docRef, { text: newText, content: newText, updatedAt: new Date() });
         return true;
     };
     
     const deleteNote = async (noteId: string, clientId?: string) => {
-        if (!user) return false;
-        const docRef = doc(firestore, 'users', user.uid, 'notes', noteId);
+        if (!currentUser) return false;
+        const docRef = doc(firestore, 'users', currentUser.uid, 'notes', noteId);
         deleteDocumentNonBlocking(docRef);
         return true;
     };
     
     const addDonnaReservation = async (data: Omit<Reservation, 'id'>) => {
-        if (!user || !reservationsQuery) { showNotification('error', 'No autenticado'); return null; }
+        if (!currentUser || !reservationsQuery) return null;
         const docRef = await addDocumentNonBlocking(reservationsQuery, data);
-        showNotification('success', 'Reservación creada');
         return { id: docRef.id, ...data };
     };
 
     const updateDonnaReservation = async (id: string, updates: Partial<Reservation>) => {
-        if (!user) return false;
-        const docRef = doc(firestore, 'users', user.uid, 'bookings', id);
+        if (!currentUser) return false;
+        const docRef = doc(firestore, 'users', currentUser.uid, 'bookings', id);
         updateDocumentNonBlocking(docRef, updates);
         return true;
     };
     
     const deleteDonnaReservation = async (id: string) => {
-        if (!user) return false;
-        const docRef = doc(firestore, 'users', user.uid, 'bookings', id);
+        if (!currentUser) return false;
+        const docRef = doc(firestore, 'users', currentUser.uid, 'bookings', id);
         deleteDocumentNonBlocking(docRef);
         return true;
     };
     
     const addService = async () => {
-        if (!user || !workflowsQuery) return null;
+        if (!currentUser || !workflowsQuery) return null;
         const newService: Omit<ServiceWorkflow, 'id'> = { name: "Nuevo Servicio (sin título)", stages: [], subServices: [] };
         const docRef = await addDocumentNonBlocking(workflowsQuery, newService);
         return { id: docRef.id, ...newService };
     };
     
     const updateService = async (serviceId: string, updates: Partial<ServiceWorkflow>) => {
-        if (!user) return false;
-        const docRef = doc(firestore, 'users', user.uid, 'serviceWorkflows', serviceId);
+        if (!currentUser) return false;
+        const docRef = doc(firestore, 'users', currentUser.uid, 'serviceWorkflows', serviceId);
         updateDocumentNonBlocking(docRef, updates);
         return true;
     };
     
     const deleteService = async (serviceId: string) => {
-        if (!user) return false;
-        const docRef = doc(firestore, 'users', user.uid, 'serviceWorkflows', serviceId);
+        if (!currentUser) return false;
+        const docRef = doc(firestore, 'users', currentUser.uid, 'serviceWorkflows', serviceId);
         deleteDocumentNonBlocking(docRef);
         return true;
     };
 
     const addSubServiceToService = async (serviceId: string) => {
         const service = serviceWorkflows.find(s => s.id === serviceId);
-        if (!user || !service) return false;
+        if (!currentUser || !service) return false;
         const newSub: SubService = { id: `sub-${Date.now()}`, name: 'Nuevo Sub-Servicio', stages: [] };
         const updatedSubServices = [...(service.subServices || []), newSub];
-        updateDocumentNonBlocking(doc(firestore, 'users', user.uid, 'serviceWorkflows', serviceId), { subServices: updatedSubServices });
+        updateDocumentNonBlocking(doc(firestore, 'users', currentUser.uid, 'serviceWorkflows', serviceId), { subServices: updatedSubServices });
         return true;
     };
     
     const updateSubServiceName = async (serviceId: string, subServiceId: string, newName: string) => {
         const service = serviceWorkflows.find(s => s.id === serviceId);
-        if (!user || !service) return false;
+        if (!currentUser || !service) return false;
         const updatedSubServices = service.subServices.map(sub => sub.id === subServiceId ? { ...sub, name: newName } : sub);
-        updateDocumentNonBlocking(doc(firestore, 'users', user.uid, 'serviceWorkflows', serviceId), { subServices: updatedSubServices });
+        updateDocumentNonBlocking(doc(firestore, 'users', currentUser.uid, 'serviceWorkflows', serviceId), { subServices: updatedSubServices });
         return true;
     };
 
     const deleteSubServiceFromService = async (serviceId: string, subServiceId: string) => {
         const service = serviceWorkflows.find(s => s.id === serviceId);
-        if (!user || !service) return false;
+        if (!currentUser || !service) return false;
         const updatedSubServices = service.subServices.filter(sub => sub.id !== subServiceId);
-        updateDocumentNonBlocking(doc(firestore, 'users', user.uid, 'serviceWorkflows', serviceId), { subServices: updatedSubServices });
+        updateDocumentNonBlocking(doc(firestore, 'users', currentUser.uid, 'serviceWorkflows', serviceId), { subServices: updatedSubServices });
         return true;
     };
     
     const addStageToSubService = async (serviceId: string, subServiceId: string | null) => {
         const service = serviceWorkflows.find(s => s.id === serviceId);
-        if (!user || !service) return false;
+        if (!currentUser || !service) return false;
 
         const newStage: WorkflowStage = { id: `stage-${Date.now()}`, title: 'Nueva Etapa', order: 0, objectives: [] };
 
@@ -322,13 +322,13 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
             targetSubService.stages.push(newStage);
         }
 
-        updateDocumentNonBlocking(doc(firestore, 'users', user.uid, 'serviceWorkflows', serviceId), { subServices: service.subServices });
+        updateDocumentNonBlocking(doc(firestore, 'users', currentUser.uid, 'serviceWorkflows', serviceId), { subServices: service.subServices });
         return true;
     };
     
     const updateStageInSubService = async (serviceId: string, subServiceId: string | null, stageId: string, updates: Partial<WorkflowStage>) => {
         const service = serviceWorkflows.find(s => s.id === serviceId);
-        if (!user || !service) return false;
+        if (!currentUser || !service) return false;
 
         const targetSubService = subServiceId ? service.subServices.find(s => s.id === subServiceId) : service.subServices[0];
 
@@ -336,13 +336,13 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
             targetSubService.stages = targetSubService.stages.map(st => st.id === stageId ? { ...st, ...updates } : st);
         }
 
-        updateDocumentNonBlocking(doc(firestore, 'users', user.uid, 'serviceWorkflows', serviceId), { subServices: service.subServices });
+        updateDocumentNonBlocking(doc(firestore, 'users', currentUser.uid, 'serviceWorkflows', serviceId), { subServices: service.subServices });
         return true;
     };
     
     const deleteStageFromSubService = async (serviceId: string, subServiceId: string | null, stageId: string) => {
         const service = serviceWorkflows.find(s => s.id === serviceId);
-        if (!user || !service) return false;
+        if (!currentUser || !service) return false;
 
         const targetSubService = subServiceId ? service.subServices.find(s => s.id === subServiceId) : service.subServices[0];
 
@@ -350,13 +350,13 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
             targetSubService.stages = targetSubService.stages.filter(st => st.id !== stageId);
         }
 
-        updateDocumentNonBlocking(doc(firestore, 'users', user.uid, 'serviceWorkflows', serviceId), { subServices: service.subServices });
+        updateDocumentNonBlocking(doc(firestore, 'users', currentUser.uid, 'serviceWorkflows', serviceId), { subServices: service.subServices });
         return true;
     };
     
     const addObjectiveToStage = async (serviceId: string, subServiceId: string | null, stageId: string) => {
         const service = serviceWorkflows.find(s => s.id === serviceId);
-        if (!user || !service) return false;
+        if (!currentUser || !service) return false;
 
         const newObjective: WorkflowStageObjective = { id: `obj-${Date.now()}`, description: 'Nuevo Objetivo', order: 0, subObjectives: [] };
         
@@ -370,13 +370,13 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
             }
         }
         
-        updateDocumentNonBlocking(doc(firestore, 'users', user.uid, 'serviceWorkflows', serviceId), { subServices: service.subServices });
+        updateDocumentNonBlocking(doc(firestore, 'users', currentUser.uid, 'serviceWorkflows', serviceId), { subServices: service.subServices });
         return true;
     };
 
     const updateObjectiveInStage = async (serviceId: string, subServiceId: string | null, stageId: string, objectiveId: string, updates: Partial<WorkflowStageObjective>) => {
         const service = serviceWorkflows.find(s => s.id === serviceId);
-        if (!user || !service) return false;
+        if (!currentUser || !service) return false;
 
         const targetSubService = subServiceId ? service.subServices.find(s => s.id === subServiceId) : service.subServices[0];
         
@@ -387,13 +387,13 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
             }
         }
         
-        updateDocumentNonBlocking(doc(firestore, 'users', user.uid, 'serviceWorkflows', serviceId), { subServices: service.subServices });
+        updateDocumentNonBlocking(doc(firestore, 'users', currentUser.uid, 'serviceWorkflows', serviceId), { subServices: service.subServices });
         return true;
     };
     
     const deleteObjectiveFromStage = async (serviceId: string, subServiceId: string | null, stageId: string, objectiveId: string) => {
         const service = serviceWorkflows.find(s => s.id === serviceId);
-        if (!user || !service) return false;
+        if (!currentUser || !service) return false;
         
         const targetSubService = subServiceId ? service.subServices.find(s => s.id === subServiceId) : service.subServices[0];
 
@@ -404,8 +404,20 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
             }
         }
         
-        updateDocumentNonBlocking(doc(firestore, 'users', user.uid, 'serviceWorkflows', serviceId), { subServices: service.subServices });
+        updateDocumentNonBlocking(doc(firestore, 'users', currentUser.uid, 'serviceWorkflows', serviceId), { subServices: service.subServices });
         return true;
+    };
+
+    const registerUser = async (name: string, email: string, pass: string) => {
+        if (!auth) throw new Error("Auth not initialized");
+        const userCredential = await createUserWithEmailAndPassword(auth, email, pass);
+        
+        if (userCredential.user) {
+            await updateProfile(userCredential.user, { displayName: name });
+            const userDocRef = doc(firestore, "users", userCredential.user.uid);
+            await setDoc(userDocRef, { uid: userCredential.user.uid, roleId: "collaborator" });
+        }
+        return userCredential;
     };
 
 
@@ -423,7 +435,7 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
 
     const completeClientObjective = useCallback(async (clientId: string): Promise<{ nextObjective: WorkflowStageObjective | null; updatedClient: Client | null; }> => {
         const client = clients.find(c => c.id === clientId);
-        if (!client || !client.currentWorkflowStageId || !client.currentObjectiveId) {
+        if (!client || !client.currentWorkflowStageId || !client.currentObjectiveId || !currentUser) {
             showNotification('error', 'Error', 'El cliente no tiene un objetivo activo.');
             return { nextObjective: null, updatedClient: null };
         }
@@ -441,16 +453,13 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
             return { nextObjective: null, updatedClient: null };
         }
 
-        // Check if there is a next objective in the same stage
         if (currentObjectiveIndex + 1 < currentStage.objectives.length) {
             const nextObjective = currentStage.objectives[currentObjectiveIndex + 1];
             const updates = { currentObjectiveId: nextObjective.id };
             await updateClient(clientId, updates);
             const updatedClient = { ...client, ...updates };
-            showNotification('success', '¡Objetivo completado!', `Siguiente objetivo: ${nextObjective.description}`);
             return { nextObjective, updatedClient };
         } else {
-            // Move to the next stage
             const currentStageIndex = allStages.findIndex(s => s.id === currentStage.id);
             if (currentStageIndex + 1 < allStages.length) {
                 const nextStage = allStages[currentStageIndex + 1];
@@ -461,35 +470,33 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
                 };
                 await updateClient(clientId, updates);
                 const updatedClient = { ...client, ...updates };
-                showNotification('success', `¡Etapa "${currentStage.title}" completada!`, `Iniciando etapa: "${nextStage.title}"`);
                 return { nextObjective, updatedClient };
             } else {
-                // Workflow complete
-                const updates = { currentObjectiveId: undefined }; // Or set a specific "completed" status
+                const updates = { currentObjectiveId: undefined };
                 await updateClient(clientId, updates);
                 const updatedClient = { ...client, ...updates };
-                showNotification('success', '¡Flujo de trabajo completado!', 'Todos los objetivos han sido cumplidos.');
                 return { nextObjective: null, updatedClient };
             }
         }
-    }, [clients, serviceWorkflows, updateClient, showNotification]);
+    }, [clients, serviceWorkflows, updateClient, showNotification, currentUser]);
 
     const value = useMemo(() => ({
-        currentUser, clients, isLoadingClients, addClient, updateClient, deleteClient, getClientById,
+        currentUser, isLoadingCurrentUser, clients, isLoadingClients, addClient, updateClient, deleteClient, getClientById,
         tasks, isLoadingTasks, addTask, updateTask, deleteTask, getTasksByClientId,
         documents, isLoadingDocuments, addDocument, updateDocument, deleteDocument, getDocumentsByClientId,
         notes, isLoadingNotes, addNote, updateNote, deleteNote,
         donnaReservations, isLoadingDonnaReservations, addDonnaReservation, updateDonnaReservation, deleteDonnaReservation,
         serviceWorkflows, isLoadingWorkflows, addService, updateService, deleteService, addSubServiceToService, updateSubServiceName, deleteSubServiceFromService, addStageToSubService, updateStageInSubService, deleteStageFromSubService, addObjectiveToStage, updateObjectiveInStage, deleteObjectiveFromStage,
-        getObjectiveById, completeClientObjective
+        getObjectiveById, completeClientObjective,
+        registerUser,
     }), [
-        currentUser, clients, isLoadingClients, getClientById,
+        currentUser, isLoadingCurrentUser, clients, isLoadingClients, getClientById,
         tasks, isLoadingTasks, getTasksByClientId,
         documents, isLoadingDocuments, getDocumentsByClientId,
         notes, isLoadingNotes,
         donnaReservations, isLoadingDonnaReservations,
         serviceWorkflows, isLoadingWorkflows,
-        getObjectiveById, completeClientObjective, addClient, updateClient, deleteClient, addTask, updateTask, deleteTask, addDocument, updateDocument, deleteDocument, addNote, updateNote, deleteNote, addDonnaReservation, updateDonnaReservation, deleteDonnaReservation, addService, updateService, deleteService, addSubServiceToService, updateSubServiceName, deleteSubServiceFromService, addStageToSubService, updateStageInSubService, deleteStageFromSubService, addObjectiveToStage, updateObjectiveInStage, deleteObjectiveFromStage
+        getObjectiveById, completeClientObjective, addClient, updateClient, deleteClient, addTask, updateTask, deleteTask, addDocument, updateDocument, deleteDocument, addNote, updateNote, deleteNote, addDonnaReservation, updateDonnaReservation, deleteDonnaReservation, addService, updateService, deleteService, addSubServiceToService, updateSubServiceName, deleteSubServiceFromService, addStageToSubService, updateStageInSubService, deleteStageFromSubService, addObjectiveToStage, updateObjectiveInStage, deleteObjectiveFromStage, registerUser
     ]);
 
     return (
