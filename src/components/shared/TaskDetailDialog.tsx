@@ -16,6 +16,8 @@ import { Edit, Trash, CheckCircle, Loader2 } from 'lucide-react';
 import { Task } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+
 
 interface TaskDetailDialogProps {
   isOpen: boolean;
@@ -82,50 +84,65 @@ export function TaskDetailDialog({
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent>
-        <DialogHeader>
-          <DialogTitle>{task.title}</DialogTitle>
-          <DialogDescription>
-            Vence: {format(new Date(task.dueDate), 'PPP')} | Estado: {task.status}
-          </DialogDescription>
-        </DialogHeader>
-        <div className="py-4 space-y-2">
-          <p>
-            <strong>Cliente:</strong> {task.clientName}
-          </p>
-          <p>
-            <strong>Detalles:</strong> {task.description || 'Sin detalles.'}
-          </p>
-        </div>
-        <DialogFooter className="sm:justify-between">
-          <div>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setIsEditing(!isEditing)}
-              disabled={isSubmitting}
-            >
-              <Edit className="mr-2 h-4 w-4" /> Editar
-            </Button>
-            <Button
-              variant="destructive"
-              size="sm"
-              onClick={handleDelete}
-              disabled={isSubmitting}
-              className="ml-2"
-            >
-               {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Trash className="mr-2 h-4 w-4" />}
-              Eliminar
-            </Button>
-          </div>
-          <Button
-            size="sm"
-            onClick={handleMarkAsComplete}
-            disabled={isSubmitting || task.status === 'Completada'}
-          >
-            {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <CheckCircle className="mr-2 h-4 w-4" />}
-            Marcar como Completada
-          </Button>
-        </DialogFooter>
+        <TooltipProvider>
+            <DialogHeader>
+            <DialogTitle>{task.title}</DialogTitle>
+            <DialogDescription>
+                Vence: {format(new Date(task.dueDate), 'PPP')} | Estado: {task.status}
+            </DialogDescription>
+            </DialogHeader>
+            <div className="py-4 space-y-2">
+            <p>
+                <strong>Cliente:</strong> {task.clientName}
+            </p>
+            <p>
+                <strong>Detalles:</strong> {task.description || 'Sin detalles.'}
+            </p>
+            </div>
+            <DialogFooter className="sm:justify-between">
+            <div className="flex gap-2">
+                <Tooltip>
+                    <TooltipTrigger asChild>
+                        <Button
+                            variant="outline"
+                            size="icon"
+                            onClick={() => setIsEditing(!isEditing)}
+                            disabled={isSubmitting}
+                        >
+                            <Edit className="h-4 w-4" />
+                        </Button>
+                    </TooltipTrigger>
+                    <TooltipContent><p>Editar</p></TooltipContent>
+                </Tooltip>
+                <Tooltip>
+                    <TooltipTrigger asChild>
+                        <Button
+                            variant="destructive"
+                            size="icon"
+                            onClick={handleDelete}
+                            disabled={isSubmitting}
+                        >
+                            {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash className="h-4 w-4" />}
+                        </Button>
+                    </TooltipTrigger>
+                    <TooltipContent><p>Eliminar</p></TooltipContent>
+                </Tooltip>
+            </div>
+            <Tooltip>
+                <TooltipTrigger asChild>
+                    <Button
+                        size="icon"
+                        onClick={handleMarkAsComplete}
+                        disabled={isSubmitting || task.status === 'Completada'}
+                        className="bg-green-600 hover:bg-green-700 text-white"
+                    >
+                         {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle className="h-4 w-4" />}
+                    </Button>
+                </TooltipTrigger>
+                <TooltipContent><p>Marcar como Completada</p></TooltipContent>
+            </Tooltip>
+            </DialogFooter>
+        </TooltipProvider>
       </DialogContent>
     </Dialog>
   );
