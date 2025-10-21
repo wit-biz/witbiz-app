@@ -16,7 +16,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Loader2 } from "lucide-react";
 import { useAuth } from "@/firebase";
-import { signInWithEmailAndPassword } from "firebase/auth";
+import { signInWithEmailAndPassword, type FirebaseError } from "firebase/auth";
 import { useToast } from "@/hooks/use-toast";
 import { Logo } from "@/components/shared/logo";
 import { PasswordInput } from "@/components/shared/PasswordInput";
@@ -38,10 +38,14 @@ export default function LoginPage() {
       router.push("/");
     } catch (error: any) {
       console.error("Login failed:", error);
+      let description = "Por favor, revise sus credenciales.";
+      if (error.code === 'auth/invalid-credential' || error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password') {
+        description = "Credenciales inválidas. Por favor, revise su email y contraseña.";
+      }
       toast({
         variant: "destructive",
         title: "Error al iniciar sesión",
-        description: error.message || "Por favor, revise sus credenciales.",
+        description: description,
       });
       setIsLoading(false);
     }
