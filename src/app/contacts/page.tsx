@@ -13,6 +13,7 @@ import { useCRMData } from "@/contexts/CRMDataContext";
 import { AddEditClientDialog } from "@/components/shared/AddEditClientDialog";
 import { ClientDetailView } from "@/components/shared/ClientDetailView";
 import type { Client } from "@/lib/types";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 
 export default function DirectoryPage() {
   const { clients, isLoadingClients, getClientById, currentUser } = useCRMData();
@@ -21,26 +22,36 @@ export default function DirectoryPage() {
 
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
   const [isAddClientDialogOpen, setIsAddClientDialogOpen] = useState(false);
+  const [isDetailDialogOpen, setIsDetailDialogOpen] = useState(false);
   const [activeTab, setActiveTab] = useState('clients');
   
   useEffect(() => {
     const openClientId = searchParams.get('openClient');
     if (openClientId) {
       const client = getClientById(openClientId);
-      if(client) setSelectedClient(client);
+      if(client) {
+        setSelectedClient(client);
+        setIsDetailDialogOpen(true);
+      }
     } else {
         setSelectedClient(null);
+        setIsDetailDialogOpen(false);
     }
   }, [searchParams, clients, getClientById]);
   
   const handleClientSelect = (client: Client) => {
     setSelectedClient(client);
+    setIsDetailDialogOpen(true);
     router.push(`/contacts?openClient=${client.id}`, { scroll: false });
   };
   
   const handleCloseDetailView = () => {
-    setSelectedClient(null);
-    router.push('/contacts', { scroll: false });
+    setIsDetailDialogOpen(false);
+    // Allow animation to finish before removing from URL
+    setTimeout(() => {
+        setSelectedClient(null);
+        router.push('/contacts', { scroll: false });
+    }, 300);
   }
 
   const canCreateClient = currentUser?.permissions.clients_create ?? true;
@@ -62,37 +73,30 @@ export default function DirectoryPage() {
               </button>
           )}
         </Header>
-        <main className="flex-1 overflow-hidden">
-          <div className="h-full grid grid-cols-1 lg:grid-cols-2">
-            <div className="h-full overflow-y-auto p-4 md:p-6 lg:border-r">
-                <Tabs defaultValue="clients" className="w-full" onValueChange={setActiveTab}>
-                    <TabsList className="grid w-full grid-cols-2 mb-6">
-                        <TabsTrigger value="clients">
-                            <Users className="mr-2 h-4 w-4"/>
-                            Clientes
-                        </TabsTrigger>
-                        <TabsTrigger value="promoters">
-                            <UserCheck className="mr-2 h-4 w-4" />
-                            Promotores
-                        </TabsTrigger>
-                    </TabsList>
-                    <TabsContent value="clients">
-                        <ClientsTab 
-                          clients={clients} 
-                          isLoading={isLoadingClients}
-                          onClientSelect={handleClientSelect}
-                          selectedClientId={selectedClient?.id || null}
-                        />
-                    </TabsContent>
-                    <TabsContent value="promoters">
-                        <PromotersTab promoters={promoters} isLoading={false} />
-                    </TabsContent>
-                </Tabs>
-            </div>
-            <div className="hidden lg:block h-full overflow-y-auto">
-                <ClientDetailView client={selectedClient} onClose={handleCloseDetailView} />
-            </div>
-          </div>
+        <main className="flex-1 p-4 md:p-8">
+            <Tabs defaultValue="clients" className="w-full" onValueChange={setActiveTab}>
+                <TabsList className="grid w-full grid-cols-2 mb-6">
+                    <TabsTrigger value="clients">
+                        <Users className="mr-2 h-4 w-4"/>
+                        Clientes
+                    </TabsTrigger>
+                    <TabsTrigger value="promoters">
+                        <UserCheck className="mr-2 h-4 w-4" />
+                        Promotores
+                    </TabsTrigger>
+                </TabsList>
+                <TabsContent value="clients">
+                    <ClientsTab 
+                      clients={clients} 
+                      isLoading={isLoadingClients}
+                      onClientSelect={handleClientSelect}
+                      selectedClientId={selectedClient?.id || null}
+                    />
+                </TabsContent>
+                <TabsContent value="promoters">
+                    <PromotersTab promoters={promoters} isLoading={false} />
+                </TabsContent>
+            </Tabs>
         </main>
       </div>
       
@@ -101,6 +105,12 @@ export default function DirectoryPage() {
         isOpen={isAddClientDialogOpen}
         onClose={() => setIsAddClientDialogOpen(false)}
       />
+
+      <Dialog open={isDetailDialogOpen} onOpenChange={(open) => !open && handleCloseDetailView()}>
+        <DialogContent className="max-w-2xl">
+           <ClientDetailView client={selectedClient} onClose={handleCloseDetailView} />
+        </DialogContent>
+      </Dialog>
     </>
   );
 }

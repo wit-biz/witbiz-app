@@ -6,7 +6,7 @@ import { type Client, type Document } from "@/lib/types";
 import { useCRMData } from "@/contexts/CRMDataContext";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { X, Edit, Trash2, Plus, Download, FileText, UploadCloud, Info, Users } from "lucide-react";
+import { X, Edit, Trash2, Plus, Download, FileText, UploadCloud, Info, Users, Target } from "lucide-react";
 import { AddEditClientDialog } from "./AddEditClientDialog";
 import { useToast } from "@/hooks/use-toast";
 import { SmartDocumentUploadDialog } from "./SmartDocumentUploadDialog";
@@ -37,9 +37,18 @@ export function ClientDetailView({ client, onClose }: ClientDetailViewProps) {
     const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
     const [isUploadDialogOpen, setIsUploadDialogOpen] = useState(false);
     
-    const clientDocuments = client ? getDocumentsByClientId(client.id) : [];
-    const clientTasks = client ? getTasksByClientId(client.id) : [];
-
+    if (!client) {
+        return (
+            <div className="h-full flex flex-col items-center justify-center text-center p-8 bg-background">
+                <Users className="h-16 w-16 text-muted-foreground/50 mb-4" />
+                <h3 className="text-lg font-semibold text-foreground">Seleccione un Cliente</h3>
+                <p className="text-sm text-muted-foreground">Cargando detalles del cliente...</p>
+            </div>
+        );
+    }
+    
+    const clientDocuments = getDocumentsByClientId(client.id);
+    const clientTasks = getTasksByClientId(client.id);
     const currentStageObjective = client?.currentObjectiveId ? getObjectiveById(client.currentObjectiveId) : null;
 
     const handleDownload = (doc: Document) => {
@@ -48,20 +57,10 @@ export function ClientDetailView({ client, onClose }: ClientDetailViewProps) {
             description: `Se ha iniciado la descarga de "${doc.name}".`
         });
     };
-
-    if (!client) {
-        return (
-            <div className="h-full flex flex-col items-center justify-center text-center p-8 bg-background">
-                <Users className="h-16 w-16 text-muted-foreground/50 mb-4" />
-                <h3 className="text-lg font-semibold text-foreground">Seleccione un Cliente</h3>
-                <p className="text-sm text-muted-foreground">Haga clic en un cliente de la lista para ver sus detalles aquí.</p>
-            </div>
-        );
-    }
     
     return (
         <>
-            <div className="relative h-full bg-background p-4 md:p-6">
+            <div className="relative bg-background max-h-[80vh] overflow-y-auto p-1">
                 <Button variant="ghost" size="icon" className="absolute top-3 right-3 h-7 w-7" onClick={onClose}>
                     <X className="h-4 w-4" />
                     <span className="sr-only">Cerrar</span>
@@ -94,7 +93,10 @@ export function ClientDetailView({ client, onClose }: ClientDetailViewProps) {
                                 <CardTitle>Estado Actual en el Flujo</CardTitle>
                             </CardHeader>
                             <CardContent>
-                                 <DetailItem label="Objetivo Actual" value={currentStageObjective.description} />
+                                <div className="flex items-start gap-2">
+                                    <Target className="h-4 w-4 text-blue-500 mt-1 flex-shrink-0" />
+                                    <DetailItem label="Objetivo Actual" value={currentStageObjective.description} />
+                                </div>
                             </CardContent>
                         </Card>
                     )}
@@ -146,4 +148,3 @@ export function ClientDetailView({ client, onClose }: ClientDetailViewProps) {
         </>
     );
 }
-
