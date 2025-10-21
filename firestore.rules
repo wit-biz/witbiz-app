@@ -2,99 +2,99 @@
  * @fileoverview Firestore Security Rules for WitCRM application.
  *
  * Core Philosophy:
- * This ruleset enforces a strict user-ownership model, where each user has exclusive access to their leads, contacts, and tasks.
+ * This ruleset enforces a strict user-ownership model for leads, contacts, and tasks.
+ * Each user has complete control over the data nested under their respective /users/{userId} path.
  *
  * Data Structure:
- * All data is nested under /users/{userId}, ensuring that all leads, contacts, and tasks are scoped to the owning user.
+ * All data is nested under /users/{userId}, ensuring clear ownership and access control.
  *  - /users/{userId}/leads/{leadId}
  *  - /users/{userId}/contacts/{contactId}
  *  - /users/{userId}/tasks/{taskId}
  *
  * Key Security Decisions:
- * - Users can only access their own data, preventing cross-user data access.
- * - Listing operations are scoped to the user's data, preventing unauthorized data exposure.
+ * - User data is completely isolated, with no cross-user access allowed except through explicit sharing mechanisms (not yet implemented).
+ * - List operations are restricted to the owner of the user subcollection.
+ *
+ * Denormalization for Authorization: N/A, path-based ownership is used.
+ * Structural Segregation: N/A, all data is private user data.
  */
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
     /**
-     * @description Secures leads associated with a specific user.
+     * @description Checks if the request is authenticated.
+     */
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    /**
+     * @description Checks if the requested user ID matches the authenticated user's ID.
+     */
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    /**
+     * @description Checks if the requested user ID matches the authenticated user's ID and the resource exists.
+     */
+    function isExistingOwner(userId) {
+        return isOwner(userId) && resource != null;
+    }
+
+    /**
+     * @description Rules for leads.
      * @path /users/{userId}/leads/{leadId}
-     * @allow (create) User 'user123' can create a new lead under their own user ID.
-     * @deny (create) User 'user456' cannot create a lead under 'user123's ID.
-     * @allow (get) User 'user123' can read a lead under their own user ID.
-     * @deny (get) User 'user456' cannot read a lead under 'user123's ID.
-     * @principle Enforces document ownership for writes. Restricts access to a user's own data tree.
+     * @allow (create) User 'lbz7nN49aERC4AwnsGSruB6spQJ3' can create a lead under /users/lbz7nN49aERC4AwnsGSruB6spQJ3/leads/testLead.
+     * @deny (create) User 'otherUser' cannot create a lead under /users/lbz7nN49aERC4AwnsGSruB6spQJ3/leads/testLead.
+     * @principle Enforces document ownership for writes.
      */
     match /users/{userId}/leads/{leadId} {
-      // Only the owner can read their leads.
-      allow get: if isSignedIn() && isOwner(userId);
-      allow list: if isSignedIn() && isOwner(userId);
+      // Read permissions
+      allow get: if isOwner(userId);
+      allow list: if isOwner(userId);
 
-      // Only the owner can create leads under their user ID.
-      allow create: if isSignedIn() && isOwner(userId) && request.resource.data.id == leadId;
-
-      // Only the owner can update/delete their leads, but only if the document exists.
-      allow update: if isSignedIn() && isExistingOwner(userId) && request.resource.data.id == resource.data.id;
-      allow delete: if isSignedIn() && isExistingOwner(userId);
+      // Write permissions
+      allow create: if isOwner(userId) && request.resource.data.id == leadId;
+      allow update: if isExistingOwner(userId) && request.resource.data.id == resource.data.id;
+      allow delete: if isExistingOwner(userId);
     }
 
     /**
-     * @description Secures contacts associated with a specific user.
+     * @description Rules for contacts.
      * @path /users/{userId}/contacts/{contactId}
-     * @allow (create) User 'user123' can create a new contact under their own user ID.
-     * @deny (create) User 'user456' cannot create a contact under 'user123's ID.
-     * @allow (get) User 'user123' can read a contact under their own user ID.
-     * @deny (get) User 'user456' cannot read a contact under 'user123's ID.
-     * @principle Enforces document ownership for writes. Restricts access to a user's own data tree.
+     * @allow (create) User 'lbz7nN49aERC4AwnsGSruB6spQJ3' can create a contact under /users/lbz7nN49aERC4AwnsGSruB6spQJ3/contacts/testContact.
+     * @deny (create) User 'otherUser' cannot create a contact under /users/lbz7nN49aERC4AwnsGSruB6spQJ3/contacts/testContact.
+     * @principle Enforces document ownership for writes.
      */
     match /users/{userId}/contacts/{contactId} {
-      // Only the owner can read their contacts.
-      allow get: if isSignedIn() && isOwner(userId);
-      allow list: if isSignedIn() && isOwner(userId);
+      // Read permissions
+      allow get: if isOwner(userId);
+      allow list: if isOwner(userId);
 
-      // Only the owner can create contacts under their user ID.
-      allow create: if isSignedIn() && isOwner(userId) && request.resource.data.id == contactId;
-
-      // Only the owner can update/delete their contacts, but only if the document exists.
-      allow update: if isSignedIn() && isExistingOwner(userId) && request.resource.data.id == resource.data.id;
-      allow delete: if isSignedIn() && isExistingOwner(userId);
+      // Write permissions
+      allow create: if isOwner(userId) && request.resource.data.id == contactId;
+      allow update: if isExistingOwner(userId) && request.resource.data.id == resource.data.id;
+      allow delete: if isExistingOwner(userId);
     }
 
     /**
-     * @description Secures tasks associated with a specific user.
+     * @description Rules for tasks.
      * @path /users/{userId}/tasks/{taskId}
-     * @allow (create) User 'user123' can create a new task under their own user ID.
-     * @deny (create) User 'user456' cannot create a task under 'user123's ID.
-     * @allow (get) User 'user123' can read a task under their own user ID.
-     * @deny (get) User 'user456' cannot read a task under 'user123's ID.
-     * @principle Enforces document ownership for writes. Restricts access to a user's own data tree.
+     * @allow (create) User 'lbz7nN49aERC4AwnsGSruB6spQJ3' can create a task under /users/lbz7nN49aERC4AwnsGSruB6spQJ3/tasks/testTask.
+     * @deny (create) User 'otherUser' cannot create a task under /users/lbz7nN49aERC4AwnsGSruB6spQJ3/tasks/testTask.
+     * @principle Enforces document ownership for writes.
      */
     match /users/{userId}/tasks/{taskId} {
-      // Only the owner can read their tasks.
-      allow get: if isSignedIn() && isOwner(userId);
-      allow list: if isSignedIn() && isOwner(userId);
+      // Read permissions
+      allow get: if isOwner(userId);
+      allow list: if isOwner(userId);
 
-      // Only the owner can create tasks under their user ID.
-      allow create: if isSignedIn() && isOwner(userId) && request.resource.data.id == taskId;
-
-      // Only the owner can update/delete their tasks, but only if the document exists.
-      allow update: if isSignedIn() && isExistingOwner(userId) && request.resource.data.id == resource.data.id;
-      allow delete: if isSignedIn() && isExistingOwner(userId);
+      // Write permissions
+      allow create: if isOwner(userId) && request.resource.data.id == taskId;
+      allow update: if isExistingOwner(userId) && request.resource.data.id == resource.data.id;
+      allow delete: if isExistingOwner(userId);
     }
-  }
-
-  // Helper Functions
-  function isSignedIn() {
-    return request.auth != null;
-  }
-
-  function isOwner(userId) {
-    return request.auth.uid == userId;
-  }
-
-  function isExistingOwner(userId) {
-    return isOwner(userId) && resource != null;
   }
 }
