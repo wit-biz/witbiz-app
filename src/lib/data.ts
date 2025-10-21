@@ -1,11 +1,121 @@
 
-import type { Client, Task, Document, Note, Reservation, WorkflowStage, NavItem, Promoter } from './types';
+import type { Client, Task, Document, Note, Reservation, WorkflowStage, NavItem, Promoter, ServiceWorkflow } from './types';
 
-export const workflowStages: WorkflowStage[] = [
-  { id: 'stage-1', title: 'Prospecto', order: 1, objectives: [] },
-  { id: 'stage-2', title: 'Cualificación', order: 2, objectives: [] },
-  { id: 'stage-3', title: 'Negociación', order: 3, objectives: [] },
-  { id: 'stage-4', title: 'Cierre', order: 4, objectives: [] },
+export const serviceWorkflows: ServiceWorkflow[] = [
+  {
+    id: 'service-1',
+    name: 'Asesoría de Crédito Empresarial',
+    subServices: [
+      {
+        id: 'sub-service-1-1',
+        name: 'Crédito Principal',
+        stages: [
+          { 
+            id: 's1-st1', title: 'Análisis Inicial', order: 1, 
+            objectives: [
+              { id: 's1-st1-obj1', description: 'Recopilar documentación financiera del cliente (últimos 2 años).', order: 1, subObjectives: [], requiredDocumentForCompletion: 'Informe' },
+              { id: 's1-st1-obj2', description: 'Evaluar perfil de riesgo crediticio preliminar.', order: 2, subObjectives: [] },
+            ]
+          },
+          { 
+            id: 's1-st2', title: 'Desarrollo de Estrategia', order: 2,
+            objectives: [
+              { id: 's1-st2-obj1', description: 'Identificar 3-5 opciones de financiamiento viables.', order: 1, subObjectives: [] },
+              { id: 's1-st2-obj2', description: 'Preparar propuesta de asesoría y estructura de comisiones.', order: 2, subObjectives: [], requiredDocumentForCompletion: 'Propuesta' },
+            ]
+          },
+          { 
+            id: 's1-st3', title: 'Implementación', order: 3,
+            objectives: [
+              { id: 's1-st3-obj1', description: 'Presentar solicitud de crédito a instituciones financieras.', order: 1, subObjectives: [] },
+              { id: 's1-st3-obj2', description: 'Negociar términos y condiciones del crédito.', order: 2, subObjectives: [] },
+            ]
+          },
+          { 
+            id: 's1-st4', title: 'Seguimiento y Cierre', order: 4,
+            objectives: [
+              { id: 's1-st4-obj1', description: 'Obtener aprobación final del crédito.', order: 1, subObjectives: [] },
+              { id: 's1-st4-obj2', description: 'Coordinar firma de contrato y desembolso.', order: 2, subObjectives: [], requiredDocumentForCompletion: 'Contrato' },
+              { id: 's1-st4-obj3', description: 'Facturar comisión de éxito.', order: 3, subObjectives: [], requiredDocumentForCompletion: 'Factura' },
+            ]
+          },
+        ]
+      }
+    ]
+  },
+  {
+    id: 'service-2',
+    name: 'Gestión Patrimonial',
+    subServices: [
+      {
+        id: 'sub-service-2-1',
+        name: 'Inversiones',
+        stages: [
+          {
+            id: 's2-st1', title: 'Perfil de Inversionista', order: 1,
+            objectives: [
+              { id: 's2-st1-obj1', description: 'Realizar cuestionario de tolerancia al riesgo.', order: 1, subObjectives: [] },
+              { id: 's2-st1-obj2', description: 'Definir horizonte de inversión y objetivos financieros.', order: 2, subObjectives: [] },
+            ]
+          },
+          {
+            id: 's2-st2', title: 'Propuesta de Inversión', order: 2,
+            objectives: [
+              { id: 's2-st2-obj1', description: 'Elaborar cartera de inversión diversificada.', order: 1, subObjectives: [], requiredDocumentForCompletion: 'Propuesta' },
+              { id: 's2-st2-obj2', description: 'Presentar y validar la propuesta con el cliente.', order: 2, subObjectives: [] },
+            ]
+          },
+        ]
+      },
+      {
+        id: 'sub-service-2-2',
+        name: 'Planificación Fiscal',
+        stages: [
+          {
+            id: 's2-st3', title: 'Análisis Fiscal', order: 3,
+            objectives: [
+              { id: 's2-st3-obj1', description: 'Revisar declaraciones de impuestos de años anteriores.', order: 1, subObjectives: [] },
+              { id: 's2-st3-obj2', description: 'Identificar oportunidades de optimización fiscal.', order: 2, subObjectives: [] },
+            ]
+          },
+        ]
+      }
+    ]
+  },
+  {
+    id: 'service-3',
+    name: 'Operaciones de Divisas',
+    subServices: [
+      {
+        id: 'sub-service-3-1',
+        name: 'Operaciones Spot',
+        stages: [
+          { 
+            id: 's3-st1', title: 'Cotización', order: 1,
+            objectives: [
+              { id: 's3-st1-obj1', description: 'Confirmar pares de divisas y monto.', order: 1, subObjectives: [] },
+              { id: 's3-st1-obj2', description: 'Proporcionar cotización de tipo de cambio en tiempo real.', order: 2, subObjectives: [] },
+            ]
+          },
+          {
+            id: 's3-st2', title: 'Ejecución', order: 2,
+            objectives: [
+              { id: 's3-st2-obj1', description: 'Recibir confirmación de la operación por parte del cliente.', order: 1, subObjectives: [] },
+              { id: 's3-st2-obj2', description: 'Ejecutar la operación en el mercado.', order: 2, subObjectives: [] },
+            ]
+          },
+          {
+            id: 's3-st3', title: 'Liquidación', order: 3,
+            objectives: [
+              { id: 's3-st3-obj1', description: 'Confirmar recepción de fondos.', order: 1, subObjectives: [] },
+              { id: 's3-st3-obj2', description: 'Enviar fondos convertidos a la cuenta del cliente.', order: 2, subObjectives: [] },
+              { id: 's3-st3-obj3', description: 'Enviar comprobante de la operación.', order: 3, subObjectives: [], requiredDocumentForCompletion: 'Informe' },
+            ]
+          },
+        ]
+      }
+    ]
+  }
 ];
 
 export const promoters: Promoter[] = [
@@ -18,86 +128,47 @@ export const promoters: Promoter[] = [
 
 export const clients: Client[] = [
   {
-    id: '1',
-    name: 'Innovate Inc.',
-    owner: 'Mariana Fernandez',
-    category: 'Tecnología',
-    stage: 'Cualificación',
-    currentObjective: 'Análisis completo de necesidades técnicas.',
+    id: '1', name: 'Innovate Inc.', owner: 'Mariana Fernandez', category: 'Tecnología',
+    subscribedServiceIds: ['service-1'], currentWorkflowStageId: 's1-st2', currentObjectiveId: 's1-st2-obj1',
   },
   {
-    id: '2',
-    name: 'Synergy Corp.',
-    owner: 'Juan Carlos Bodoque',
-    category: 'Finanzas',
-    stage: 'Negociación',
-    currentObjective: 'Finalizar precios y términos del contrato.',
+    id: '2', name: 'Synergy Corp.', owner: 'Juan Carlos Bodoque', category: 'Finanzas',
+    subscribedServiceIds: ['service-2'], currentWorkflowStageId: 's2-st1', currentObjectiveId: 's2-st1-obj2',
   },
   {
-    id: '3',
-    name: 'Solutions LLC',
-    owner: 'Mariana Fernandez',
-    category: 'Salud',
-    stage: 'Prospecto',
-    currentObjective: 'Contacto inicial e introducción.',
+    id: '3', name: 'Solutions LLC', owner: 'Mariana Fernandez', category: 'Salud',
+    subscribedServiceIds: ['service-3'], currentWorkflowStageId: 's3-st1', currentObjectiveId: 's3-st1-obj1',
   },
   {
-    id: '4',
-    name: 'Global Net',
-    owner: 'Sofía Rodriguez',
-    category: 'Logística',
-    stage: 'Cierre',
-    currentObjective: 'Inicio del proyecto.',
-  },
-   {
-    id: '5',
-    name: 'Marketing Pro',
-    owner: 'Carla Santamaria',
-    category: 'Marketing',
-    stage: 'Prospecto',
-    currentObjective: 'Agendar llamada de descubrimiento.',
+    id: '4', name: 'Global Net', owner: 'Sofía Rodriguez', category: 'Logística',
+    subscribedServiceIds: ['service-1'], currentWorkflowStageId: 's1-st4', currentObjectiveId: 's1-st4-obj2',
   },
   {
-    id: '6',
-    name: 'QuantumLeap',
-    owner: 'Sofía Rodriguez',
-    category: 'Investigación',
-    stage: 'Cualificación',
-    currentObjective: 'Demostración de producto.',
+    id: '5', name: 'Marketing Pro', owner: 'Carla Santamaria', category: 'Marketing',
+    subscribedServiceIds: ['service-3'], currentWorkflowStageId: 's3-st3', currentObjectiveId: 's3-st3-obj3',
   },
   {
-    id: '7',
-    name: 'Nexus Enterprises',
-    owner: 'Mariana Fernandez',
-    category: 'Retail',
-    stage: 'Negociación',
-    currentObjective: 'Ajuste de propuesta económica.',
+    id: '6', name: 'QuantumLeap', owner: 'Sofía Rodriguez', category: 'Investigación',
+    subscribedServiceIds: ['service-2'], currentWorkflowStageId: 's2-st2', currentObjectiveId: 's2-st2-obj1',
   },
   {
-    id: '8',
-    name: 'BioGen',
-    owner: 'Juan Carlos Bodoque',
-    category: 'Biotecnología',
-    stage: 'Prospecto',
-    currentObjective: 'Identificar al tomador de decisiones.',
+    id: '7', name: 'Nexus Enterprises', owner: 'Mariana Fernandez', category: 'Retail',
+    subscribedServiceIds: ['service-1'], currentWorkflowStageId: 's1-st3', currentObjectiveId: 's1-st3-obj1',
   },
   {
-    id: '9',
-    name: 'AeroDynamics',
-    owner: 'Carla Santamaria',
-    category: 'Aeroespacial',
-    stage: 'Cierre',
-    currentObjective: 'Firma de contrato.',
+    id: '8', name: 'BioGen', owner: 'Juan Carlos Bodoque', category: 'Biotecnología',
+    subscribedServiceIds: ['service-2'], currentWorkflowStageId: 's2-st3', currentObjectiveId: 's2-st3-obj2',
   },
   {
-    id: '10',
-    name: 'EcoBuild',
-    owner: 'Mariana Fernandez',
-    category: 'Construcción',
-    stage: 'Cualificación',
-    currentObjective: 'Validar presupuesto del cliente.',
+    id: '9', name: 'AeroDynamics', owner: 'Carla Santamaria', category: 'Aeroespacial',
+    subscribedServiceIds: ['service-1'], currentWorkflowStageId: 's1-st4', currentObjectiveId: 's1-st4-obj3',
+  },
+  {
+    id: '10', name: 'EcoBuild', owner: 'Mariana Fernandez', category: 'Construcción',
+    subscribedServiceIds: ['service-3'], currentWorkflowStageId: 's3-st2', currentObjectiveId: 's3-st2-obj2',
   },
 ];
+
 
 export const tasks: Task[] = [
   {
@@ -152,7 +223,7 @@ export const notes: Note[] = [
   { id: 'N2', content: 'El cliente está revisando el contrato. Esperando comentarios sobre la sección 3.2.', text: 'El cliente está revisando el contrato. Esperando comentarios sobre la sección 3.2.', createdAt: new Date(), clientId: '2' },
 ];
 
-export const bookings: Reservation[] = [
+export const reservations: Reservation[] = [
     { id: 'B1', clientName: 'Innovate Inc.', date: new Date(new Date().getTime() + 2 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], clientId: '1', type: 'Cita', time: '10:00', details: 'Llamada de seguimiento', status: 'Confirmada' },
     { id: 'B2', clientName: 'Synergy Corp.', date: new Date(new Date().getTime() + 1 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], clientId: '2', type: 'Cita', time: '14:30', details: 'Revisión de contrato', status: 'Confirmada' },
 ];

@@ -16,11 +16,13 @@ import {
     type AppUser,
     type UserRole,
     type AppPermissions,
+    type SubService,
 } from '@/lib/types';
 import { useUser, useFirestore, useMemoFirebase, useDoc, useAuth } from '@/firebase';
 import { collection, doc, writeBatch, setDoc, getDoc, addDoc, updateDoc, deleteDoc, serverTimestamp } from 'firebase/firestore';
 import { setDocumentNonBlocking, addDocumentNonBlocking, updateDocumentNonBlocking, deleteDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
+import { clients as mockClients, tasks as mockTasks, documents as mockDocuments, notes as mockNotes, reservations as mockReservations, serviceWorkflows as mockWorkflows } from '@/lib/data';
 
 interface CRMContextType {
   currentUser: AuthenticatedUser | null;
@@ -85,20 +87,22 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
     const auth = useAuth();
     const { user, isUserLoading } = useUser();
 
-    // Return empty arrays and loading=false to prevent Firestore calls
-    const clients: Client[] = [];
-    const isLoadingClients = false;
-    const tasks: Task[] = [];
-    const isLoadingTasks = false;
-    const documents: Document[] = [];
-    const isLoadingDocuments = false;
-    const notes: Note[] = [];
-    const isLoadingNotes = false;
-    const reservations: Reservation[] = [];
-    const isLoadingReservations = false;
-    const serviceWorkflows: ServiceWorkflow[] = [];
-    const isLoadingWorkflows = false;
-
+    // MOCK DATA STATES
+    const [clients, setClients] = useState<Client[]>(mockClients);
+    const [tasks, setTasks] = useState<Task[]>(mockTasks);
+    const [documents, setDocuments] = useState<Document[]>(mockDocuments);
+    const [notes, setNotes] = useState<Note[]>(mockNotes);
+    const [reservations, setReservations] = useState<Reservation[]>(mockReservations);
+    const [serviceWorkflows, setServiceWorkflows] = useState<ServiceWorkflow[]>(mockWorkflows);
+    
+    // LOADING STATES
+    const [isLoadingClients, setIsLoadingClients] = useState(false);
+    const [isLoadingTasks, setIsLoadingTasks] = useState(false);
+    const [isLoadingDocuments, setIsLoadingDocuments] = useState(false);
+    const [isLoadingNotes, setIsLoadingNotes] = useState(false);
+    const [isLoadingReservations, setIsLoadingReservations] = useState(false);
+    const [isLoadingWorkflows, setIsLoadingWorkflows] = useState(false);
+    
     const [currentUser, setCurrentUser] = useState<AuthenticatedUser | null>(null);
 
     useEffect(() => {
@@ -158,6 +162,71 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
         }
     };
     
+    // MOCK DATA HANDLERS
+    const addClient = async (newClientData: Omit<Client, 'id'>): Promise<Client | null> => {
+        const newClient: Client = { ...newClientData, id: `client-${Date.now()}` };
+        setClients(prev => [...prev, newClient]);
+        return newClient;
+    };
+    const updateClient = async (clientId: string, updates: Partial<Client>): Promise<boolean> => {
+        setClients(prev => prev.map(c => c.id === clientId ? { ...c, ...updates } : c));
+        return true;
+    };
+    const deleteClient = async (clientId: string): Promise<boolean> => {
+        setClients(prev => prev.filter(c => c.id !== clientId));
+        return true;
+    };
+    
+    const addTask = async (newTaskData: Omit<Task, 'id' | 'status' | 'clientName'>): Promise<Task | null> => {
+        const client = clients.find(c => c.id === newTaskData.clientId);
+        if (!client) return null;
+        const newTask: Task = { ...newTaskData, id: `task-${Date.now()}`, status: 'Pendiente', clientName: client.name };
+        setTasks(prev => [...prev, newTask]);
+        return newTask;
+    };
+    const updateTask = async (taskId: string, updates: Partial<Task>): Promise<boolean> => {
+        setTasks(prev => prev.map(t => t.id === taskId ? { ...t, ...updates } : t));
+        return true;
+    };
+    const deleteTask = async (taskId: string): Promise<boolean> => {
+        setTasks(prev => prev.filter(t => t.id !== taskId));
+        return true;
+    };
+
+    const addDocument = async (newDocumentData: Omit<Document, 'id' | 'uploadedAt' | 'downloadURL'>, file?: File): Promise<Document | null> => {
+        const newDoc: Document = { ...newDocumentData, id: `doc-${Date.now()}`, uploadedAt: new Date(), downloadURL: '#' };
+        setDocuments(prev => [...prev, newDoc]);
+        return newDoc;
+    }
+
+    const addReservation = async (newReservationData: Omit<Reservation, 'id'>): Promise<Reservation | null> => {
+        const newReservation: Reservation = { ...newReservationData, id: `res-${Date.now()}` };
+        setReservations(prev => [...prev, newReservation]);
+        return newReservation;
+    }
+
+    const updateReservation = async (reservationId: string, updates: Partial<Reservation>): Promise<boolean> => {
+        setReservations(prev => prev.map(r => r.id === reservationId ? { ...r, ...updates } : r));
+        return true;
+    }
+
+    const deleteReservation = async (reservationId: string): Promise<boolean> => {
+        setReservations(prev => prev.filter(r => r.id !== reservationId));
+        return true;
+    }
+
+    const getObjectiveById = useCallback((objectiveId: string): WorkflowStageObjective | null => {
+        for (const service of serviceWorkflows) {
+            for (const subService of service.subServices) {
+                for (const stage of subService.stages) {
+                    const objective = stage.objectives.find(o => o.id === objectiveId);
+                    if (objective) return objective;
+                }
+            }
+        }
+        return null;
+    }, [serviceWorkflows]);
+
     // Placeholder functions to avoid breaking the UI
     const placeholderPromise = async <T,>(data: T | null = null): Promise<any> => {
         showNotification('info', 'Funcionalidad no implementada', 'Esta acción aún no está conectada.');
@@ -167,19 +236,15 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
     const value = useMemo(() => ({
         currentUser, isLoadingCurrentUser: isUserLoading, 
         clients, isLoadingClients, 
-        addClient: (d) => placeholderPromise(null), 
-        updateClient: (id, d) => placeholderPromise(false), 
-        deleteClient: (id) => placeholderPromise(false),
+        addClient, updateClient, deleteClient,
         getClientById: (id: string) => clients.find(c => c.id === id),
         
         tasks, isLoadingTasks,
-        addTask: (d) => placeholderPromise(null), 
-        updateTask: (id, d) => placeholderPromise(false), 
-        deleteTask: (id) => placeholderPromise(false),
+        addTask, updateTask, deleteTask,
         getTasksByClientId: (id: string) => tasks.filter(t => t.clientId === id),
 
         documents, isLoadingDocuments,
-        addDocument: (d) => placeholderPromise(null),
+        addDocument,
         updateDocument: (id, d) => placeholderPromise(false),
         deleteDocument: (id) => placeholderPromise(false),
         getDocumentsByClientId: (id) => documents.filter(d => d.clientId === id),
@@ -190,9 +255,9 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
         deleteNote: (id) => placeholderPromise(false),
 
         reservations, isLoadingReservations,
-        addReservation: (d) => placeholderPromise(null),
-        updateReservation: (id, d) => placeholderPromise(false),
-        deleteReservation: (id) => placeholderPromise(false),
+        addReservation,
+        updateReservation,
+        deleteReservation,
 
         serviceWorkflows, isLoadingWorkflows,
         addService: () => placeholderPromise(null),
@@ -207,14 +272,13 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
         addObjectiveToStage: (id, subId, stageId) => placeholderPromise(false),
         updateObjectiveInStage: (id, subId, stageId, objId, d) => placeholderPromise(false),
         deleteObjectiveFromStage: (id, subId, stageId, objId) => placeholderPromise(false),
-
-        getObjectiveById: (id) => null,
+        getObjectiveById,
         completeClientObjective: (id) => placeholderPromise({ nextObjective: null, updatedClient: null }),
         registerUser,
     }), [
         currentUser, isUserLoading, clients, isLoadingClients, 
         tasks, isLoadingTasks, documents, isLoadingDocuments, notes, isLoadingNotes,
-        reservations, isLoadingReservations, serviceWorkflows, isLoadingWorkflows,
+        reservations, isLoadingReservations, serviceWorkflows, isLoadingWorkflows, getObjectiveById
     ]);
 
     return (
@@ -231,5 +295,3 @@ export function useCRMData() {
   }
   return context;
 }
-
-    

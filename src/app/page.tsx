@@ -63,7 +63,7 @@ const StageNumberIcon = ({ index, variant = 'default' }: { index: number, varian
 };
 
 export default function InicioPage() {
-  const { clients, isLoadingClients, tasks, serviceWorkflows, isLoadingWorkflows } = useCRMData();
+  const { clients, isLoadingClients, tasks, serviceWorkflows, isLoadingWorkflows, getObjectiveById } = useCRMData();
   const { setHasTasksForToday } = useTasksContext();
 
   const [currentClientDateForDashboard, setCurrentClientDateForDashboard] = useState<Date | null>(null);
@@ -97,15 +97,17 @@ export default function InicioPage() {
       .map(client => {
         const clientTasks = tasks.filter(t => t.clientId === client.id);
         const pendingTask = clientTasks.find(task => task.status === 'Pendiente');
+        const currentObjective = client.currentObjectiveId ? getObjectiveById(client.currentObjectiveId) : null;
+
 
         return {
           ...client,
-          currentObjectiveDisplay: client.currentObjective,
+          currentObjectiveDisplay: currentObjective?.description || client.currentObjective || 'No definido',
           pendingTaskInfo: pendingTask ? { title: pendingTask.title, dueDate: new Date(pendingTask.dueDate) } : undefined,
         };
       })
       .sort((a, b) => a.name.localeCompare(b.name));
-  }, [selectedStage, clients, isLoadingClients, tasks]);
+  }, [selectedStage, clients, isLoadingClients, tasks, getObjectiveById]);
 
 
   const filteredClientsDashboard = useMemo(() => {

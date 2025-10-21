@@ -465,7 +465,7 @@ export default function WorkflowConfigurationPage() {
                 )}
                 
                 {/* Global actions for the service */}
-                {canEditWorkflow && selectedWorkflow.subServices && selectedWorkflow.subServices.length > 0 && (
+                {canEditWorkflow && selectedWorkflow.subServices && (
                   <div className="mt-6 pt-6 border-t">
                     <Button variant="outline" onClick={() => addSubServiceToService(selectedWorkflow.id)} disabled={!canEditWorkflow}><Plus className="h-4 w-4 mr-2"/>Añadir Sub-Servicio</Button>
                   </div>
@@ -508,6 +508,3 @@ export default function WorkflowConfigurationPage() {
     </TooltipProvider>
   );
 }
-    
-
-    
