@@ -206,7 +206,7 @@ function CommissionsView() {
                                 <p className="text-2xl font-bold text-slate-500">${totalPending.toFixed(2)}</p>
                             </div>
                         </div>
-                        <div className="mt-4 max-h-48 overflow-y-auto">
+                        <div className="mt-4 max-h-80 overflow-y-auto">
                             {filteredCommissions.length > 0 ? (
                                 <ul className="space-y-2">
                                 {filteredCommissions.map(c => (
@@ -373,5 +373,7 @@ export default function PromoterPage() {
 
 
 
+
+    
 
     
