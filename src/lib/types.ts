@@ -115,6 +115,7 @@ export type AppPermissions = {
     admin_view: boolean;
     dashboard: boolean;
     team_invite: boolean;
+    services_view: boolean;
 }
 
 export type UserRole = {
@@ -164,5 +165,3 @@ export interface NavItem {
   exactMatch?: boolean;
   requiredPermission: keyof AppPermissions;
 }
-
-    

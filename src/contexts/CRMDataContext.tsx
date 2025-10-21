@@ -132,6 +132,7 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
                   crm_edit: true,
                   team_invite: true,
                   documents_view: true,
+                  services_view: true,
                 },
             });
         } else {
@@ -353,5 +354,3 @@ export function useCRMData() {
   }
   return context;
 }
-
-    

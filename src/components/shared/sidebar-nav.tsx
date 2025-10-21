@@ -19,6 +19,7 @@ import {
   User,
   DollarSign,
   BookText,
+  Briefcase,
   type LucideIcon,
 } from "lucide-react";
 import {
@@ -47,7 +48,8 @@ const icons: { [key: string]: LucideIcon } = {
     Shield,
     User,
     BookText,
-    DollarSign
+    DollarSign,
+    Briefcase
 };
 
 export function SidebarNav() {
