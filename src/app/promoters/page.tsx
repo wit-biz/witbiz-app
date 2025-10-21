@@ -25,6 +25,7 @@ import {
   Sheet,
   SheetContent,
   SheetTrigger,
+  SheetTitle,
 } from "@/components/ui/sheet";
 
 // --- Mock Data ---
@@ -423,7 +424,7 @@ export default function PromoterPage() {
                   )
               })}
           </nav>
-          <div className="mt-auto p-4">
+          <div className="mt-auto p-4 border-t">
               <Button
                   key={profileNavItem.id}
                   variant={activeView === profileNavItem.id ? 'default' : 'ghost'}
@@ -443,7 +444,7 @@ export default function PromoterPage() {
 
     return (
         <div className="flex min-h-screen w-full flex-col bg-muted/40">
-             <aside className="fixed inset-y-0 left-0 z-10 hidden w-56 flex-col border-r bg-background sm:flex">
+             <aside className="fixed inset-y-0 left-0 z-10 hidden w-56 flex-col border-r bg-background sm:flex shrink-0">
                 <SidebarContent />
             </aside>
             <div className="flex flex-col sm:gap-4 sm:py-4 sm:pl-56">
@@ -456,6 +457,7 @@ export default function PromoterPage() {
                             </Button>
                         </SheetTrigger>
                         <SheetContent side="left" className="sm:max-w-xs p-0">
+                           <SheetTitle className="sr-only">Menú</SheetTitle>
                             <SidebarContent />
                         </SheetContent>
                     </Sheet>
@@ -463,7 +465,7 @@ export default function PromoterPage() {
                         {([...navItems, profileNavItem].find(item => item.id === activeView)?.label || 'Panel de Promotor')}
                     </h1>
                 </header>
-                <main className="grid flex-1 items-start gap-4 p-4 sm:px-6 sm:py-0 md:gap-8">
+                <main className="grid items-start gap-4 p-4 sm:px-6 sm:py-0 md:gap-8 overflow-x-auto">
                     <ActiveComponent />
                 </main>
             </div>
