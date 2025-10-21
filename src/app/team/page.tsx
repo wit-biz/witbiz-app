@@ -19,6 +19,27 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { InviteMemberDialog } from "@/components/shared/InviteMemberDialog";
+import { type AppPermissions } from "@/lib/types";
+
+const allPermissions: { key: keyof AppPermissions; label: string }[] = [
+    { key: "dashboard", label: "Ver Dashboard" },
+    { key: "clients_view", label: "Ver Clientes" },
+    { key: "clients_create", label: "Crear Clientes" },
+    { key: "clients_edit", label: "Editar Clientes" },
+    { key: "clients_delete", label: "Eliminar Clientes" },
+    { key: "tasks_view", label: "Ver Tareas" },
+    { key: "tasks_create", label: "Crear Tareas" },
+    { key: "tasks_edit", label: "Editar Tareas" },
+    { key: "tasks_delete", label: "Eliminar Tareas" },
+    { key: "reservations_view", label: "Ver Reservaciones" },
+    { key: "reservations_create", label: "Crear Reservaciones" },
+    { key: "reservations_edit", label: "Editar Reservaciones" },
+    { key: "reservations_delete", label: "Eliminar Reservaciones" },
+    { key: "crm_view", label: "Ver Flujos CRM" },
+    { key: "crm_edit", label: "Editar Flujos CRM" },
+    { key: "audit_view", label: "Ver Auditoría" },
+    { key: "admin_view", label: "Ver Administración/Finanzas" },
+];
 
 
 const teamMembers = [
@@ -27,39 +48,43 @@ const teamMembers = [
     { id: 'user-3', name: 'Andrea Admin', email: 'andrea@witbiz.com', role: 'Administrador' },
 ];
 
-const roles = [
+const initialRoles = [
     { 
         id: 'director', 
         name: 'Director', 
-        permissions: [
-            { key: 'all_access', label: 'Acceso Total', value: true, disabled: true },
-        ] 
+        permissions: {
+            dashboard: true, clients_view: true, clients_create: true, clients_edit: true, clients_delete: true,
+            tasks_view: true, tasks_create: true, tasks_edit: true, tasks_delete: true,
+            reservations_view: true, reservations_create: true, reservations_edit: true, reservations_delete: true,
+            crm_view: true, crm_edit: true, audit_view: true, admin_view: true,
+        }
     },
     { 
         id: 'admin', 
         name: 'Administrador', 
-        permissions: [
-            { key: 'clients_manage', label: 'Gestionar Clientes', value: true },
-            { key: 'team_manage', label: 'Gestionar Equipo', value: true },
-            { key: 'finances_view', label: 'Ver Finanzas', value: true },
-            { key: 'crm_edit', label: 'Editar CRM', value: true },
-        ] 
+        permissions: {
+            dashboard: true, clients_view: true, clients_create: true, clients_edit: true, clients_delete: true,
+            tasks_view: true, tasks_create: true, tasks_edit: true, tasks_delete: true,
+            reservations_view: true, reservations_create: true, reservations_edit: false, reservations_delete: false,
+            crm_view: true, crm_edit: true, audit_view: false, admin_view: true,
+        }
     },
     { 
         id: 'collaborator', 
         name: 'Colaborador', 
-        permissions: [
-            { key: 'clients_view', label: 'Ver Clientes', value: true },
-            { key: 'tasks_manage', label: 'Gestionar Tareas Propias', value: true },
-            { key: 'bookings_view', label: 'Ver Reservaciones', value: false },
-            { key: 'crm_view', label: 'Ver CRM', value: false },
-        ]
+        permissions: {
+            dashboard: true, clients_view: true, clients_create: false, clients_edit: false, clients_delete: false,
+            tasks_view: true, tasks_create: true, tasks_edit: true, tasks_delete: false,
+            reservations_view: true, reservations_create: true, reservations_edit: false, reservations_delete: false,
+            crm_view: true, crm_edit: false, audit_view: false, admin_view: false,
+        }
     },
 ];
 
 
 export default function TeamPage() {
     const [isInviteDialogOpen, setIsInviteDialogOpen] = useState(false);
+    const [roles, setRoles] = useState(initialRoles);
 
     const sortedTeamMembers = useMemo(() => {
         const roleOrder = {
@@ -73,6 +98,16 @@ export default function TeamPage() {
             return roleA - roleB;
         });
     }, []);
+
+    const handlePermissionChange = (roleId: string, permissionKey: keyof AppPermissions, value: boolean) => {
+        setRoles(currentRoles => 
+            currentRoles.map(role => 
+                role.id === roleId 
+                    ? { ...role, permissions: { ...role.permissions, [permissionKey]: value } }
+                    : role
+            )
+        );
+    };
 
   return (
     <>
@@ -135,37 +170,35 @@ export default function TeamPage() {
             </Card>
           </TabsContent>
           <TabsContent value="permissions" className="mt-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Roles y Permisos</CardTitle>
-                <CardDescription>
-                  Configure qué puede hacer cada rol dentro de la aplicación.
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                 {roles.map((role) => (
-                     <div key={role.id}>
-                        <div className="flex items-center gap-3">
-                            <div className="p-2 bg-muted rounded-full"><KeyRound className="h-5 w-5 text-accent"/></div>
-                            <h3 className="text-lg font-semibold">{role.name}</h3>
-                        </div>
-                        <div className="pl-12 pt-4 space-y-4">
-                            {role.permissions.map(permission => (
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                {roles.map((role) => (
+                  <Card key={role.id}>
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2"><KeyRound className="h-5 w-5 text-accent"/>{role.name}</CardTitle>
+                      <CardDescription>Configure los permisos para el rol de {role.name}.</CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-4 max-h-[60vh] overflow-y-auto">
+                        {role.id === 'director' ? (
+                            <div className="flex items-center justify-between p-3 bg-muted/50 rounded-md">
+                                <Label htmlFor="perm-director-all" className="font-medium">Acceso Total</Label>
+                                <Switch id="perm-director-all" checked={true} disabled={true} />
+                            </div>
+                        ) : (
+                            allPermissions.map(permission => (
                                 <div key={permission.key} className="flex items-center justify-between">
                                     <Label htmlFor={`perm-${role.id}-${permission.key}`}>{permission.label}</Label>
                                     <Switch
                                         id={`perm-${role.id}-${permission.key}`}
-                                        checked={permission.value}
-                                        disabled={permission.disabled}
+                                        checked={role.permissions[permission.key] || false}
+                                        onCheckedChange={(value) => handlePermissionChange(role.id, permission.key, value)}
                                     />
                                 </div>
-                            ))}
-                        </div>
-                        <Separator className="mt-6"/>
-                     </div>
-                 ))}
-              </CardContent>
-            </Card>
+                            ))
+                        )}
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
           </TabsContent>
         </Tabs>
       </main>
@@ -175,9 +208,7 @@ export default function TeamPage() {
         onOpenChange={setIsInviteDialogOpen}
         roles={roles.map(r => r.name)}
         onInvite={(email, role) => {
-          // Here you would typically call an API to send an invitation
           console.log(`Inviting ${email} with role ${role}`);
-          // For now, we'll just close the dialog and show a toast
         }}
     />
     </>
