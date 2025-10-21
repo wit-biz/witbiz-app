@@ -87,16 +87,12 @@ export default function PromoterPage() {
 
     useEffect(() => {
         setIsClient(true);
-        setSelectedDate(new Date());
     }, []);
     
-    const paymentDays = commissions.filter(c => c.status === 'Pagada').map(c => new Date(c.paymentDate));
-    const pendingPaymentDays = commissions.filter(c => c.status === 'Pendiente').map(c => new Date(c.paymentDate));
-
-    const commissionsForSelectedDate = useMemo(() => {
-        if (!selectedDate) return [];
-        const selectedDayString = format(selectedDate, 'yyyy-MM-dd');
-        return commissions.filter(c => c.paymentDate === selectedDayString);
+    useEffect(() => {
+        if (!selectedDate) {
+            setSelectedDate(new Date());
+        }
     }, [selectedDate]);
 
     const handleLogout = async () => {
@@ -109,6 +105,16 @@ export default function PromoterPage() {
             setIsLoggingOut(false);
         }
     };
+    
+    const paymentDays = useMemo(() => commissions.filter(c => c.status === 'Pagada').map(c => new Date(c.paymentDate)), []);
+    const pendingPaymentDays = useMemo(() => commissions.filter(c => c.status === 'Pendiente').map(c => new Date(c.paymentDate)), []);
+
+    const commissionsForSelectedDate = useMemo(() => {
+        if (!selectedDate) return [];
+        const selectedDayString = format(selectedDate, 'yyyy-MM-dd');
+        return commissions.filter(c => c.paymentDate === selectedDayString);
+    }, [selectedDate]);
+
 
     return (
         <div className="flex flex-col min-h-screen bg-muted/40">
@@ -126,10 +132,9 @@ export default function PromoterPage() {
                         <p className="text-muted-foreground">Bienvenido a tu centro de operaciones. Aquí puedes seguir tu progreso.</p>
                     </div>
                     
-                    <Tabs defaultValue="commissions">
-                        <TabsList className="grid w-full grid-cols-2 md:grid-cols-4 mb-6">
+                    <Tabs defaultValue="clients">
+                        <TabsList className="grid w-full grid-cols-3 mb-6">
                             <TabsTrigger value="clients"><Users className="mr-2 h-4 w-4"/>Mis Clientes</TabsTrigger>
-                            <TabsTrigger value="commissions"><CircleDollarSign className="mr-2 h-4 w-4"/>Mis Comisiones</TabsTrigger>
                             <TabsTrigger value="resources"><Download className="mr-2 h-4 w-4"/>Recursos</TabsTrigger>
                             <TabsTrigger value="stats"><TrendingUp className="mr-2 h-4 w-4"/>Estadísticas</TabsTrigger>
                         </TabsList>
@@ -150,7 +155,7 @@ export default function PromoterPage() {
                                             </TableRow>
                                         </TableHeader>
                                         <TableBody>
-                                            {referredClients.map(client => (
+                                            {referredClients.map((client) => (
                                                 <TableRow key={client.id}>
                                                     <TableCell className="font-medium">{client.name}</TableCell>
                                                     <TableCell>{isClient ? new Date(client.joinDate).toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: 'numeric' }) : ''}</TableCell>
@@ -163,98 +168,6 @@ export default function PromoterPage() {
                                     </Table>
                                 </CardContent>
                             </Card>
-                        </TabsContent>
-
-                        <TabsContent value="commissions">
-                            <div className="space-y-6">
-                                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                                    <div className="lg:col-span-1">
-                                        <Card>
-                                            <CardHeader>
-                                                <CardTitle className="flex items-center gap-2"><CalendarDays className="h-5 w-5 text-accent"/>Calendario de Pagos</CardTitle>
-                                                <CardDescription>Pagos realizados (verde) y pendientes (azul).</CardDescription>
-                                            </CardHeader>
-                                            <CardContent className="flex justify-center">
-                                                {isClient ? (
-                                                    <Calendar
-                                                        mode="single"
-                                                        selected={selectedDate}
-                                                        onSelect={setSelectedDate}
-                                                        className="rounded-md border"
-                                                        modifiers={{ paid: paymentDays, pending: pendingPaymentDays }}
-                                                        modifiersClassNames={{
-                                                            paid: 'bg-green-100 dark:bg-green-900/50 text-green-800 dark:text-green-300',
-                                                            pending: 'bg-blue-100 dark:bg-blue-900/50 text-blue-800 dark:text-blue-300'
-                                                        }}
-                                                        locale={es}
-                                                    />
-                                                ) : (
-                                                    <div className="p-3 rounded-md border w-[280px] h-[321px] flex items-center justify-center">
-                                                        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-                                                    </div>
-                                                )}
-                                            </CardContent>
-                                        </Card>
-                                    </div>
-                                    <div className="lg:col-span-2">
-                                        <Card>
-                                            <CardHeader>
-                                                <CardTitle>Pagos para el {selectedDate && isClient ? format(selectedDate, "d 'de' MMMM", { locale: es }) : '...'}</CardTitle>
-                                            </CardHeader>
-                                            <CardContent className="space-y-3 min-h-[353px]">
-                                                {commissionsForSelectedDate.length > 0 ? (
-                                                    commissionsForSelectedDate.map(com => (
-                                                        <div key={com.id} className="p-3 border rounded-md flex items-center justify-between">
-                                                            <div>
-                                                                <p className="font-semibold">{com.clientName}</p>
-                                                                <p className="text-sm text-muted-foreground">${com.commission.toFixed(2)}</p>
-                                                            </div>
-                                                            <Badge variant={com.status === 'Pagada' ? 'default' : 'outline'} className={com.status === 'Pagada' ? 'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300' : ''}>{com.status}</Badge>
-                                                        </div>
-                                                    ))
-                                                ) : (
-                                                    <div className="text-center text-muted-foreground py-6 flex flex-col items-center justify-center h-full">
-                                                        <Info className="mx-auto h-8 w-8 mb-2"/>
-                                                        <p className="text-sm">No hay pagos para esta fecha.</p>
-                                                    </div>
-                                                )}
-                                            </CardContent>
-                                        </Card>
-                                    </div>
-                                </div>
-                                <Card>
-                                    <CardHeader>
-                                        <CardTitle>Historial de Comisiones</CardTitle>
-                                        <CardDescription>Detalle de las comisiones generadas por tus clientes.</CardDescription>
-                                    </CardHeader>
-                                    <CardContent>
-                                        <Table>
-                                            <TableHeader>
-                                                <TableRow>
-                                                    <TableHead>Cliente</TableHead>
-                                                    <TableHead>Monto Venta</TableHead>
-                                                    <TableHead>Comisión</TableHead>
-                                                    <TableHead>Fecha de Pago</TableHead>
-                                                    <TableHead className="text-right">Estado</TableHead>
-                                                </TableRow>
-                                            </TableHeader>
-                                            <TableBody>
-                                                {commissions.map(com => (
-                                                    <TableRow key={com.id}>
-                                                        <TableCell className="font-medium">{com.clientName}</TableCell>
-                                                        <TableCell>${com.saleAmount.toFixed(2)}</TableCell>
-                                                        <TableCell className="font-semibold text-green-600">${com.commission.toFixed(2)}</TableCell>
-                                                        <TableCell>{isClient ? new Date(com.paymentDate).toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: 'numeric' }) : ''}</TableCell>
-                                                        <TableCell className="text-right">
-                                                            <Badge variant={com.status === 'Pagada' ? 'default' : 'outline'} className={com.status === 'Pagada' ? 'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300' : ''}>{com.status}</Badge>
-                                                        </TableCell>
-                                                    </TableRow>
-                                                ))}
-                                            </TableBody>
-                                        </Table>
-                                    </CardContent>
-                                </Card>
-                            </div>
                         </TabsContent>
 
                         <TabsContent value="resources">
@@ -346,5 +259,3 @@ export default function PromoterPage() {
         </div>
     );
 }
-
-    
