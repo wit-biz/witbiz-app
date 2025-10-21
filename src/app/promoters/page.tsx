@@ -125,7 +125,7 @@ export default function PromoterPage() {
                         <p className="text-muted-foreground">Bienvenido a tu centro de operaciones. Aquí puedes seguir tu progreso.</p>
                     </div>
                     
-                    <Tabs defaultValue="clients">
+                    <Tabs defaultValue="commissions">
                         <TabsList className="grid w-full grid-cols-2 md:grid-cols-4 mb-6">
                             <TabsTrigger value="clients"><Users className="mr-2 h-4 w-4"/>Mis Clientes</TabsTrigger>
                             <TabsTrigger value="commissions"><CircleDollarSign className="mr-2 h-4 w-4"/>Mis Comisiones</TabsTrigger>
@@ -346,4 +346,5 @@ export default function PromoterPage() {
             </main>
         </div>
     );
-}
+
+    
