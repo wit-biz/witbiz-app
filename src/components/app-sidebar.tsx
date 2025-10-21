@@ -10,45 +10,54 @@ import {
 import { SidebarNav } from './shared/sidebar-nav';
 
 const Logo = () => (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      viewBox="0 0 100 100"
-      className="h-8 w-8"
-      aria-label="WitBiz Logo"
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    viewBox="0 0 160 40" // Adjusted viewBox for a wider logo
+    className="h-8 w-auto" // Auto width to maintain aspect ratio
+    aria-label="WitBiz Logo"
+  >
+    {/* Black rectangle for WIT */}
+    <rect x="0" y="0" width="80" height="40" fill="black" />
+    
+    {/* WIT text */}
+    <text
+      x="40"
+      y="27" // Vertically centered
+      fontFamily="Arial, sans-serif"
+      fontSize="20"
+      fill="white"
+      textAnchor="middle"
+      fontWeight="bold"
     >
-      <style>
-        {`
-          .witbiz-logo-circle { fill: hsl(var(--primary)); }
-          @media (prefers-color-scheme: dark) {
-            .witbiz-logo-circle { fill: hsl(var(--primary)); }
+      WIT
+    </text>
+    
+    {/* BIZ text */}
+    <text
+      x="120" // Positioned to the right of the box
+      y="27" // Vertically centered
+      fontFamily="Arial, sans-serif"
+      fontSize="20"
+      fill="black" // Black text for dark mode compatibility
+      textAnchor="middle"
+      fontWeight="bold"
+    >
+      BIZ
+    </text>
+    
+    {/* Style for dark mode */}
+    <style>
+      {`
+        @media (prefers-color-scheme: dark) {
+          text[fill="black"] {
+            fill: white;
           }
-        `}
-      </style>
-      <circle cx="50" cy="50" r="50" className="witbiz-logo-circle" />
-      <rect x="15" y="40" width="30" height="20" fill="black" />
-      <text
-        x="30"
-        y="55"
-        fontFamily="Arial, sans-serif"
-        fontSize="14"
-        fill="white"
-        textAnchor="middle"
-        fontWeight="bold"
-      >
-        WIT
-      </text>
-      <text
-        x="52"
-        y="55"
-        fontFamily="Arial, sans-serif"
-        fontSize="14"
-        fill="black"
-        fontWeight="bold"
-      >
-        BIZ
-      </text>
-    </svg>
-  );
+        }
+      `}
+    </style>
+  </svg>
+);
+
 
 export function AppSidebar() {
 
@@ -57,7 +66,7 @@ export function AppSidebar() {
       <SidebarHeader>
         <div className="flex items-center gap-2.5">
           <Logo />
-          <h1 className="text-xl font-bold text-foreground">WitBiz</h1>
+          <h1 className="text-xl font-bold text-foreground sr-only">WitBiz</h1>
         </div>
       </SidebarHeader>
       <SidebarContent>
