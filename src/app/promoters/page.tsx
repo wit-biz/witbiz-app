@@ -292,7 +292,7 @@ const navItems = [
 
 export default function PromoterPage() {
     const router = useRouter();
-    const [activeView, setActiveView] = useState('commissions');
+    const [activeView, setActiveView] = useState('clients');
     
     const handleLogout = () => {
         router.push('/promoter-login');
@@ -344,4 +344,5 @@ export default function PromoterPage() {
 }
 
     
+
 
