@@ -35,9 +35,10 @@ const UserMenuIcon = () => (
 );
 
 export function UserNav() {
-  const { currentUser, isLoadingCurrentUser } = useCRMData();
+  const { user, isUserLoading } = useUser();
+  const auth = useAuth();
 
-  if (isLoadingCurrentUser) {
+  if (isUserLoading) {
     return (
       <div className="fixed top-4 right-4 z-50">
         <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
@@ -60,12 +61,12 @@ export function UserNav() {
               "sidebar-glowing-border"
             )}
           >
-            {currentUser ? (
+            {user ? (
               <Avatar className="h-8 w-8">
-                {currentUser.photoURL ? (
-                  <AvatarImage src={currentUser.photoURL} alt={currentUser.displayName || 'User'}/>
+                {user.photoURL ? (
+                  <AvatarImage src={user.photoURL} alt={user.displayName || 'User'}/>
                 ) : (
-                  <AvatarFallback>{currentUser.displayName?.charAt(0).toUpperCase() || 'U'}</AvatarFallback>
+                  <AvatarFallback>{user.displayName?.charAt(0).toUpperCase() || user.email?.charAt(0).toUpperCase() || 'U'}</AvatarFallback>
                 )}
               </Avatar>
             ) : (
@@ -75,21 +76,21 @@ export function UserNav() {
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
-          {currentUser ? (
+          {user ? (
             <>
               <DropdownMenuLabel>
                 <div className="flex items-center gap-3">
                   <Avatar className="h-9 w-9">
-                    {currentUser.photoURL ? (
-                      <AvatarImage src={currentUser.photoURL} alt={currentUser.displayName || 'User'}/>
+                    {user.photoURL ? (
+                      <AvatarImage src={user.photoURL} alt={user.displayName || 'User'}/>
                     ) : (
-                      <AvatarFallback>{currentUser.displayName?.charAt(0).toUpperCase() || 'U'}</AvatarFallback>
+                      <AvatarFallback>{user.displayName?.charAt(0).toUpperCase() || user.email?.charAt(0).toUpperCase() || 'U'}</AvatarFallback>
                     )}
                   </Avatar>
                   <div>
-                    <p className="text-sm font-medium leading-none">{currentUser.displayName || 'Usuario'}</p>
+                    <p className="text-sm font-medium leading-none">{user.displayName || 'Usuario'}</p>
                     <p className="text-xs leading-none text-muted-foreground">
-                      {currentUser.email || 'No email'}
+                      {user.email || 'No email'}
                     </p>
                   </div>
                 </div>
@@ -105,12 +106,24 @@ export function UserNav() {
                 <LifeBuoy className="mr-2 h-4 w-4" />
                 <span>Soporte</span>
               </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => initiateSignOut(auth)}>
+                <LogOut className="mr-2 h-4 w-4" />
+                <span>Cerrar Sesión</span>
+              </DropdownMenuItem>
             </>
           ) : (
              <>
                 <DropdownMenuLabel>
                     <p>No autenticado</p>
                 </DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem asChild>
+                    <Link href="/login">
+                        <LogIn className="mr-2 h-4 w-4" />
+                        <span>Iniciar Sesión</span>
+                    </Link>
+                </DropdownMenuItem>
              </>
           )}
         </DropdownMenuContent>
