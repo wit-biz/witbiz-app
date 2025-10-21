@@ -17,34 +17,44 @@ import Link from 'next/link';
 import { useState, type FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/firebase';
+import { signInAnonymously } from 'firebase/auth';
 
 export default function PromoterLoginPage() {
   const [accessCode, setAccessCode] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const router = useRouter();
   const { toast } = useToast();
+  const auth = useAuth();
 
-  const handleSubmit = (e: FormEvent) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
 
-    // Simulate a network request
-    setTimeout(() => {
-      if (accessCode === '123') {
+    if (accessCode === '123') {
+      try {
+        await signInAnonymously(auth);
         toast({
           title: 'Acceso concedido',
           description: 'Bienvenido, promotor.',
         });
         router.push('/');
-      } else {
+      } catch (error) {
         toast({
           variant: 'destructive',
-          title: 'Código incorrecto',
-          description: 'El código de acceso introducido no es válido.',
+          title: 'Error de autenticación',
+          description: 'No se pudo iniciar la sesión de invitado.',
         });
         setIsSubmitting(false);
       }
-    }, 500);
+    } else {
+      toast({
+        variant: 'destructive',
+        title: 'Código incorrecto',
+        description: 'El código de acceso introducido no es válido.',
+      });
+      setIsSubmitting(false);
+    }
   };
 
   return (
