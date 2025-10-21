@@ -60,7 +60,7 @@ const StageNumberIcon = ({ index, variant = 'default' }: { index: number, varian
 
 
 export default function InicioPage() {
-  const { clients, isLoadingClients, tasks, isLoadingTasks, serviceWorkflows, isLoadingWorkflows } = useCRMData();
+  const { clients, isLoadingClients, tasks, serviceWorkflows, isLoadingWorkflows } = useCRMData();
   const { setHasTasksForToday } = useTasksContext();
 
   const [currentClientDateForDashboard, setCurrentClientDateForDashboard] = useState<Date | null>(null);
@@ -89,7 +89,7 @@ export default function InicioPage() {
   }, [serviceWorkflows]);
 
   const clientsInSelectedStageWithDetails = useMemo(() => {
-    if (!selectedStage || isLoadingClients || !clients ) return [];
+    if (!selectedStage || isLoadingClients || !clients || !tasks) return [];
 
     return clients
       .filter(client => client.currentWorkflowStageId === selectedStage.id)
@@ -180,7 +180,7 @@ export default function InicioPage() {
           <CardDescription>Estas son las tareas que requieren su atención hoy.</CardDescription>
         </CardHeader>
         <CardContent className="pt-0">
-          {isLoadingTasks ? (
+          {isLoadingWorkflows || !tasks ? (
               <div className="flex items-center justify-center p-12"><Loader2 className="h-8 w-8 animate-spin text-primary"/></div>
           ) : tasks.length === 0 ? (
             <div className="flex flex-col items-center justify-center text-center text-muted-foreground py-10">
@@ -239,7 +239,7 @@ export default function InicioPage() {
                     <Button variant="outline" className="h-8 px-2 py-1 text-xs w-full sm:w-40">
                     <Search className="h-3 w-3 mr-1.5 text-muted-foreground" />
                     <span className="text-muted-foreground truncate max-w-[100px] sm:max-w-[120px]">
-                        {highlightedStageId && clients.find(c => c.currentWorkflowStageId === highlightedStageId && c.name === searchTermDashboard) ? searchTermDashboard : "Buscar Cliente..."}
+                        {highlightedStageId && clients && clients.find(c => c.currentWorkflowStageId === highlightedStageId && c.name === searchTermDashboard) ? searchTermDashboard : "Buscar Cliente..."}
                     </span>
                     </Button>
                 </PopoverTrigger>
