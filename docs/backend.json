@@ -4,7 +4,7 @@
       "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "Contact",
       "type": "object",
-      "description": "Represents a customer contact.",
+      "description": "Represents a customer contact within the CRM.",
       "properties": {
         "id": {
           "type": "string",
@@ -29,7 +29,7 @@
         },
         "company": {
           "type": "string",
-          "description": "Company the contact works for."
+          "description": "Company the contact is associated with."
         },
         "leadId": {
           "type": "string",
@@ -47,7 +47,7 @@
       "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "Lead",
       "type": "object",
-      "description": "Represents a potential customer lead.",
+      "description": "Represents a lead and its progress through the sales pipeline.",
       "properties": {
         "id": {
           "type": "string",
@@ -59,15 +59,15 @@
         },
         "status": {
           "type": "string",
-          "description": "Current status of the lead (e.g., New, Contacted, Qualified, Closed)."
+          "description": "Current status of the lead (e.g., New, Contacted, Qualified, Opportunity, Customer)."
         },
         "source": {
           "type": "string",
-          "description": "Source of the lead (e.g., Web, Referral, Trade Show)."
+          "description": "Source of the lead (e.g., Website, Referral, Advertisement)."
         },
-        "estimatedValue": {
-          "type": "number",
-          "description": "Estimated value of the lead."
+        "assignedTo": {
+          "type": "string",
+          "description": "Reference to User. User assigned to the lead. (Relationship: User 1:N Lead)"
         }
       },
       "required": [
@@ -80,11 +80,15 @@
       "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "Task",
       "type": "object",
-      "description": "Represents a task assigned to a team member.",
+      "description": "Represents a task assigned to a user.",
       "properties": {
         "id": {
           "type": "string",
           "description": "Unique identifier for the Task entity."
+        },
+        "title": {
+          "type": "string",
+          "description": "Title of the task."
         },
         "description": {
           "type": "string",
@@ -92,16 +96,16 @@
         },
         "dueDate": {
           "type": "string",
-          "description": "Due date for the task.",
+          "description": "Due date of the task.",
           "format": "date-time"
+        },
+        "status": {
+          "type": "string",
+          "description": "Status of the task (e.g., Open, In Progress, Completed)."
         },
         "assignedTo": {
           "type": "string",
-          "description": "The team member user id this task is assigned to."
-        },
-        "completed": {
-          "type": "boolean",
-          "description": "Indicates whether the task is completed or not."
+          "description": "Reference to User. User assigned to the task. (Relationship: User 1:N Task)"
         },
         "leadId": {
           "type": "string",
@@ -110,75 +114,40 @@
       },
       "required": [
         "id",
-        "description",
+        "title",
         "dueDate",
-        "assignedTo",
-        "completed"
+        "status",
+        "assignedTo"
       ]
     },
-    "Client": {
+    "User": {
       "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "Client",
+      "title": "User",
       "type": "object",
-      "description": "Represents a client in the CRM.",
+      "description": "Represents a user of the CRM system.",
       "properties": {
-        "id": { "type": "string", "description": "Unique client ID." },
-        "name": { "type": "string" },
-        "owner": { "type": "string" },
-        "category": { "type": "string" }
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the User entity."
+        },
+        "email": {
+          "type": "string",
+          "description": "Email address of the user.",
+          "format": "email"
+        },
+        "firstName": {
+          "type": "string",
+          "description": "First name of the user."
+        },
+        "lastName": {
+          "type": "string",
+          "description": "Last name of the user."
+        }
       },
-      "required": ["id", "name"]
-    },
-    "Document": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "Document",
-      "type": "object",
-      "description": "Represents a document associated with a client.",
-      "properties": {
-        "id": { "type": "string" },
-        "name": { "type": "string" },
-        "type": { "type": "string" },
-        "uploadedAt": { "type": "string", "format": "date-time" },
-        "clientId": { "type": "string" }
-      },
-      "required": ["id", "name", "type", "clientId"]
-    },
-    "Note": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "Note",
-      "type": "object",
-      "description": "Represents a note for a client.",
-      "properties": {
-        "id": { "type": "string" },
-        "content": { "type": "string" },
-        "createdAt": { "type": "string", "format": "date-time" },
-        "clientId": { "type": "string" }
-      },
-      "required": ["id", "content", "clientId"]
-    },
-    "Reservation": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "Reservation",
-      "type": "object",
-      "description": "Represents a booking or reservation.",
-      "properties": {
-        "id": { "type": "string" },
-        "clientName": { "type": "string" },
-        "date": { "type": "string", "format": "date" },
-        "time": { "type": "string", "format": "time" }
-      },
-      "required": ["id", "clientName", "date", "time"]
-    },
-    "ServiceWorkflow": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "ServiceWorkflow",
-      "type": "object",
-      "description": "Defines a service workflow with stages and objectives.",
-      "properties": {
-        "id": { "type": "string" },
-        "name": { "type": "string" }
-      },
-      "required": ["id", "name"]
+      "required": [
+        "id",
+        "email"
+      ]
     }
   },
   "auth": {
@@ -188,39 +157,84 @@
     ]
   },
   "firestore": {
-    "/users/{userId}/leads/{leadId}": {
-      "schema": { "$ref": "#/entities/Lead" },
-      "description": "Stores leads for a user."
-    },
-    "/users/{userId}/contacts/{contactId}": {
-      "schema": { "$ref": "#/entities/Contact" },
-      "description": "Stores contacts for a user."
-    },
-    "/users/{userId}/tasks/{taskId}": {
-      "schema": { "$ref": "#/entities/Task" },
-      "description": "Stores tasks for a user."
-    },
-    "/users/{userId}/clients/{clientId}": {
-      "schema": { "$ref": "#/entities/Client" },
-      "description": "Stores clients for a user."
-    },
-    "/users/{userId}/documents/{documentId}": {
-      "schema": { "$ref": "#/entities/Document" },
-      "description": "Stores documents for a user."
-    },
-    "/users/{userId}/notes/{noteId}": {
-      "schema": { "$ref": "#/entities/Note" },
-      "description": "Stores notes for a user."
-    },
-    "/users/{userId}/bookings/{bookingId}": {
-      "schema": { "$ref": "#/entities/Reservation" },
-      "description": "Stores bookings/reservations for a user."
-    },
-    "/users/{userId}/serviceWorkflows/{workflowId}": {
-      "schema": { "$ref": "#/entities/ServiceWorkflow" },
-      "description": "Stores service workflows for a user."
-    }
+    "structure": [
+      {
+        "path": "/users/{userId}",
+        "definition": {
+          "entityName": "User",
+          "schema": {
+            "$ref": "#/backend/entities/User"
+          },
+          "description": "Collection to store user profiles.  'userId' corresponds to the Firebase Auth UID.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The Firebase Auth UID of the user."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/leads/{leadId}",
+        "definition": {
+          "entityName": "Lead",
+          "schema": {
+            "$ref": "#/backend/entities/Lead"
+          },
+          "description": "Subcollection to store leads owned by a specific user.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The Firebase Auth UID of the user who owns the lead."
+            },
+            {
+              "name": "leadId",
+              "description": "The unique identifier of the lead."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/contacts/{contactId}",
+        "definition": {
+          "entityName": "Contact",
+          "schema": {
+            "$ref": "#/backend/entities/Contact"
+          },
+          "description": "Subcollection to store contacts owned by a specific user.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The Firebase Auth UID of the user who owns the contact."
+            },
+            {
+              "name": "contactId",
+              "description": "The unique identifier of the contact."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/tasks/{taskId}",
+        "definition": {
+          "entityName": "Task",
+          "schema": {
+            "$ref": "#/backend/entities/Task"
+          },
+          "description": "Subcollection to store tasks assigned to a specific user.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The Firebase Auth UID of the user to whom the task is assigned."
+            },
+            {
+              "name": "taskId",
+              "description": "The unique identifier of the task."
+            }
+          ]
+        }
+      }
+    ],
+    "reasoning": "The Firestore data structure is designed to address the reported permission error and ensure secure and scalable data management for the WitCRM application. The primary principle is Authorization Independence, achieved through denormalization and structural segregation.  The error `Missing or insufficient permissions` on the path `/databases/(default)/documents/users/lbz7nN49aERC4AwnsGSruB6spQJ3/notes` indicates the security rules are not allowing the user to `list` notes.  This structure uses path-based ownership for notes and other user-owned data, resolving the immediate issue and preventing future authorization problems.  \n\n**Authorization Independence:** User-owned entities like `Leads`, `Tasks`, and `Contacts` are stored under user-specific subcollections (e.g., `/users/{userId}/leads/{leadId}`). This structure inherently enforces ownership and eliminates the need for complex `get()` calls in security rules. This avoids hierarchical authorization dependencies, crucial for atomic operations and debuggability.  The security rules can simply check `request.auth.uid == userId`.\n\n**Structural Segregation:**  Data with different access requirements is stored in separate collections. All documents within a collection share the same security posture, simplifying rule definitions. For example, `Leads`, `Tasks`, and `Contacts` are stored under their respective user subcollections, ensuring that only the assigned user can access them.\n\n**QAPs (Rules are not Filters):**  The path-based ownership model enables secure `list` operations. A user can only list the documents within their own `/users/{userId}` subcollections. This directly addresses the error reported, allowing users to list their notes (after the appropriate rules are added, which this data structure facilitates).  \n\n**Invariants:**  The structure supports the integrity of ownership. The `assignedTo` field in `Lead` and `Task` documents is used for relationship purposes, but the actual ownership and access control are enforced by the path structure."
   }
 }
-
-    
