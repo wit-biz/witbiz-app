@@ -3,10 +3,6 @@
 @tailwind components;
 @tailwind utilities;
 
-body {
-  font-family: var(--font-montserrat), Arial, Helvetica, sans-serif;
-}
-
 @layer base {
   :root {
     --background: 240 5% 96%; /* Neutral light gray for main background */
@@ -55,6 +51,8 @@ body {
     --indicator-upcoming-bg-raw: 210 70% 55%;
     --reservation-indicator-today-bg: 130 60% 45%;
     --reservation-indicator-future-bg: 210 70% 55%;
+
+    --font-montserrat: 'Montserrat', sans-serif;
   }
 
   .dark {
@@ -113,6 +111,7 @@ body {
   }
   body {
     @apply bg-background text-foreground;
+    font-family: var(--font-montserrat);
     font-feature-settings: "rlig" 1, "calt" 1;
   }
   .sr-only {
@@ -341,4 +340,3 @@ body {
     filter: blur(1px);
   }
 }
-    

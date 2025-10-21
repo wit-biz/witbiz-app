@@ -30,7 +30,7 @@ export default function RootLayout({
           rel="stylesheet"
         />
       </head>
-      <body className="antialiased" style={{ fontFamily: 'Montserrat, sans-serif' }}>
+      <body className="antialiased">
         <ThemeProvider
           attribute="class"
           defaultTheme="system"

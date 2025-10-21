@@ -22,7 +22,7 @@ const Logo = () => (
       className="logo-wit-text"
       x="40"
       y="27" // Vertically centered
-      fontFamily="Arial, sans-serif"
+      fontFamily="Montserrat, sans-serif"
       fontSize="20"
       fill="white"
       textAnchor="middle"
@@ -34,7 +34,7 @@ const Logo = () => (
     <text
       x="120" // Positioned to the right of the box
       y="27" // Vertically centered
-      fontFamily="Arial, sans-serif"
+      fontFamily="Montserrat, sans-serif"
       fontSize="20"
       fill="black" // Black text for dark mode compatibility
       textAnchor="middle"
