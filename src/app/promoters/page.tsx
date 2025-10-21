@@ -82,11 +82,12 @@ export default function PromoterPage() {
     const auth = useAuth();
     const router = useRouter();
     const [isLoggingOut, setIsLoggingOut] = useState(false);
-    const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
+    const [selectedDate, setSelectedDate] = useState<Date | undefined>();
     const [isClient, setIsClient] = useState(false);
 
     useEffect(() => {
         setIsClient(true);
+        setSelectedDate(new Date());
     }, []);
     
     const paymentDays = commissions.filter(c => c.status === 'Pagada').map(c => new Date(c.paymentDate));
@@ -198,7 +199,7 @@ export default function PromoterPage() {
                                     <div className="lg:col-span-2">
                                         <Card>
                                             <CardHeader>
-                                                <CardTitle>Pagos para el {selectedDate ? format(selectedDate, "d 'de' MMMM", { locale: es }) : '...'}</CardTitle>
+                                                <CardTitle>Pagos para el {selectedDate && isClient ? format(selectedDate, "d 'de' MMMM", { locale: es }) : '...'}</CardTitle>
                                             </CardHeader>
                                             <CardContent className="space-y-3 min-h-[353px]">
                                                 {commissionsForSelectedDate.length > 0 ? (
@@ -346,5 +347,7 @@ export default function PromoterPage() {
             </main>
         </div>
     );
+
+    
 
     
