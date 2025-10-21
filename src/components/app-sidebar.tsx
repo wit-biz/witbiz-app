@@ -41,6 +41,7 @@ const Logo = () => (
       fill="black" // Black text for dark mode compatibility
       textAnchor="middle"
       fontWeight="bold"
+      className="logo-biz-text"
     >
       BIZ
     </text>
@@ -48,10 +49,8 @@ const Logo = () => (
     {/* Style for dark mode */}
     <style>
       {`
-        @media (prefers-color-scheme: dark) {
-          text[fill="black"] {
+        .dark .logo-biz-text {
             fill: white;
-          }
         }
       `}
     </style>
