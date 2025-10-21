@@ -165,7 +165,7 @@ export default function TeamPage() {
                     {canInvite && (
                         <Button size="sm" onClick={() => setIsInviteDialogOpen(true)}>
                             <PlusCircle className="mr-2 h-4 w-4" />
-                            Invitar Miembro
+                            Agregar Miembro
                         </Button>
                     )}
                 </CardHeader>
@@ -232,9 +232,9 @@ export default function TeamPage() {
     <InviteMemberDialog
         isOpen={isInviteDialogOpen}
         onOpenChange={setIsInviteDialogOpen}
-        roles={roles.map(r => r.name)}
+        roles={roles.map(r => r.name).filter(name => name !== 'Director')}
         onInvite={(email, role) => {
-          console.log(`Inviting ${email} with role ${role}`);
+          console.log(`Adding ${email} with role ${role}`);
         }}
     />
     </>

@@ -31,7 +31,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Loader2, Send } from 'lucide-react';
+import { Loader2, UserPlus } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 const inviteSchema = z.object({
@@ -67,8 +67,8 @@ export function InviteMemberDialog({ isOpen, onOpenChange, roles, onInvite }: In
     onOpenChange(false);
     form.reset();
     toast({
-      title: "Invitación Enviada",
-      description: `Se ha enviado una invitación a ${values.email}.`,
+      title: "Miembro Agregado",
+      description: `El usuario ${values.email} ha sido agregado al equipo.`,
     });
   };
 
@@ -81,9 +81,9 @@ export function InviteMemberDialog({ isOpen, onOpenChange, roles, onInvite }: In
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)}>
             <DialogHeader>
-              <DialogTitle>Invitar Nuevo Miembro</DialogTitle>
+              <DialogTitle>Agregar Nuevo Miembro</DialogTitle>
               <DialogDescription>
-                Envíe una invitación por correo electrónico. La contraseña por defecto será: <br/>
+                El nuevo usuario será registrado en la plataforma. La contraseña por defecto será: <br/>
                 <span className="font-semibold text-foreground">WitBiz!123</span>
               </DialogDescription>
             </DialogHeader>
@@ -143,9 +143,9 @@ export function InviteMemberDialog({ isOpen, onOpenChange, roles, onInvite }: In
                 {isSubmitting ? (
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 ) : (
-                  <Send className="mr-2 h-4 w-4" />
+                  <UserPlus className="mr-2 h-4 w-4" />
                 )}
-                Enviar Invitación
+                Agregar Miembro
               </Button>
             </DialogFooter>
           </form>
