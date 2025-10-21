@@ -12,11 +12,12 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Calendar } from '@/components/ui/calendar';
 import { Badge } from '@/components/ui/badge';
-import { LogOut, Users, CircleDollarSign, BookText, Download } from 'lucide-react';
+import { LogOut, Users, CircleDollarSign, BookText, Download, BarChart } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { Logo } from '@/components/shared/logo';
 import { cn, parseDateString } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
+import { ChartsTab } from '@/components/shared/ChartsTab';
 
 // --- Mock Data ---
 const referredClients = [
@@ -299,9 +300,10 @@ export default function PromoterPage() {
             </header>
             <main className="flex-1 p-4 md:p-8">
                  <Tabs defaultValue="commissions" className="w-full">
-                    <TabsList className="grid w-full grid-cols-3">
+                    <TabsList className="grid w-full grid-cols-4">
                         <TabsTrigger value="clients"><Users className="mr-2 h-4 w-4" />Clientes</TabsTrigger>
                         <TabsTrigger value="commissions"><CircleDollarSign className="mr-2 h-4 w-4" />Comisiones</TabsTrigger>
+                        <TabsTrigger value="charts"><BarChart className="mr-2 h-4 w-4" />Gráficos</TabsTrigger>
                         <TabsTrigger value="resources"><BookText className="mr-2 h-4 w-4" />Recursos</TabsTrigger>
                     </TabsList>
                     <TabsContent value="clients" className="mt-6">
@@ -309,6 +311,9 @@ export default function PromoterPage() {
                     </TabsContent>
                     <TabsContent value="commissions" className="mt-6">
                         <CommissionsTab />
+                    </TabsContent>
+                    <TabsContent value="charts" className="mt-6">
+                        <ChartsTab />
                     </TabsContent>
                     <TabsContent value="resources" className="mt-6">
                         <ResourcesTab />
