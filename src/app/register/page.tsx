@@ -89,8 +89,9 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background p-4">
-      <Card className="w-full max-w-sm">
+    <div className="relative flex min-h-screen items-center justify-center bg-background p-4 overflow-hidden">
+      <div className="animated-gradient-bg"></div>
+      <Card className="w-full max-w-sm z-10">
         <CardHeader className="text-center">
           <Logo className="mx-auto h-12 w-auto mb-4" />
           <CardTitle className="text-2xl">Crear una Cuenta</CardTitle>

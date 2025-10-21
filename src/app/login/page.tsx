@@ -60,7 +60,6 @@ export default function LoginPage() {
             title: 'Inicio de sesión exitoso',
             description: 'Redirigiendo a la plataforma...',
         });
-        // La redirección será manejada por el layout
     } catch (error: any) {
         let description = 'Ocurrió un error inesperado. Por favor, inténtelo de nuevo.';
         if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
@@ -77,13 +76,14 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background p-4">
-      <Card className="w-full max-w-sm">
+    <div className="relative flex min-h-screen items-center justify-center bg-background p-4 overflow-hidden">
+        <div className="animated-gradient-bg"></div>
+        <Card className="w-full max-w-sm z-10">
         <CardHeader className="text-center">
           <Logo className="mx-auto h-12 w-auto mb-4" />
-          <CardTitle className="text-2xl">Bienvenido de Nuevo</CardTitle>
+          <CardTitle className="text-2xl">Acceso a la Plataforma</CardTitle>
           <CardDescription>
-            Inicie sesión para acceder a su cuenta.
+            Introduzca sus credenciales para acceder a su cuenta.
           </CardDescription>
         </CardHeader>
         <CardContent>
