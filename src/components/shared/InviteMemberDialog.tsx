@@ -83,7 +83,8 @@ export function InviteMemberDialog({ isOpen, onOpenChange, roles, onInvite }: In
             <DialogHeader>
               <DialogTitle>Invitar Nuevo Miembro</DialogTitle>
               <DialogDescription>
-                Envíe una invitación por correo electrónico para que un nuevo miembro se una a su equipo.
+                Envíe una invitación por correo electrónico. La contraseña por defecto será: <br/>
+                <span className="font-semibold text-foreground">WitBiz!123</span>
               </DialogDescription>
             </DialogHeader>
 
