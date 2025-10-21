@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { PlaceHolderImages } from "@/lib/placeholder-images";
 import Link from "next/link";
+import { cn } from "@/lib/utils";
 
 const userAvatar = PlaceHolderImages.find((img) => img.id === "user-avatar");
 
@@ -38,7 +39,10 @@ export function UserNav() {
           <Button
             variant="ghost"
             size="icon"
-            className="h-9 w-9 rounded-full bg-background/80 backdrop-blur-sm hover:bg-muted/90"
+            className={cn(
+              "h-9 w-9 rounded-full bg-background/80 backdrop-blur-sm hover:bg-muted/90",
+              "sidebar-glowing-border"
+            )}
           >
             <UserMenuIcon />
             <span className="sr-only">Abrir menú de usuario</span>
