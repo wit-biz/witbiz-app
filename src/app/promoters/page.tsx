@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { useAuth } from '@/firebase';
 import { signOut } from 'firebase/auth';
 import { useRouter } from 'next/navigation';
-import { LogOut, Loader2, Users, CircleDollarSign, Download, CalendarDays, HardDriveDownload, Presentation, Image as ImageIcon, TrendingUp, Info, CalendarIcon, X } from 'lucide-react';
+import { LogOut, Loader2, Users, CircleDollarSign, Download, HardDriveDownload, Presentation, Image as ImageIcon, TrendingUp, Info, CalendarIcon, X } from 'lucide-react';
 import { useState, useEffect, useMemo } from 'react';
 import { Logo } from '@/components/shared/logo';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -87,13 +87,11 @@ export default function PromoterPage() {
     const auth = useAuth();
     const router = useRouter();
     const [isLoggingOut, setIsLoggingOut] = useState(false);
-    const [selectedDate, setSelectedDate] = useState<Date | undefined>();
     const [isClient, setIsClient] = useState(false);
     const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined);
     
     useEffect(() => {
         setIsClient(true);
-        setSelectedDate(new Date());
     }, []);
 
     const handleLogout = async () => {
@@ -122,29 +120,27 @@ export default function PromoterPage() {
         pending: 'day-pending'
     };
 
-    const commissionsForSelectedDate = useMemo(() => {
-        if (!selectedDate || !isClient) return [];
-        const selectedDayString = format(selectedDate, 'yyyy-MM-dd');
-        return commissions.filter(c => c.paymentDate === selectedDayString);
-    }, [selectedDate, isClient]);
-
     const filteredCommissions = useMemo(() => {
-        if (!dateRange || (!dateRange.from && !dateRange.to)) {
-            return commissions;
+        if (!dateRange?.from) {
+          return commissions;
         }
-        return commissions.filter(commission => {
-            const paymentDate = new Date(commission.paymentDate);
-            if (!isValid(paymentDate)) return false;
-            
-            let isInRange = true;
-            if (dateRange.from) {
-                isInRange = isInRange && paymentDate >= dateRange.from;
-            }
-            if (dateRange.to) {
-                isInRange = isInRange && paymentDate <= dateRange.to;
-            }
-            return isInRange;
-        });
+        
+        const fromDate = dateRange.from;
+        const toDate = dateRange.to;
+
+        if (toDate) { // Range selected
+            return commissions.filter(commission => {
+                const paymentDate = new Date(commission.paymentDate);
+                if (!isValid(paymentDate)) return false;
+                return paymentDate >= fromDate && paymentDate <= toDate;
+            });
+        } else { // Single day selected
+             return commissions.filter(commission => {
+                const paymentDate = new Date(commission.paymentDate);
+                if (!isValid(paymentDate)) return false;
+                return format(paymentDate, 'yyyy-MM-dd') === format(fromDate, 'yyyy-MM-dd');
+            });
+        }
     }, [dateRange]);
 
 
@@ -204,133 +200,72 @@ export default function PromoterPage() {
                         </TabsContent>
 
                         <TabsContent value="commissions" className="space-y-6">
-                           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                               <div className="lg:col-span-1">
-                                   <Card>
-                                       <CardHeader>
-                                           <CardTitle>Calendario de Pagos</CardTitle>
-                                            <CardDescription className="flex items-center gap-x-2 text-xs">
-                                                <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-green-500"></span>Pagado</span>
-                                                <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-blue-500"></span>Pendiente</span>
-                                            </CardDescription>
-                                       </CardHeader>
-                                       <CardContent>
-                                          <style>
-                                            {`
-                                                .day-paid { 
-                                                    background-color: hsl(var(--primary) / 0.2) !important;
-                                                    font-weight: bold;
-                                                }
-                                                .day-pending { 
-                                                    background-color: hsl(210 100% 56% / 0.2) !important; 
-                                                }
-                                                .rdp-day_today:not([disabled]):not(.day-paid):not(.day-pending) > .rdp-button {
-                                                    font-weight: normal;
-                                                    background-color: hsl(var(--accent) / 0.5);
-                                                }
-                                            `}
-                                          </style>
-                                          {!isClient ? (
-                                              <div className="flex justify-center items-center p-4">
-                                                  <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-                                              </div>
-                                          ) : (
-                                            <Calendar
-                                                mode="single"
-                                                selected={selectedDate}
-                                                onSelect={setSelectedDate}
-                                                className="rounded-md border p-0"
-                                                locale={es}
-                                                modifiers={dayModifiers}
-                                                modifiersClassNames={dayModifiersClassNames}
-                                            />
-                                          )}
-                                       </CardContent>
-                                   </Card>
-                               </div>
-                               <div className="lg:col-span-2">
-                                   <Card className="min-h-full">
-                                       <CardHeader>
-                                            <CardTitle>
-                                              Detalles del {selectedDate && isClient ? format(selectedDate, 'PPP', { locale: es }) : 'día'}
-                                            </CardTitle>
-                                       </CardHeader>
-                                       <CardContent>
-                                            {commissionsForSelectedDate.length > 0 ? (
-                                                <ul className="space-y-3">
-                                                    {commissionsForSelectedDate.map(c => (
-                                                        <li key={c.id} className="flex items-center justify-between p-3 border rounded-md">
-                                                            <div>
-                                                                <p className="font-semibold">{c.clientName}</p>
-                                                                <p className="text-sm text-muted-foreground">${c.commission.toFixed(2)}</p>
-                                                            </div>
-                                                            <Badge variant={c.status === 'Pagada' ? 'default' : 'secondary'} className={cn(
-                                                                c.status === 'Pagada' && 'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300',
-                                                                c.status === 'Pendiente' && 'bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-300'
-                                                            )}>{c.status}</Badge>
-                                                        </li>
-                                                    ))}
-                                                </ul>
-                                            ) : (
-                                                <div className="text-center text-muted-foreground py-10">
-                                                    <CalendarDays className="mx-auto h-12 w-12 mb-4" />
-                                                    <p>No hay pagos para esta fecha.</p>
-                                                </div>
-                                            )}
-                                       </CardContent>
-                                   </Card>
-                               </div>
-                           </div>
                            <Card>
                                 <CardHeader>
                                     <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                                         <div>
-                                            <CardTitle>Historial de Comisiones</CardTitle>
-                                            <CardDescription>Visualiza todas tus comisiones pagadas y pendientes.</CardDescription>
+                                            <CardTitle>Historial y Calendario de Comisiones</CardTitle>
+                                            <CardDescription>Seleccione un día para ver sus detalles o un rango para filtrar el historial.</CardDescription>
                                         </div>
-                                        <div className="flex items-center gap-2">
-                                            <Popover>
-                                                <PopoverTrigger asChild>
-                                                    <Button
-                                                        variant={"outline"}
-                                                        className={cn(
-                                                            "w-[240px] justify-start text-left font-normal",
-                                                            !dateRange && "text-muted-foreground"
-                                                        )}
-                                                    >
-                                                        <CalendarIcon className="mr-2 h-4 w-4" />
-                                                        {dateRange?.from ? (
-                                                            dateRange.to ? (
-                                                                <>
-                                                                    {format(dateRange.from, "LLL dd, y")} -{" "}
-                                                                    {format(dateRange.to, "LLL dd, y")}
-                                                                </>
-                                                            ) : (
-                                                                format(dateRange.from, "LLL dd, y")
-                                                            )
+                                        <Popover>
+                                            <PopoverTrigger asChild>
+                                                <Button
+                                                    variant={"outline"}
+                                                    className={cn(
+                                                        "w-full sm:w-[280px] justify-start text-left font-normal",
+                                                        !dateRange && "text-muted-foreground"
+                                                    )}
+                                                >
+                                                    <CalendarIcon className="mr-2 h-4 w-4" />
+                                                    {dateRange?.from ? (
+                                                        dateRange.to ? (
+                                                            <>
+                                                                {format(dateRange.from, "LLL dd, y", { locale: es })} -{" "}
+                                                                {format(dateRange.to, "LLL dd, y", { locale: es })}
+                                                            </>
                                                         ) : (
-                                                            <span>Seleccionar rango</span>
-                                                        )}
-                                                    </Button>
-                                                </PopoverTrigger>
-                                                <PopoverContent className="w-auto p-0" align="end">
+                                                            format(dateRange.from, "PPP", { locale: es })
+                                                        )
+                                                    ) : (
+                                                        <span>Seleccionar fecha o rango</span>
+                                                    )}
+                                                </Button>
+                                            </PopoverTrigger>
+                                            <PopoverContent className="w-auto p-0" align="end">
+                                                <style>
+                                                {`
+                                                    .day-paid { 
+                                                        background-color: hsl(var(--primary) / 0.2) !important;
+                                                        font-weight: bold;
+                                                    }
+                                                    .day-pending { 
+                                                        background-color: hsl(210 100% 56% / 0.2) !important; 
+                                                    }
+                                                    .rdp-day_today:not([disabled]):not(.day-paid):not(.day-pending) > .rdp-button {
+                                                        font-weight: normal;
+                                                        background-color: hsl(var(--accent) / 0.5);
+                                                    }
+                                                `}
+                                                </style>
+                                                {!isClient ? (
+                                                    <div className="p-3 rounded-md border w-[280px] h-[321px] flex items-center justify-center">
+                                                        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                                                    </div>
+                                                ) : (
                                                     <Calendar
                                                         initialFocus
                                                         mode="range"
                                                         defaultMonth={dateRange?.from}
                                                         selected={dateRange}
                                                         onSelect={setDateRange}
-                                                        numberOfMonths={2}
+                                                        numberOfMonths={1}
                                                         locale={es}
+                                                        modifiers={dayModifiers}
+                                                        modifiersClassNames={dayModifiersClassNames}
                                                     />
-                                                </PopoverContent>
-                                            </Popover>
-                                            {dateRange && (
-                                                <Button variant="ghost" size="icon" onClick={() => setDateRange(undefined)}>
-                                                    <X className="h-4 w-4" />
-                                                </Button>
-                                            )}
-                                        </div>
+                                                )}
+                                            </PopoverContent>
+                                        </Popover>
                                     </div>
                                 </CardHeader>
                                 <CardContent>
@@ -364,7 +299,7 @@ export default function PromoterPage() {
                                      {filteredCommissions.length === 0 && (
                                         <div className="text-center text-muted-foreground py-10">
                                             <Info className="mx-auto h-12 w-12 mb-4" />
-                                            <p>No se encontraron comisiones en el rango de fechas seleccionado.</p>
+                                            <p>No se encontraron comisiones para la fecha o rango seleccionado.</p>
                                         </div>
                                     )}
                                 </CardContent>
