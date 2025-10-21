@@ -13,16 +13,21 @@ import { FirebaseClientProvider, useUser } from '@/firebase';
 import { CRMDataProvider } from '@/contexts/CRMDataContext';
 import { TasksProvider } from '@/contexts/TasksContext';
 import { useRouter, usePathname } from 'next/navigation';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { Loader2 } from 'lucide-react';
 
 function AppContent({ children }: { children: React.ReactNode }) {
   const { user, isUserLoading } = useUser();
   const router = useRouter();
   const pathname = usePathname();
+  const [isClient, setIsClient] = useState(false);
 
   useEffect(() => {
-    if (!isUserLoading) {
+    setIsClient(true);
+  }, []);
+
+  useEffect(() => {
+    if (isClient && !isUserLoading) {
       const isAuthPage = pathname === '/login' || pathname === '/register';
       if (!user && !isAuthPage) {
         router.push('/login');
@@ -31,9 +36,9 @@ function AppContent({ children }: { children: React.ReactNode }) {
         router.push('/');
       }
     }
-  }, [isUserLoading, user, router, pathname]);
+  }, [isUserLoading, user, router, pathname, isClient]);
 
-  if (isUserLoading) {
+  if (!isClient || isUserLoading) {
     return (
       <div className="flex h-screen w-full items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin" />
@@ -45,27 +50,23 @@ function AppContent({ children }: { children: React.ReactNode }) {
 
   if (isAuthPage) {
     if (user) {
-      // Muestra un loader mientras redirige para evitar un parpadeo
       return (
         <div className="flex h-screen w-full items-center justify-center">
           <Loader2 className="h-8 w-8 animate-spin" />
         </div>
       );
     }
-    // Si no hay usuario y es una página de autenticación, muestra el contenido
     return <>{children}</>;
   }
 
   if (!user) {
-    // Muestra un loader mientras redirige a login
     return (
-        <div className="flex h-screen w-full items-center justify-center">
-            <Loader2 className="h-8 w-8 animate-spin" />
-        </div>
+      <div className="flex h-screen w-full items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin" />
+      </div>
     );
   }
 
-  // Si hay usuario y no es una página de autenticación, muestra el layout principal
   return (
     <SidebarProvider>
       <AppSidebar />
