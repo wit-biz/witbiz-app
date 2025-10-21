@@ -15,6 +15,15 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
+} from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
+import {
   User,
   Shield,
   Palette,
@@ -26,6 +35,9 @@ import {
   Save,
   Eye,
   EyeOff,
+  Edit,
+  Trash2,
+  PlusCircle,
 } from "lucide-react";
 import { useState } from "react";
 import { ThemeToggle } from "@/components/shared/theme-toggle";
@@ -48,6 +60,12 @@ const PasswordInput = ({ id, placeholder }: { id: string, placeholder: string })
     );
 };
 
+const teamMembers = [
+    { name: "Admin User", email: "admin@witfx.com", role: "Administrador", status: "Activo" },
+    { name: "Cajero 1", email: "cajero1@wit.com", role: "Colaborador", status: "Activo" },
+    { name: "Cajero 2", email: "cajero2@wit.com", role: "Colaborador", status: "Activo" },
+];
+
 
 export default function SettingsPage() {
   return (
@@ -57,7 +75,7 @@ export default function SettingsPage() {
         description="Gestiona tu información y las preferencias del sistema."
       />
       <main className="flex-1 p-4 md:p-8">
-        <Tabs defaultValue="summary" className="w-full">
+        <Tabs defaultValue="team" className="w-full">
           <TabsList className="grid w-full grid-cols-2 sm:grid-cols-5 mb-6">
             <TabsTrigger value="summary">
               <User className="mr-2 h-4 w-4" />
@@ -192,17 +210,44 @@ export default function SettingsPage() {
           </TabsContent>
           <TabsContent value="team">
             <Card>
-              <CardHeader>
-                <CardTitle>Miembros del Equipo</CardTitle>
-                <CardDescription>
-                  Gestiona los miembros de tu equipo.
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <p className="text-muted-foreground">
-                  Aquí podrás invitar, eliminar y gestionar los roles de los miembros de tu equipo.
-                </p>
-              </CardContent>
+                <CardHeader className="flex flex-row items-center justify-between">
+                    <div>
+                        <CardTitle className="flex items-center gap-2"><Users className="h-5 w-5 text-accent" /> Miembros del Equipo</CardTitle>
+                        <CardDescription>Gestiona los miembros de tu equipo y sus roles.</CardDescription>
+                    </div>
+                    <Button><PlusCircle className="mr-2 h-4 w-4" /> Añadir Miembro</Button>
+                </CardHeader>
+                <CardContent>
+                    <Table>
+                        <TableHeader>
+                            <TableRow>
+                                <TableHead>Nombre</TableHead>
+                                <TableHead>Correo Electrónico</TableHead>
+                                <TableHead>Rol</TableHead>
+                                <TableHead>Estado</TableHead>
+                                <TableHead className="text-right">Acciones</TableHead>
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                            {teamMembers.map((member, index) => (
+                                <TableRow key={index}>
+                                    <TableCell className="font-medium">{member.name}</TableCell>
+                                    <TableCell>{member.email}</TableCell>
+                                    <TableCell><Badge variant="outline">{member.role}</Badge></TableCell>
+                                    <TableCell><Badge className="bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300">{member.status}</Badge></TableCell>
+                                    <TableCell className="text-right">
+                                        <Button variant="ghost" size="icon" className="h-8 w-8">
+                                            <Edit className="h-4 w-4" />
+                                        </Button>
+                                        <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive">
+                                            <Trash2 className="h-4 w-4" />
+                                        </Button>
+                                    </TableCell>
+                                </TableRow>
+                            ))}
+                        </TableBody>
+                    </Table>
+                </CardContent>
             </Card>
           </TabsContent>
           <TabsContent value="permissions">
