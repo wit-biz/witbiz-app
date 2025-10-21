@@ -34,7 +34,15 @@ const Logo = () => (
       className="h-8 w-8"
       aria-label="WitBiz Logo"
     >
-      <circle cx="50" cy="50" r="50" fill="#90EE90" />
+      <style>
+        {`
+          .witbiz-logo-circle { fill: hsl(var(--primary)); }
+          @media (prefers-color-scheme: dark) {
+            .witbiz-logo-circle { fill: hsl(var(--primary)); }
+          }
+        `}
+      </style>
+      <circle cx="50" cy="50" r="50" className="witbiz-logo-circle" />
       <rect x="15" y="40" width="30" height="20" fill="black" />
       <text
         x="30"
