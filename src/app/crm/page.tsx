@@ -34,6 +34,7 @@ export default function CrmConfigurationPage() {
   const { 
     currentUser,
     serviceWorkflows, 
+    isLoadingWorkflows,
     addService, 
     updateService, 
     deleteService, 
@@ -70,6 +71,7 @@ export default function CrmConfigurationPage() {
   const canEditWorkflow = currentUser?.permissions.donna.crm_edit ?? true;
 
   useEffect(() => {
+    if (!serviceWorkflows) return;
     if (!selectedWorkflowId && serviceWorkflows.length > 0) {
       setSelectedWorkflowId(serviceWorkflows[0].id);
     }
@@ -79,6 +81,7 @@ export default function CrmConfigurationPage() {
   }, [serviceWorkflows, selectedWorkflowId]);
 
   const selectedWorkflow = useMemo(() => {
+    if (!serviceWorkflows) return null;
     return serviceWorkflows.find(wf => wf.id === selectedWorkflowId) || null;
   }, [selectedWorkflowId, serviceWorkflows]);
   
@@ -217,6 +220,7 @@ export default function CrmConfigurationPage() {
   };
 
   const renderStages = (stages: WorkflowStage[], serviceId: string, subServiceId: string | null) => {
+    if (!stages) return null;
     return (
       <Accordion type="multiple" className="w-full space-y-4" defaultValue={(stages || []).map(s => s.id)}>
         {(stages || []).map((stage, stageIndex) => {
@@ -329,6 +333,20 @@ export default function CrmConfigurationPage() {
     );
   };
 
+  if (isLoadingWorkflows) {
+    return (
+        <div className="flex flex-col min-h-screen">
+            <Header 
+                title="Configuración del CRM" 
+                description="Seleccione un servicio para gestionar sus etapas y objetivos."
+            />
+            <div className="flex-1 flex items-center justify-center">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            </div>
+        </div>
+    )
+  }
+
   return (
     <TooltipProvider>
       <Header 
@@ -372,12 +390,12 @@ export default function CrmConfigurationPage() {
                                 </Button>
                             </div>
                         ) : (
-                            <Select value={selectedWorkflowId || ""} onValueChange={(id) => setSelectedWorkflowId(id)} disabled={!serviceWorkflows.length}>
+                            <Select value={selectedWorkflowId || ""} onValueChange={(id) => setSelectedWorkflowId(id)} disabled={!serviceWorkflows || !serviceWorkflows.length}>
                                 <SelectTrigger id="service-selector" className="mt-1">
                                     <SelectValue placeholder="Seleccione un servicio..." />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    {serviceWorkflows.map(service => (
+                                    {serviceWorkflows && serviceWorkflows.map(service => (
                                         <SelectItem key={service.id} value={service.id}>{service.name}</SelectItem>
                                     ))}
                                 </SelectContent>
@@ -447,7 +465,7 @@ export default function CrmConfigurationPage() {
                 )}
                 
                 {/* Global actions for the service */}
-                {canEditWorkflow && (
+                {canEditWorkflow && selectedWorkflow.subServices && selectedWorkflow.subServices.length > 0 && (
                   <div className="mt-6 pt-6 border-t">
                     <Button variant="outline" onClick={() => addSubServiceToService(selectedWorkflow.id)} disabled={!canEditWorkflow}><Plus className="h-4 w-4 mr-2"/>Añadir Sub-Servicio</Button>
                   </div>
