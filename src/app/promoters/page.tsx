@@ -9,6 +9,7 @@ import { LogOut, Loader2 } from 'lucide-react';
 import { useState } from 'react';
 import { Logo } from '@/components/shared/logo';
 import { PromotersTab } from '@/components/shared/PromotersTab';
+import { promoters } from '@/lib/data';
 
 
 export default function PromoterPage() {
@@ -37,7 +38,7 @@ export default function PromoterPage() {
                 </Button>
             </header>
             <main className="flex-1 p-4 md:p-8">
-                <PromotersTab isStandalonePage={true} />
+                <PromotersTab promoters={promoters} isLoading={false} isStandalonePage={true}/>
             </main>
         </div>
     );

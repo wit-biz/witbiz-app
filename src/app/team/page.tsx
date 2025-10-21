@@ -108,11 +108,14 @@ export default function TeamPage() {
             'Administrador': 2,
             'Colaborador': 3,
         };
-        return [...teamMembers].sort((a, b) => {
-            const roleA = roleOrder[a.role as keyof typeof roleOrder] || 99;
-            const roleB = roleOrder[b.role as keyof typeof roleOrder] || 99;
-            return roleA - roleB;
-        });
+        // Filter out promoters from the team members list
+        return teamMembers
+            .filter(member => member.role !== 'Promotor')
+            .sort((a, b) => {
+                const roleA = roleOrder[a.role as keyof typeof roleOrder] || 99;
+                const roleB = roleOrder[b.role as keyof typeof roleOrder] || 99;
+                return roleA - roleB;
+            });
     }, []);
 
     const handlePermissionChange = (roleId: string, permissionKey: keyof AppPermissions, value: boolean) => {

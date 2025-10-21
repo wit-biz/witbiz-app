@@ -13,9 +13,10 @@ import { type Promoter } from '@/lib/types';
 interface PromotersTabProps {
     promoters: Promoter[];
     isLoading: boolean;
+    isStandalonePage?: boolean;
 }
 
-export function PromotersTab({ promoters, isLoading }: PromotersTabProps) {
+export function PromotersTab({ promoters, isLoading, isStandalonePage = false }: PromotersTabProps) {
 
     return (
         <Card>
@@ -26,10 +27,7 @@ export function PromotersTab({ promoters, isLoading }: PromotersTabProps) {
                        Personas que generan comisiones al referir clientes.
                     </CardDescription>
                 </div>
-                <Button size="sm">
-                    <PlusCircle className="mr-2 h-4 w-4" />
-                    Añadir Promotor
-                </Button>
+                {/* The button to add promoters is in the Team page now, not here */}
             </CardHeader>
             <CardContent>
                 {isLoading ? (
@@ -45,7 +43,9 @@ export function PromotersTab({ promoters, isLoading }: PromotersTabProps) {
                                     <TableHead className="text-center">Clientes Referidos</TableHead>
                                     <TableHead>Comisiones Generadas</TableHead>
                                     <TableHead>Estado</TableHead>
-                                    <TableHead className="text-right">Acciones</TableHead>
+                                    {!isStandalonePage && (
+                                       <TableHead className="text-right">Acciones</TableHead>
+                                    )}
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
@@ -62,14 +62,16 @@ export function PromotersTab({ promoters, isLoading }: PromotersTabProps) {
                                         <TableCell>
                                             <Badge variant={promoter.status === 'Activo' ? 'default' : 'secondary'}>{promoter.status}</Badge>
                                         </TableCell>
-                                        <TableCell className="text-right">
-                                            <Button variant="ghost" size="icon">
-                                                <Edit className="h-4 w-4" />
-                                            </Button>
-                                            <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive">
-                                                <Trash2 className="h-4 w-4" />
-                                            </Button>
-                                        </TableCell>
+                                        {!isStandalonePage && (
+                                            <TableCell className="text-right">
+                                                <Button variant="ghost" size="icon">
+                                                    <Edit className="h-4 w-4" />
+                                                </Button>
+                                                <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive">
+                                                    <Trash2 className="h-4 w-4" />
+                                                </Button>
+                                            </TableCell>
+                                        )}
                                     </TableRow>
                                 ))}
                             </TableBody>
