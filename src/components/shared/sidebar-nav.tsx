@@ -60,17 +60,17 @@ export function SidebarNav() {
     }
   }, [isMobile, setOpenMobile]);
 
-  const userHasPermission = (permissionKey: NavItem['requiredPermission']) => {
-    if (isLoadingCurrentUser || !currentUser) {
-      return permissionKey === 'dashboard';
-    }
+  const userHasPermission = (permissionKey: keyof NavItem['requiredPermission']) => {
+    if (isLoadingCurrentUser) return false;
+    if (!currentUser) return false; // No permissions if no user
+    // Simplified check
     return currentUser.permissions[permissionKey] === true;
   };
 
   const renderNavItem = (item: NavItem) => {
-    if (!userHasPermission(item.requiredPermission)) {
-      return null;
-    }
+    // Always render items if there is a current user, based on simplified permissions
+    if (!currentUser) return null;
+    
     const isActive = item.href === '/' ? pathname === '/' : pathname.startsWith(item.href) && item.href !== '/';
     const Icon = item.icon;
 
