@@ -46,8 +46,6 @@ import type { Client, Task, WorkflowStage } from '@/lib/types';
 import { useTasksContext } from "@/contexts/TasksContext";
 import { TaskDetailDialog } from "@/components/shared/TaskDetailDialog";
 import { useCRMData } from "@/contexts/CRMDataContext";
-import { useAuth, useUser } from "@/firebase";
-import { sendEmailVerification } from "firebase/auth";
 import { useToast } from "@/hooks/use-toast";
 
 
@@ -63,63 +61,6 @@ const StageNumberIcon = ({ index, variant = 'default' }: { index: number, varian
     </div>
   );
 };
-
-const EmailVerificationBanner = () => {
-    const { user } = useUser();
-    const auth = useAuth();
-    const { toast } = useToast();
-    const [isSending, setIsSending] = useState(false);
-    const [emailSent, setEmailSent] = useState(false);
-
-    const handleSendVerification = async () => {
-        if (auth.currentUser && !auth.currentUser.emailVerified) {
-            setIsSending(true);
-            try {
-                await sendEmailVerification(auth.currentUser);
-                toast({
-                    title: "Verificación enviada",
-                    description: "Se ha enviado un enlace de verificación a su correo electrónico.",
-                });
-                setEmailSent(true);
-            } catch (error) {
-                console.error("Error sending verification email:", error);
-                toast({
-                    variant: "destructive",
-                    title: "Error",
-                    description: "No se pudo enviar el correo de verificación. Por favor, inténtelo de nuevo más tarde.",
-                });
-            } finally {
-                setIsSending(false);
-            }
-        }
-    };
-
-    if (!user || user.emailVerified) {
-        return null;
-    }
-
-    return (
-        <Alert variant="destructive" className="bg-yellow-50 border-yellow-300 text-yellow-800 dark:bg-yellow-900/20 dark:border-yellow-700 dark:text-yellow-300 [&>svg]:text-yellow-500">
-            <MailWarning className="h-4 w-4" />
-            <AlertTitle>Verifique su Correo Electrónico</AlertTitle>
-            <AlertDescription>
-                Su correo electrónico no ha sido verificado. Por favor, revise su bandeja de entrada o haga clic aquí para reenviar el enlace y poder acceder a todas las funcionalidades.
-                <div className="mt-3">
-                    <Button 
-                        size="sm" 
-                        onClick={handleSendVerification} 
-                        disabled={isSending || emailSent}
-                        className="bg-yellow-600 hover:bg-yellow-700 text-white"
-                    >
-                        {isSending ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Send className="mr-2 h-4 w-4" />}
-                        {emailSent ? 'Enlace Enviado' : 'Reenviar Verificación'}
-                    </Button>
-                </div>
-            </AlertDescription>
-        </Alert>
-    );
-};
-
 
 export default function InicioPage() {
   const { clients, isLoadingClients, tasks, serviceWorkflows, isLoadingWorkflows } = useCRMData();
@@ -232,8 +173,6 @@ export default function InicioPage() {
         title="Inicio"
         description="Bienvenido a WitBiz. Aquí tienes un resumen y accesos rápidos."
       />
-
-      <EmailVerificationBanner />
 
       <Card className="w-full">
         <CardHeader>
