@@ -40,6 +40,7 @@ import {
   Briefcase,
   MailWarning,
   Send,
+  Users,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { Client, Task, WorkflowStage } from '@/lib/types';
@@ -77,11 +78,8 @@ export default function InicioPage() {
     setCurrentClientDateForDashboard(today);
   }, []);
 
-  const [selectedStage, setSelectedStage] = useState<WorkflowStage | null>(null);
-  const [isStageClientsDialogOpen, setIsStageClientsDialogOpen] = useState(false);
-
   const [searchTermDashboard, setSearchTermDashboard] = useState("");
-  const [highlightedStageId, setHighlightedStageId] = useState<string | null>(null);
+  const [highlightedClientId, setHighlightedClientId] = useState<string | null>(null);
   
   const workflowStagesForDisplay: WorkflowStage[] = useMemo(() => {
       if (!serviceWorkflows || serviceWorkflows.length === 0) return [];
@@ -89,25 +87,20 @@ export default function InicioPage() {
       return serviceWorkflows.flatMap(sw => sw.subServices.flatMap(ss => ss.stages)).sort((a,b) => a.order - b.order);
   }, [serviceWorkflows]);
 
-  const clientsInSelectedStageWithDetails = useMemo(() => {
-    if (!selectedStage || isLoadingClients || !clients || !tasks) return [];
-
-    return clients
-      .filter(client => client.currentWorkflowStageId === selectedStage.id)
-      .map(client => {
-        const clientTasks = tasks.filter(t => t.clientId === client.id);
-        const pendingTask = clientTasks.find(task => task.status === 'Pendiente');
-        const currentObjective = client.currentObjectiveId ? getObjectiveById(client.currentObjectiveId) : null;
-
-
-        return {
-          ...client,
-          currentObjectiveDisplay: currentObjective?.description || client.currentObjective || 'No definido',
-          pendingTaskInfo: pendingTask ? { title: pendingTask.title, dueDate: new Date(pendingTask.dueDate) } : undefined,
-        };
-      })
-      .sort((a, b) => a.name.localeCompare(b.name));
-  }, [selectedStage, clients, isLoadingClients, tasks, getObjectiveById]);
+  const clientsByStage = useMemo(() => {
+    if (isLoadingClients || !clients) return new Map<string, Client[]>();
+    const map = new Map<string, Client[]>();
+    clients.forEach(client => {
+      const stageId = client.currentWorkflowStageId;
+      if (stageId) {
+        if (!map.has(stageId)) {
+          map.set(stageId, []);
+        }
+        map.get(stageId)!.push(client);
+      }
+    });
+    return map;
+  }, [clients, isLoadingClients]);
 
 
   const filteredClientsDashboard = useMemo(() => {
@@ -124,25 +117,18 @@ export default function InicioPage() {
   }, [searchTermDashboard, clients, isLoadingClients]);
 
 
-  const handleStageClick = (stage: WorkflowStage) => {
-    setHighlightedStageId(stage.id);
-    setSelectedStage(stage);
-    setIsStageClientsDialogOpen(true);
-  };
-
-  const populatedStageIds = useMemo(() => {
-    if (isLoadingClients || !clients) return new Set<string>();
-    return new Set(clients.map(client => client.currentWorkflowStageId || ''));
-  }, [clients, isLoadingClients]);
-
-
   const handleClientSearchSelection = useCallback((client: Client) => {
     setSearchTermDashboard(""); // Clear search term to hide results
-    setHighlightedStageId(client.currentWorkflowStageId || null);
+    setHighlightedClientId(client.id || null);
+    
+    // Scroll to the stage card
+    const stageCard = document.getElementById(`stage-card-${client.currentWorkflowStageId}`);
+    stageCard?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
     setTimeout(() => {
         // Remove highlight after animation
-        setHighlightedStageId(null);
-    }, 2000);
+        setHighlightedClientId(null);
+    }, 2500);
   }, []);
 
   const todaysTasks = useMemo(() => {
@@ -230,8 +216,8 @@ export default function InicioPage() {
 
       <Card className="w-full">
          <CardHeader>
-            <CardTitle className="flex items-center gap-2">CRM de WitBiz</CardTitle>
-            <CardDescription>Etapas clave en el ciclo de vida del Cliente y búsqueda rápida.</CardDescription>
+            <CardTitle className="flex items-center gap-2">Pipeline de Clientes (CRM)</CardTitle>
+            <CardDescription>Vista general de todos los clientes en cada etapa del flujo de trabajo.</CardDescription>
         </CardHeader>
         <CardContent className="pt-0 space-y-4">
             <div className="relative max-w-sm">
@@ -239,7 +225,7 @@ export default function InicioPage() {
                 <Input
                     value={searchTermDashboard}
                     onChange={(e) => setSearchTermDashboard(e.target.value)}
-                    placeholder="Buscar cliente para resaltar su etapa..."
+                    placeholder="Buscar cliente para resaltar..."
                     className="pl-10"
                 />
                 {filteredClientsDashboard.length > 0 && (
@@ -262,184 +248,50 @@ export default function InicioPage() {
                 )}
             </div>
 
-            {isLoadingWorkflows ? (
+            {isLoadingWorkflows || isLoadingClients ? (
                 <div className="flex items-center justify-center p-12"><Loader2 className="h-8 w-8 animate-spin text-primary"/></div>
             ) : (
-            <>
-            {/* Mobile: Vertical flow */}
-            <div className="flex flex-col items-center gap-2 sm:hidden pt-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                 {workflowStagesForDisplay.map((stage, index) => {
-                const isPopulated = populatedStageIds.has(stage.id);
-                const isHighlighted = stage.id === highlightedStageId;
-                let currentStatusForStyling: 'locked' | 'active' | 'completed' = 'locked';
-
-                if (isPopulated && !isHighlighted) {
-                    currentStatusForStyling = 'completed';
-                } else if (isHighlighted) {
-                    currentStatusForStyling = 'active';
-                }
-
-                let baseStageClass = 'bg-secondary dark:bg-secondary/50 border border-border';
-                let baseTextClass = 'text-muted-foreground';
-
-                if (currentStatusForStyling === 'completed') {
-                    baseStageClass = 'bg-green-100 dark:bg-green-900/50 border border-green-300 dark:border-green-700';
-                    baseTextClass = cn('text-green-700 dark:text-green-300', isHighlighted && 'text-inherit');
-                } else if (currentStatusForStyling === 'active') {
-                    baseStageClass = 'bg-accent/20 dark:bg-accent/30 border-2 border-accent shadow-lg';
-                    baseTextClass = cn('text-accent-foreground dark:text-accent font-semibold', isHighlighted && 'text-inherit');
-                }
-
-                return (
-                    <React.Fragment key={stage.id}>
-                    <div
-                        onClick={() => handleStageClick(stage)}
-                        className={cn(
-                        "flex-shrink-0 rounded-lg shadow-md hover:shadow-lg transition-all",
-                        "w-full min-h-[4rem] p-3 flex flex-row items-center justify-start text-left",
-                        baseStageClass,
-                        'hover:opacity-90 cursor-pointer',
-                        isHighlighted ? 'stage-pulse-highlight' : ''
+                  const clientsInStage = clientsByStage.get(stage.id) || [];
+                  return (
+                    <Card key={stage.id} id={`stage-card-${stage.id}`} className="flex flex-col">
+                      <CardHeader>
+                        <CardTitle className="flex items-center gap-2">
+                           <StageNumberIcon index={index} variant="dialog" /> 
+                           <span className="flex-grow">{stage.title}</span>
+                           <span className="text-sm font-normal bg-muted text-muted-foreground rounded-full px-2 py-0.5">
+                             {clientsInStage.length}
+                           </span>
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent className="flex-grow space-y-2 overflow-y-auto">
+                        {clientsInStage.length > 0 ? (
+                           clientsInStage.map(client => (
+                             <Link key={client.id} href={`/contacts?openClient=${client.id}`} passHref>
+                                <div className={cn(
+                                  "p-2 border rounded-md cursor-pointer hover:bg-secondary/50 transition-all",
+                                   highlightedClientId === client.id ? 'bg-accent/30 border-accent ring-2 ring-accent' : 'bg-background'
+                                )}>
+                                  <p className="font-semibold text-sm truncate">{client.name}</p>
+                                  <p className="text-xs text-muted-foreground truncate">{client.category}</p>
+                                </div>
+                             </Link>
+                           ))
+                        ) : (
+                          <div className="text-center text-muted-foreground py-6 text-sm flex flex-col items-center">
+                            <Users className="h-8 w-8 mb-2" />
+                            <p>No hay clientes en esta etapa.</p>
+                          </div>
                         )}
-                        role="button"
-                        tabIndex={0}
-                        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') handleStageClick(stage); }}
-                        aria-label={stage.title}
-                    >
-                        <StageNumberIcon index={index} variant="default" />
-                        <div className="min-w-0">
-                        <span className={cn("leading-tight break-words text-sm font-medium", isHighlighted ? 'text-inherit' : baseTextClass)}>
-                            {stage.title}
-                        </span>
-                        </div>
-                    </div>
-                    {index < workflowStagesForDisplay.length - 1 && (
-                        <ChevronDown className="w-5 h-5 text-muted-foreground my-1" />
-                    )}
-                    </React.Fragment>
-                );
+                      </CardContent>
+                    </Card>
+                  )
                 })}
-            </div>
-            {/* Desktop: Horizontal wrap flow */}
-            <div className="hidden sm:flex flex-wrap items-start gap-2 pt-4">
-                {workflowStagesForDisplay.map((stage, index) => {
-                 const isPopulated = populatedStageIds.has(stage.id);
-                 const isHighlighted = stage.id === highlightedStageId;
-                 let currentStatusForStyling: 'locked' | 'active' | 'completed' = 'locked';
-                
-                 if (isPopulated && !isHighlighted) {
-                     currentStatusForStyling = 'completed';
-                 } else if (isHighlighted) {
-                    currentStatusForStyling = 'active';
-                 }
-
-                let baseStageClass = 'bg-muted/50 dark:bg-muted/30 border border-border';
-                let baseTextClass = 'text-muted-foreground';
-
-                if (currentStatusForStyling === 'locked') {
-                     baseStageClass = 'bg-muted/50 dark:bg-muted/30 border border-border';
-                     if(isPopulated) baseStageClass += ' opacity-70';
-                     else baseStageClass += ' opacity-50 cursor-not-allowed';
-                } else if (currentStatusForStyling === 'completed') {
-                    baseStageClass = 'bg-green-100 dark:bg-green-900/50 border border-green-300 dark:border-green-700';
-                    baseTextClass = cn('text-green-700 dark:text-green-300', isHighlighted && 'text-inherit');
-                } else if (currentStatusForStyling === 'active') {
-                    baseStageClass = 'bg-accent/20 dark:bg-accent/30 border-2 border-accent shadow-lg';
-                    baseTextClass = cn('text-accent-foreground dark:text-accent font-semibold', isHighlighted && 'text-inherit');
-                }
-
-                return (
-                    <React.Fragment key={stage.id}>
-                    <div
-                        onClick={() => handleStageClick(stage)}
-                        className={cn(
-                        "flex-shrink-0 rounded-lg shadow-md hover:shadow-lg transition-all",
-                        "sm:w-20 sm:h-20 md:w-24 md:h-24 lg:w-28 lg:h-28 p-1.5 sm:p-2 m-0.5 flex flex-col justify-center items-center text-center",
-                        baseStageClass,
-                        'hover:opacity-90 cursor-pointer',
-                        isHighlighted ? 'stage-pulse-highlight' : ''
-                        )}
-                        role={"button"}
-                        tabIndex={0}
-                        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') handleStageClick(stage); }}
-                        aria-label={stage.title}
-                    >
-                        <StageNumberIcon index={index} variant="large" />
-                        <span className={cn("leading-tight break-words text-[10px] sm:text-xs w-full px-0.5", isHighlighted ? 'text-inherit' : baseTextClass)}>
-                        {stage.title}
-                        </span>
-                    </div>
-                    {index < workflowStagesForDisplay.length - 1 && (
-                        <ChevronRight className="w-4 h-4 text-muted-foreground self-center" />
-                    )}
-                    </React.Fragment>
-                );
-                })}
-            </div>
-            </>
+              </div>
             )}
         </CardContent>
       </Card>
-
-
-      {selectedStage && (
-        <Dialog open={isStageClientsDialogOpen} onOpenChange={setIsStageClientsDialogOpen}>
-          <DialogContent className="sm:max-w-lg md:max-w-xl">
-            <DialogHeader>
-              <DialogTitle className="flex items-center gap-2 text-lg">
-                <StageNumberIcon index={workflowStagesForDisplay.findIndex(s => s.id === selectedStage.id)} variant="dialog" />
-                Clientes en Etapa: {selectedStage.title}
-              </DialogTitle>
-              <DialogDescription>
-                Listado de clientes actuales en esta etapa y su objetivo principal.
-              </DialogDescription>
-            </DialogHeader>
-            <div className="max-h-[60vh] my-4 pr-4 -mr-4 overflow-y-auto">
-              {isLoadingClients && (
-                <div className="flex items-center justify-center py-4">
-                  <Loader2 className="h-5 w-5 animate-spin text-accent mr-2" />
-                  <p className="text-sm text-muted-foreground">Cargando clientes...</p>
-                </div>
-              )}
-              {!isLoadingClients && clientsInSelectedStageWithDetails.length > 0 ? (
-                <ul className="space-y-3">
-                  {clientsInSelectedStageWithDetails.map(client => (
-                    <li key={client.id} className="p-3 border rounded-md bg-card hover:bg-secondary/50 transition-colors">
-                      <Link href={`/contacts?openClient=${client.id}`} passHref>
-                        <div className="cursor-pointer">
-                            <p className="font-semibold text-card-foreground">{client.name}</p>
-                            <div className="mt-1.5 text-xs text-muted-foreground flex items-start gap-1.5">
-                                <Target className="h-3.5 w-3.5 text-blue-500 flex-shrink-0 mt-0.5" />
-                                <div className="min-w-0 flex-grow">
-                                    <p className="font-medium text-foreground/90">Objetivo Actual:</p>
-                                    <p className="break-words italic">{client.currentObjectiveDisplay}</p>
-                                </div>
-                            </div>
-                            {client.pendingTaskInfo && (
-                                <div className="mt-1.5 text-xs text-muted-foreground flex items-start gap-1.5">
-                                <ListChecks className="h-3.5 w-3.5 text-orange-500 flex-shrink-0 mt-0.5" />
-                                <div className="min-w-0 flex-grow">
-                                    <p className="font-medium text-foreground/90">Próx. Tarea Pendiente:</p>
-                                    <p className="break-words" title={client.pendingTaskInfo.title}>{client.pendingTaskInfo.title}</p>
-                                     <p>Vence: {client.pendingTaskInfo.dueDate.toLocaleDateString()}</p>
-                                </div>
-                                </div>
-                            )}
-                        </div>
-                      </Link>
-                    </li>
-                  ))}
-                </ul>
-              ) : !isLoadingClients && (
-                <div className="text-center text-muted-foreground py-8 flex flex-col items-center">
-                  <Info className="h-10 w-10 mb-3 text-gray-400" />
-                  <p className="text-sm">No hay clientes actualmente en la etapa "{selectedStage.title}".</p>
-                </div>
-              )}
-            </div>
-          </DialogContent>
-        </Dialog>
-      )}
 
       {selectedTaskDetail && (
         <TaskDetailDialog
