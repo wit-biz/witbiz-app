@@ -75,7 +75,7 @@ export default function TasksPage() {
   const [currentClientDate, setCurrentClientDate] = useState<Date | null>(null);
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
   const [calendarMonth, setCalendarMonth] = useState<Date>();
-  const [openAccordionItems, setOpenAccordionItems] = useState<string[]>(["today-tasks"]);
+  const [openAccordionItem, setOpenAccordionItem] = useState<string>("today-tasks");
   
   const [selectedTaskDetail, setSelectedTaskDetail] = useState<Task | null>(null);
   const [isDetailDialogOpen, setIsDetailDialogOpen] = useState(false);
@@ -234,7 +234,26 @@ export default function TasksPage() {
               {selectedDate && ( <Card> <CardHeader> <CardTitle>Tareas para el {isClient ? format(selectedDate, 'PPP', { locale: es }) : '...'}</CardTitle> </CardHeader> <CardContent className="space-y-3"> {tasksForSelectedDate.length > 0 ? ( tasksForSelectedDate.map(task => <MemoizedTaskItemDisplay key={task.id} task={task} showDate={false} icon={Clock} iconColor="text-blue-500" isClient={isClient} onClickHandler={handleTaskClick} />) ) : ( <div className="text-sm text-muted-foreground p-4 text-center flex flex-col items-center"> <Info className="h-8 w-8 text-muted-foreground mb-2"/> No hay tareas pendientes para esta fecha. </div> )} </CardContent> </Card> )}
             </div>
             <div className="lg:col-span-2 space-y-1">
-              <Accordion type="multiple" className="w-full space-y-4" value={openAccordionItems} onValueChange={setOpenAccordionItems} > {taskSections.map(section => ( <AccordionItem value={section.id} key={section.id} className="border-none"> <Card> <AccordionTrigger className="w-full hover:no-underline p-0 [&_svg]:ml-auto [&_svg]:mr-2"> <CardHeader className="flex-1 p-4"> <CardTitle className="flex items-center gap-2 text-lg"> <section.icon className={`h-6 w-6 ${section.color}`} /> {section.title} <Badge variant={section.tasks.length > 0 && section.id === "overdue-tasks" ? "destructive" : "secondary"} className="ml-auto mr-2" > {section.tasks.length} </Badge> </CardTitle> </CardHeader> </AccordionTrigger> <AccordionContent> <CardContent className="space-y-3 pt-0 p-4"> {section.tasks.length > 0 ? ( section.tasks.map(task => <MemoizedTaskItemDisplay key={task.id} task={task} icon={section.icon} iconColor={section.color} showDate={section.id !== 'today-tasks'} isClient={isClient} onClickHandler={handleTaskClick} />) ) : ( <div className="text-sm text-muted-foreground p-4 text-center flex flex-col items-center"> <Info className="h-8 w-8 text-muted-foreground mb-2"/> {section.emptyMsg} </div> )} </CardContent> </AccordionContent> </Card> </AccordionItem> ))} </Accordion>
+              <Accordion type="single" collapsible className="w-full space-y-4" value={openAccordionItem} onValueChange={setOpenAccordionItem} >
+                {taskSections.map(section => ( 
+                  <AccordionItem value={section.id} key={section.id} className="border-none"> 
+                    <Card> 
+                      <AccordionTrigger className="w-full hover:no-underline p-0 [&_svg]:ml-auto [&_svg]:mr-2"> 
+                        <CardHeader className="flex-1 p-4"> 
+                          <CardTitle className="flex items-center gap-2 text-lg"> 
+                            <section.icon className={`h-6 w-6 ${section.color}`} /> {section.title} <Badge variant={section.tasks.length > 0 && section.id === "overdue-tasks" ? "destructive" : "secondary"} className="ml-auto mr-2" > {section.tasks.length} </Badge> 
+                          </CardTitle> 
+                        </CardHeader> 
+                      </AccordionTrigger> 
+                      <AccordionContent> 
+                        <CardContent className="space-y-3 pt-0 p-4"> 
+                          {section.tasks.length > 0 ? ( section.tasks.map(task => <MemoizedTaskItemDisplay key={task.id} task={task} icon={section.icon} iconColor={section.color} showDate={section.id !== 'today-tasks'} isClient={isClient} onClickHandler={handleTaskClick} />) ) : ( <div className="text-sm text-muted-foreground p-4 text-center flex flex-col items-center"> <Info className="h-8 w-8 text-muted-foreground mb-2"/> {section.emptyMsg} </div> )} 
+                        </CardContent> 
+                      </AccordionContent> 
+                    </Card> 
+                  </AccordionItem> 
+                ))} 
+              </Accordion>
             </div>
           </div>
         </main>
