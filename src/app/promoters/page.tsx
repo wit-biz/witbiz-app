@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { useAuth } from '@/firebase';
 import { signOut } from 'firebase/auth';
 import { useRouter } from 'next/navigation';
-import { LogOut, Loader2, Users, CircleDollarSign, Download, CalendarDays, HardDriveDownload, Presentation, Image as ImageIcon } from 'lucide-react';
+import { LogOut, Loader2, Users, CircleDollarSign, Download, CalendarDays, HardDriveDownload, Presentation, Image as ImageIcon, TrendingUp } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { Logo } from '@/components/shared/logo';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -13,6 +13,9 @@ import { Calendar } from '@/components/ui/calendar';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from '@/components/ui/badge';
+import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Tooltip } from "recharts"
+import { ChartContainer, ChartTooltip, ChartTooltipContent, type ChartConfig } from "@/components/ui/chart"
+
 
 // Mock Data
 const referredClients = [
@@ -34,6 +37,29 @@ const resources = [
     { id: 'r2', name: 'Presentación de Servicios', type: 'PDF', icon: Presentation, description: "Documento PDF detallado con la descripción de todos nuestros servicios." },
     { id: 'r3', name: 'Imágenes Promocionales', type: 'Imágenes', icon: ImageIcon, description: "Galería de imágenes de alta calidad para usar en tus publicaciones." },
 ];
+
+const monthlyCommissionsData = [
+  { month: "Ene", commissions: 186 },
+  { month: "Feb", commissions: 305 },
+  { month: "Mar", commissions: 237 },
+  { month: "Abr", commissions: 173 },
+  { month: "May", commissions: 209 },
+  { month: "Jun", commissions: 214 },
+  { month: "Jul", commissions: 345 },
+];
+
+const annualCommissionsData = [
+  { year: "2022", commissions: 1250 },
+  { year: "2023", commissions: 2430 },
+  { year: "2024", commissions: 3890 },
+];
+
+const chartConfig = {
+  commissions: {
+    label: "Comisiones",
+    color: "hsl(var(--primary))",
+  },
+} satisfies ChartConfig
 
 export default function PromoterPage() {
     const auth = useAuth();
@@ -77,10 +103,11 @@ export default function PromoterPage() {
                     </div>
                     
                     <Tabs defaultValue="clients">
-                        <TabsList className="grid w-full grid-cols-3 mb-6">
+                        <TabsList className="grid w-full grid-cols-2 md:grid-cols-4 mb-6">
                             <TabsTrigger value="clients"><Users className="mr-2 h-4 w-4"/>Mis Clientes</TabsTrigger>
                             <TabsTrigger value="commissions"><CircleDollarSign className="mr-2 h-4 w-4"/>Mis Comisiones</TabsTrigger>
                             <TabsTrigger value="resources"><Download className="mr-2 h-4 w-4"/>Recursos</TabsTrigger>
+                            <TabsTrigger value="stats"><TrendingUp className="mr-2 h-4 w-4"/>Estadísticas</TabsTrigger>
                         </TabsList>
                         
                         <TabsContent value="clients">
@@ -157,17 +184,23 @@ export default function PromoterPage() {
                                             <CardDescription>Pagos realizados (verde) y pendientes (amarillo).</CardDescription>
                                         </CardHeader>
                                         <CardContent className="flex justify-center">
-                                            <Calendar
-                                                mode="single"
-                                                selected={date}
-                                                onSelect={setDate}
-                                                className="rounded-md border"
-                                                modifiers={{ paid: paymentDays, pending: pendingPaymentDays }}
-                                                modifiersClassNames={{
-                                                    paid: 'bg-green-100 dark:bg-green-900/50 text-green-800 dark:text-green-300',
-                                                    pending: 'bg-yellow-100 dark:bg-yellow-900/50 text-yellow-800 dark:text-yellow-300'
-                                                }}
-                                            />
+                                             {isClient ? (
+                                                <Calendar
+                                                    mode="single"
+                                                    selected={date}
+                                                    onSelect={setDate}
+                                                    className="rounded-md border"
+                                                    modifiers={{ paid: paymentDays, pending: pendingPaymentDays }}
+                                                    modifiersClassNames={{
+                                                        paid: 'bg-green-100 dark:bg-green-900/50 text-green-800 dark:text-green-300',
+                                                        pending: 'bg-yellow-100 dark:bg-yellow-900/50 text-yellow-800 dark:text-yellow-300'
+                                                    }}
+                                                />
+                                             ) : (
+                                                <div className="p-3 rounded-md border w-[280px] h-[321px] flex items-center justify-center">
+                                                    <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                                                </div>
+                                             )}
                                         </CardContent>
                                     </Card>
                                 </div>
@@ -195,6 +228,68 @@ export default function PromoterPage() {
                                 </CardContent>
                             </Card>
                         </TabsContent>
+
+                         <TabsContent value="stats" className="space-y-6">
+                            <div className="grid gap-4 sm:grid-cols-2">
+                               <Card>
+                                    <CardHeader>
+                                        <CardTitle>Comisiones (Mes Actual)</CardTitle>
+                                        <CardDescription>Total de comisiones generadas este mes.</CardDescription>
+                                    </CardHeader>
+                                    <CardContent>
+                                        <p className="text-4xl font-bold">$455.00</p>
+                                    </CardContent>
+                                </Card>
+                                <Card>
+                                    <CardHeader>
+                                        <CardTitle>Comisiones (Total Anual)</CardTitle>
+                                        <CardDescription>Total de comisiones generadas en 2024.</CardDescription>
+                                    </CardHeader>
+                                    <CardContent>
+                                        <p className="text-4xl font-bold">$3,890.00</p>
+                                    </CardContent>
+                                </Card>
+                            </div>
+                            <div className="grid gap-6 lg:grid-cols-2">
+                                <Card>
+                                    <CardHeader>
+                                        <CardTitle>Comisiones Mensuales (2024)</CardTitle>
+                                    </CardHeader>
+                                    <CardContent>
+                                        <ChartContainer config={chartConfig} className="w-full h-[250px]">
+                                            <BarChart accessibilityLayer data={monthlyCommissionsData}>
+                                                <XAxis dataKey="month" tickLine={false} tickMargin={10} axisLine={false} />
+                                                <YAxis tickLine={false} axisLine={false} tickFormatter={(value) => `$${value}`} />
+                                                <ChartTooltip
+                                                    cursor={false}
+                                                    content={<ChartTooltipContent indicator="dot" />}
+                                                />
+                                                <Bar dataKey="commissions" fill="var(--color-commissions)" radius={4} />
+                                            </BarChart>
+                                        </ChartContainer>
+                                    </CardContent>
+                                </Card>
+                                <Card>
+                                    <CardHeader>
+                                        <CardTitle>Ganancias Anuales</CardTitle>
+                                    </CardHeader>
+                                    <CardContent>
+                                        <ChartContainer config={chartConfig} className="w-full h-[250px]">
+                                            <BarChart accessibilityLayer data={annualCommissionsData}>
+                                                 <XAxis dataKey="year" tickLine={false} tickMargin={10} axisLine={false} />
+                                                <YAxis tickLine={false} axisLine={false} tickFormatter={(value) => `$${value/1000}k`} />
+                                                <ChartTooltip
+                                                    cursor={false}
+                                                    content={<ChartTooltipContent indicator="dot" />}
+                                                />
+                                                <Bar dataKey="commissions" fill="var(--color-commissions)" radius={4} />
+                                            </BarChart>
+                                        </ChartContainer>
+                                    </CardContent>
+                                </Card>
+                            </div>
+                        </TabsContent>
+
                     </Tabs>
                 </div>
             </main>
