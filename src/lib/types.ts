@@ -1,4 +1,5 @@
 
+
 import { type LucideIcon } from "lucide-react";
 
 export type Client = {
@@ -163,3 +164,5 @@ export interface NavItem {
   exactMatch?: boolean;
   requiredPermission: keyof AppPermissions;
 }
+
+    

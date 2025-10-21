@@ -68,7 +68,7 @@ MemoizedTaskItemDisplay.displayName = 'TaskItemDisplay';
 export default function TasksPage() {
   const { toast } = useToast();
 
-  const { tasks: allTasks, isLoadingTasks, currentUser, addTask } = useCRMData();
+  const { tasks: allTasks, isLoadingTasks, currentUser, addTask, updateTask, deleteTask } = useCRMData();
   const { setHasTasksForToday } = useTasksContext();
 
   const [isClient, setIsClient] = useState(false);
@@ -264,11 +264,15 @@ export default function TasksPage() {
             isOpen={isDetailDialogOpen}
             onOpenChange={setIsDetailDialogOpen}
             task={selectedTaskDetail}
+            onUpdateTask={updateTask}
+            onDeleteTask={deleteTask}
           />
         )}
       </div>
     </TooltipProvider>
   );
 }
+
+    
 
     
