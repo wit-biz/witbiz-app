@@ -20,6 +20,12 @@ import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { InviteMemberDialog } from "@/components/shared/InviteMemberDialog";
 import { type AppPermissions } from "@/lib/types";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 
 const allPermissions: { key: keyof AppPermissions; label: string }[] = [
     { key: "dashboard", label: "Ver Dashboard" },
@@ -170,35 +176,34 @@ export default function TeamPage() {
             </Card>
           </TabsContent>
           <TabsContent value="permissions" className="mt-6">
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                {roles.map((role) => (
-                  <Card key={role.id}>
-                    <CardHeader>
-                      <CardTitle className="flex items-center gap-2"><KeyRound className="h-5 w-5 text-accent"/>{role.name}</CardTitle>
-                      <CardDescription>Configure los permisos para el rol de {role.name}.</CardDescription>
-                    </CardHeader>
-                    <CardContent className="space-y-4 max-h-[60vh] overflow-y-auto">
-                        {role.id === 'director' ? (
-                            <div className="flex items-center justify-between p-3 bg-muted/50 rounded-md">
-                                <Label htmlFor="perm-director-all" className="font-medium">Acceso Total</Label>
-                                <Switch id="perm-director-all" checked={true} disabled={true} />
-                            </div>
-                        ) : (
-                            allPermissions.map(permission => (
-                                <div key={permission.key} className="flex items-center justify-between">
-                                    <Label htmlFor={`perm-${role.id}-${permission.key}`}>{permission.label}</Label>
-                                    <Switch
-                                        id={`perm-${role.id}-${permission.key}`}
-                                        checked={role.permissions[permission.key] || false}
-                                        onCheckedChange={(value) => handlePermissionChange(role.id, permission.key, value)}
-                                    />
-                                </div>
-                            ))
-                        )}
-                    </CardContent>
-                  </Card>
+             <Accordion type="single" collapsible className="w-full space-y-4">
+                {roles.filter(r => r.id !== 'director').map((role) => (
+                    <AccordionItem value={role.id} key={role.id} asChild>
+                        <Card>
+                            <AccordionTrigger className="w-full p-0 [&_svg]:ml-auto [&_svg]:mr-4">
+                                <CardHeader className="flex-1">
+                                    <CardTitle className="flex items-center gap-2 text-left"><KeyRound className="h-5 w-5 text-accent"/>{role.name}</CardTitle>
+                                    <CardDescription className="text-left">Configure los permisos para el rol de {role.name}.</CardDescription>
+                                </CardHeader>
+                            </AccordionTrigger>
+                            <AccordionContent>
+                                <CardContent className="space-y-4 max-h-[60vh] overflow-y-auto">
+                                    {allPermissions.map(permission => (
+                                        <div key={permission.key} className="flex items-center justify-between">
+                                            <Label htmlFor={`perm-${role.id}-${permission.key}`}>{permission.label}</Label>
+                                            <Switch
+                                                id={`perm-${role.id}-${permission.key}`}
+                                                checked={role.permissions[permission.key] || false}
+                                                onCheckedChange={(value) => handlePermissionChange(role.id, permission.key, value)}
+                                            />
+                                        </div>
+                                    ))}
+                                </CardContent>
+                            </AccordionContent>
+                        </Card>
+                    </AccordionItem>
                 ))}
-              </div>
+              </Accordion>
           </TabsContent>
         </Tabs>
       </main>
