@@ -3,107 +3,91 @@
  *
  * Core Philosophy:
  * This ruleset enforces a strict user-ownership model for leads, contacts, and tasks.
- * Each user has exclusive access to the data nested under their respective /users/{userId} path.
+ * Each user has complete control over the data nested under their respective /users/{userId} path.
  *
  * Data Structure:
- * All data is nested under /users/{userId}, creating a hierarchical structure that simplifies access control.
- *  - /users/{userId}/leads/{leadId}
- *  - /users/{userId}/contacts/{contactId}
- *  - /users/{userId}/tasks/{taskId}
+ * All data is nested under /users/{userId}, creating a hierarchical data organization.
+ * Leads: /users/{userId}/leads/{leadId}
+ * Contacts: /users/{userId}/contacts/{contactId}
+ * Tasks: /users/{userId}/tasks/{taskId}
  *
  * Key Security Decisions:
- * - User listing is implicitly disallowed as there are no rules defined at the root /users collection.
- * - All write operations (create, update, delete) require the user to be the owner of the data.
- * - Read operations (get, list) are restricted to the owner of the data.
- *
- * Denormalization for Authorization:
- *  - The rules rely on path-based authorization, eliminating the need for additional `get()` calls.
- *  - The userId is encoded in the path.
+ * - User listing is implicitly disallowed as there are no rules on the root /users collection.
+ * - All writes are protected by authorization checks, preventing unauthorized data modification.
  */
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
     /**
-     * @description Checks if the request is authenticated.
-     * @returns {boolean} True if the request is authenticated, false otherwise.
-     */
-    function isSignedIn() {
-      return request.auth != null;
-    }
-
-    /**
-     * @description Checks if the authenticated user ID matches the provided user ID.
-     * @param {string} userId The user ID to compare against the authenticated user ID.
-     * @returns {boolean} True if the authenticated user is the owner, false otherwise.
-     */
-    function isOwner(userId) {
-      return isSignedIn() && request.auth.uid == userId;
-    }
-
-    /**
-     * @description Checks if the authenticated user is the owner of the existing document.
-     * @param {string} userId The user ID to compare against the authenticated user ID.
-     * @returns {boolean} True if the authenticated user is the owner and the document exists, false otherwise.
-     */
-    function isExistingOwner(userId) {
-      return isOwner(userId) && resource != null;
-    }
-
-    /**
-     * @description Rules for managing leads under a specific user.
+     * @description Enforces owner-only access to leads for all operations.
      * @path /users/{userId}/leads/{leadId}
-     * @allow (create) - Authenticated user 'lbz7nN49aERC4AwnsGSruB6spQJ3' can create a lead under /users/lbz7nN49aERC4AwnsGSruB6spQJ3/leads/{leadId}.
-     * @deny (create) - Authenticated user 'otherUserId' cannot create a lead under /users/lbz7nN49aERC4AwnsGSruB6spQJ3/leads/{leadId}.
-     * @allow (get, list) - Authenticated user 'lbz7nN49aERC4AwnsGSruB6spQJ3' can read leads under /users/lbz7nN49aERC4AwnsGSruB6spQJ3/leads.
-     * @deny (get, list) - Authenticated user 'otherUserId' cannot read leads under /users/lbz7nN49aERC4AwnsGSruB6spQJ3/leads.
-     * @allow (update, delete) - Authenticated user 'lbz7nN49aERC4AwnsGSruB6spQJ3' can update/delete a lead under /users/lbz7nN49aERC4AwnsGSruB6spQJ3/leads/{leadId}.
-     * @deny (update, delete) - Authenticated user 'otherUserId' cannot update/delete a lead under /users/lbz7nN49aERC4AwnsGSruB6spQJ3/leads/{leadId}.
-     * @principle Enforces document ownership for writes and restricts access to a user's own leads.
+     * @allow (create) User with UID 'lbz7nN49aERC4AwnsGSruB6spQJ3' can create a lead document with the lead's userId field equal to 'lbz7nN49aERC4AwnsGSruB6spQJ3'.
+     * @deny (create) User with UID 'otherUserId' cannot create a lead document under /users/lbz7nN49aERC4AwnsGSruB6spQJ3/leads/ with a mismatched userId.
+     * @principle Enforces document ownership for writes.
      */
     match /users/{userId}/leads/{leadId} {
+      // Helper function to check if the request is made by the owner of the resource
+      function isOwner(userId) {
+        return request.auth != null && request.auth.uid == userId;
+      }
+      // Helper function to check if the request is made by the owner of an existing resource
+      function isExistingOwner(userId) {
+        return isOwner(userId) && resource != null;
+      }
+
       allow get: if isOwner(userId);
       allow list: if isOwner(userId);
-      allow create: if isOwner(userId);
-      allow update: if isExistingOwner(userId);
+      allow create: if isOwner(userId) && request.resource.data.id == leadId;
+      allow update: if isExistingOwner(userId) && request.resource.data.id == resource.data.id;
       allow delete: if isExistingOwner(userId);
     }
 
     /**
-     * @description Rules for managing contacts under a specific user.
+     * @description Enforces owner-only access to contacts for all operations.
      * @path /users/{userId}/contacts/{contactId}
-     * @allow (create) - Authenticated user 'lbz7nN49aERC4AwnsGSruB6spQJ3' can create a contact under /users/lbz7nN49aERC4AwnsGSruB6spQJ3/contacts/{contactId}.
-     * @deny (create) - Authenticated user 'otherUserId' cannot create a contact under /users/lbz7nN49aERC4AwnsGSruB6spQJ3/contacts/{contactId}.
-     * @allow (get, list) - Authenticated user 'lbz7nN49aERC4AwnsGSruB6spQJ3' can read contacts under /users/lbz7nN49aERC4AwnsGSruB6spQJ3/contacts.
-     * @deny (get, list) - Authenticated user 'otherUserId' cannot read contacts under /users/lbz7nN49aERC4AwnsGSruB6spQJ3/contacts.
-     * @allow (update, delete) - Authenticated user 'lbz7nN49aERC4AwnsGSruB6spQJ3' can update/delete a contact under /users/lbz7nN49aERC4AwnsGSruB6spQJ3/contacts/{contactId}.
-     * @deny (update, delete) - Authenticated user 'otherUserId' cannot update/delete a contact under /users/lbz7nN49aERC4AwnsGSruB6spQJ3/contacts/{contactId}.
-     * @principle Enforces document ownership for writes and restricts access to a user's own contacts.
+     * @allow (create) User with UID 'lbz7nN49aERC4AwnsGSruB6spQJ3' can create a contact document with the contact's userId field equal to 'lbz7nN49aERC4AwnsGSruB6spQJ3'.
+     * @deny (create) User with UID 'otherUserId' cannot create a contact document under /users/lbz7nN49aERC4AwnsGSruB6spQJ3/contacts/ with a mismatched userId.
+     * @principle Enforces document ownership for writes.
      */
     match /users/{userId}/contacts/{contactId} {
+       // Helper function to check if the request is made by the owner of the resource
+      function isOwner(userId) {
+        return request.auth != null && request.auth.uid == userId;
+      }
+      // Helper function to check if the request is made by the owner of an existing resource
+      function isExistingOwner(userId) {
+        return isOwner(userId) && resource != null;
+      }
+
       allow get: if isOwner(userId);
       allow list: if isOwner(userId);
-      allow create: if isOwner(userId);
-      allow update: if isExistingOwner(userId);
+      allow create: if isOwner(userId) && request.resource.data.id == contactId;
+      allow update: if isExistingOwner(userId) && request.resource.data.id == resource.data.id;
       allow delete: if isExistingOwner(userId);
     }
 
     /**
-     * @description Rules for managing tasks under a specific user.
+     * @description Enforces owner-only access to tasks for all operations.
      * @path /users/{userId}/tasks/{taskId}
-     * @allow (create) - Authenticated user 'lbz7nN49aERC4AwnsGSruB6spQJ3' can create a task under /users/lbz7nN49aERC4AwnsGSruB6spQJ3/tasks/{taskId}.
-     * @deny (create) - Authenticated user 'otherUserId' cannot create a task under /users/lbz7nN49aERC4AwnsGSruB6spQJ3/tasks/{taskId}.
-     * @allow (get, list) - Authenticated user 'lbz7nN49aERC4AwnsGSruB6spQJ3' can read tasks under /users/lbz7nN49aERC4AwnsGSruB6spQJ3/tasks.
-     * @deny (get, list) - Authenticated user 'otherUserId' cannot read tasks under /users/lbz7nN49aERC4AwnsGSruB6spQJ3/tasks.
-     * @allow (update, delete) - Authenticated user 'lbz7nN49aERC4AwnsGSruB6spQJ3' can update/delete a task under /users/lbz7nN49aERC4AwnsGSruB6spQJ3/tasks/{taskId}.
-     * @deny (update, delete) - Authenticated user 'otherUserId' cannot update/delete a task under /users/lbz7nN49aERC4AwnsGSruB6spQJ3/tasks/{taskId}.
-     * @principle Enforces document ownership for writes and restricts access to a user's own tasks.
+     * @allow (create) User with UID 'lbz7nN49aERC4AwnsGSruB6spQJ3' can create a task document with the task's userId field equal to 'lbz7nN49aERC4AwnsGSruB6spQJ3'.
+     * @deny (create) User with UID 'otherUserId' cannot create a task document under /users/lbz7nN49aERC4AwnsGSruB6spQJ3/tasks/ with a mismatched userId.
+     * @principle Enforces document ownership for writes.
      */
     match /users/{userId}/tasks/{taskId} {
+      // Helper function to check if the request is made by the owner of the resource
+      function isOwner(userId) {
+        return request.auth != null && request.auth.uid == userId;
+      }
+      // Helper function to check if the request is made by the owner of an existing resource
+      function isExistingOwner(userId) {
+        return isOwner(userId) && resource != null;
+      }
+
       allow get: if isOwner(userId);
       allow list: if isOwner(userId);
-      allow create: if isOwner(userId);
-      allow update: if isExistingOwner(userId);
+      allow create: if isOwner(userId) && request.resource.data.id == taskId;
+      allow update: if isExistingOwner(userId) && request.resource.data.id == resource.data.id;
       allow delete: if isExistingOwner(userId);
     }
   }
