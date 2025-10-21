@@ -12,6 +12,8 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   User,
   Shield,
@@ -21,7 +23,30 @@ import {
   Mail,
   UserCog,
   LogOut,
+  Save,
+  Eye,
+  EyeOff,
 } from "lucide-react";
+import { useState } from "react";
+
+const PasswordInput = ({ id, placeholder }: { id: string, placeholder: string }) => {
+    const [showPassword, setShowPassword] = useState(false);
+    return (
+        <div className="relative">
+            <Input type={showPassword ? "text" : "password"} id={id} placeholder={placeholder} />
+            <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                className="absolute top-1/2 right-2 -translate-y-1/2 h-7 w-7 text-muted-foreground"
+                onClick={() => setShowPassword(!showPassword)}
+            >
+                {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+            </Button>
+        </div>
+    );
+};
+
 
 export default function SettingsPage() {
   return (
@@ -93,19 +118,63 @@ export default function SettingsPage() {
             </Card>
           </TabsContent>
           <TabsContent value="security">
-            <Card>
-              <CardHeader>
-                <CardTitle>Seguridad</CardTitle>
-                <CardDescription>
-                  Gestiona la configuración de seguridad de tu cuenta.
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <p className="text-muted-foreground">
-                  Aquí podrás cambiar tu contraseña y gestionar la autenticación de dos factores.
-                </p>
-              </CardContent>
-            </Card>
+             <div className="grid gap-6">
+                <div className="grid lg:grid-cols-2 gap-6">
+                    <Card>
+                        <CardHeader>
+                            <CardTitle className="flex items-center gap-2"><User className="h-5 w-5 text-accent"/> Nombre de Usuario</CardTitle>
+                            <CardDescription>Esta información es visible para otros miembros del equipo.</CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                            <div>
+                                <Label htmlFor="fullName">Nombre Completo</Label>
+                                <Input id="fullName" defaultValue="Admin User" />
+                            </div>
+                             <Button><Save className="mr-2 h-4 w-4" />Guardar Nombre</Button>
+                        </CardContent>
+                    </Card>
+                    <Card>
+                        <CardHeader>
+                            <CardTitle className="flex items-center gap-2"><Mail className="h-5 w-5 text-accent"/> Cambiar Correo Electrónico</CardTitle>
+                            <CardDescription>Actualice la dirección de correo electrónico asociada a su cuenta.</CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                            <div>
+                                <Label htmlFor="newEmail">Nuevo Correo Electrónico</Label>
+                                <Input id="newEmail" type="email" placeholder="su.nuevo@correo.com" />
+                            </div>
+                            <div>
+                                <Label htmlFor="currentPasswordEmail">Contraseña Actual</Label>
+                                <PasswordInput id="currentPasswordEmail" placeholder="••••••••" />
+                            </div>
+                            <Button><Save className="mr-2 h-4 w-4" />Guardar Correo</Button>
+                        </CardContent>
+                    </Card>
+                </div>
+                <Card>
+                    <CardHeader>
+                        <CardTitle className="flex items-center gap-2"><Lock className="h-5 w-5 text-accent"/> Cambiar Contraseña</CardTitle>
+                        <CardDescription>Asegúrese de usar una contraseña segura.</CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                        <div className="grid sm:grid-cols-3 gap-4">
+                            <div>
+                                <Label htmlFor="currentPassword">Contraseña Actual</Label>
+                                <PasswordInput id="currentPassword" placeholder="••••••••" />
+                            </div>
+                            <div>
+                                <Label htmlFor="newPassword">Nueva Contraseña</Label>
+                                <PasswordInput id="newPassword" placeholder="••••••••" />
+                            </div>
+                            <div>
+                                <Label htmlFor="confirmNewPassword">Confirmar Nueva Contraseña</Label>
+                                <PasswordInput id="confirmNewPassword" placeholder="••••••••" />
+                            </div>
+                        </div>
+                        <Button><Save className="mr-2 h-4 w-4" />Guardar Contraseña</Button>
+                    </CardContent>
+                </Card>
+            </div>
           </TabsContent>
           <TabsContent value="appearance">
             <Card>
