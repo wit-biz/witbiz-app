@@ -11,7 +11,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Calendar } from '@/components/ui/calendar';
 import { Badge } from '@/components/ui/badge';
-import { LogOut, Users, CircleDollarSign, BookText, Download, BarChart, User, Save, Lock, Mail, UserCircle } from 'lucide-react';
+import { LogOut, Users, CircleDollarSign, BookText, Download, BarChart, User, Save, Lock, Mail, UserCircle, PanelLeft } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { Logo } from '@/components/shared/logo';
 import { cn } from '@/lib/utils';
@@ -21,6 +21,11 @@ import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { PasswordInput } from '@/components/shared/PasswordInput';
 import { Separator } from '@/components/ui/separator';
+import {
+  Sheet,
+  SheetContent,
+  SheetTrigger,
+} from "@/components/ui/sheet";
 
 // --- Mock Data ---
 const referredClients = [
@@ -76,26 +81,28 @@ function ClientsView() {
                 <CardDescription>Esta es la lista de clientes que has referido a WitBiz.</CardDescription>
             </CardHeader>
             <CardContent>
-                <Table>
-                    <TableHeader>
-                        <TableRow>
-                            <TableHead>Nombre del Cliente</TableHead>
-                            <TableHead>Fecha de Ingreso</TableHead>
-                            <TableHead>Estado</TableHead>
-                        </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                        {referredClients.map(client => (
-                            <TableRow key={client.id}>
-                                <TableCell className="font-medium">{client.name}</TableCell>
-                                <TableCell>{isClient ? format(new Date(client.joinDate), 'dd/MM/yyyy') : '-'}</TableCell>
-                                <TableCell>
-                                    <Badge variant={client.status === 'Activo' ? 'default' : 'secondary'}>{client.status}</Badge>
-                                </TableCell>
+                <div className="relative w-full overflow-auto">
+                    <Table>
+                        <TableHeader>
+                            <TableRow>
+                                <TableHead>Nombre del Cliente</TableHead>
+                                <TableHead>Fecha de Ingreso</TableHead>
+                                <TableHead>Estado</TableHead>
                             </TableRow>
-                        ))}
-                    </TableBody>
-                </Table>
+                        </TableHeader>
+                        <TableBody>
+                            {referredClients.map(client => (
+                                <TableRow key={client.id}>
+                                    <TableCell className="font-medium">{client.name}</TableCell>
+                                    <TableCell>{isClient ? format(new Date(client.joinDate), 'dd/MM/yyyy') : '-'}</TableCell>
+                                    <TableCell>
+                                        <Badge variant={client.status === 'Activo' ? 'default' : 'secondary'}>{client.status}</Badge>
+                                    </TableCell>
+                                </TableRow>
+                            ))}
+                        </TableBody>
+                    </Table>
+                </div>
             </CardContent>
         </Card>
     );
@@ -248,28 +255,30 @@ function CommissionsView() {
                     </div>
                 </CardHeader>
                 <CardContent>
-                    <Table>
-                        <TableHeader>
-                            <TableRow>
-                                <TableHead>Cliente</TableHead>
-                                <TableHead>Fecha</TableHead>
-                                <TableHead>Monto</TableHead>
-                                <TableHead>Estado</TableHead>
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {filteredCommissions.map(c => (
-                                <TableRow key={c.id}>
-                                    <TableCell className="font-medium">{c.clientName}</TableCell>
-                                    <TableCell>{isClient ? format(c.date, 'PPP', { locale: es }) : '-'}</TableCell>
-                                    <TableCell>${c.amount.toFixed(2)}</TableCell>
-                                    <TableCell>
-                                        <Badge variant={c.status === 'Pagada' ? 'default' : 'secondary'} className={cn(c.status === 'Pagada' ? 'bg-blue-600 text-white' : 'bg-slate-500 text-white')}>{c.status}</Badge>
-                                    </TableCell>
+                    <div className="relative w-full overflow-auto">
+                        <Table>
+                            <TableHeader>
+                                <TableRow>
+                                    <TableHead>Cliente</TableHead>
+                                    <TableHead>Fecha</TableHead>
+                                    <TableHead>Monto</TableHead>
+                                    <TableHead>Estado</TableHead>
                                 </TableRow>
-                            ))}
-                        </TableBody>
-                    </Table>
+                            </TableHeader>
+                            <TableBody>
+                                {filteredCommissions.map(c => (
+                                    <TableRow key={c.id}>
+                                        <TableCell className="font-medium">{c.clientName}</TableCell>
+                                        <TableCell>{isClient ? format(c.date, 'PPP', { locale: es }) : '-'}</TableCell>
+                                        <TableCell>${c.amount.toFixed(2)}</TableCell>
+                                        <TableCell>
+                                            <Badge variant={c.status === 'Pagada' ? 'default' : 'secondary'} className={cn(c.status === 'Pagada' ? 'bg-blue-600 text-white' : 'bg-slate-500 text-white')}>{c.status}</Badge>
+                                        </TableCell>
+                                    </TableRow>
+                                ))}
+                            </TableBody>
+                        </Table>
+                    </div>
                 </CardContent>
             </Card>
         </div>
@@ -385,61 +394,81 @@ const profileNavItem = { id: 'profile', label: 'Perfil', icon: User, component: 
 export default function PromoterPage() {
     const router = useRouter();
     const [activeView, setActiveView] = useState('clients');
+    const [isMenuOpen, setIsMenuOpen] = useState(false);
     
     const handleLogout = () => {
         router.push('/promoter-login');
     };
 
     const ActiveComponent = [...navItems, profileNavItem].find(item => item.id === activeView)?.component || ClientsView;
+    
+    const SidebarContent = () => (
+      <div className="flex h-full flex-col">
+          <div className="flex h-16 items-center justify-center border-b">
+              <Logo />
+          </div>
+          <nav className="flex flex-col gap-2 p-4">
+              {navItems.map(item => {
+                  const Icon = item.icon;
+                  return (
+                      <Button
+                          key={item.id}
+                          variant={activeView === item.id ? 'default' : 'ghost'}
+                          className="justify-start gap-2"
+                          onClick={() => { setActiveView(item.id); setIsMenuOpen(false); }}
+                      >
+                          <Icon className="h-4 w-4"/>
+                          {item.label}
+                      </Button>
+                  )
+              })}
+          </nav>
+          <div className="mt-auto p-4">
+              <Button
+                  key={profileNavItem.id}
+                  variant={activeView === profileNavItem.id ? 'default' : 'ghost'}
+                  className="justify-start gap-2 w-full mb-2"
+                  onClick={() => { setActiveView(profileNavItem.id); setIsMenuOpen(false); }}
+              >
+                  <User className="h-4 w-4"/>
+                  {profileNavItem.label}
+              </Button>
+              <Button onClick={handleLogout} variant="outline" size="sm" className="w-full">
+                  <LogOut className="mr-2 h-4 w-4" />
+                  Cerrar Sesión
+              </Button>
+          </div>
+      </div>
+    );
 
     return (
-        <div className="flex min-h-screen bg-muted/40">
-             <aside className="w-56 flex-shrink-0 border-r bg-background p-4 flex flex-col">
-                <div className="flex justify-center mb-6">
-                    <Logo />
-                </div>
-                <nav className="flex flex-col gap-2">
-                    {navItems.map(item => {
-                        const Icon = item.icon;
-                        return (
-                            <Button
-                                key={item.id}
-                                variant={activeView === item.id ? 'default' : 'ghost'}
-                                className="justify-start gap-2"
-                                onClick={() => setActiveView(item.id)}
-                            >
-                                <Icon className="h-4 w-4"/>
-                                {item.label}
-                            </Button>
-                        )
-                    })}
-                </nav>
-                 <div className="mt-auto">
-                    <Button
-                        key={profileNavItem.id}
-                        variant={activeView === profileNavItem.id ? 'default' : 'ghost'}
-                        className="justify-start gap-2 w-full mb-2"
-                        onClick={() => setActiveView(profileNavItem.id)}
-                    >
-                        <User className="h-4 w-4"/>
-                        {profileNavItem.label}
-                    </Button>
-                    <Button onClick={handleLogout} variant="outline" size="sm" className="w-full">
-                        <LogOut className="mr-2 h-4 w-4" />
-                        Cerrar Sesión
-                    </Button>
-                </div>
+        <div className="flex min-h-screen w-full flex-col bg-muted/40">
+             <aside className="fixed inset-y-0 left-0 z-10 hidden w-56 flex-col border-r bg-background sm:flex">
+                <SidebarContent />
             </aside>
-            <div className="flex flex-col w-full overflow-x-auto">
-                <header className="sticky top-0 z-10 flex h-16 shrink-0 items-center justify-between gap-4 border-b bg-background/80 px-4 backdrop-blur-sm sm:px-6">
-                    <h1 className="text-xl font-semibold">
-                        {activeView === 'profile' ? 'Mi Perfil' : navItems.find(item => item.id === activeView)?.label || 'Panel de Promotor'}
+            <div className="flex flex-col sm:gap-4 sm:py-4 sm:pl-56">
+                <header className="sticky top-0 z-30 flex h-14 items-center gap-4 border-b bg-background px-4 sm:static sm:h-auto sm:border-0 sm:bg-transparent sm:px-6">
+                    <Sheet open={isMenuOpen} onOpenChange={setIsMenuOpen}>
+                        <SheetTrigger asChild>
+                            <Button size="icon" variant="outline" className="sm:hidden">
+                                <PanelLeft className="h-5 w-5" />
+                                <span className="sr-only">Toggle Menu</span>
+                            </Button>
+                        </SheetTrigger>
+                        <SheetContent side="left" className="sm:max-w-xs p-0">
+                            <SidebarContent />
+                        </SheetContent>
+                    </Sheet>
+                     <h1 className="text-xl font-semibold md:text-2xl">
+                        {([...navItems, profileNavItem].find(item => item.id === activeView)?.label || 'Panel de Promotor')}
                     </h1>
                 </header>
-                <main className="flex-1 p-4 md:p-8">
+                <main className="grid flex-1 items-start gap-4 p-4 sm:px-6 sm:py-0 md:gap-8">
                     <ActiveComponent />
                 </main>
             </div>
         </div>
     );
 }
+
+    
