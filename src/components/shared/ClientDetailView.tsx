@@ -10,6 +10,7 @@ import { X, Edit, Trash2, Plus, Download, FileText, UploadCloud, Info, Users, Ta
 import { AddEditClientDialog } from "./AddEditClientDialog";
 import { useToast } from "@/hooks/use-toast";
 import { SmartDocumentUploadDialog } from "./SmartDocumentUploadDialog";
+import { DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 
 interface ClientDetailViewProps {
   client: Client | null;
@@ -65,13 +66,13 @@ export function ClientDetailView({ client, onClose }: ClientDetailViewProps) {
                     <X className="h-4 w-4" />
                     <span className="sr-only">Cerrar</span>
                 </Button>
+                
+                <DialogHeader>
+                    <DialogTitle className="text-2xl font-bold">{client.name}</DialogTitle>
+                    <DialogDescription>{client.category}</DialogDescription>
+                </DialogHeader>
 
-                <div className="space-y-6">
-                    <div className="space-y-1">
-                        <h2 className="text-2xl font-bold">{client.name}</h2>
-                        <p className="text-sm text-muted-foreground">{client.category}</p>
-                    </div>
-
+                <div className="space-y-6 pt-4">
                     <div className="flex items-center gap-2">
                         <Button variant="outline" onClick={() => setIsEditDialogOpen(true)}><Edit className="mr-2 h-4 w-4"/>Editar</Button>
                         <Button variant="outline" onClick={() => setIsUploadDialogOpen(true)}><UploadCloud className="mr-2 h-4 w-4"/>Subir Documento</Button>
