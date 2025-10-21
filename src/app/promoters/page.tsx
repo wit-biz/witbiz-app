@@ -104,13 +104,14 @@ export default function PromoterPage() {
     };
     
     const dayModifiers = useMemo(() => {
+        if (!isClient) return {};
         const paidDays = commissions.filter(c => c.status === 'Pagada').map(c => new Date(c.paymentDate.replace(/-/g, '/')));
         const pendingDays = commissions.filter(c => c.status === 'Pendiente').map(c => new Date(c.paymentDate.replace(/-/g, '/')));
         return {
             paid: paidDays,
             pending: pendingDays,
         }
-    }, []);
+    }, [isClient]);
 
     const dayModifiersClassNames = {
         paid: 'day-paid',
@@ -206,7 +207,12 @@ export default function PromoterPage() {
                                                 }
                                             `}
                                           </style>
-                                           <Calendar
+                                          {!isClient ? (
+                                              <div className="flex justify-center items-center p-4">
+                                                  <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                                              </div>
+                                          ) : (
+                                            <Calendar
                                                 mode="single"
                                                 selected={selectedDate}
                                                 onSelect={setSelectedDate}
@@ -215,6 +221,7 @@ export default function PromoterPage() {
                                                 modifiers={dayModifiers}
                                                 modifiersClassNames={dayModifiersClassNames}
                                             />
+                                          )}
                                        </CardContent>
                                    </Card>
                                </div>
@@ -370,5 +377,3 @@ export default function PromoterPage() {
         </div>
     );
 }
-
-    
