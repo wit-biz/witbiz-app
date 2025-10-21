@@ -28,7 +28,7 @@ function AppContent({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (isClient && !isUserLoading) {
-      const isAuthPage = pathname === '/login' || pathname === '/register';
+      const isAuthPage = pathname === '/login' || pathname === '/register' || pathname === '/promoter-login';
       if (!user && !isAuthPage) {
         router.push('/login');
       }
@@ -38,33 +38,36 @@ function AppContent({ children }: { children: React.ReactNode }) {
     }
   }, [isUserLoading, user, router, pathname, isClient]);
 
-  if (!isClient || isUserLoading) {
+  if (!isClient || (isUserLoading && !(pathname === '/login' || pathname === '/register' || pathname === '/promoter-login'))) {
     return (
       <div className="flex h-screen w-full items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin" />
       </div>
     );
   }
+  
+  const isAuthPage = pathname === '/login' || pathname === '/register' || pathname === '/promoter-login';
 
-  const isAuthPage = pathname === '/login' || pathname === '/register';
 
   if (isAuthPage) {
+     // If we are on an auth page and the user is logged in, show a loader while redirecting
     if (user) {
-      return (
-        <div className="flex h-screen w-full items-center justify-center">
-          <Loader2 className="h-8 w-8 animate-spin" />
-        </div>
-      );
+        return (
+            <div className="flex h-screen w-full items-center justify-center">
+              <Loader2 className="h-8 w-8 animate-spin" />
+            </div>
+        );
     }
     return <>{children}</>;
   }
-
+  
   if (!user) {
-    return (
-      <div className="flex h-screen w-full items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin" />
-      </div>
-    );
+      // If user is not logged in and not on an auth page, show loader while redirecting
+      return (
+          <div className="flex h-screen w-full items-center justify-center">
+            <Loader2 className="h-8 w-8 animate-spin" />
+          </div>
+      );
   }
 
   return (
