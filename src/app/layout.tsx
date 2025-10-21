@@ -9,7 +9,7 @@ import { CRMDataProvider } from '@/contexts/CRMDataContext';
 import { GlobalNotificationProvider } from '@/contexts/NotificationContext';
 
 export const metadata: Metadata = {
-  title: 'WitCRM',
+  title: 'WitBiz',
   description: 'Un CRM para el equipo de ventas moderno.',
 };
 
@@ -46,5 +46,3 @@ export default function RootLayout({
     </html>
   );
 }
-
-    

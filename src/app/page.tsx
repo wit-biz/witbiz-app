@@ -169,7 +169,7 @@ export default function InicioPage() {
     <div className="w-full space-y-6 p-4 md:p-8">
       <Header
         title="Inicio"
-        description="Bienvenido a WitCRM. Aquí tienes un resumen y accesos rápidos."
+        description="Bienvenido a WitBiz. Aquí tienes un resumen y accesos rápidos."
       />
 
       <Card className="w-full">
@@ -229,7 +229,7 @@ export default function InicioPage() {
       <Card className="w-full">
          <CardHeader className="flex flex-row justify-between items-center w-full">
             <div className="flex-grow text-left">
-                <CardTitle className="flex items-center gap-2">Flujo de WitCRM</CardTitle>
+                <CardTitle className="flex items-center gap-2">Flujo de WitBiz</CardTitle>
                 <CardDescription>Etapas clave en el ciclo de vida del Cliente.</CardDescription>
             </div>
             <div className="ml-auto flex-shrink-0 relative" onClick={(e) => e.stopPropagation()}>
@@ -355,7 +355,7 @@ export default function InicioPage() {
                     currentStatusForStyling = 'active';
                  }
 
-                let baseStageClass = 'bg-secondary dark:bg-secondary/50 border border-border';
+                let baseStageClass = 'bg-muted/50 dark:bg-muted/30 border border-border';
                 let baseTextClass = 'text-muted-foreground';
 
                 if (currentStatusForStyling === 'locked') {

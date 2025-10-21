@@ -28,16 +28,37 @@ import { SidebarNav } from './shared/sidebar-nav';
 const userAvatar = PlaceHolderImages.find((img) => img.id === 'user-avatar');
 
 const Logo = () => (
-  <svg
-    xmlns="http://www.w3.org/2000/svg"
-    viewBox="0 0 24 24"
-    fill="currentColor"
-    className="h-6 w-6 text-primary"
-  >
-    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z" />
-    <path d="M12 12.5c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0-5c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0-5c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z" />
-  </svg>
-);
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 100 100"
+      className="h-8 w-8"
+      aria-label="WitBiz Logo"
+    >
+      <circle cx="50" cy="50" r="50" fill="#90EE90" />
+      <rect x="15" y="40" width="30" height="20" fill="black" />
+      <text
+        x="30"
+        y="55"
+        fontFamily="Arial, sans-serif"
+        fontSize="14"
+        fill="white"
+        textAnchor="middle"
+        fontWeight="bold"
+      >
+        WIT
+      </text>
+      <text
+        x="52"
+        y="55"
+        fontFamily="Arial, sans-serif"
+        fontSize="14"
+        fill="black"
+        fontWeight="bold"
+      >
+        BIZ
+      </text>
+    </svg>
+  );
 
 export function AppSidebar() {
 
@@ -46,7 +67,7 @@ export function AppSidebar() {
       <SidebarHeader>
         <div className="flex items-center gap-2.5">
           <Logo />
-          <h1 className="text-xl font-bold text-foreground">WitCRM</h1>
+          <h1 className="text-xl font-bold text-foreground">WitBiz</h1>
         </div>
       </SidebarHeader>
       <SidebarContent>
