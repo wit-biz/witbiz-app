@@ -4,8 +4,8 @@
 import React, { useState, useMemo, useEffect, useCallback } from "react";
 import { Header } from "@/components/header";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import { useCRMData, type WorkflowStage, type ServiceWorkflow, type WorkflowStageObjective, type SubObjective, type SubService } from "@/contexts/CRMDataContext"; 
-import { Edit, Save, Trash2, Plus, X, Loader2, UploadCloud, ChevronsRight, FileText } from "lucide-react";
+import { useCRMData, type WorkflowStage, type ServiceWorkflow, type WorkflowStageObjective, type SubObjective, type SubService, type Task } from "@/contexts/CRMDataContext"; 
+import { Edit, Save, Trash2, Plus, X, Loader2, UploadCloud, ChevronsRight, FileText, ListTodo } from "lucide-react";
 import { Card, CardHeader, CardTitle, CardContent, CardDescription, CardFooter } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
@@ -18,6 +18,7 @@ import { SmartDocumentUploadDialog } from "@/components/shared/SmartDocumentUplo
 import { useRouter } from "next/navigation";
 import { Tooltip, TooltipProvider, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useGlobalNotification } from "@/contexts/NotificationContext";
+import { AddTaskDialog } from "@/components/shared/AddTaskDialog";
 
 
 const StageNumberIcon = ({ index }: { index: number }) => {
@@ -46,7 +47,8 @@ export default function WorkflowConfigurationPage() {
     deleteStageFromSubService, 
     updateObjectiveInStage, 
     addObjectiveToStage, 
-    deleteObjectiveFromStage 
+    deleteObjectiveFromStage,
+    addTask
   } = useCRMData();
   const router = useRouter();
   const { showNotification } = useGlobalNotification();
@@ -68,7 +70,15 @@ export default function WorkflowConfigurationPage() {
 
   const [isSmartUploadDialogOpen, setIsSmartUploadDialogOpen] = useState(false);
 
+  const [isAddTaskDialogOpen, setIsAddTaskDialogOpen] = useState(false);
+  const [initialTaskDataForDialog, setInitialTaskDataForDialog] = useState<Partial<Omit<Task, 'id'>>>({});
+
   const canEditWorkflow = currentUser?.permissions.crm_edit ?? true;
+
+  const handleOpenTaskDialog = (title: string) => {
+    setInitialTaskDataForDialog({ title: title });
+    setIsAddTaskDialogOpen(true);
+  };
 
   useEffect(() => {
     if (!serviceWorkflows) return;
@@ -242,7 +252,15 @@ export default function WorkflowConfigurationPage() {
                           <Button variant="ghost" size="sm" onClick={handleCancelEditStage}><X className="h-4 w-4 mr-2"/>Cancelar</Button>
                         </div>
                     ) : (
-                      <Button variant="outline" size="sm" onClick={() => handleStartEditStage(stage)} disabled={!!editingServiceId}><Edit className="h-4 w-4 mr-2"/>Editar</Button>
+                      <>
+                        <Button variant="outline" size="sm" onClick={() => handleStartEditStage(stage)} disabled={!!editingServiceId}><Edit className="h-4 w-4 mr-2"/>Editar</Button>
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <Button variant="outline" size="icon" className="h-8 w-8 ml-1" onClick={(e) => { e.stopPropagation(); handleOpenTaskDialog(stage.title);}}><ListTodo className="h-4 w-4"/></Button>
+                            </TooltipTrigger>
+                            <TooltipContent><p>Crear tarea desde esta etapa</p></TooltipContent>
+                        </Tooltip>
+                      </>
                     )}
                     <Button variant="ghost" size="icon" className="h-8 w-8 ml-1" onClick={() => deleteStageFromSubService(serviceId, subServiceId, stage.id)}><Trash2 className="h-4 w-4 text-destructive"/></Button>
                   </div>
@@ -317,8 +335,16 @@ export default function WorkflowConfigurationPage() {
                     {stage.objectives.length > 0 ? (
                       <div className="space-y-2">
                         {stage.objectives.map((objective, objectiveIndex) => (
-                          <div key={objective.id}>
-                            <div className="flex items-baseline gap-2"><div className="w-5 flex-shrink-0 text-right font-semibold">{objectiveIndex + 1}.</div><p className="font-semibold flex-grow">{objective.description}</p></div>
+                          <div key={objective.id} className="flex items-center gap-2 group">
+                            <div className="flex items-baseline gap-2 flex-grow"><div className="w-5 flex-shrink-0 text-right font-semibold">{objectiveIndex + 1}.</div><p className="font-semibold flex-grow">{objective.description}</p></div>
+                             {canEditWorkflow && (
+                                <Tooltip>
+                                    <TooltipTrigger asChild>
+                                        <Button variant="ghost" size="icon" className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity" onClick={() => handleOpenTaskDialog(objective.description)}><ListTodo className="h-4 w-4"/></Button>
+                                    </TooltipTrigger>
+                                    <TooltipContent><p>Crear tarea desde este objetivo</p></TooltipContent>
+                                </Tooltip>
+                             )}
                           </div>
                         ))}
                       </div>
@@ -435,9 +461,15 @@ export default function WorkflowConfigurationPage() {
                               ) : ( <h3 className="font-semibold text-lg">{subService.name}</h3> )}
                             </div>
                           </AccordionTrigger>
-                          {canEditWorkflow && (
-                            <div className="pl-2">
+                          {canEditWorkflow && !editingSubServiceId && (
+                            <div className="pl-2 flex items-center">
                               <Button variant="outline" size="sm" onClick={() => handleStartEditSubService(subService)} disabled={!!editingSubServiceId || !canEditWorkflow}><Edit className="h-4 w-4 mr-2"/>Editar</Button>
+                               <Tooltip>
+                                    <TooltipTrigger asChild>
+                                        <Button variant="outline" size="icon" className="h-8 w-8 ml-1" onClick={(e) => { e.stopPropagation(); handleOpenTaskDialog(subService.name);}}><ListTodo className="h-4 w-4"/></Button>
+                                    </TooltipTrigger>
+                                    <TooltipContent><p>Crear tarea desde este sub-servicio</p></TooltipContent>
+                                </Tooltip>
                               <Button variant="ghost" size="icon" className="h-8 w-8 ml-1" onClick={() => deleteSubServiceFromService(selectedWorkflow.id, subService.id)} disabled={!canEditWorkflow}><Trash2 className="h-4 w-4 text-destructive"/></Button>
                             </div>
                           )}
@@ -505,6 +537,22 @@ export default function WorkflowConfigurationPage() {
                 router.push(`/clients?openClient=${client.id}`);
             }}
         />
+
+        <AddTaskDialog
+            isOpen={isAddTaskDialogOpen}
+            onOpenChange={setIsAddTaskDialogOpen}
+            initialTaskData={initialTaskDataForDialog}
+            onTaskAdd={async (taskData) => {
+                const newTask = await addTask(taskData);
+                if(newTask) {
+                    showNotification('success', 'Tarea Creada', `La tarea "${newTask.title}" ha sido creada.`);
+                    return true;
+                }
+                return false;
+            }}
+        />
     </TooltipProvider>
   );
 }
+
+    
