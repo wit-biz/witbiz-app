@@ -286,7 +286,7 @@ export default function WorkflowConfigurationPage() {
                                                 <UploadCloud className="h-4 w-4" />
                                               </Button>
                                           </TooltipTrigger>
-                                          <TooltipContent><p>Subir y analizar con IA</p></TooltipContent>
+                                          <TooltipContent><p>Subir documento</p></TooltipContent>
                                       </Tooltip>
                                     </div>
                                     {selectValue === 'Otro' && (
@@ -338,7 +338,7 @@ export default function WorkflowConfigurationPage() {
           <div className="flex flex-col sm:flex-row gap-2">
             <Button variant="outline" onClick={() => setIsSmartUploadDialogOpen(true)}>
               <UploadCloud className="mr-2 h-4 w-4"/>
-              Subir Documento con IA
+              Subir Documento
             </Button>
             {canEditWorkflow && (
               <Button onClick={handleAddNewService} disabled={isAddingService || !canEditWorkflow}>
@@ -490,4 +490,6 @@ export default function WorkflowConfigurationPage() {
     </TooltipProvider>
   );
 }
+    
+
     

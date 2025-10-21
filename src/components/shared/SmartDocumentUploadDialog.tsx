@@ -43,7 +43,6 @@ export function SmartDocumentUploadDialog({
 
   const [file, setFile] = useState<File | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
-  const [analysisResult, setAnalysisResult] = useState<{ clientName?: string; documentType?: DocumentType; rawText?: string }>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedClientId, setSelectedClientId] = useState<string>('');
   const [documentType, setDocumentType] = useState<DocumentType | 'Otro'>('Otro');
@@ -55,7 +54,6 @@ export function SmartDocumentUploadDialog({
   const resetState = useCallback(() => {
     setFile(null);
     setIsAnalyzing(false);
-    setAnalysisResult({});
     setIsSubmitting(false);
     setSelectedClientId(preselectedClientId || '');
     setDocumentType('Otro');
@@ -81,43 +79,8 @@ export function SmartDocumentUploadDialog({
     const droppedFile = acceptedFiles[0];
     if (droppedFile) {
       setFile(droppedFile);
-      setIsAnalyzing(true);
-      setAnalysisResult({}); // Reset previous results
-
-      // Simulate AI analysis
-      setTimeout(() => {
-        // Mock analysis result
-        const mockResult = {
-          clientName: 'Innovate Inc.',
-          documentType: 'Propuesta' as DocumentType,
-          rawText: 'Este es un análisis simulado del contenido del documento...'
-        };
-        
-        setAnalysisResult(mockResult);
-
-        // Auto-select client if found
-        const foundClient = clients.find(c => c.name.toLowerCase() === mockResult.clientName?.toLowerCase());
-        if (foundClient) {
-          setSelectedClientId(foundClient.id);
-          setIsNewClient(false);
-        } else {
-            setSelectedClientId('new');
-            setIsNewClient(true);
-            setNewClientName(mockResult.clientName || '');
-        }
-
-        // Auto-select document type
-        if (mockResult.documentType && documentTypes.includes(mockResult.documentType)) {
-          setDocumentType(mockResult.documentType);
-        } else {
-            setDocumentType('Otro');
-            setCustomDocumentType(mockResult.documentType || '');
-        }
-
-        setIsAnalyzing(false);
-      }, 1500);
     }
-  }, [clients]);
+  }, []);
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
@@ -140,7 +103,7 @@ export function SmartDocumentUploadDialog({
     if (isNewClient) {
         const newClient = await addClient({
             name: newClientName.trim(),
-            owner: 'Auto-Asignado (IA)',
+            owner: '',
             category: 'General',
         });
         if (newClient && typeof newClient !== 'boolean') {
@@ -178,16 +141,15 @@ export function SmartDocumentUploadDialog({
       }
   };
 
-  const hasAnalysis = Object.keys(analysisResult).length > 0;
 
   return (
     <Dialog open={isSmartUploadDialogOpen} onOpenChange={handleOpenChange}>
       <DialogContent className="sm:max-w-lg">
         <form onSubmit={handleSubmit}>
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2"><Wand2 className="h-5 w-5 text-accent"/>Subida Inteligente de Documentos</DialogTitle>
+            <DialogTitle className="flex items-center gap-2"><UploadCloud className="h-5 w-5 text-accent"/>Subir Nuevo Documento</DialogTitle>
             <DialogDescription>
-              Arrastre un documento PDF o DOCX. La IA intentará analizarlo para pre-rellenar los campos.
+              Arrastre un documento PDF o DOCX para subirlo.
             </DialogDescription>
           </DialogHeader>
           <div className="py-4 space-y-4">
@@ -214,11 +176,6 @@ export function SmartDocumentUploadDialog({
               </div>
             )}
             
-            {hasAnalysis && (
-                <div className="p-3 bg-green-50 dark:bg-green-900/30 border border-green-200 dark:border-green-800 rounded-md text-xs text-green-800 dark:text-green-300">
-                    <p className="font-semibold">Análisis de IA completado. Por favor, verifique los datos sugeridos.</p>
-                </div>
-            )}
 
             {file && !isAnalyzing && (
               <div className="space-y-4 pt-4 border-t">
@@ -297,3 +254,5 @@ export function SmartDocumentUploadDialog({
     </Dialog>
   );
 }
+
+    
