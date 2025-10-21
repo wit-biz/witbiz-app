@@ -118,3 +118,5 @@ export const navItems: NavItem[] = [
     { href: '/audit', label: 'Auditoría', icon: 'Scale', requiredPermission: 'audit_view' },
     { href: '/settings', label: 'Administración', icon: 'Shield', requiredPermission: 'admin_view' },
 ];
+
+    

@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useState, useEffect, useCallback } from 'react';
@@ -130,7 +131,7 @@ export function AddTaskDialog({
               />
             </div>
             <div>
-              <Label htmlFor="clientId">Asignar a Usuario <span className="text-destructive">*</span></Label>
+              <Label htmlFor="clientId">Asignar a Cliente <span className="text-destructive">*</span></Label>
               <Select
                 name="clientId"
                 value={formData.clientId}
@@ -139,7 +140,7 @@ export function AddTaskDialog({
                 disabled={isSubmitting || !!preselectedClient}
               >
                 <SelectTrigger id="clientId">
-                  <SelectValue placeholder="Seleccione un usuario..." />
+                  <SelectValue placeholder="Seleccione un cliente..." />
                 </SelectTrigger>
                 <SelectContent>
                   {clients.map((client) => (
@@ -225,3 +226,5 @@ export function AddTaskDialog({
     </Dialog>
   );
 }
+
+    

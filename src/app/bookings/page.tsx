@@ -116,7 +116,7 @@ export default function ReservationsPage() {
     const handleSubmit = useCallback(async (e: FormEvent) => {
         e.preventDefault();
         if (!formData.clientId || !formData.date || !formData.time) {
-        toast({ title: 'Error', description: 'Usuario, fecha y hora son obligatorios.', variant: 'destructive'});
+        toast({ title: 'Error', description: 'Cliente, fecha y hora son obligatorios.', variant: 'destructive'});
         return;
         }
         setIsSubmitting(true);
@@ -275,9 +275,9 @@ export default function ReservationsPage() {
             <form onSubmit={handleSubmit}>
                 <div className="grid gap-4 py-4 max-h-[60vh] overflow-y-auto px-1">
                 <div>
-                    <Label htmlFor="clientId">Usuario</Label>
+                    <Label htmlFor="clientId">Cliente</Label>
                     <Select name="clientId" value={formData.clientId} onValueChange={handleSelectChange('clientId')} required disabled={isSubmitting}>
-                    <SelectTrigger id="clientId"><SelectValue placeholder="Seleccione un usuario..." /></SelectTrigger>
+                    <SelectTrigger id="clientId"><SelectValue placeholder="Seleccione un cliente..." /></SelectTrigger>
                     <SelectContent>
                         {clients.map(client => (
                         <SelectItem key={client.id} value={client.id}>{client.name}</SelectItem>
@@ -362,4 +362,5 @@ export default function ReservationsPage() {
     </div>
   );
 }
+    
     

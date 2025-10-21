@@ -71,7 +71,7 @@ export default function RegisterPage() {
         });
         router.push('/');
       } else {
-         throw new Error("No se pudo crear el usuario.");
+         throw new Error("No se pudo crear el cliente.");
       }
     } catch (error: any) {
         let description = 'Ocurrió un error inesperado. Por favor, inténtelo de nuevo.';
@@ -188,3 +188,5 @@ export default function RegisterPage() {
     </div>
   );
 }
+
+    

@@ -116,7 +116,7 @@ export type UserRole = {
 export interface AppUser {
     uid: string;
     roleId: string;
-    // ... otros campos del perfil de usuario
+    // ... otros campos del perfil de cliente
 }
 
 export interface AuthenticatedUser {
@@ -154,3 +154,5 @@ export interface NavItem {
   exactMatch?: boolean;
   requiredPermission: keyof AppPermissions;
 }
+
+    

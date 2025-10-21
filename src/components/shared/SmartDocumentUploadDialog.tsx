@@ -108,7 +108,7 @@ export function SmartDocumentUploadDialog({
             finalClientId = newClient.id;
             onClientAdded?.(newClient);
         } else {
-            toast({ variant: 'destructive', title: 'Error al crear usuario', description: 'No se pudo crear el nuevo usuario.' });
+            toast({ variant: 'destructive', title: 'Error al crear cliente', description: 'No se pudo crear el nuevo cliente.' });
             setIsSubmitting(false);
             return;
         }
@@ -172,13 +172,13 @@ export function SmartDocumentUploadDialog({
             {file && (
               <div className="space-y-4 pt-4 border-t">
                 <div>
-                  <Label htmlFor="client-selector">Asociar a Usuario</Label>
+                  <Label htmlFor="client-selector">Asociar a Cliente</Label>
                   <Select value={selectedClientId} onValueChange={handleClientSelection} required disabled={isSubmitting}>
                     <SelectTrigger id="client-selector">
-                      <SelectValue placeholder="Seleccione un usuario..." />
+                      <SelectValue placeholder="Seleccione un cliente..." />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="new">-- Crear Nuevo Usuario --</SelectItem>
+                      <SelectItem value="new">-- Crear Nuevo Cliente --</SelectItem>
                       {clients.map(client => (
                         <SelectItem key={client.id} value={client.id}>{client.name}</SelectItem>
                       ))}
@@ -188,7 +188,7 @@ export function SmartDocumentUploadDialog({
 
                 {isNewClient && (
                   <div className="pl-4 border-l-2 ml-2">
-                    <Label htmlFor="new-client-name">Nombre del Nuevo Usuario</Label>
+                    <Label htmlFor="new-client-name">Nombre del Nuevo Cliente</Label>
                     <Input
                       id="new-client-name"
                       value={newClientName}
@@ -246,3 +246,5 @@ export function SmartDocumentUploadDialog({
     </Dialog>
   );
 }
+
+    

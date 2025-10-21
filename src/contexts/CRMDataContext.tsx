@@ -143,7 +143,7 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
             const { user: newUser } = userCredential;
 
             await updateProfile(newUser, { displayName: name });
-            await setDoc(doc(firestore, "users", newUser.uid), {
+            await setDoc(doc(firestore, "clients", newUser.uid), {
                 uid: newUser.uid,
                 email: newUser.email,
                 displayName: name,
@@ -231,3 +231,5 @@ export function useCRMData() {
   }
   return context;
 }
+
+    

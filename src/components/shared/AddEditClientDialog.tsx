@@ -95,8 +95,8 @@ export function AddEditClientDialog({ client, isOpen, onClose }: AddEditClientDi
 
     if (success) {
       toast({
-        title: isEditMode ? 'Usuario Actualizado' : 'Usuario Creado',
-        description: `El usuario "${values.name}" ha sido ${isEditMode ? 'actualizado' : 'creado'} correctamente.`,
+        title: isEditMode ? 'Cliente Actualizado' : 'Cliente Creado',
+        description: `El cliente "${values.name}" ha sido ${isEditMode ? 'actualizado' : 'creado'} correctamente.`,
       });
       onClose();
     }
@@ -108,9 +108,9 @@ export function AddEditClientDialog({ client, isOpen, onClose }: AddEditClientDi
         <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)}>
                 <DialogHeader>
-                    <DialogTitle>{isEditMode ? 'Editar Usuario' : 'Añadir Nuevo Usuario'}</DialogTitle>
+                    <DialogTitle>{isEditMode ? 'Editar Cliente' : 'Añadir Nuevo Cliente'}</DialogTitle>
                     <DialogDescription>
-                    Complete los detalles para {isEditMode ? 'actualizar' : 'crear'} un usuario.
+                    Complete los detalles para {isEditMode ? 'actualizar' : 'crear'} un cliente.
                     </DialogDescription>
                 </DialogHeader>
 
@@ -122,7 +122,7 @@ export function AddEditClientDialog({ client, isOpen, onClose }: AddEditClientDi
                             <FormItem>
                                 <FormLabel>Nombre <span className="text-destructive">*</span></FormLabel>
                                 <FormControl>
-                                    <Input placeholder="Nombre del usuario" {...field} disabled={isSubmitting}/>
+                                    <Input placeholder="Nombre del cliente" {...field} disabled={isSubmitting}/>
                                 </FormControl>
                                 <FormMessage />
                             </FormItem>
@@ -148,7 +148,7 @@ export function AddEditClientDialog({ client, isOpen, onClose }: AddEditClientDi
                             <FormItem>
                                 <FormLabel>Categoría</FormLabel>
                                 <FormControl>
-                                    <Input placeholder="Categoría del usuario" {...field} disabled={isSubmitting}/>
+                                    <Input placeholder="Categoría del cliente" {...field} disabled={isSubmitting}/>
                                 </FormControl>
                                 <FormMessage />
                             </FormItem>
@@ -207,7 +207,7 @@ export function AddEditClientDialog({ client, isOpen, onClose }: AddEditClientDi
                     ) : (
                         <Save className="mr-2 h-4 w-4" />
                     )}
-                    {isEditMode ? 'Guardar Cambios' : 'Crear Usuario'}
+                    {isEditMode ? 'Guardar Cambios' : 'Crear Cliente'}
                     </Button>
                 </DialogFooter>
             </form>
@@ -216,3 +216,5 @@ export function AddEditClientDialog({ client, isOpen, onClose }: AddEditClientDi
     </Dialog>
   );
 }
+
+    
