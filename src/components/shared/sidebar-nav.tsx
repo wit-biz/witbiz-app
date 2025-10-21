@@ -15,6 +15,7 @@ import {
   Calculator,
   Scale,
   Shield,
+  ChevronDown,
   type LucideIcon,
 } from "lucide-react";
 import {
@@ -22,9 +23,12 @@ import {
   SidebarMenuItem,
   SidebarMenuButton,
   useSidebar,
+  SidebarMenuSub,
+  SidebarMenuSubButton,
 } from "@/components/ui/sidebar";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { cn } from "@/lib/utils";
-import React from "react";
+import React, { useState } from "react";
 import { useCRMData } from "@/contexts/CRMDataContext";
 import { NavItem } from "@/lib/types";
 import { navItems as navData } from "@/lib/data";
@@ -43,15 +47,19 @@ const icons: { [key: string]: LucideIcon } = {
     Shield,
 };
 
-
 export function SidebarNav() {
   const pathname = usePathname();
-  const { state: sidebarState, isMobile, setOpenMobile } = useSidebar();
-  const { currentUser, isLoadingCurrentUser } = useCRMData(); 
+  const { isMobile, setOpenMobile } = useSidebar();
+  const { currentUser, isLoadingCurrentUser } = useCRMData();
+  const [openSubmenus, setOpenSubmenus] = useState<Record<string, boolean>>({});
 
   const navItems: NavItem[] = navData.map(item => ({
       ...item,
-      icon: icons[item.icon as string] || LayoutDashboard
+      icon: icons[item.icon as string] || LayoutDashboard,
+      subItems: item.subItems?.map(sub => ({
+        ...sub,
+        icon: icons[sub.icon as string] || LayoutDashboard
+      }))
   }));
 
   const handleLinkClick = React.useCallback(() => {
@@ -60,20 +68,64 @@ export function SidebarNav() {
     }
   }, [isMobile, setOpenMobile]);
 
+  const toggleSubmenu = (label: string) => {
+    setOpenSubmenus(prev => ({ ...prev, [label]: !prev[label] }));
+  };
+
   const userHasPermission = (permissionKey: keyof NavItem['requiredPermission']) => {
-    if (isLoadingCurrentUser) return false;
-    if (!currentUser) return false; // No permissions if no user
-    // Simplified check
+    if (isLoadingCurrentUser || !currentUser) return false;
     return currentUser.permissions[permissionKey] === true;
   };
 
   const renderNavItem = (item: NavItem) => {
-    // Always render items if there is a current user, based on simplified permissions
     if (!currentUser) return null;
     
-    const isActive = item.href === '/' ? pathname === '/' : pathname.startsWith(item.href) && item.href !== '/';
-    const Icon = item.icon;
+    const Icon = item.icon as LucideIcon;
+    const hasSubItems = item.subItems && item.subItems.length > 0;
+    const isParentActive = hasSubItems && item.subItems.some(sub => pathname.startsWith(sub.href));
 
+    if (hasSubItems) {
+      const isOpen = openSubmenus[item.label] ?? isParentActive;
+      return (
+        <SidebarMenuItem key={item.label} className="group/item">
+          <Collapsible open={isOpen} onOpenChange={() => toggleSubmenu(item.label)}>
+            <CollapsibleTrigger asChild>
+                <SidebarMenuButton
+                  isActive={isParentActive}
+                  tooltip={item.label}
+                  className="justify-between"
+                  onClick={(e) => { e.preventDefault(); toggleSubmenu(item.label); }}
+                >
+                  <div className="flex items-center gap-2">
+                    <Icon />
+                    <span>{item.label}</span>
+                  </div>
+                  <ChevronDown className={cn("h-4 w-4 transition-transform", isOpen && "rotate-180")} />
+                </SidebarMenuButton>
+            </CollapsibleTrigger>
+            <CollapsibleContent>
+              <SidebarMenuSub>
+                {item.subItems?.map(subItem => {
+                  const isSubActive = pathname.startsWith(subItem.href) && (subItem.href !== '/' || pathname === '/');
+                  return (
+                    <li key={subItem.href}>
+                      <SidebarMenuSubButton asChild isActive={isSubActive}>
+                        <Link href={subItem.href} onClick={handleLinkClick}>
+                          <div className="w-4"/> {/* Placeholder for icon space */}
+                          <span>{subItem.label}</span>
+                        </Link>
+                      </SidebarMenuSubButton>
+                    </li>
+                  )
+                })}
+              </SidebarMenuSub>
+            </CollapsibleContent>
+          </Collapsible>
+        </SidebarMenuItem>
+      )
+    }
+
+    const isActive = item.exactMatch ? pathname === item.href : pathname.startsWith(item.href) && item.href !== '/';
     return (
       <SidebarMenuItem key={item.href}>
         <SidebarMenuButton
