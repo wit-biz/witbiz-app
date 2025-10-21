@@ -1,6 +1,7 @@
 
 "use client";
 
+import React, { useState, useMemo } from "react";
 import { Header } from "@/components/header";
 import {
   Card,
@@ -17,6 +18,7 @@ import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
+import { InviteMemberDialog } from "@/components/shared/InviteMemberDialog";
 
 
 const teamMembers = [
@@ -57,7 +59,23 @@ const roles = [
 
 
 export default function TeamPage() {
+    const [isInviteDialogOpen, setIsInviteDialogOpen] = useState(false);
+
+    const sortedTeamMembers = useMemo(() => {
+        const roleOrder = {
+            'Director': 1,
+            'Administrador': 2,
+            'Colaborador': 3,
+        };
+        return [...teamMembers].sort((a, b) => {
+            const roleA = roleOrder[a.role as keyof typeof roleOrder] || 99;
+            const roleB = roleOrder[b.role as keyof typeof roleOrder] || 99;
+            return roleA - roleB;
+        });
+    }, []);
+
   return (
+    <>
     <div className="flex flex-col min-h-screen">
       <Header
         title="Equipo y Permisos"
@@ -84,7 +102,7 @@ export default function TeamPage() {
                             Usuarios con acceso a la plataforma.
                         </CardDescription>
                     </div>
-                    <Button size="sm">
+                    <Button size="sm" onClick={() => setIsInviteDialogOpen(true)}>
                         <PlusCircle className="mr-2 h-4 w-4" />
                         Invitar Miembro
                     </Button>
@@ -100,7 +118,7 @@ export default function TeamPage() {
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                            {teamMembers.map((member) => (
+                            {sortedTeamMembers.map((member) => (
                                 <TableRow key={member.id}>
                                     <TableCell className="font-medium">{member.name}</TableCell>
                                     <TableCell>{member.email}</TableCell>
@@ -152,6 +170,16 @@ export default function TeamPage() {
         </Tabs>
       </main>
     </div>
+    <InviteMemberDialog
+        isOpen={isInviteDialogOpen}
+        onOpenChange={setIsInviteDialogOpen}
+        roles={roles.map(r => r.name)}
+        onInvite={(email, role) => {
+          // Here you would typically call an API to send an invitation
+          console.log(`Inviting ${email} with role ${role}`);
+          // For now, we'll just close the dialog and show a toast
+        }}
+    />
+    </>
   );
 }
-
