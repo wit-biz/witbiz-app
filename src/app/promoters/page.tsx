@@ -142,17 +142,15 @@ function CommissionsView() {
 
     return (
         <div className="space-y-6">
-             <style>{`
-                .day-paid { background-color: rgba(34, 197, 94, 0.2); border-radius: 50%; }
-                .day-pending { background-color: rgba(59, 130, 246, 0.2); border-radius: 50%; }
-                .rdp-day_range_start, .rdp-day_range_end { background-color: hsl(var(--primary)) !important; color: hsl(var(--primary-foreground)) !important; }
-                .rdp-day_range_middle { background-color: hsl(var(--muted)) !important; border-radius: 0 !important; }
-            `}</style>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <Card className="md:col-span-1">
                     <CardHeader>
                         <CardTitle>Calendario de Comisiones</CardTitle>
-                        <CardDescription>Seleccione un día o un rango de fechas.</CardDescription>
+                        <CardDescription className="flex flex-col gap-1.5 text-xs">
+                          <span>Seleccione día o rango.</span>
+                          <span className="flex items-center gap-2"><span className="w-2.5 h-2.5 rounded-full bg-green-500/80"></span>Pagadas</span>
+                          <span className="flex items-center gap-2"><span className="w-2.5 h-2.5 rounded-full bg-blue-500/80"></span>Pendientes</span>
+                        </CardDescription>
                     </CardHeader>
                     <CardContent className="flex justify-center">
                         {isClient && (
@@ -216,11 +214,15 @@ function CommissionsView() {
             </div>
             <Card>
                 <CardHeader>
-                    <CardTitle>Historial de Comisiones</CardTitle>
-                     <CardDescription>
-                        Mostrando {filteredCommissions.length} de {commissions.length} registros. 
-                        {(dateRange || selectedDay) && <Button variant="link" className="p-0 h-auto ml-2" onClick={() => { setDateRange(undefined); setSelectedDay(undefined); }}>Limpiar selección</Button>}
-                    </CardDescription>
+                    <div className="flex justify-between items-center">
+                        <div>
+                            <CardTitle>Historial de Comisiones</CardTitle>
+                            <CardDescription>
+                                Mostrando {filteredCommissions.length} de {commissions.length} registros. 
+                            </CardDescription>
+                        </div>
+                         {(dateRange || selectedDay) && <Button variant="outline" size="sm" onClick={() => { setDateRange(undefined); setSelectedDay(undefined); }}>Limpiar selección</Button>}
+                    </div>
                 </CardHeader>
                 <CardContent>
                     <Table>
@@ -342,3 +344,4 @@ export default function PromoterPage() {
 }
 
     
+
