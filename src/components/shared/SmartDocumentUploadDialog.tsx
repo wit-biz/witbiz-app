@@ -19,12 +19,11 @@ import { Loader2, UploadCloud, File, AlertTriangle, Wand2, X } from 'lucide-reac
 import { useDropzone } from 'react-dropzone';
 import { useCRMData, type DocumentType, type Client } from '@/contexts/CRMDataContext';
 import { useGlobalNotification } from '@/contexts/NotificationContext';
+import { useDialogs } from '@/contexts/DialogsContext';
 
 const documentTypes: DocumentType[] = ["Contrato", "Factura", "Propuesta", "Informe", "Otro"];
 
 interface SmartDocumentUploadDialogProps {
-  isOpen: boolean;
-  onOpenChange: (open: boolean) => void;
   onDocumentUploaded?: (docId: string) => void;
   onClientAdded?: (client: Client) => void;
   preselectedClientId?: string;
@@ -32,8 +31,6 @@ interface SmartDocumentUploadDialogProps {
 }
 
 export function SmartDocumentUploadDialog({
-  isOpen,
-  onOpenChange,
   onDocumentUploaded,
   onClientAdded,
   preselectedClientId,
@@ -41,6 +38,8 @@ export function SmartDocumentUploadDialog({
 }: SmartDocumentUploadDialogProps) {
   const { clients, addClient, addDocument } = useCRMData();
   const { showNotification } = useGlobalNotification();
+  const { isSmartUploadDialogOpen, setIsSmartUploadDialogOpen } = useDialogs();
+
 
   const [file, setFile] = useState<File | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
@@ -69,14 +68,14 @@ export function SmartDocumentUploadDialog({
     if (!open) {
       resetState();
     }
-    onOpenChange(open);
+    setIsSmartUploadDialogOpen(open);
   };
   
   useEffect(() => {
-      if (isOpen && preselectedClientId) {
+      if (isSmartUploadDialogOpen && preselectedClientId) {
           setSelectedClientId(preselectedClientId);
       }
-  }, [isOpen, preselectedClientId]);
+  }, [isSmartUploadDialogOpen, preselectedClientId]);
 
   const onDrop = useCallback(async (acceptedFiles: File[]) => {
     const droppedFile = acceptedFiles[0];
@@ -182,7 +181,7 @@ export function SmartDocumentUploadDialog({
   const hasAnalysis = Object.keys(analysisResult).length > 0;
 
   return (
-    <Dialog open={isOpen} onOpenChange={handleOpenChange}>
+    <Dialog open={isSmartUploadDialogOpen} onOpenChange={handleOpenChange}>
       <DialogContent className="sm:max-w-lg">
         <form onSubmit={handleSubmit}>
           <DialogHeader>

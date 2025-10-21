@@ -9,6 +9,7 @@ import { Toaster } from '@/components/ui/toaster';
 import { TasksProvider } from '@/contexts/TasksContext';
 import { CRMDataProvider } from '@/contexts/CRMDataContext';
 import { GlobalNotificationProvider } from '@/contexts/NotificationContext';
+import { DialogsProvider } from '@/contexts/DialogsContext';
 import { UserNav } from '@/components/shared/user-nav';
 import { ThemeProvider } from '@/components/theme-provider';
 import { useEffect, useState } from 'react';
@@ -52,21 +53,23 @@ export default function RootLayout({
           <GlobalNotificationProvider>
             <CRMDataProvider>
               <TasksProvider>
-                <SidebarProvider>
-                  {isClient ? (
-                    <>
-                      <AppSidebar />
-                      <SidebarInset>
-                        <UserNav />
-                        {children}
-                      </SidebarInset>
-                    </>
-                  ) : (
-                    <div className="flex h-screen w-full items-center justify-center">
-                      {/* Puedes poner un spinner o un loader aquí */}
-                    </div>
-                  )}
-                </SidebarProvider>
+                <DialogsProvider>
+                  <SidebarProvider>
+                    {isClient ? (
+                      <>
+                        <AppSidebar />
+                        <SidebarInset>
+                          <UserNav />
+                          {children}
+                        </SidebarInset>
+                      </>
+                    ) : (
+                      <div className="flex h-screen w-full items-center justify-center">
+                        {/* Puedes poner un spinner o un loader aquí */}
+                      </div>
+                    )}
+                  </SidebarProvider>
+                </DialogsProvider>
               </TasksProvider>
             </CRMDataProvider>
           </GlobalNotificationProvider>

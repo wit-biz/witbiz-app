@@ -18,6 +18,7 @@ import { SmartDocumentUploadDialog } from "@/components/shared/SmartDocumentUplo
 import { useRouter } from "next/navigation";
 import { Tooltip, TooltipProvider, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useGlobalNotification } from "@/contexts/NotificationContext";
+import { useDialogs } from "@/contexts/DialogsContext";
 
 
 const StageNumberIcon = ({ index }: { index: number }) => {
@@ -49,6 +50,7 @@ export default function CrmConfigurationPage() {
   } = useCRMData();
   const router = useRouter();
   const { showNotification } = useGlobalNotification();
+  const { isSmartUploadDialogOpen, setIsSmartUploadDialogOpen } = useDialogs();
 
   const [selectedWorkflowId, setSelectedWorkflowId] = useState<string | null>(null);
   const [editingServiceId, setEditingServiceId] = useState<string | null>(null);
@@ -64,8 +66,6 @@ export default function CrmConfigurationPage() {
   
   const [serviceToDelete, setServiceToDelete] = useState<ServiceWorkflow | null>(null);
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
-
-  const [isSmartUploadDialogOpen, setIsSmartUploadDialogOpen] = useState(false);
 
   const canEditWorkflow = currentUser?.permissions.donna.crm_edit ?? true;
 
@@ -484,7 +484,7 @@ export default function CrmConfigurationPage() {
             isOpen={isSmartUploadDialogOpen}
             onOpenChange={setIsSmartUploadDialogOpen}
             onClientAdded={(client) => {
-                router.push(`/clients?openClient=${client.id}`);
+                router.push(`/contacts?openClient=${client.id}`);
             }}
         />
     </TooltipProvider>

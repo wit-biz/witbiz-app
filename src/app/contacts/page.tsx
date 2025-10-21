@@ -22,6 +22,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { clients as mockClients, tasks as mockTasks, documents as mockDocs, notes as mockNotes } from '@/lib/data';
 import type { Client, Task, Document, Note, Booking, WorkflowStage, WorkflowStageObjective } from '@/lib/types';
 import { useToast } from "@/hooks/use-toast";
+import { useDialogs } from "@/contexts/DialogsContext";
 
 const documentTypes = ["Contrato", "Factura", "Propuesta", "Informe", "Otro"];
 
@@ -50,7 +51,7 @@ export default function ClientsPage() {
   const [notes, setNotes] = useState<Note[]>(mockNotes);
   const [isLoadingClients, setIsLoadingClients] = useState(false);
 
-  const [isAddClientDialogOpen, setIsAddClientDialogOpen] = useState(false);
+  const { isAddClientDialogOpen, setIsAddClientDialogOpen } = useDialogs();
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
   const [isClientDetailDialogOpen, setIsClientDetailDialogOpen] = useState(false);
   const [isEditingClient, setIsEditingClient] = useState(false);
@@ -352,6 +353,17 @@ export default function ClientsPage() {
           </DialogContent>
         </Dialog>
       )}
+
+    <Dialog open={isAddClientDialogOpen} onOpenChange={setIsAddClientDialogOpen}>
+        <DialogContent>
+            <DialogHeader>
+                <DialogTitle>Añadir Nuevo Usuario</DialogTitle>
+            </DialogHeader>
+            {/* Formulario para añadir nuevo cliente */}
+        </DialogContent>
+    </Dialog>
+
+
       <AlertDialog open={isDeletingClient} onOpenChange={setIsDeletingClient}>
         <AlertDialogContent>
           <AlertDialogHeader>

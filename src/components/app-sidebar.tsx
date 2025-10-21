@@ -8,6 +8,10 @@ import {
   SidebarFooter,
 } from '@/components/ui/sidebar';
 import { SidebarNav } from './shared/sidebar-nav';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { Button } from '@/components/ui/button';
+import { Plus, UploadCloud, UserPlus } from 'lucide-react';
+import { useDialogs } from '@/contexts/DialogsContext';
 
 const Logo = () => (
   <svg
@@ -62,6 +66,7 @@ const Logo = () => (
 
 
 export function AppSidebar() {
+  const { setIsAddClientDialogOpen, setIsSmartUploadDialogOpen } = useDialogs();
 
   return (
     <Sidebar>
@@ -74,8 +79,24 @@ export function AppSidebar() {
       <SidebarContent>
         <SidebarNav />
       </SidebarContent>
-      <SidebarFooter>
-        {/* User profile dropdown has been moved to UserNav component */}
+      <SidebarFooter className="mt-auto">
+        <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon" className="w-full h-10">
+                    <Plus className="h-5 w-5"/>
+                </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent side="right" align="end" className="mb-2">
+                <DropdownMenuItem onSelect={() => setIsSmartUploadDialogOpen(true)}>
+                    <UploadCloud className="mr-2 h-4 w-4" />
+                    <span>Subir Documento</span>
+                </DropdownMenuItem>
+                <DropdownMenuItem onSelect={() => setIsAddClientDialogOpen(true)}>
+                    <UserPlus className="mr-2 h-4 w-4" />
+                    <span>Crear Usuario</span>
+                </DropdownMenuItem>
+            </DropdownMenuContent>
+        </DropdownMenu>
       </SidebarFooter>
     </Sidebar>
   );
