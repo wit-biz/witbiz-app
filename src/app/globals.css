@@ -330,5 +330,18 @@
      animation-play-state: paused;
      filter: drop-shadow(0 0 6px hsl(var(--primary))) drop-shadow(0 0 12px hsl(var(--primary) / 0.5));
   }
+  
+  @keyframes sidebar-glow {
+    0%, 100% {
+      box-shadow: 0 0 4px hsl(var(--primary) / 0.4), inset 0 0 4px hsl(var(--primary) / 0.3);
+    }
+    50% {
+      box-shadow: 0 0 8px hsl(var(--primary) / 0.6), inset 0 0 6px hsl(var(--primary) / 0.5);
+    }
+  }
+
+  .sidebar-glowing-border {
+    animation: sidebar-glow 3s infinite ease-in-out;
+  }
 
 }
