@@ -14,10 +14,11 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Loader2, UserPlus } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { useAuth } from "@/firebase";
 import { createUserWithEmailAndPassword, updateProfile } from "firebase/auth";
 import { useToast } from "@/hooks/use-toast";
+import { Logo } from "@/components/shared/logo";
 
 export default function RegisterPage() {
   const [name, setName] = useState("");
@@ -62,9 +63,12 @@ export default function RegisterPage() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-background p-4">
       <Card className="w-full max-w-sm">
-        <CardHeader className="text-center">
-          <CardTitle className="text-2xl flex items-center justify-center gap-2">
-            <UserPlus className="h-6 w-6" /> Crear Cuenta
+        <CardHeader className="text-center space-y-4">
+          <div className="flex justify-center">
+            <Logo />
+          </div>
+          <CardTitle className="text-2xl">
+            Crear Cuenta
           </CardTitle>
           <CardDescription>
             Cree una nueva cuenta para empezar a usar WitBiz.

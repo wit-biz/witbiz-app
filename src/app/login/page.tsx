@@ -14,10 +14,11 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Loader2, LogIn } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { useAuth } from "@/firebase";
 import { signInWithEmailAndPassword } from "firebase/auth";
 import { useToast } from "@/hooks/use-toast";
+import { Logo } from "@/components/shared/logo";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -48,9 +49,12 @@ export default function LoginPage() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-background p-4">
       <Card className="w-full max-w-sm">
-        <CardHeader className="text-center">
-          <CardTitle className="text-2xl flex items-center justify-center gap-2">
-            <LogIn className="h-6 w-6" /> Iniciar Sesión
+        <CardHeader className="text-center space-y-4">
+            <div className="flex justify-center">
+                <Logo />
+            </div>
+          <CardTitle className="text-2xl">
+            Iniciar Sesión
           </CardTitle>
           <CardDescription>
             Ingrese a su cuenta de WitBiz para continuar.
