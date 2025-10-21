@@ -8,9 +8,6 @@ import { useRouter } from 'next/navigation';
 import { LogOut, Loader2 } from 'lucide-react';
 import { useState } from 'react';
 import { Logo } from '@/components/shared/logo';
-import { PromotersTab } from '@/components/shared/PromotersTab';
-import { promoters } from '@/lib/data';
-
 
 export default function PromoterPage() {
     const auth = useAuth();
@@ -37,8 +34,10 @@ export default function PromoterPage() {
                     Cerrar Sesión
                 </Button>
             </header>
-            <main className="flex-1 p-4 md:p-8">
-                <PromotersTab promoters={promoters} isLoading={false} isStandalonePage={true}/>
+            <main className="flex-1 p-4 md:p-8 flex items-center justify-center">
+                <svg width="100" height="100" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+                    <polygon points="50,10 90,90 10,90" className="fill-primary" />
+                </svg>
             </main>
         </div>
     );
