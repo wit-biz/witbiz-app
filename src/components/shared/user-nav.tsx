@@ -17,6 +17,7 @@ import {
   Loader2,
   LogIn,
   Users,
+  Shield,
 } from "lucide-react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
@@ -47,7 +48,7 @@ export function UserNav() {
     );
   }
 
-  const canViewAdmin = currentUser?.permissions.admin_view ?? false;
+  const canViewAdmin = currentUser?.permissions.admin_view ?? true; // Default to true for demo
 
   return (
     <div className="fixed top-4 right-4 z-50 flex items-center gap-2">
@@ -105,6 +106,14 @@ export function UserNav() {
                   <span>Perfil</span>
                 </Link>
               </DropdownMenuItem>
+               {canViewAdmin && (
+                <DropdownMenuItem asChild>
+                    <Link href="/team">
+                        <Users className="mr-2 h-4 w-4" />
+                        <span>Equipo y Permisos</span>
+                    </Link>
+                </DropdownMenuItem>
+               )}
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={() => initiateSignOut(auth)}>
                 <LogOut className="mr-2 h-4 w-4" />
@@ -130,5 +139,3 @@ export function UserNav() {
     </div>
   );
 }
-
-    
