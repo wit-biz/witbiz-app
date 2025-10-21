@@ -52,6 +52,12 @@ const resources = [
 // --- Components for each view ---
 
 function ClientsView() {
+    const [isClient, setIsClient] = useState(false);
+
+    useEffect(() => {
+        setIsClient(true);
+    }, []);
+
     return (
         <Card>
             <CardHeader>
@@ -71,7 +77,7 @@ function ClientsView() {
                         {referredClients.map(client => (
                             <TableRow key={client.id}>
                                 <TableCell className="font-medium">{client.name}</TableCell>
-                                <TableCell>{client.joinDate ? format(parseDateString(client.joinDate)!, 'dd/MM/yyyy') : '-'}</TableCell>
+                                <TableCell>{isClient && client.joinDate ? format(parseDateString(client.joinDate)!, 'dd/MM/yyyy') : '-'}</TableCell>
                                 <TableCell>
                                     <Badge variant={client.status === 'Activo' ? 'default' : 'secondary'}>{client.status}</Badge>
                                 </TableCell>
@@ -203,7 +209,7 @@ function CommissionsView() {
                                     <li key={c.id} className="flex justify-between items-center p-2 rounded-md bg-muted/50">
                                         <div>
                                             <p className="font-semibold">{c.clientName}</p>
-                                            <p className="text-xs text-muted-foreground">{c.date ? format(parseDateString(c.date)!, 'PPP', { locale: es }) : '-'}</p>
+                                            <p className="text-xs text-muted-foreground">{isClient && c.date ? format(parseDateString(c.date)!, 'PPP', { locale: es }) : '-'}</p>
                                         </div>
                                         <div className="text-right">
                                              <p className="font-semibold">${c.amount.toFixed(2)}</p>
@@ -247,7 +253,7 @@ function CommissionsView() {
                             {filteredCommissions.map(c => (
                                 <TableRow key={c.id}>
                                     <TableCell className="font-medium">{c.clientName}</TableCell>
-                                    <TableCell>{c.date ? format(parseDateString(c.date)!, 'PPP', { locale: es }) : '-'}</TableCell>
+                                    <TableCell>{isClient && c.date ? format(parseDateString(c.date)!, 'PPP', { locale: es }) : '-'}</TableCell>
                                     <TableCell>${c.amount.toFixed(2)}</TableCell>
                                     <TableCell>
                                         <Badge variant={c.status === 'Pagada' ? 'default' : 'secondary'} className={cn(c.status === 'Pagada' ? 'bg-blue-600 text-white' : 'bg-slate-500 text-white')}>{c.status}</Badge>
@@ -360,3 +366,4 @@ export default function PromoterPage() {
     
 
     
+
