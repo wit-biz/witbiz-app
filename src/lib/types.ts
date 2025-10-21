@@ -16,6 +16,14 @@ export type Client = {
   currentObjectiveId?: string;
 };
 
+export type Promoter = {
+  id: string;
+  name: string;
+  referredClients: number;
+  totalCommissions: number;
+  status: 'Activo' | 'Inactivo';
+};
+
 export type Task = {
   id: string;
   title: string;
@@ -154,5 +162,3 @@ export interface NavItem {
   exactMatch?: boolean;
   requiredPermission: keyof AppPermissions;
 }
-
-    

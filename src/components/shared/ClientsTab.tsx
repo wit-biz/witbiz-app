@@ -12,12 +12,15 @@ import type { Client } from '@/lib/types';
 import { useToast } from "@/hooks/use-toast";
 import { AddEditClientDialog } from "@/components/shared/AddEditClientDialog";
 
-export function ClientsTab() {
+interface ClientsTabProps {
+    clients: Client[];
+    isLoading: boolean;
+}
+
+export function ClientsTab({ clients, isLoading }: ClientsTabProps) {
   const { toast } = useToast();
 
-  const {
-      clients, isLoadingClients, deleteClient, currentUser
-  } = useCRMData();
+  const { deleteClient, currentUser } = useCRMData();
 
   const [dialogState, setDialogState] = useState<{ open: boolean; client: Client | null }>({ open: false, client: null });
   const [clientToDelete, setClientToDelete] = useState<Client | null>(null);
@@ -63,7 +66,7 @@ export function ClientsTab() {
             <div>
               <CardTitle>Listado de Clientes</CardTitle>
               <CardDescription>
-                {isLoadingClients
+                {isLoading
                   ? "Cargando clientes..."
                   : `${sortedClients.length} cliente(s) encontrado(s).`}
               </CardDescription>
@@ -76,7 +79,7 @@ export function ClientsTab() {
             )}
           </CardHeader>
           <CardContent>
-            {isLoadingClients ? (
+            {isLoading ? (
               <div className="flex items-center justify-center p-12">
                 <Loader2 className="h-8 w-8 animate-spin text-primary" />
               </div>
@@ -162,5 +165,3 @@ export function ClientsTab() {
     </>
   );
 }
-
-    

@@ -1,5 +1,5 @@
 
-import type { Client, Task, Document, Note, Reservation, WorkflowStage, NavItem } from './types';
+import type { Client, Task, Document, Note, Reservation, WorkflowStage, NavItem, Promoter } from './types';
 
 export const workflowStages: WorkflowStage[] = [
   { id: 'stage-1', title: 'Prospecto', order: 1, objectives: [] },
@@ -8,11 +8,19 @@ export const workflowStages: WorkflowStage[] = [
   { id: 'stage-4', title: 'Cierre', order: 4, objectives: [] },
 ];
 
+export const promoters: Promoter[] = [
+    { id: 'p1', name: 'Mariana Fernandez', referredClients: 5, totalCommissions: 1250.50, status: 'Activo' },
+    { id: 'p2', name: 'Juan Carlos Bodoque', referredClients: 3, totalCommissions: 850.00, status: 'Activo' },
+    { id: 'p3', name: 'Sofía Rodriguez', referredClients: 8, totalCommissions: 2100.75, status: 'Activo' },
+    { id: 'p4', name: 'Pedro Pascal', referredClients: 1, totalCommissions: 150.00, status: 'Inactivo' },
+    { id: 'p5', name: 'Carla Santamaria', referredClients: 12, totalCommissions: 3500.00, status: 'Activo' },
+];
+
 export const clients: Client[] = [
   {
     id: '1',
     name: 'Innovate Inc.',
-    owner: 'Tú',
+    owner: 'Mariana Fernandez',
     category: 'Tecnología',
     stage: 'Cualificación',
     currentObjective: 'Análisis completo de necesidades técnicas.',
@@ -20,7 +28,7 @@ export const clients: Client[] = [
   {
     id: '2',
     name: 'Synergy Corp.',
-    owner: 'Alex Smith',
+    owner: 'Juan Carlos Bodoque',
     category: 'Finanzas',
     stage: 'Negociación',
     currentObjective: 'Finalizar precios y términos del contrato.',
@@ -28,7 +36,7 @@ export const clients: Client[] = [
   {
     id: '3',
     name: 'Solutions LLC',
-    owner: 'Tú',
+    owner: 'Mariana Fernandez',
     category: 'Salud',
     stage: 'Prospecto',
     currentObjective: 'Contacto inicial e introducción.',
@@ -36,7 +44,7 @@ export const clients: Client[] = [
   {
     id: '4',
     name: 'Global Net',
-    owner: 'Jane Doe',
+    owner: 'Sofía Rodriguez',
     category: 'Logística',
     stage: 'Cierre',
     currentObjective: 'Inicio del proyecto.',
@@ -44,10 +52,50 @@ export const clients: Client[] = [
    {
     id: '5',
     name: 'Marketing Pro',
-    owner: 'Tú',
+    owner: 'Carla Santamaria',
     category: 'Marketing',
     stage: 'Prospecto',
     currentObjective: 'Agendar llamada de descubrimiento.',
+  },
+  {
+    id: '6',
+    name: 'QuantumLeap',
+    owner: 'Sofía Rodriguez',
+    category: 'Investigación',
+    stage: 'Cualificación',
+    currentObjective: 'Demostración de producto.',
+  },
+  {
+    id: '7',
+    name: 'Nexus Enterprises',
+    owner: 'Mariana Fernandez',
+    category: 'Retail',
+    stage: 'Negociación',
+    currentObjective: 'Ajuste de propuesta económica.',
+  },
+  {
+    id: '8',
+    name: 'BioGen',
+    owner: 'Juan Carlos Bodoque',
+    category: 'Biotecnología',
+    stage: 'Prospecto',
+    currentObjective: 'Identificar al tomador de decisiones.',
+  },
+  {
+    id: '9',
+    name: 'AeroDynamics',
+    owner: 'Carla Santamaria',
+    category: 'Aeroespacial',
+    stage: 'Cierre',
+    currentObjective: 'Firma de contrato.',
+  },
+  {
+    id: '10',
+    name: 'EcoBuild',
+    owner: 'Mariana Fernandez',
+    category: 'Construcción',
+    stage: 'Cualificación',
+    currentObjective: 'Validar presupuesto del cliente.',
   },
 ];
 
@@ -118,5 +166,3 @@ export const navItems: NavItem[] = [
     { href: '/audit', label: 'Auditoría', icon: 'Scale', requiredPermission: 'audit_view' },
     { href: '/settings', label: 'Administración', icon: 'Shield', requiredPermission: 'admin_view' },
 ];
-
-    
