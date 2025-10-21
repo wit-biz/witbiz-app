@@ -11,21 +11,21 @@
     --card-foreground: 0 0% 3.9%;
     --popover: 0 0% 100%;
     --popover-foreground: 0 0% 3.9%;
-    --primary: 130 60% 45%; /* Saturated Green */
-    --primary-foreground: 0 0% 98%; /* White text on green */
+    --primary: 86 100% 72%; /* New Lime Green */
+    --primary-foreground: 86 100% 10%; /* Dark Green text on new primary */
     --secondary: 0 0% 94%; /* Slightly darker gray for secondary elements */
     --secondary-foreground: 0 0% 9%;
     --muted: 0 0% 94%;
     --muted-foreground: 0 0% 45.1%;
-    --accent: 130 60% 45%; /* Saturated Green */
-    --accent-foreground: 0 0% 98%; /* White text on accent for contrast */
-    --accent-raw: 130 60% 45%; /* Raw HSL for accent */
+    --accent: 86 100% 72%; /* New Lime Green */
+    --accent-foreground: 86 100% 10%; /* Dark Green text on accent */
+    --accent-raw: 86 100% 72%; /* Raw HSL for accent */
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 0 0% 98%;
     --destructive-raw: 0 84.2% 60.2%; /* For direct HSL use with opacity */
     --border: 0 0% 89.8%;
     --input: 0 0% 89.8%;
-    --ring: 130 60% 45%; /* Ring color based on accent */
+    --ring: 86 100% 72%; /* Ring color based on accent */
     --chart-1: 12 76% 61%;
     --chart-2: 173 58% 39%;
     --chart-3: 197 37% 24%;
@@ -36,20 +36,20 @@
     /* Sidebar specific colors */
     --sidebar-background: 0 0% 98%; /* Light gray for sidebar */
     --sidebar-foreground: 0 0% 3.9%; /* Black text */
-    --sidebar-primary: 130 60% 45%; /* Accent Green for active/primary items in sidebar */
-    --sidebar-primary-foreground: 0 0% 98%; /* White text on primary */
+    --sidebar-primary: 86 100% 72%; /* Accent Green for active/primary items in sidebar */
+    --sidebar-primary-foreground: 86 100% 10%; /* Dark Green text on primary */
     --sidebar-accent: 0 0% 92%; /* Lighter gray for hover/accent backgrounds in sidebar */
     --sidebar-accent-foreground: 0 0% 3.9%; /* Black text on accent */
     --sidebar-border: 0 0% 89.8%;
-    --sidebar-ring: 130 60% 45%;
+    --sidebar-ring: 86 100% 72%;
 
     /* Calendar Indicator Colors */
     --indicator-overdue-bg: hsl(var(--destructive));
-    --indicator-today-bg: 130 60% 45%;
+    --indicator-today-bg: 86 100% 72%;
     --indicator-upcoming-bg: 210 70% 55%;
-    --indicator-today-bg-raw: 130 60% 45%;
+    --indicator-today-bg-raw: 86 100% 72%;
     --indicator-upcoming-bg-raw: 210 70% 55%;
-    --reservation-indicator-today-bg: 130 60% 45%;
+    --reservation-indicator-today-bg: 86 100% 72%;
     --reservation-indicator-future-bg: 210 70% 55%;
 
     --font-montserrat: 'Montserrat', sans-serif;
@@ -62,21 +62,21 @@
     --card-foreground: 0 0% 98%;
     --popover: 240 10% 3.9%;
     --popover-foreground: 0 0% 98%;
-    --primary: 130 60% 45%; /* Saturated Green */
-    --primary-foreground: 0 0% 98%;
+    --primary: 86 100% 72%; /* New Lime Green */
+    --primary-foreground: 86 100% 10%;
     --secondary: 240 4% 15%; /* Dark Gray */
     --secondary-foreground: 0 0% 98%;
     --muted: 240 4% 15%;
     --muted-foreground: 0 0% 63.9%;
-    --accent: 130 60% 45%; /* Saturated Green */
-    --accent-foreground: 0 0% 98%;
-    --accent-raw: 130 60% 45%;
+    --accent: 86 100% 72%; /* New Lime Green */
+    --accent-foreground: 86 100% 10%;
+    --accent-raw: 86 100% 72%;
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 0 0% 98%;
     --destructive-raw: 0 62.8% 30.6%;
     --border: 240 4% 15%;
     --input: 240 4% 15%;
-    --ring: 130 60% 45%;
+    --ring: 86 100% 72%;
     --chart-1: 220 70% 50%;
     --chart-2: 160 60% 45%;
     --chart-3: 30 80% 55%;
@@ -86,20 +86,20 @@
     /* Sidebar specific colors - Dark Mode */
     --sidebar-background: 240 10% 3.9%;
     --sidebar-foreground: 0 0% 98%;
-    --sidebar-primary: 130 60% 45%;
-    --sidebar-primary-foreground: 0 0% 98%;
+    --sidebar-primary: 86 100% 72%;
+    --sidebar-primary-foreground: 86 100% 10%;
     --sidebar-accent: 240 4% 15%;
     --sidebar-accent-foreground: 0 0% 98%;
     --sidebar-border: 240 4% 15%;
-    --sidebar-ring: 130 60% 45%;
+    --sidebar-ring: 86 100% 72%;
 
     /* Calendar Indicator Colors - Dark Mode */
     --indicator-overdue-bg: hsl(var(--destructive));
-    --indicator-today-bg: 130 50% 45%;
+    --indicator-today-bg: 86 100% 72%;
     --indicator-upcoming-bg: 210 60% 50%;
-    --indicator-today-bg-raw: 130 50% 45%;
+    --indicator-today-bg-raw: 86 100% 72%;
     --indicator-upcoming-bg-raw: 210 60% 50%;
-    --reservation-indicator-today-bg: 130 50% 45%;
+    --reservation-indicator-today-bg: 86 100% 72%;
     --reservation-indicator-future-bg: 210 60% 50%;
   }
 }
