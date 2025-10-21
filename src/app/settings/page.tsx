@@ -37,6 +37,9 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
+import { SmartDocumentUploadDialog } from "@/components/shared/SmartDocumentUploadDialog";
+import { useRouter } from "next/navigation";
+
 
 type Transaction = {
     id: string;
@@ -63,6 +66,7 @@ type Payable = {
 
 
 export default function SettingsPage() {
+    const router = useRouter();
     const [banks, setBanks] = useState<Bank[]>([]);
     const [newBankName, setNewBankName] = useState("");
     const [newBankBalance, setNewBankBalance] = useState("");
@@ -74,6 +78,8 @@ export default function SettingsPage() {
     
     const [generalTransactions, setGeneralTransactions] = useState<Transaction[]>([]);
     const [newGeneralTransaction, setNewGeneralTransaction] = useState({ description: '', amount: '', type: 'income' as 'income' | 'expense' });
+
+    const [isSmartUploadDialogOpen, setIsSmartUploadDialogOpen] = useState(false);
 
 
     const handleAddBank = (e: FormEvent) => {
@@ -146,8 +152,10 @@ export default function SettingsPage() {
 
     const handleUploadReceipt = (payableId: string) => {
         // This is a simulation. In a real app, this would open a file dialog.
-        alert("Función para subir recibo no implementada. Esto es una simulación.");
-        setPayables(payables.map(p => p.id === payableId ? { ...p, receiptUploaded: true } : p));
+        setIsSmartUploadDialogOpen(true);
+        // We will mark it as uploaded on successful upload via the dialog's callback.
+        // For now, let's assume success for the simulation.
+        // setPayables(payables.map(p => p.id === payableId ? { ...p, receiptUploaded: true } : p));
     };
     
     const handleDeleteReceipt = (payableId: string) => {
@@ -351,9 +359,15 @@ export default function SettingsPage() {
                 </AlertDialogFooter>
             </AlertDialogContent>
         </AlertDialog>
+
+        <SmartDocumentUploadDialog
+            isOpen={isSmartUploadDialogOpen}
+            onOpenChange={setIsSmartUploadDialogOpen}
+            onClientAdded={(client) => {
+                router.push(`/clients?openClient=${client.id}`);
+            }}
+        />
       </main>
     </div>
   );
 }
-
-    
