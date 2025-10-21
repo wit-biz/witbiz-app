@@ -20,7 +20,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
-import { useFirebase } from "@/firebase";
+import { useFirebase, useUser } from "@/firebase";
 import { SidebarTrigger } from "../ui/sidebar";
 import { initiateSignOut } from "@/firebase/non-blocking-login";
 import { useAuth } from "@/firebase/provider";
@@ -34,7 +34,7 @@ const UserMenuIcon = () => (
 );
 
 export function UserNav() {
-  const { user, isUserLoading } = useFirebase();
+  const { user, isUserLoading } = useUser();
   const auth = useAuth();
 
   if (isUserLoading) {
