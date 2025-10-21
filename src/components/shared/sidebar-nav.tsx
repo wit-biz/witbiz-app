@@ -79,6 +79,11 @@ export function SidebarNav() {
   return (
     <SidebarMenu>
       {navItems.map((item) => {
+        // Hide "Workflows" link if user cannot edit CRM
+        if (item.href === '/workflows' && !currentUser.permissions.crm_edit) {
+          return null;
+        }
+
         if (!item.requiredPermission || currentUser.permissions[item.requiredPermission]) {
           const Icon = item.icon as LucideIcon;
           // For exactMatch, we want to match only the exact href.
@@ -86,7 +91,7 @@ export function SidebarNav() {
           // but we also ensure href isn't just "/" to avoid matching all routes.
           const isActive = item.exactMatch
             ? pathname === item.href
-            : pathname.startsWith(item.href) && item.href !== '/';
+            : (pathname.startsWith(item.href) && item.href !== '/') || (item.href === '/crm' && pathname.startsWith('/workflows'));
             
           return (
             <SidebarMenuItem key={item.href}>
