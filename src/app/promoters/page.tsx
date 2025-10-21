@@ -148,8 +148,8 @@ function CommissionsView() {
                         <CardTitle>Calendario de Comisiones</CardTitle>
                         <CardDescription className="flex flex-col gap-1.5 text-xs">
                           <span>Seleccione día o rango.</span>
-                          <span className="flex items-center gap-2"><span className="w-2.5 h-2.5 rounded-full bg-green-500/80"></span>Pagadas</span>
-                          <span className="flex items-center gap-2"><span className="w-2.5 h-2.5 rounded-full bg-blue-500/80"></span>Pendientes</span>
+                          <span className="flex items-center gap-2"><span className="w-2.5 h-2.5 rounded-full bg-blue-500/80"></span>Pagadas</span>
+                          <span className="flex items-center gap-2"><span className="w-2.5 h-2.5 rounded-full bg-slate-400/80"></span>Pendientes</span>
                         </CardDescription>
                     </CardHeader>
                     <CardContent className="flex justify-center">
@@ -180,11 +180,11 @@ function CommissionsView() {
                             </div>
                             <div>
                                 <p className="text-sm text-muted-foreground">Pagado</p>
-                                <p className="text-2xl font-bold text-green-600">${totalPaid.toFixed(2)}</p>
+                                <p className="text-2xl font-bold text-blue-600">${totalPaid.toFixed(2)}</p>
                             </div>
                             <div>
                                 <p className="text-sm text-muted-foreground">Pendiente</p>
-                                <p className="text-2xl font-bold text-blue-600">${totalPending.toFixed(2)}</p>
+                                <p className="text-2xl font-bold text-slate-500">${totalPending.toFixed(2)}</p>
                             </div>
                         </div>
                         <div className="mt-4 max-h-48 overflow-y-auto">
@@ -198,7 +198,7 @@ function CommissionsView() {
                                         </div>
                                         <div className="text-right">
                                              <p className="font-semibold">${c.amount.toFixed(2)}</p>
-                                             <Badge variant={c.status === 'Pagada' ? 'default' : 'secondary'} className={cn(c.status === 'Pagada' ? 'bg-green-600' : 'bg-blue-600', 'text-white')}>{c.status}</Badge>
+                                             <Badge variant={c.status === 'Pagada' ? 'default' : 'secondary'} className={cn(c.status === 'Pagada' ? 'bg-blue-600 text-white' : 'bg-slate-500 text-white')}>{c.status}</Badge>
                                         </div>
                                     </li>
                                 ))}
@@ -241,7 +241,7 @@ function CommissionsView() {
                                     <TableCell>{format(parseISO(c.date), 'PPP', { locale: es })}</TableCell>
                                     <TableCell>${c.amount.toFixed(2)}</TableCell>
                                     <TableCell>
-                                        <Badge variant={c.status === 'Pagada' ? 'default' : 'secondary'} className={cn(c.status === 'Pagada' ? 'bg-green-600' : 'bg-blue-600', 'text-white')}>{c.status}</Badge>
+                                        <Badge variant={c.status === 'Pagada' ? 'default' : 'secondary'} className={cn(c.status === 'Pagada' ? 'bg-blue-600 text-white' : 'bg-slate-500 text-white')}>{c.status}</Badge>
                                     </TableCell>
                                 </TableRow>
                             ))}
@@ -346,3 +346,6 @@ export default function PromoterPage() {
     
 
 
+
+
+    

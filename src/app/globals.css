@@ -53,8 +53,8 @@
     --reservation-indicator-future-bg: 210 70% 55%;
     
     /* Promoter Calendar Colors */
-    --promoter-paid-bg-raw: 142.1 76.2% 36.3%; /* Green */
-    --promoter-pending-bg-raw: 221.2 83.2% 53.3%; /* Blue */
+    --promoter-paid-bg-raw: 221.2 83.2% 53.3%; /* Blue */
+    --promoter-pending-bg-raw: 240 4% 60%; /* Gray */
 
 
     --font-montserrat: 'Montserrat', sans-serif;
@@ -108,8 +108,8 @@
     --reservation-indicator-future-bg: 210 60% 50%;
     
     /* Promoter Calendar Colors - Dark Mode */
-    --promoter-paid-bg-raw: 142.1 76.2% 45.3%;
-    --promoter-pending-bg-raw: 221.2 83.2% 63.3%;
+    --promoter-paid-bg-raw: 221.2 83.2% 63.3%;
+    --promoter-pending-bg-raw: 240 4% 25%;
   }
 }
 
@@ -368,3 +368,6 @@
 
 }
 
+
+
+    
