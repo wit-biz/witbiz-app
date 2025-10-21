@@ -298,5 +298,3 @@ export function SmartDocumentUploadDialog({
     </Dialog>
   );
 }
-
-    

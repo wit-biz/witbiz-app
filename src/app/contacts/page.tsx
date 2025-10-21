@@ -123,7 +123,7 @@ export default function ClientsPage() {
   return (
     <TooltipProvider>
       <div className="flex flex-col min-h-screen">
-      <Header title="Usuarios">
+      <Header title="Directorio de usuarios">
         {canCreateClient ? (
               <Button
                 onClick={() => setIsAddClientDialogOpen(true)}
@@ -380,6 +380,3 @@ export default function ClientsPage() {
     </TooltipProvider>
   );
 }
-
-
-    
