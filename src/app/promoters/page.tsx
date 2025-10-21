@@ -375,7 +375,7 @@ export default function PromoterPage() {
                     <Logo />
                 </div>
                 <nav className="flex flex-col gap-2">
-                    {navItems.map(item => {
+                    {navItems.filter(item => item.id !== 'profile').map(item => {
                         const Icon = item.icon;
                         return (
                             <Button
@@ -391,6 +391,15 @@ export default function PromoterPage() {
                     })}
                 </nav>
                  <div className="mt-auto">
+                    <Button
+                        key="profile"
+                        variant={activeView === 'profile' ? 'default' : 'ghost'}
+                        className="justify-start gap-2 w-full mb-2"
+                        onClick={() => setActiveView('profile')}
+                    >
+                        <User className="h-4 w-4"/>
+                        Perfil
+                    </Button>
                     <Button onClick={handleLogout} variant="outline" size="sm" className="w-full">
                         <LogOut className="mr-2 h-4 w-4" />
                         Cerrar Sesión
@@ -410,5 +419,3 @@ export default function PromoterPage() {
         </div>
     );
 }
-
-    
