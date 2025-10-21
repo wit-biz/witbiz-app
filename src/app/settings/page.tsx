@@ -20,6 +20,8 @@ import {
   ArrowUpCircle,
   ArrowDownCircle,
   Banknote,
+  UploadCloud,
+  FileText,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -56,6 +58,7 @@ type Payable = {
     description: string;
     amount: number;
     status: 'pending' | 'paid';
+    receiptUploaded: boolean;
 };
 
 
@@ -129,6 +132,7 @@ export default function SettingsPage() {
                 description: newPayableDesc,
                 amount: parseFloat(newPayableAmount),
                 status: 'pending',
+                receiptUploaded: false,
             };
             setPayables([...payables, newPayable]);
             setNewPayableDesc("");
@@ -139,6 +143,17 @@ export default function SettingsPage() {
     const handleMarkAsPaid = (payableId: string) => {
         setPayables(payables.map(p => p.id === payableId ? { ...p, status: 'paid' } : p));
     };
+
+    const handleUploadReceipt = (payableId: string) => {
+        // This is a simulation. In a real app, this would open a file dialog.
+        alert("Función para subir recibo no implementada. Esto es una simulación.");
+        setPayables(payables.map(p => p.id === payableId ? { ...p, receiptUploaded: true } : p));
+    };
+    
+    const handleDeleteReceipt = (payableId: string) => {
+        setPayables(payables.map(p => p.id === payableId ? { ...p, receiptUploaded: false } : p));
+    };
+
 
     const handleAddGeneralTransaction = (e: FormEvent) => {
         e.preventDefault();
@@ -258,11 +273,18 @@ export default function SettingsPage() {
                                                 <p className="font-medium">{p.description}</p>
                                                 <p className="text-muted-foreground">${p.amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
                                             </div>
-                                            {p.status === 'pending' ? (
-                                                <Button size="xs" variant="outline" onClick={() => handleMarkAsPaid(p.id)}>Marcar como Pagado</Button>
-                                            ) : (
-                                                <Badge variant="default" className="bg-green-100 text-green-800">Pagado</Badge>
-                                            )}
+                                            <div className="flex items-center gap-1">
+                                                {p.receiptUploaded ? (
+                                                    <Button size="xs" variant="secondary" onClick={() => handleDeleteReceipt(p.id)}><FileText className="h-3 w-3 mr-1"/>Borrar</Button>
+                                                ) : (
+                                                    <Button size="xs" variant="outline" onClick={() => handleUploadReceipt(p.id)}><UploadCloud className="h-3 w-3 mr-1"/>Recibo</Button>
+                                                )}
+                                                {p.status === 'pending' ? (
+                                                    <Button size="xs" variant="outline" onClick={() => handleMarkAsPaid(p.id)}>Marcar Pagado</Button>
+                                                ) : (
+                                                    <Badge variant="default" className="bg-green-100 text-green-800">Pagado</Badge>
+                                                )}
+                                            </div>
                                         </div>
                                     )) : <p className="text-muted-foreground text-center py-4">No hay gastos por pagar.</p>}
                                 </div>
@@ -333,3 +355,5 @@ export default function SettingsPage() {
     </div>
   );
 }
+
+    
