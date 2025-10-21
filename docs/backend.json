@@ -1,0 +1,191 @@
+{
+  "entities": {
+    "Contact": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Contact",
+      "type": "object",
+      "description": "Represents a customer contact.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Contact entity."
+        },
+        "firstName": {
+          "type": "string",
+          "description": "First name of the contact."
+        },
+        "lastName": {
+          "type": "string",
+          "description": "Last name of the contact."
+        },
+        "email": {
+          "type": "string",
+          "description": "Email address of the contact.",
+          "format": "email"
+        },
+        "phone": {
+          "type": "string",
+          "description": "Phone number of the contact."
+        },
+        "company": {
+          "type": "string",
+          "description": "Company the contact works for."
+        },
+        "leadId": {
+          "type": "string",
+          "description": "Reference to Lead. (Relationship: Lead 1:N Contact)"
+        }
+      },
+      "required": [
+        "id",
+        "firstName",
+        "lastName",
+        "email"
+      ]
+    },
+    "Lead": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Lead",
+      "type": "object",
+      "description": "Represents a potential customer lead.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Lead entity."
+        },
+        "name": {
+          "type": "string",
+          "description": "Name of the lead."
+        },
+        "status": {
+          "type": "string",
+          "description": "Current status of the lead (e.g., New, Contacted, Qualified, Closed)."
+        },
+        "source": {
+          "type": "string",
+          "description": "Source of the lead (e.g., Web, Referral, Trade Show)."
+        },
+        "estimatedValue": {
+          "type": "number",
+          "description": "Estimated value of the lead."
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "status"
+      ]
+    },
+    "Task": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Task",
+      "type": "object",
+      "description": "Represents a task assigned to a team member.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Task entity."
+        },
+        "description": {
+          "type": "string",
+          "description": "Description of the task."
+        },
+        "dueDate": {
+          "type": "string",
+          "description": "Due date for the task.",
+          "format": "date-time"
+        },
+        "assignedTo": {
+          "type": "string",
+          "description": "The team member user id this task is assigned to."
+        },
+        "completed": {
+          "type": "boolean",
+          "description": "Indicates whether the task is completed or not."
+        },
+        "leadId": {
+          "type": "string",
+          "description": "Reference to Lead. (Relationship: Lead 1:N Task)"
+        }
+      },
+      "required": [
+        "id",
+        "description",
+        "dueDate",
+        "assignedTo",
+        "completed"
+      ]
+    }
+  },
+  "auth": {
+    "providers": [
+      "password",
+      "anonymous"
+    ]
+  },
+  "firestore": {
+    "structure": [
+      {
+        "path": "/users/{userId}/leads/{leadId}",
+        "definition": {
+          "entityName": "Lead",
+          "schema": {
+            "$ref": "#/backend/entities/Lead"
+          },
+          "description": "Stores leads associated with a specific user. The 'userId' parameter identifies the owner of the lead. Path-based ownership ensures only the authenticated user can access leads under their /users/{userId} path.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The ID of the user who owns the lead."
+            },
+            {
+              "name": "leadId",
+              "description": "The unique ID of the lead document."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/contacts/{contactId}",
+        "definition": {
+          "entityName": "Contact",
+          "schema": {
+            "$ref": "#/backend/entities/Contact"
+          },
+          "description": "Stores contact information associated with a user. Path-based ownership ensures only the authenticated user can access contacts under their /users/{userId} path.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The ID of the user who owns the contact."
+            },
+            {
+              "name": "contactId",
+              "description": "The unique ID of the contact document."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/tasks/{taskId}",
+        "definition": {
+          "entityName": "Task",
+          "schema": {
+            "$ref": "#/backend/entities/Task"
+          },
+          "description": "Stores tasks assigned to a specific user. Path-based ownership ensures only the authenticated user can access tasks under their /users/{userId} path.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The ID of the user to whom the task is assigned."
+            },
+            {
+              "name": "taskId",
+              "description": "The unique ID of the task document."
+            }
+          ]
+        }
+      }
+    ],
+    "reasoning": "The Firestore structure is designed to manage data for the WitCRM application, focusing on users, leads, contacts, and tasks. The structure prioritizes security, scalability, and ease of debugging, especially concerning access control. Each user has their own leads, contacts, and tasks, achieving authorization independence by leveraging hierarchical paths and avoiding complex `get()` calls in security rules.\n\nSpecifically, ownership is enforced through path-based rules (e.g., `/users/{userId}/leads/{leadId}`), which grants the user identified by `{userId}` complete control over the `leads` located under their respective path. This approach inherently supports QAPs (Rules Are Not Filters), as list operations are scoped to the user's data, which prevents unauthorized data exposure. This same approach is applied for Contacts and Tasks.\n\nThis structure facilitates clear and robust security rules. For example, a rule to allow a user to read their own leads can be directly tied to the path `/users/{userId}/leads/{leadId}`, preventing them from accessing other users' leads.  There is no reliance on custom claims; authorization relies solely on `request.auth.uid`. Further, the design avoids mixing data with different access requirements within the same collections."
+  }
+}
