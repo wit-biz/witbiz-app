@@ -61,9 +61,9 @@ const PasswordInput = ({ id, placeholder }: { id: string, placeholder: string })
 };
 
 const teamMembers = [
-    { name: "Admin User", email: "admin@witfx.com", role: "Administrador", status: "Activo" },
-    { name: "Cajero 1", email: "cajero1@wit.com", role: "Colaborador", status: "Activo" },
-    { name: "Cajero 2", email: "cajero2@wit.com", role: "Colaborador", status: "Activo" },
+    { name: "Admin User", email: "admin@witbiz.com", role: "Administrador", status: "Activo" },
+    { name: "Cajero 1", email: "cajero1@witbiz.com", role: "Colaborador", status: "Activo" },
+    { name: "Cajero 2", email: "cajero2@witbiz.com", role: "Colaborador", status: "Activo" },
 ];
 
 
@@ -118,7 +118,7 @@ export default function SettingsPage() {
                         <Mail className="h-5 w-5 text-muted-foreground" />
                         <div className="flex flex-col">
                            <span className="text-sm text-muted-foreground">Email</span>
-                           <span className="font-medium">admin@witfx.com</span>
+                           <span className="font-medium">admin@witbiz.com</span>
                         </div>
                     </div>
                     <div className="flex items-center gap-3">
