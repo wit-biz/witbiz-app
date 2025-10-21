@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { useAuth } from '@/firebase';
 import { signOut } from 'firebase/auth';
 import { useRouter } from 'next/navigation';
-import { LogOut, Loader2, Users, CircleDollarSign, Download, CalendarDays, HardDriveDownload, Presentation, Image as ImageIcon, TrendingUp, Info } from 'lucide-react';
+import { LogOut, Loader2, Users, CircleDollarSign, Download, CalendarDays, HardDriveDownload, Presentation, Image as ImageIcon, TrendingUp, Info, CalendarIcon, X } from 'lucide-react';
 import { useState, useEffect, useMemo } from 'react';
 import { Logo } from '@/components/shared/logo';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -15,9 +15,11 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from '@/components/ui/badge';
 import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Tooltip } from "recharts"
 import { ChartContainer, ChartTooltip, ChartTooltipContent, type ChartConfig } from "@/components/ui/chart"
-import { format } from 'date-fns';
+import { format, isValid } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
+import { DateRange } from 'react-day-picker';
+import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
 
 
 // Helper to get dates for the current month
@@ -36,13 +38,6 @@ const getLastMonthDate = (day: number) => {
 
 
 // Mock Data
-const referredClients = [
-    { id: 'c1', name: 'Innovate Inc.', joinDate: getLastMonthDate(15), status: 'Activo' },
-    { id: 'c2', name: 'Synergy Corp.', joinDate: getLastMonthDate(20), status: 'Activo' },
-    { id: 'c3', name: 'Solutions LLC', joinDate: getCurrentMonthDate(1), status: 'En Proceso' },
-    { id: 'c4', name: 'Global Net', joinDate: getCurrentMonthDate(5), status: 'Activo' },
-];
-
 const commissions = [
     { id: 'com1', clientName: 'Innovate Inc.', saleAmount: 500, commission: 50, paymentDate: getLastMonthDate(28), status: 'Pagada' },
     { id: 'com2', clientName: 'Synergy Corp.', saleAmount: 1200, commission: 120, paymentDate: getCurrentMonthDate(2), status: 'Pagada' },
@@ -50,6 +45,14 @@ const commissions = [
     { id: 'com4', clientName: 'Innovate Inc.', saleAmount: 300, commission: 30, paymentDate: getCurrentMonthDate(25), status: 'Pendiente' },
     { id: 'com5', clientName: 'Solutions LLC', saleAmount: 750, commission: 75, paymentDate: getCurrentMonthDate(15), status: 'Pendiente' },
 ];
+
+const referredClients = [
+    { id: 'c1', name: 'Innovate Inc.', joinDate: getLastMonthDate(15), status: 'Activo' },
+    { id: 'c2', name: 'Synergy Corp.', joinDate: getLastMonthDate(20), status: 'Activo' },
+    { id: 'c3', name: 'Solutions LLC', joinDate: getCurrentMonthDate(1), status: 'En Proceso' },
+    { id: 'c4', name: 'Global Net', joinDate: getCurrentMonthDate(5), status: 'Activo' },
+];
+
 
 const resources = [
     { id: 'r1', name: 'Kit de Logos y Banners', type: 'Zip', icon: HardDriveDownload, description: "Paquete completo con logos en alta resolución y banners para redes sociales." },
@@ -86,6 +89,7 @@ export default function PromoterPage() {
     const [isLoggingOut, setIsLoggingOut] = useState(false);
     const [selectedDate, setSelectedDate] = useState<Date | undefined>();
     const [isClient, setIsClient] = useState(false);
+    const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined);
     
     useEffect(() => {
         setIsClient(true);
@@ -123,6 +127,25 @@ export default function PromoterPage() {
         const selectedDayString = format(selectedDate, 'yyyy-MM-dd');
         return commissions.filter(c => c.paymentDate === selectedDayString);
     }, [selectedDate, isClient]);
+
+    const filteredCommissions = useMemo(() => {
+        if (!dateRange || (!dateRange.from && !dateRange.to)) {
+            return commissions;
+        }
+        return commissions.filter(commission => {
+            const paymentDate = new Date(commission.paymentDate);
+            if (!isValid(paymentDate)) return false;
+            
+            let isInRange = true;
+            if (dateRange.from) {
+                isInRange = isInRange && paymentDate >= dateRange.from;
+            }
+            if (dateRange.to) {
+                isInRange = isInRange && paymentDate <= dateRange.to;
+            }
+            return isInRange;
+        });
+    }, [dateRange]);
 
 
     return (
@@ -260,7 +283,55 @@ export default function PromoterPage() {
                            </div>
                            <Card>
                                 <CardHeader>
-                                    <CardTitle>Historial de Comisiones</CardTitle>
+                                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                                        <div>
+                                            <CardTitle>Historial de Comisiones</CardTitle>
+                                            <CardDescription>Visualiza todas tus comisiones pagadas y pendientes.</CardDescription>
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            <Popover>
+                                                <PopoverTrigger asChild>
+                                                    <Button
+                                                        variant={"outline"}
+                                                        className={cn(
+                                                            "w-[240px] justify-start text-left font-normal",
+                                                            !dateRange && "text-muted-foreground"
+                                                        )}
+                                                    >
+                                                        <CalendarIcon className="mr-2 h-4 w-4" />
+                                                        {dateRange?.from ? (
+                                                            dateRange.to ? (
+                                                                <>
+                                                                    {format(dateRange.from, "LLL dd, y")} -{" "}
+                                                                    {format(dateRange.to, "LLL dd, y")}
+                                                                </>
+                                                            ) : (
+                                                                format(dateRange.from, "LLL dd, y")
+                                                            )
+                                                        ) : (
+                                                            <span>Seleccionar rango</span>
+                                                        )}
+                                                    </Button>
+                                                </PopoverTrigger>
+                                                <PopoverContent className="w-auto p-0" align="end">
+                                                    <Calendar
+                                                        initialFocus
+                                                        mode="range"
+                                                        defaultMonth={dateRange?.from}
+                                                        selected={dateRange}
+                                                        onSelect={setDateRange}
+                                                        numberOfMonths={2}
+                                                        locale={es}
+                                                    />
+                                                </PopoverContent>
+                                            </Popover>
+                                            {dateRange && (
+                                                <Button variant="ghost" size="icon" onClick={() => setDateRange(undefined)}>
+                                                    <X className="h-4 w-4" />
+                                                </Button>
+                                            )}
+                                        </div>
+                                    </div>
                                 </CardHeader>
                                 <CardContent>
                                     <Table>
@@ -274,7 +345,7 @@ export default function PromoterPage() {
                                             </TableRow>
                                         </TableHeader>
                                         <TableBody>
-                                            {commissions.map(c => (
+                                            {filteredCommissions.map(c => (
                                                 <TableRow key={c.id}>
                                                     <TableCell className="font-medium">{c.clientName}</TableCell>
                                                     <TableCell>${c.saleAmount.toFixed(2)}</TableCell>
@@ -290,6 +361,12 @@ export default function PromoterPage() {
                                             ))}
                                         </TableBody>
                                     </Table>
+                                     {filteredCommissions.length === 0 && (
+                                        <div className="text-center text-muted-foreground py-10">
+                                            <Info className="mx-auto h-12 w-12 mb-4" />
+                                            <p>No se encontraron comisiones en el rango de fechas seleccionado.</p>
+                                        </div>
+                                    )}
                                 </CardContent>
                             </Card>
                         </TabsContent>
@@ -383,5 +460,3 @@ export default function PromoterPage() {
         </div>
     );
 }
-
-    
