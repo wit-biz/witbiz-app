@@ -17,6 +17,8 @@ import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Tooltip } from "recha
 import { ChartContainer, ChartTooltip, ChartTooltipContent, type ChartConfig } from "@/components/ui/chart"
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
+import { cn } from '@/lib/utils';
+
 
 // Helper to get dates for the current month
 const getCurrentMonthDate = (day: number) => {
@@ -84,16 +86,11 @@ export default function PromoterPage() {
     const [isLoggingOut, setIsLoggingOut] = useState(false);
     const [selectedDate, setSelectedDate] = useState<Date | undefined>();
     const [isClient, setIsClient] = useState(false);
-
-    useEffect(() => {
-        setIsClient(true);
-    }, []);
     
     useEffect(() => {
-        if (!selectedDate) {
-            setSelectedDate(new Date());
-        }
-    }, [selectedDate]);
+        setIsClient(true);
+        setSelectedDate(new Date());
+    }, []);
 
     const handleLogout = async () => {
         setIsLoggingOut(true);
@@ -106,8 +103,19 @@ export default function PromoterPage() {
         }
     };
     
-    const paymentDays = useMemo(() => commissions.filter(c => c.status === 'Pagada').map(c => new Date(c.paymentDate)), []);
-    const pendingPaymentDays = useMemo(() => commissions.filter(c => c.status === 'Pendiente').map(c => new Date(c.paymentDate)), []);
+    const dayModifiers = useMemo(() => {
+        const paidDays = commissions.filter(c => c.status === 'Pagada').map(c => new Date(c.paymentDate));
+        const pendingDays = commissions.filter(c => c.status === 'Pendiente').map(c => new Date(c.paymentDate));
+        return {
+            paid: paidDays,
+            pending: pendingDays,
+        }
+    }, []);
+
+    const dayModifiersClassNames = {
+        paid: 'day-paid',
+        pending: 'day-pending'
+    };
 
     const commissionsForSelectedDate = useMemo(() => {
         if (!selectedDate) return [];
@@ -132,9 +140,10 @@ export default function PromoterPage() {
                         <p className="text-muted-foreground">Bienvenido a tu centro de operaciones. Aquí puedes seguir tu progreso.</p>
                     </div>
                     
-                    <Tabs defaultValue="clients">
-                        <TabsList className="grid w-full grid-cols-3 mb-6">
+                    <Tabs defaultValue="commissions">
+                        <TabsList className="grid w-full grid-cols-4 mb-6">
                             <TabsTrigger value="clients"><Users className="mr-2 h-4 w-4"/>Mis Clientes</TabsTrigger>
+                            <TabsTrigger value="commissions"><CircleDollarSign className="mr-2 h-4 w-4"/>Mis Comisiones</TabsTrigger>
                             <TabsTrigger value="resources"><Download className="mr-2 h-4 w-4"/>Recursos</TabsTrigger>
                             <TabsTrigger value="stats"><TrendingUp className="mr-2 h-4 w-4"/>Estadísticas</TabsTrigger>
                         </TabsList>
@@ -161,6 +170,108 @@ export default function PromoterPage() {
                                                     <TableCell>{isClient ? new Date(client.joinDate).toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: 'numeric' }) : ''}</TableCell>
                                                     <TableCell className="text-right">
                                                         <Badge variant={client.status === 'Activo' ? 'default' : 'secondary'}>{client.status}</Badge>
+                                                    </TableCell>
+                                                </TableRow>
+                                            ))}
+                                        </TableBody>
+                                    </Table>
+                                </CardContent>
+                            </Card>
+                        </TabsContent>
+
+                        <TabsContent value="commissions" className="space-y-6">
+                           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                               <div className="lg:col-span-1">
+                                   <Card>
+                                       <CardHeader>
+                                           <CardTitle>Calendario de Pagos</CardTitle>
+                                            <CardDescription className="flex items-center gap-x-2 text-xs">
+                                                <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-green-500"></span>Pagado</span>
+                                                <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-blue-500"></span>Pendiente</span>
+                                            </CardDescription>
+                                       </CardHeader>
+                                       <CardContent>
+                                          <style>
+                                            {`
+                                                .day-paid { 
+                                                    background-color: hsl(var(--primary) / 0.2);
+                                                    font-weight: bold;
+                                                }
+                                                .day-pending { 
+                                                    background-color: hsl(210 100% 56% / 0.2); 
+                                                }
+                                                .rdp-day_today:not([disabled]):not(.day-paid):not(.day-pending) {
+                                                    font-weight: normal;
+                                                    background-color: hsl(var(--accent) / 0.5);
+                                                }
+                                            `}
+                                          </style>
+                                           <Calendar
+                                                mode="single"
+                                                selected={selectedDate}
+                                                onSelect={setSelectedDate}
+                                                className="rounded-md border p-0"
+                                                locale={es}
+                                                modifiers={dayModifiers}
+                                                modifiersClassNames={dayModifiersClassNames}
+                                            />
+                                       </CardContent>
+                                   </Card>
+                               </div>
+                               <div className="lg:col-span-2">
+                                   <Card className="min-h-full">
+                                       <CardHeader>
+                                            <CardTitle>
+                                              Detalles del {selectedDate && isClient ? format(selectedDate, 'PPP', { locale: es }) : 'día'}
+                                            </CardTitle>
+                                       </CardHeader>
+                                       <CardContent>
+                                            {commissionsForSelectedDate.length > 0 ? (
+                                                <ul className="space-y-3">
+                                                    {commissionsForSelectedDate.map(c => (
+                                                        <li key={c.id} className="flex items-center justify-between p-3 border rounded-md">
+                                                            <div>
+                                                                <p className="font-semibold">{c.clientName}</p>
+                                                                <p className="text-sm text-muted-foreground">${c.commission.toFixed(2)}</p>
+                                                            </div>
+                                                            <Badge variant={c.status === 'Pagada' ? 'default' : 'secondary'} className={cn(c.status === 'Pagada' && 'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300')}>{c.status}</Badge>
+                                                        </li>
+                                                    ))}
+                                                </ul>
+                                            ) : (
+                                                <div className="text-center text-muted-foreground py-10">
+                                                    <CalendarDays className="mx-auto h-12 w-12 mb-4" />
+                                                    <p>No hay pagos para esta fecha.</p>
+                                                </div>
+                                            )}
+                                       </CardContent>
+                                   </Card>
+                               </div>
+                           </div>
+                           <Card>
+                                <CardHeader>
+                                    <CardTitle>Historial de Comisiones</CardTitle>
+                                </CardHeader>
+                                <CardContent>
+                                    <Table>
+                                        <TableHeader>
+                                            <TableRow>
+                                                <TableHead>Cliente</TableHead>
+                                                <TableHead>Monto Venta</TableHead>
+                                                <TableHead>Comisión</TableHead>
+                                                <TableHead>Fecha de Pago</TableHead>
+                                                <TableHead className="text-right">Estado</TableHead>
+                                            </TableRow>
+                                        </TableHeader>
+                                        <TableBody>
+                                            {commissions.map(c => (
+                                                <TableRow key={c.id}>
+                                                    <TableCell className="font-medium">{c.clientName}</TableCell>
+                                                    <TableCell>${c.saleAmount.toFixed(2)}</TableCell>
+                                                    <TableCell className="font-semibold">${c.commission.toFixed(2)}</TableCell>
+                                                    <TableCell>{isClient ? format(new Date(c.paymentDate), 'PPP', { locale: es }) : ''}</TableCell>
+                                                    <TableCell className="text-right">
+                                                        <Badge variant={c.status === 'Pagada' ? 'default' : 'secondary'}  className={cn(c.status === 'Pagada' && 'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300')}>{c.status}</Badge>
                                                     </TableCell>
                                                 </TableRow>
                                             ))}
@@ -259,3 +370,4 @@ export default function PromoterPage() {
         </div>
     );
 }
+
