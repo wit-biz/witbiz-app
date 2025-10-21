@@ -1,121 +1,103 @@
 /**
- * @fileoverview Firestore Security Rules for WitCRM application.
+ * @file WitCRM Firestore Security Rules
  *
- * Core Philosophy:
- * This ruleset enforces a strict user-ownership model for leads, contacts, and tasks. Each user has complete control over the data nested under their /users/{userId} path.
- *
- * Data Structure:
- * All data is nested under /users/{userId}, ensuring data isolation and clear ownership. This approach simplifies security rules and enhances performance.
- *
- * Key Security Decisions:
- * - Listing other users' data is strictly forbidden by enforcing path-based ownership.
- * - Schema validation is relaxed to allow rapid prototyping, but authorization is strictly enforced.
- * - All write operations require authentication and proper ownership.
+ * @core-philosophy This ruleset enforces a strict user-ownership model. Each user has complete control over the leads, contacts, and tasks located under their respective `/users/{userId}` path.
+ * @data-structure All data is nested under `/users/{userId}`, ensuring clear ownership and authorization boundaries. Leads, contacts, and tasks are stored in subcollections under each user.
+ * @key-security-decisions
+ *   - User listing is implicitly disallowed (no top-level `/users` collection).
+ *   - All write operations require a verified user identity (`request.auth != null`).
+ *   - Read and write access to Leads, Contacts, and Tasks are restricted to the owner (`isOwner(userId)`).
  */
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
     /**
-     * @description Checks if the request is made by a signed-in user.
-     * @return {boolean} True if the user is signed in, false otherwise.
-     */
-    function isSignedIn() {
-      return request.auth != null;
-    }
-
-    /**
-     * @description Checks if the authenticated user ID matches the provided user ID.
-     * @param {string} userId The user ID to compare against.
-     * @return {boolean} True if the user IDs match, false otherwise.
-     */
-    function isOwner(userId) {
-      return isSignedIn() && request.auth.uid == userId;
-    }
-
-    /**
-     * @description Checks if the authenticated user ID matches the provided user ID and the resource exists.
-     * @param {string} userId The user ID to compare against.
-     * @return {boolean} True if the user IDs match and the resource exists, false otherwise.
-     */
-    function isExistingOwner(userId) {
-      return isOwner(userId) && resource != null;
-    }
-
-    /**
-     * @description Security rules for leads under a specific user.
+     * @description Allows the owner to read, create, update, and delete their leads.
      * @path /users/{userId}/leads/{leadId}
-     * @allow (create) Signed-in user with ID 'user123' can create a new lead under /users/user123/leads/newLead with data '{"id": "newLead", "name": "New Lead", "status": "New", "source": "Web", "estimatedValue": 100}'.
-     * @allow (get) Signed-in user with ID 'user123' can retrieve lead 'lead456' under /users/user123/leads/lead456.
-     * @allow (list) Signed-in user with ID 'user123' can list leads under /users/user123/leads.
-     * @allow (update) Signed-in user with ID 'user123' can update lead 'lead456' under /users/user123/leads/lead456.
-     * @allow (delete) Signed-in user with ID 'user123' can delete lead 'lead456' under /users/user123/leads/lead456.
-     * @deny (create) Signed-in user with ID 'user456' cannot create a lead under /users/user123/leads/newLead.
-     * @deny (get) Signed-in user with ID 'user456' cannot retrieve lead 'lead456' under /users/user123/leads/lead456.
-     * @deny (list) Signed-in user with ID 'user456' cannot list leads under /users/user123/leads.
-     * @deny (update) Signed-in user with ID 'user456' cannot update lead 'lead456' under /users/user123/leads/lead456.
-     * @deny (delete) Signed-in user with ID 'user456' cannot delete lead 'lead456' under /users/user123/leads/lead456.
-     * @principle Enforces document ownership for writes and restricts access to a user's own data tree.
+     * @allow (create) User 'lbz7nN49aERC4AwnsGSruB6spQJ3' can create a lead under /users/lbz7nN49aERC4AwnsGSruB6spQJ3/leads/lead123.
+     * @allow (get) User 'lbz7nN49aERC4AwnsGSruB6spQJ3' can read lead 'lead123' under /users/lbz7nN49aERC4AwnsGSruB6spQJ3/leads/lead123.
+     * @allow (update) User 'lbz7nN49aERC4AwnsGSruB6spQJ3' can update lead 'lead123' under /users/lbz7nN49aERC4AwnsGSruB6spQJ3/leads/lead123.
+     * @allow (delete) User 'lbz7nN49aERC4AwnsGSruB6spQJ3' can delete lead 'lead123' under /users/lbz7nN49aERC4AwnsGSruB6spQJ3/leads/lead123.
+     * @deny (create) User 'otherUser' cannot create a lead under /users/lbz7nN49aERC4AwnsGSruB6spQJ3/leads/lead123.
+     * @principle Enforces document ownership for writes.
      */
     match /users/{userId}/leads/{leadId} {
-      // Read permissions: Only the owner can get or list
-      allow get: if isOwner(userId);
-      allow list: if isOwner(userId);
+      function isSignedIn() {
+        return request.auth != null;
+      }
 
-      // Write permissions: Only the owner can create, update, or delete
-      allow create: if isOwner(userId);
+      function isOwner(userId) {
+        return request.auth.uid == userId;
+      }
+
+      function isExistingOwner(userId) {
+        return isSignedIn() && isOwner(userId) && resource != null;
+      }
+
+      allow get: if isSignedIn() && isOwner(userId);
+      allow list: if isSignedIn() && isOwner(userId);
+      allow create: if isSignedIn() && isOwner(userId);
       allow update: if isExistingOwner(userId);
       allow delete: if isExistingOwner(userId);
     }
 
     /**
-     * @description Security rules for contacts under a specific user.
+     * @description Allows the owner to read, create, update, and delete their contacts.
      * @path /users/{userId}/contacts/{contactId}
-     * @allow (create) Signed-in user with ID 'user123' can create a new contact under /users/user123/contacts/newContact with data '{"id": "newContact", "firstName": "John", "lastName": "Doe", "email": "john.doe@example.com"}'.
-     * @allow (get) Signed-in user with ID 'user123' can retrieve contact 'contact456' under /users/user123/contacts/contact456.
-     * @allow (list) Signed-in user with ID 'user123' can list contacts under /users/user123/contacts.
-     * @allow (update) Signed-in user with ID 'user123' can update contact 'contact456' under /users/user123/contacts/contact456.
-     * @allow (delete) Signed-in user with ID 'user123' can delete contact 'contact456' under /users/user123/contacts/contact456.
-     * @deny (create) Signed-in user with ID 'user456' cannot create a contact under /users/user123/contacts/newContact.
-     * @deny (get) Signed-in user with ID 'user456' cannot retrieve contact 'contact456' under /users/user123/contacts/contact456.
-     * @deny (list) Signed-in user with ID 'user456' cannot list contacts under /users/user123/contacts.
-     * @deny (update) Signed-in user with ID 'user456' cannot update contact 'contact456' under /users/user123/contacts/contact456.
-     * @deny (delete) Signed-in user with ID 'user456' cannot delete contact 'contact456' under /users/user123/contacts/contact456.
-     * @principle Enforces document ownership for writes and restricts access to a user's own data tree.
+     * @allow (create) User 'lbz7nN49aERC4AwnsGSruB6spQJ3' can create a contact under /users/lbz7nN49aERC4AwnsGSruB6spQJ3/contacts/contact123.
+     * @allow (get) User 'lbz7nN49aERC4AwnsGSruB6spQJ3' can read contact 'contact123' under /users/lbz7nN49aERC4AwnsGSruB6spQJ3/contacts/contact123.
+     * @allow (update) User 'lbz7nN49aERC4AwnsGSruB6spQJ3' can update contact 'contact123' under /users/lbz7nN49aERC4AwnsGSruB6spQJ3/contacts/contact123.
+     * @allow (delete) User 'lbz7nN49aERC4AwnsGSruB6spQJ3' can delete contact 'contact123' under /users/lbz7nN49aERC4AwnsGSruB6spQJ3/contacts/contact123.
+     * @deny (create) User 'otherUser' cannot create a contact under /users/lbz7nN49aERC4AwnsGSruB6spQJ3/contacts/contact123.
+     * @principle Enforces document ownership for writes.
      */
     match /users/{userId}/contacts/{contactId} {
-      // Read permissions: Only the owner can get or list
-      allow get: if isOwner(userId);
-      allow list: if isOwner(userId);
+      function isSignedIn() {
+        return request.auth != null;
+      }
 
-      // Write permissions: Only the owner can create, update, or delete
-      allow create: if isOwner(userId);
+      function isOwner(userId) {
+        return request.auth.uid == userId;
+      }
+
+      function isExistingOwner(userId) {
+        return isSignedIn() && isOwner(userId) && resource != null;
+      }
+
+      allow get: if isSignedIn() && isOwner(userId);
+      allow list: if isSignedIn() && isOwner(userId);
+      allow create: if isSignedIn() && isOwner(userId);
       allow update: if isExistingOwner(userId);
       allow delete: if isExistingOwner(userId);
     }
 
     /**
-     * @description Security rules for tasks under a specific user.
+     * @description Allows the owner to read, create, update, and delete their tasks.
      * @path /users/{userId}/tasks/{taskId}
-     * @allow (create) Signed-in user with ID 'user123' can create a new task under /users/user123/tasks/newTask with data '{"id": "newTask", "description": "Complete project", "dueDate": "2024-01-01T00:00:00Z", "assignedTo": "user123", "completed": false}'.
-     * @allow (get) Signed-in user with ID 'user123' can retrieve task 'task456' under /users/user123/tasks/task456.
-     * @allow (list) Signed-in user with ID 'user123' can list tasks under /users/user123/tasks.
-     * @allow (update) Signed-in user with ID 'user123' can update task 'task456' under /users/user123/tasks/task456.
-     * @allow (delete) Signed-in user with ID 'user123' can delete task 'task456' under /users/user123/tasks/task456.
-     * @deny (create) Signed-in user with ID 'user456' cannot create a task under /users/user123/tasks/newTask.
-     * @deny (get) Signed-in user with ID 'user456' cannot retrieve task 'task456' under /users/user123/tasks/task456.
-     * @deny (list) Signed-in user with ID 'user456' cannot list tasks under /users/user123/tasks.
-     * @deny (update) Signed-in user with ID 'user456' cannot update task 'task456' under /users/user123/tasks/task456.
-     * @deny (delete) Signed-in user with ID 'user456' cannot delete task 'task456' under /users/user123/tasks/task456.
-     * @principle Enforces document ownership for writes and restricts access to a user's own data tree.
+     * @allow (create) User 'lbz7nN49aERC4AwnsGSruB6spQJ3' can create a task under /users/lbz7nN49aERC4AwnsGSruB6spQJ3/tasks/task123.
+     * @allow (get) User 'lbz7nN49aERC4AwnsGSruB6spQJ3' can read task 'task123' under /users/lbz7nN49aERC4AwnsGSruB6spQJ3/tasks/task123.
+     * @allow (update) User 'lbz7nN49aERC4AwnsGSruB6spQJ3' can update task 'task123' under /users/lbz7nN49aERC4AwnsGSruB6spQJ3/tasks/task123.
+     * @allow (delete) User 'lbz7nN49aERC4AwnsGSruB6spQJ3' can delete task 'task123' under /users/lbz7nN49aERC4AwnsGSruB6spQJ3/tasks/task123.
+     * @deny (create) User 'otherUser' cannot create a task under /users/lbz7nN49aERC4AwnsGSruB6spQJ3/tasks/task123.
+     * @principle Enforces document ownership for writes.
      */
     match /users/{userId}/tasks/{taskId} {
-      // Read permissions: Only the owner can get or list
-      allow get: if isOwner(userId);
-      allow list: if isOwner(userId);
+      function isSignedIn() {
+        return request.auth != null;
+      }
 
-      // Write permissions: Only the owner can create, update, or delete
-      allow create: if isOwner(userId);
+      function isOwner(userId) {
+        return request.auth.uid == userId;
+      }
+
+      function isExistingOwner(userId) {
+        return isSignedIn() && isOwner(userId) && resource != null;
+      }
+
+      allow get: if isSignedIn() && isOwner(userId);
+      allow list: if isSignedIn() && isOwner(userId);
+      allow create: if isSignedIn() && isOwner(userId);
       allow update: if isExistingOwner(userId);
       allow delete: if isExistingOwner(userId);
     }
