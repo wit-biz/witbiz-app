@@ -234,6 +234,7 @@ export const navItems: NavItem[] = [
     { href: '/tasks', label: 'Tareas', icon: 'ListTodo', requiredPermission: 'tasks_view' },
     { href: '/bookings', label: 'Reservaciones', icon: 'Calendar', requiredPermission: 'reservations_view' },
     { href: '/crm', label: 'CRM', icon: 'Workflow', requiredPermission: 'crm_view' },
+    { href: '/resources', label: 'Recursos', icon: 'BookText', requiredPermission: 'dashboard' },
     { href: '/audit', label: 'Auditoría', icon: 'Scale', requiredPermission: 'audit_view' },
     { href: '/settings', label: 'Administración', icon: 'Shield', requiredPermission: 'admin_view' },
 ];

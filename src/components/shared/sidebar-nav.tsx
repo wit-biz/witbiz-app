@@ -18,6 +18,7 @@ import {
   ChevronDown,
   User,
   DollarSign,
+  BookText,
   type LucideIcon,
 } from "lucide-react";
 import {
@@ -45,6 +46,7 @@ const icons: { [key: string]: LucideIcon } = {
     Scale,
     Shield,
     User,
+    BookText,
     DollarSign
 };
 
