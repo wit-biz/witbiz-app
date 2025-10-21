@@ -22,20 +22,18 @@ function AppContent({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const [isClient, setIsClient] = useState(false);
 
-  useEffect(() => {
-    setIsClient(true);
-  }, []);
-
   const isAuthPage = pathname === '/login' || pathname === '/register';
   const isPromoterRoute = pathname.startsWith('/promoter');
 
-  // If it's a promoter route, render children immediately without auth checks.
-  if (isPromoterRoute) {
-    return <>{children}</>;
-  }
-  
   useEffect(() => {
-    if (isClient && !isUserLoading) {
+    setIsClient(true);
+    if (!isUserLoading) {
+      if (isPromoterRoute) {
+        // Promoter routes are public, no redirection logic needed here
+        // unless a logged-in user tries to access them, which we'll ignore for now.
+        return;
+      }
+      
       if (!user && !isAuthPage) {
         router.push('/login');
       }
@@ -43,8 +41,11 @@ function AppContent({ children }: { children: React.ReactNode }) {
         router.push('/');
       }
     }
-  }, [isUserLoading, user, router, pathname, isClient, isAuthPage]);
-
+  }, [isUserLoading, user, router, pathname, isClient, isAuthPage, isPromoterRoute]);
+  
+  if (isPromoterRoute) {
+    return <>{children}</>;
+  }
 
   if (!isClient || (isUserLoading && !isAuthPage)) {
     return (
