@@ -14,7 +14,7 @@ import { Badge } from '@/components/ui/badge';
 import { LogOut, Users, CircleDollarSign, BookText, Download, BarChart } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { Logo } from '@/components/shared/logo';
-import { cn, parseDateString } from '@/lib/utils';
+import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import { ChartsTab } from '@/components/shared/ChartsTab';
 
@@ -84,7 +84,7 @@ function ClientsView() {
                         {referredClients.map(client => (
                             <TableRow key={client.id}>
                                 <TableCell className="font-medium">{client.name}</TableCell>
-                                <TableCell>{isClient ? format(parseDateString(client.joinDate)!, 'dd/MM/yyyy') : '-'}</TableCell>
+                                <TableCell>{isClient ? format(new Date(client.joinDate), 'dd/MM/yyyy') : '-'}</TableCell>
                                 <TableCell>
                                     <Badge variant={client.status === 'Activo' ? 'default' : 'secondary'}>{client.status}</Badge>
                                 </TableCell>
@@ -110,7 +110,7 @@ function CommissionsView() {
         const paidDays: Date[] = [];
         const pendingDays: Date[] = [];
         commissions.forEach(c => {
-            const commissionDate = c.date; // Date is already a Date object
+            const commissionDate = startOfDay(c.date);
             if (c.status === 'Pagada') {
                 paidDays.push(commissionDate);
             } else {
@@ -321,7 +321,7 @@ export default function PromoterPage() {
 
     return (
         <div className="flex min-h-screen bg-muted/40">
-             <aside className="w-64 flex-shrink-0 border-r bg-background p-4 flex flex-col">
+             <aside className="w-56 flex-shrink-0 border-r bg-background p-4 flex flex-col">
                 <div className="flex justify-center mb-6">
                     <Logo />
                 </div>
@@ -372,3 +372,6 @@ export default function PromoterPage() {
     
 
 
+
+
+    
