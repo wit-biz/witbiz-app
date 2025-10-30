@@ -6,7 +6,7 @@ import { addDays, format, subDays, startOfMonth, endOfMonth, startOfYesterday, e
 import { es } from "date-fns/locale"
 import { DateRange } from "react-day-picker"
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis, ResponsiveContainer, Line, LineChart } from "recharts"
-import { Calendar as CalendarIcon } from "lucide-react"
+import { Calendar as CalendarIcon, Users, Briefcase } from "lucide-react"
 
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
@@ -32,9 +32,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 
 const allData = Array.from({ length: 180 }, (_, i) => {
     const date = subDays(new Date(), i);
+    const clientId = (i % 10) + 1; // Cycle through 10 clients
+    const serviceId = (i % 3) + 1; // Cycle through 3 services
     return {
       date: format(date, "yyyy-MM-dd"),
       commissions: 1500 + Math.floor(Math.random() * 2000) + (i % 30) * 50,
+      clientId: `client-${clientId}`,
+      serviceId: `service-${serviceId}`,
     };
 }).reverse();
 
@@ -45,11 +49,18 @@ const chartConfig = {
   },
 }
 
-export function DateRangeChartsTab({ className }: React.HTMLAttributes<HTMLDivElement>) {
+interface DateRangeChartsTabProps extends React.HTMLAttributes<HTMLDivElement> {
+  clients: { id: string; name: string }[];
+  services: { id: string; name: string }[];
+}
+
+export function DateRangeChartsTab({ className, clients, services }: DateRangeChartsTabProps) {
   const [date, setDate] = React.useState<DateRange | undefined>({
     from: subDays(new Date(), 29),
     to: new Date(),
   })
+  const [selectedClientId, setSelectedClientId] = React.useState<string>("all");
+  const [selectedServiceId, setSelectedServiceId] = React.useState<string>("all");
   
   const presets = [
     { label: "Hoy", range: { from: startOfDay(new Date()), to: endOfDay(new Date()) } },
@@ -61,12 +72,14 @@ export function DateRangeChartsTab({ className }: React.HTMLAttributes<HTMLDivEl
   ];
   
   const filteredData = React.useMemo(() => {
-    if (!date?.from || !date.to) return [];
     return allData.filter(item => {
         const itemDate = new Date(item.date);
-        return itemDate >= startOfDay(date.from!) && itemDate <= endOfDay(date.to!);
+        const isDateInRange = date?.from && date.to ? (itemDate >= startOfDay(date.from) && itemDate <= endOfDay(date.to)) : true;
+        const isClientMatch = selectedClientId === 'all' || item.clientId === `client-${selectedClientId}`;
+        const isServiceMatch = selectedServiceId === 'all' || item.serviceId === `service-${selectedServiceId}`;
+        return isDateInRange && isClientMatch && isServiceMatch;
     })
-  }, [date]);
+  }, [date, selectedClientId, selectedServiceId]);
 
   const { total, average, peak } = React.useMemo(() => {
     if (filteredData.length === 0) {
@@ -85,66 +98,78 @@ export function DateRangeChartsTab({ className }: React.HTMLAttributes<HTMLDivEl
   return (
     <div className="space-y-6">
       <Card>
-        <CardHeader className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-            <div>
-              <CardTitle>Comisiones Generadas por Rango</CardTitle>
-              <CardDescription>
-                {date?.from ? (
-                  date.to ? (
-                    <>
-                      {format(date.from, "LLL dd, y", { locale: es })} -{" "}
-                      {format(date.to, "LLL dd, y", { locale: es })}
-                    </>
-                  ) : (
-                    format(date.from, "LLL dd, y", { locale: es })
-                  )
-                ) : (
-                  <span>Seleccione un rango de fechas</span>
-                )}
-              </CardDescription>
-            </div>
-            <div className="flex flex-col sm:flex-row items-center gap-2 w-full md:w-auto">
-                <div className="grid grid-cols-3 sm:flex gap-1 w-full sm:w-auto">
-                    {presets.slice(0, 3).map(p => (
-                        <Button key={p.label} variant="outline" size="sm" onClick={() => setDate(p.range)}>{p.label}</Button>
-                    ))}
-                </div>
+        <CardHeader>
+          <CardTitle>Comisiones Generadas por Rango</CardTitle>
+          <CardDescription>
+            {date?.from ? (
+              date.to ? (
+                <>
+                  {format(date.from, "LLL dd, y", { locale: es })} -{" "}
+                  {format(date.to, "LLL dd, y", { locale: es })}
+                </>
+              ) : (
+                format(date.from, "LLL dd, y", { locale: es })
+              )
+            ) : (
+              <span>Seleccione un rango de fechas</span>
+            )}
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+            <div className="flex flex-col md:flex-row gap-2">
                  <Popover>
                     <PopoverTrigger asChild>
                         <Button
                         id="date"
                         variant={"outline"}
-                        className={cn(
-                            "w-full justify-start text-left font-normal",
-                            !date && "text-muted-foreground"
-                        )}
+                        className={cn("w-full md:w-auto justify-start text-left font-normal", !date && "text-muted-foreground")}
                         >
                         <CalendarIcon className="mr-2 h-4 w-4" />
                         <span>Calendario</span>
                         </Button>
                     </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0" align="end">
+                    <PopoverContent className="w-auto p-0" align="start">
                         <div className="p-2 border-b">
-                            <div className="grid grid-cols-3 gap-1">
+                            <div className="grid grid-cols-2 gap-1">
                                 {presets.map(p => (
                                     <Button key={p.label} variant="ghost" size="sm" onClick={() => { setDate(p.range); }}>{p.label}</Button>
                                 ))}
                             </div>
                         </div>
                         <Calendar
-                        initialFocus
-                        mode="range"
-                        defaultMonth={date?.from}
-                        selected={date}
-                        onSelect={setDate}
-                        numberOfMonths={2}
-                        locale={es}
+                          initialFocus
+                          mode="range"
+                          defaultMonth={date?.from}
+                          selected={date}
+                          onSelect={setDate}
+                          numberOfMonths={2}
+                          locale={es}
                         />
                     </PopoverContent>
                 </Popover>
+
+                 <div className="flex flex-1 flex-col sm:flex-row gap-2">
+                    <Select value={selectedClientId} onValueChange={setSelectedClientId}>
+                        <SelectTrigger className="w-full sm:w-[180px]">
+                            <SelectValue placeholder="Filtrar por cliente..."><Users className="mr-2 h-4 w-4 inline-block" /> Cliente</SelectValue>
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="all">Todos los Clientes</SelectItem>
+                            {clients.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+                        </SelectContent>
+                    </Select>
+                    <Select value={selectedServiceId} onValueChange={setSelectedServiceId}>
+                        <SelectTrigger className="w-full sm:w-[180px]">
+                            <SelectValue placeholder="Filtrar por servicio..."><Briefcase className="mr-2 h-4 w-4 inline-block" /> Servicio</SelectValue>
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="all">Todos los Servicios</SelectItem>
+                             {services.map(s => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}
+                        </SelectContent>
+                    </Select>
+                </div>
             </div>
-        </CardHeader>
-        <CardContent>
+
           <ChartContainer config={chartConfig}>
             <ResponsiveContainer width="100%" height={350}>
                 <BarChart data={filteredData}>

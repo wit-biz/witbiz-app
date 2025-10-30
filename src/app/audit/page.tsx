@@ -12,8 +12,15 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { LineChart, History, BarChart } from "lucide-react";
 import { DateRangeChartsTab } from "@/components/shared/DateRangeChartsTab";
+import { useCRMData } from "@/contexts/CRMDataContext";
+import { Loader2 } from "lucide-react";
 
 export default function AuditPage() {
+  const { clients, serviceWorkflows, isLoadingClients, isLoadingWorkflows } = useCRMData();
+
+  const chartServices = serviceWorkflows.map(s => ({ id: s.id, name: s.name }));
+  const chartClients = clients.map(c => ({ id: c.id, name: c.name }));
+
   return (
     <div className="flex flex-col min-h-screen">
       <Header
@@ -79,7 +86,13 @@ export default function AuditPage() {
             </Card>
           </TabsContent>
            <TabsContent value="charts" className="mt-6">
-            <DateRangeChartsTab />
+             {isLoadingClients || isLoadingWorkflows ? (
+                <div className="flex items-center justify-center py-12">
+                  <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                </div>
+             ) : (
+                <DateRangeChartsTab services={chartServices} clients={chartClients} />
+             )}
           </TabsContent>
         </Tabs>
       </main>
