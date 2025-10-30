@@ -46,6 +46,7 @@ interface CRMContextType {
   updateDocument: (documentId: string, updates: Partial<Document>) => Promise<boolean>;
   deleteDocument: (documentId: string) => Promise<boolean>;
   getDocumentsByClientId: (clientId: string) => Document[];
+  getDocumentsByServiceId: (serviceId: string) => Document[];
 
   notes: Note[];
   isLoadingNotes: boolean;
@@ -205,12 +206,20 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
         const newService: ServiceWorkflow = {
             id: `service-${Date.now()}`,
             name: "Nuevo Servicio (sin título)",
+            description: "",
+            clientRequirements: "",
             subServices: [],
             stages: [] // Legacy
         };
         setServiceWorkflows(prev => [...prev, newService]);
         return newService;
     };
+
+    const updateService = async (serviceId: string, updates: Partial<ServiceWorkflow>): Promise<boolean> => {
+        setServiceWorkflows(prev => prev.map(s => s.id === serviceId ? { ...s, ...updates } : s));
+        showNotification('success', 'Servicio Guardado', 'Los cambios se han guardado correctamente.');
+        return true;
+    }
 
     const addSubServiceToService = async (serviceId: string): Promise<boolean> => {
         const newSubService: SubService = {
@@ -272,8 +281,12 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
         documents, isLoadingDocuments,
         addDocument,
         updateDocument: (id, d) => placeholderPromise(false),
-        deleteDocument: (id) => placeholderPromise(false),
+        deleteDocument: (id) => {
+            setDocuments(prev => prev.filter(doc => doc.id !== id));
+            return Promise.resolve(true);
+        },
         getDocumentsByClientId: (id) => documents.filter(d => d.clientId === id),
+        getDocumentsByServiceId: (id) => documents.filter(d => d.serviceId === id),
 
         notes, isLoadingNotes,
         addNote: (clientId, text) => placeholderPromise(null),
@@ -282,7 +295,7 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
 
         serviceWorkflows, isLoadingWorkflows,
         addService,
-        updateService: (id, d) => placeholderPromise(false),
+        updateService,
         deleteService: (id) => placeholderPromise(false),
         addSubServiceToService,
         updateSubServiceName: (id, subId, name) => placeholderPromise(false),

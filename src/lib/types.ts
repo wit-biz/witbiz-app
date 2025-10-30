@@ -43,7 +43,8 @@ export type Document = {
   name: string;
   type: DocumentType;
   uploadedAt: any; // Firestore Timestamp o Date
-  clientId: string;
+  clientId?: string; // Optional: can be linked to a client
+  serviceId?: string; // Optional: can be linked to a service
   downloadURL?: string;
   uploadDate?: string; // ISO String YYYY-MM-DD
 };
@@ -136,6 +137,8 @@ export interface SubService {
 export interface ServiceWorkflow {
     id: string;
     name: string;
+    description?: string;
+    clientRequirements?: string;
     stages: WorkflowStage[]; // Legado o para flujos simples
     subServices: SubService[];
 }

@@ -1,8 +1,7 @@
 
 "use client";
 
-import React from "react";
-import Link from "next/link";
+import React, { useState } from "react";
 import { Header } from "@/components/header";
 import {
   Card,
@@ -12,15 +11,80 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { PlusCircle, Loader2, Briefcase, Workflow } from "lucide-react";
+import { PlusCircle, Loader2, Briefcase, Workflow, Edit, Save, Trash2, FileText, UploadCloud } from "lucide-react";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { useCRMData } from "@/contexts/CRMDataContext";
 import { useDialogs } from "@/contexts/DialogsContext";
+import Link from "next/link";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { SmartDocumentUploadDialog } from "@/components/shared/SmartDocumentUploadDialog";
+import { type Document } from "@/lib/types";
+
+function ServiceDocuments({ serviceId }: { serviceId: string }) {
+  const { getDocumentsByServiceId, deleteDocument } = useCRMData();
+  const { setIsSmartUploadDialogOpen } = useDialogs(); // Use shared dialog state
+  const documents = getDocumentsByServiceId(serviceId);
+
+  return (
+    <div className="space-y-3">
+      <h4 className="font-semibold text-sm">Documentos del Servicio</h4>
+      {documents.length > 0 ? (
+        <ul className="space-y-2">
+          {documents.map(doc => (
+            <li key={doc.id} className="flex items-center justify-between p-2 bg-secondary/30 rounded-md">
+              <div className="flex items-center gap-2 min-w-0">
+                <FileText className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                <p className="font-medium truncate text-sm" title={doc.name}>{doc.name}</p>
+              </div>
+              <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => deleteDocument(doc.id)}>
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p className="text-sm text-muted-foreground text-center py-4">No hay documentos para este servicio.</p>
+      )}
+      <Button variant="outline" size="sm" onClick={() => setIsSmartUploadDialogOpen(true)}>
+          <UploadCloud className="mr-2 h-4 w-4" />
+          Subir Documento
+      </Button>
+    </div>
+  );
+}
+
 
 export default function ServicesPage() {
-  const { serviceWorkflows, isLoadingWorkflows, addService, currentUser } = useCRMData();
+  const { serviceWorkflows, isLoadingWorkflows, addService, updateService, currentUser } = useCRMData();
   const { setIsSmartUploadDialogOpen } = useDialogs();
 
+  const [editingServiceId, setEditingServiceId] = useState<string | null>(null);
+  const [editableFields, setEditableFields] = useState<{ description: string; clientRequirements: string }>({ description: '', clientRequirements: '' });
+
   const canEditWorkflow = currentUser?.permissions.crm_edit ?? true;
+
+  const handleStartEdit = (service: typeof serviceWorkflows[0]) => {
+    setEditingServiceId(service.id);
+    setEditableFields({
+      description: service.description || '',
+      clientRequirements: service.clientRequirements || '',
+    });
+  };
+
+  const handleCancelEdit = () => {
+    setEditingServiceId(null);
+  };
+
+  const handleSave = async (serviceId: string) => {
+    await updateService(serviceId, editableFields);
+    setEditingServiceId(null);
+  };
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    setEditableFields(prev => ({ ...prev, [name]: value }));
+  };
 
   if (isLoadingWorkflows) {
     return (
@@ -29,12 +93,12 @@ export default function ServicesPage() {
           title="Servicios"
           description="Gestione los servicios que ofrece su empresa."
         >
-            {canEditWorkflow && (
-                <Button disabled>
-                    <PlusCircle className="mr-2 h-4 w-4" />
-                    Añadir Nuevo Servicio
-                </Button>
-            )}
+          {canEditWorkflow && (
+            <Button disabled>
+              <PlusCircle className="mr-2 h-4 w-4" />
+              Añadir Nuevo Servicio
+            </Button>
+          )}
         </Header>
         <div className="flex-1 flex items-center justify-center">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -44,47 +108,86 @@ export default function ServicesPage() {
   }
 
   return (
-    <div className="flex flex-col min-h-screen">
-      <Header
-        title="Servicios"
-        description="Gestione los servicios que ofrece su empresa."
-      >
-        {canEditWorkflow && (
+    <>
+      <div className="flex flex-col min-h-screen">
+        <Header
+          title="Servicios"
+          description="Gestione los servicios y la documentación asociada."
+        >
+          {canEditWorkflow && (
             <Button onClick={() => addService()}>
-                <PlusCircle className="mr-2 h-4 w-4" />
-                Añadir Nuevo Servicio
+              <PlusCircle className="mr-2 h-4 w-4" />
+              Añadir Nuevo Servicio
             </Button>
-        )}
-      </Header>
-      <main className="flex-1 p-4 md:p-8">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          )}
+        </Header>
+        <main className="flex-1 p-4 md:p-8">
           {serviceWorkflows && serviceWorkflows.length > 0 ? (
-            serviceWorkflows.map((service) => (
-              <Card key={service.id}>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Briefcase className="h-5 w-5 text-accent" />
-                    {service.name}
-                  </CardTitle>
-                  <CardDescription>
-                    {service.subServices.reduce((acc, ss) => acc + ss.stages.length, 0)} etapas en el flujo.
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                    <p className="text-sm text-muted-foreground mb-4">
-                        Este es uno de los servicios principales de su negocio. Puede configurar su flujo de trabajo asociado.
-                    </p>
-                </CardContent>
-                <CardContent>
-                   <Button asChild variant="outline" className="w-full">
-                       <Link href={`/workflows?serviceId=${service.id}`}>
-                          <Workflow className="mr-2 h-4 w-4"/>
-                          Configurar Flujo
-                       </Link>
-                   </Button>
-                </CardContent>
-              </Card>
-            ))
+            <Accordion type="single" collapsible className="w-full space-y-4">
+              {serviceWorkflows.map((service) => {
+                const isEditing = editingServiceId === service.id;
+                return (
+                  <AccordionItem value={service.id} key={service.id} asChild>
+                     <Card>
+                        <AccordionTrigger className="w-full p-0 [&_svg]:ml-auto [&_svg]:mr-4">
+                            <CardHeader className="flex-1 text-left">
+                                <CardTitle className="flex items-center gap-2 text-lg">
+                                    <Briefcase className="h-5 w-5 text-accent" />
+                                    {service.name}
+                                </CardTitle>
+                            </CardHeader>
+                        </AccordionTrigger>
+                        <AccordionContent className="p-6 pt-0">
+                            <div className="space-y-6">
+                                {isEditing ? (
+                                    <div className="space-y-4">
+                                        <div>
+                                            <Label htmlFor="description">Descripción del Servicio</Label>
+                                            <Textarea id="description" name="description" value={editableFields.description} onChange={handleInputChange} placeholder="Describa en qué consiste el servicio..." />
+                                        </div>
+                                        <div>
+                                            <Label htmlFor="clientRequirements">Requisitos del Cliente</Label>
+                                            <Textarea id="clientRequirements" name="clientRequirements" value={editableFields.clientRequirements} onChange={handleInputChange} placeholder="Liste los documentos o información que el cliente debe proporcionar..." />
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <>
+                                        <div>
+                                            <h4 className="font-semibold text-sm">Descripción</h4>
+                                            <p className="text-sm text-muted-foreground mt-1 whitespace-pre-wrap">{service.description || 'No hay descripción.'}</p>
+                                        </div>
+                                        <div>
+                                            <h4 className="font-semibold text-sm">Requisitos del Cliente</h4>
+                                            <p className="text-sm text-muted-foreground mt-1 whitespace-pre-wrap">{service.clientRequirements || 'No hay requisitos especificados.'}</p>
+                                        </div>
+                                    </>
+                                )}
+
+                                <ServiceDocuments serviceId={service.id} />
+
+                                <div className="flex flex-col sm:flex-row gap-2 mt-4">
+                                    {isEditing ? (
+                                        <>
+                                            <Button onClick={() => handleSave(service.id)}><Save className="mr-2 h-4 w-4"/>Guardar</Button>
+                                            <Button variant="outline" onClick={handleCancelEdit}>Cancelar</Button>
+                                        </>
+                                    ) : (
+                                        <Button variant="outline" onClick={() => handleStartEdit(service)}><Edit className="mr-2 h-4 w-4"/>Editar Descripción y Requisitos</Button>
+                                    )}
+                                    <Button asChild>
+                                        <Link href={`/workflows?serviceId=${service.id}`}>
+                                            <Workflow className="mr-2 h-4 w-4" />
+                                            Configurar Flujo de Trabajo
+                                        </Link>
+                                    </Button>
+                                </div>
+                            </div>
+                        </AccordionContent>
+                    </Card>
+                  </AccordionItem>
+                )
+              })}
+            </Accordion>
           ) : (
             <div className="col-span-full text-center text-muted-foreground py-16 border border-dashed rounded-lg">
               <Briefcase className="mx-auto h-12 w-12 mb-4" />
@@ -94,8 +197,9 @@ export default function ServicesPage() {
               </p>
             </div>
           )}
-        </div>
-      </main>
-    </div>
+        </main>
+      </div>
+      <SmartDocumentUploadDialog isOpen={false} onOpenChange={() => {}}/>
+    </>
   );
 }
