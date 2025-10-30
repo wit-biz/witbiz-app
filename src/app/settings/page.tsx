@@ -25,6 +25,7 @@ import { DateRange } from "react-day-picker";
 import { cn } from "@/lib/utils";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Calendar as CalendarIcon } from "lucide-react";
+import { Header } from "@/components/header";
 
 // --- Mock Data ---
 
@@ -391,5 +392,3 @@ export default function SettingsPage() {
     </>
   );
 }
-
-    
