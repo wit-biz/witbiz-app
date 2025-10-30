@@ -98,7 +98,12 @@ export default function AuditPage() {
       <Header
         title="Auditoría y Reportes"
         description="Analice los reportes de negocio y revise la bitácora de actividades."
-      />
+      >
+        <Button onClick={() => handleDownload('Todo')}>
+          <Download className="mr-2 h-4 w-4" />
+          Descarga General
+        </Button>
+      </Header>
       <main className="flex-1 p-4 md:p-8 space-y-6">
         <Card>
             <CardHeader>
