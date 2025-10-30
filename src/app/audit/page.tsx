@@ -1,6 +1,9 @@
 
 "use client";
 
+import React, { useState, useMemo } from 'react';
+import { DateRange } from 'react-day-picker';
+import { subDays, startOfDay, endOfDay, isWithinInterval } from 'date-fns';
 import { Header } from "@/components/header";
 import {
   Card,
@@ -11,7 +14,7 @@ import {
 } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { LineChart, History, BarChart, Download, ArrowUpCircle, ArrowDownCircle } from "lucide-react";
+import { LineChart, History, BarChart, Download, ArrowUpCircle, ArrowDownCircle, Users, Briefcase } from "lucide-react";
 import { DateRangeChartsTab } from "@/components/shared/DateRangeChartsTab";
 import { useCRMData } from "@/contexts/CRMDataContext";
 import { Loader2 } from "lucide-react";
@@ -20,23 +23,25 @@ import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
+import { DateRangeFilter } from '@/components/shared/DateRangeFilter';
+
 
 // Mock Data for Reports (Transactions)
 const reportData = [
-  { id: 'rep1', date: '2024-07-15T10:00:00Z', description: 'Comisión por Cierre - Synergy Corp.', amount: 2500, type: 'income', clientName: 'Synergy Corp.' },
-  { id: 'rep2', date: '2024-07-14T14:30:00Z', description: 'Pago de Software de Análisis', amount: -150, type: 'expense', clientName: null },
-  { id: 'rep3', date: '2024-07-12T09:00:00Z', description: 'Adelanto de Asesoría - Global Net', amount: 1000, type: 'income', clientName: 'Global Net' },
-  { id: 'rep4', date: '2024-07-11T18:00:00Z', description: 'Gastos de Representación', amount: -200, type: 'expense', clientName: null },
-  { id: 'rep5', date: '2024-07-10T11:00:00Z', description: 'Comisión por Firma - Innovate Inc.', amount: 5000, type: 'income', clientName: 'Innovate Inc.' },
+  { id: 'rep1', date: new Date(), description: 'Comisión por Cierre - Synergy Corp.', amount: 2500, type: 'income', clientName: 'Synergy Corp.', serviceName: 'Asesoría de Crédito Empresarial' },
+  { id: 'rep2', date: subDays(new Date(), 2), description: 'Pago de Software de Análisis', amount: -150, type: 'expense', clientName: null, serviceName: null },
+  { id: 'rep3', date: subDays(new Date(), 5), description: 'Adelanto de Asesoría - Global Net', amount: 1000, type: 'income', clientName: 'Global Net', serviceName: 'Gestión Patrimonial'},
+  { id: 'rep4', date: subDays(new Date(), 10), description: 'Gastos de Representación', amount: -200, type: 'expense', clientName: null, serviceName: null},
+  { id: 'rep5', date: subDays(new Date(), 32), description: 'Comisión por Firma - Innovate Inc.', amount: 5000, type: 'income', clientName: 'Innovate Inc.', serviceName: 'Operaciones de Divisas' },
 ];
 
 // Mock Data for Logs (Activities)
 const logData = [
-  { id: 'log1', date: '2024-07-15T10:02:00Z', user: 'Andrea Admin', action: 'Tarea Completada', details: 'Tarea "Preparar contrato de Synergy Corp." marcada como completada.' },
-  { id: 'log2', date: '2024-07-15T09:30:00Z', user: 'Carla Collaborator', action: 'Cliente Creado', details: 'Nuevo cliente "Futura Dynamics" fue añadido a la base de datos.' },
-  { id: 'log3', date: '2024-07-14T16:00:00Z', user: 'Admin User', action: 'Permisos Modificados', details: 'El rol "Colaborador" fue actualizado.' },
-  { id: 'log4', date: '2024-07-14T11:00:00Z', user: 'Andrea Admin', action: 'Documento Subido', details: 'Se subió el documento "Propuesta_Final.pdf" para el cliente "Global Net".' },
-  { id: 'log5', date: '2024-07-13T12:00:00Z', user: 'Carla Collaborator', action: 'Inicio de Sesión', details: 'El usuario ha iniciado sesión en la plataforma.' },
+  { id: 'log1', date: new Date(), user: 'Andrea Admin', action: 'Tarea Completada', details: 'Tarea "Preparar contrato de Synergy Corp." marcada como completada.' },
+  { id: 'log2', date: subDays(new Date(), 1), user: 'Carla Collaborator', action: 'Cliente Creado', details: 'Nuevo cliente "Futura Dynamics" fue añadido a la base de datos.' },
+  { id: 'log3', date: subDays(new Date(), 3), user: 'Admin User', action: 'Permisos Modificados', details: 'El rol "Colaborador" fue actualizado.' },
+  { id: 'log4', date: subDays(new Date(), 8), user: 'Andrea Admin', action: 'Documento Subido', details: 'Se subió el documento "Propuesta_Final.pdf" para el cliente "Global Net".' },
+  { id: 'log5', date: subDays(new Date(), 40), user: 'Carla Collaborator', action: 'Inicio de Sesión', details: 'El usuario ha iniciado sesión en la plataforma.' },
 ];
 
 
@@ -44,23 +49,79 @@ export default function AuditPage() {
   const { clients, serviceWorkflows, isLoadingClients, isLoadingWorkflows } = useCRMData();
   const { toast } = useToast();
 
+  const [date, setDate] = React.useState<DateRange | undefined>({
+    from: subDays(new Date(), 29),
+    to: new Date(),
+  })
+  const [selectedClientId, setSelectedClientId] = React.useState<string>("all");
+  const [selectedServiceId, setSelectedServiceId] = React.useState<string>("all");
+
   const chartServices = serviceWorkflows.map(s => ({ id: s.id, name: s.name }));
   const chartClients = clients.map(c => ({ id: c.id, name: c.name }));
+  
+  const filteredReports = useMemo(() => {
+     return reportData.filter(item => {
+        const itemDate = new Date(item.date);
+        const isDateInRange = date?.from && date.to ? isWithinInterval(itemDate, { start: startOfDay(date.from), end: endOfDay(date.to) }) : true;
+        // Add client and service filtering logic here when applicable
+        return isDateInRange;
+    })
+  }, [date, selectedClientId, selectedServiceId]);
+
+  const filteredLogs = useMemo(() => {
+     return logData.filter(item => {
+        const itemDate = new Date(item.date);
+        const isDateInRange = date?.from && date.to ? isWithinInterval(itemDate, { start: startOfDay(date.from), end: endOfDay(date.to) }) : true;
+        // Add user/action filtering logic here if needed
+        return isDateInRange;
+    })
+  }, [date]);
+
 
   const handleDownload = (section: string) => {
+      const clientName = clients.find(c => c.id === selectedClientId)?.name || "Todos";
+      const serviceName = serviceWorkflows.find(s => s.id === selectedServiceId)?.name || "Todos";
+
+      let description = `Iniciando descarga de "${section}". Filtros aplicados: Cliente - ${clientName}, Servicio - ${serviceName}.`;
+      if (date?.from && date.to) {
+          description += ` Rango: ${format(date.from, "dd/MM/yy")} a ${format(date.to, "dd/MM/yy")}.`;
+      }
+      
       toast({
           title: "Descarga Simulada",
-          description: `Se ha iniciado la descarga de la sección "${section}".`
+          description: description
       });
   };
 
   return (
     <div className="flex flex-col min-h-screen">
       <Header
-        title="Auditoría"
+        title="Auditoría y Reportes"
         description="Analice los reportes de negocio y revise la bitácora de actividades."
       />
-      <main className="flex-1 p-4 md:p-8">
+      <main className="flex-1 p-4 md:p-8 space-y-6">
+        <Card>
+            <CardHeader>
+                <CardTitle>Filtros de Análisis</CardTitle>
+                <CardDescription>
+                    Seleccione un rango de fechas y filtre por cliente o servicio para analizar los datos. Los filtros se aplicarán a todas las pestañas.
+                </CardDescription>
+            </CardHeader>
+            <CardContent>
+                <DateRangeFilter 
+                    date={date}
+                    setDate={setDate}
+                    selectedClientId={selectedClientId}
+                    setSelectedClientId={setSelectedClientId}
+                    selectedServiceId={selectedServiceId}
+                    setSelectedServiceId={setSelectedServiceId}
+                    clients={chartClients}
+                    services={chartServices}
+                />
+            </CardContent>
+        </Card>
+
+
         <Tabs defaultValue="reports" className="w-full">
           <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="reports">
@@ -76,6 +137,7 @@ export default function AuditPage() {
               Gráficos
             </TabsTrigger>
           </TabsList>
+
           <TabsContent value="reports" className="mt-6">
             <Card>
               <CardHeader className="flex flex-row items-start justify-between">
@@ -96,20 +158,24 @@ export default function AuditPage() {
                         <TableRow>
                             <TableHead>Fecha</TableHead>
                             <TableHead>Descripción</TableHead>
-                            <TableHead>Cliente</TableHead>
+                            <TableHead>Cliente / Servicio</TableHead>
                             <TableHead>Tipo</TableHead>
                             <TableHead className="text-right">Monto</TableHead>
                         </TableRow>
                     </TableHeader>
                     <TableBody>
-                        {reportData.map((item) => (
+                        {filteredReports.map((item) => (
                             <TableRow key={item.id}>
                                 <TableCell>{format(new Date(item.date), 'dd/MM/yyyy HH:mm')}</TableCell>
                                 <TableCell className="font-medium">{item.description}</TableCell>
-                                <TableCell>{item.clientName || 'N/A'}</TableCell>
+                                <TableCell>
+                                    {item.clientName && <div className="flex items-center text-xs gap-1"><Users className="h-3 w-3"/>{item.clientName}</div>}
+                                    {item.serviceName && <div className="flex items-center text-xs gap-1 mt-1"><Briefcase className="h-3 w-3"/>{item.serviceName}</div>}
+                                    {!item.clientName && !item.serviceName && 'N/A'}
+                                </TableCell>
                                 <TableCell>
                                     <Badge variant={item.type === 'income' ? 'default' : 'destructive'} className={item.type === 'income' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}>
-                                        {item.type === 'income' ? 'Ingreso' : 'Egreso'}
+                                        {item.type === 'income' ? <><ArrowUpCircle className="h-3 w-3 mr-1"/> Ingreso</> : <><ArrowDownCircle className="h-3 w-3 mr-1"/> Egreso</>}
                                     </Badge>
                                 </TableCell>
                                 <TableCell className={`text-right font-semibold ${item.type === 'income' ? 'text-green-600' : 'text-red-600'}`}>
@@ -122,6 +188,7 @@ export default function AuditPage() {
               </CardContent>
             </Card>
           </TabsContent>
+
           <TabsContent value="logs" className="mt-6">
             <Card>
               <CardHeader className="flex flex-row items-start justify-between">
@@ -147,7 +214,7 @@ export default function AuditPage() {
                         </TableRow>
                     </TableHeader>
                     <TableBody>
-                        {logData.map((log) => (
+                        {filteredLogs.map((log) => (
                             <TableRow key={log.id}>
                                 <TableCell>{format(new Date(log.date), 'dd/MM/yyyy HH:mm:ss')}</TableCell>
                                 <TableCell className="font-medium">{log.user}</TableCell>
@@ -162,13 +229,19 @@ export default function AuditPage() {
               </CardContent>
             </Card>
           </TabsContent>
+
            <TabsContent value="charts" className="mt-6">
              {isLoadingClients || isLoadingWorkflows ? (
                 <div className="flex items-center justify-center py-12">
                   <Loader2 className="h-8 w-8 animate-spin text-primary" />
                 </div>
              ) : (
-                <DateRangeChartsTab services={chartServices} clients={chartClients} />
+                <DateRangeChartsTab 
+                    date={date}
+                    selectedClientId={selectedClientId}
+                    selectedServiceId={selectedServiceId}
+                    onDownload={() => handleDownload('Gráficos')}
+                />
              )}
           </TabsContent>
         </Tabs>
