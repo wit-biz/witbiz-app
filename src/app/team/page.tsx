@@ -39,10 +39,6 @@ const allPermissions: { key: keyof AppPermissions; label: string }[] = [
     { key: "tasks_create", label: "Crear Tareas" },
     { key: "tasks_edit", label: "Editar Tareas" },
     { key: "tasks_delete", label: "Eliminar Tareas" },
-    { key: "reservations_view", label: "Ver Reservaciones" },
-    { key: "reservations_create", label: "Crear Reservaciones" },
-    { key: "reservations_edit", label: "Editar Reservaciones" },
-    { key: "reservations_delete", label: "Eliminar Reservaciones" },
     { key: "crm_view", label: "Ver Flujos CRM" },
     { key: "crm_edit", label: "Editar Flujos CRM" },
     { key: "audit_view", label: "Ver Auditoría" },
@@ -64,7 +60,6 @@ const initialRoles = [
         permissions: {
             dashboard: true, clients_view: true, clients_create: true, clients_edit: true, clients_delete: true,
             tasks_view: true, tasks_create: true, tasks_edit: true, tasks_delete: true,
-            reservations_view: true, reservations_create: true, reservations_edit: true, reservations_delete: true,
             crm_view: true, crm_edit: true, audit_view: true, admin_view: true, team_invite: true,
         }
     },
@@ -74,7 +69,6 @@ const initialRoles = [
         permissions: {
             dashboard: true, clients_view: true, clients_create: true, clients_edit: true, clients_delete: true,
             tasks_view: true, tasks_create: true, tasks_edit: true, tasks_delete: true,
-            reservations_view: true, reservations_create: true, reservations_edit: false, reservations_delete: false,
             crm_view: true, crm_edit: true, audit_view: false, admin_view: true, team_invite: true,
         }
     },
@@ -84,7 +78,6 @@ const initialRoles = [
         permissions: {
             dashboard: true, clients_view: true, clients_create: false, clients_edit: false, clients_delete: false,
             tasks_view: true, tasks_create: true, tasks_edit: true, tasks_delete: false,
-            reservations_view: true, reservations_create: true, reservations_edit: false, reservations_delete: false,
             crm_view: true, crm_edit: false, audit_view: false, admin_view: false, team_invite: false,
         }
     },
@@ -94,7 +87,6 @@ const initialRoles = [
         permissions: {
             dashboard: false, clients_view: false, clients_create: false, clients_edit: false, clients_delete: false,
             tasks_view: false, tasks_create: false, tasks_edit: false, tasks_delete: false,
-            reservations_view: false, reservations_create: false, reservations_edit: false, reservations_delete: false,
             crm_view: false, crm_edit: false, audit_view: false, admin_view: false, team_invite: false,
         }
     },

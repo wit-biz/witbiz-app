@@ -49,8 +49,6 @@
     --indicator-upcoming-bg: 210 70% 55%;
     --indicator-today-bg-raw: 86 100% 72%;
     --indicator-upcoming-bg-raw: 210 70% 55%;
-    --reservation-indicator-today-bg: 86 100% 72%;
-    --reservation-indicator-future-bg: 210 70% 55%;
     
     /* Promoter Calendar Colors */
     --promoter-paid-bg-raw: 221.2 83.2% 53.3%; /* Blue */
@@ -104,8 +102,6 @@
     --indicator-upcoming-bg: 210 60% 50%;
     --indicator-today-bg-raw: 86 100% 72%;
     --indicator-upcoming-bg-raw: 210 60% 50%;
-    --reservation-indicator-today-bg: 86 100% 72%;
-    --reservation-indicator-future-bg: 210 60% 50%;
     
     /* Promoter Calendar Colors - Dark Mode */
     --promoter-paid-bg-raw: 221.2 83.2% 63.3%;
@@ -223,14 +219,6 @@
   }
   .animate-pulse-indicator {
     animation: pulse-indicator-animation 1.5s infinite ease-in-out;
-  }
-
-  /* Styles for calendar day reservation indicators (background highlight) */
-  .day-reserved-today .rdp-button:not([disabled]):not([aria-selected="true"]) {
-    background-color: hsla(var(--indicator-today-bg-raw), 0.3) !important;
-  }
-  .day-reserved-future .rdp-button:not([disabled]):not([aria-selected="true"]) {
-    background-color: hsla(var(--indicator-upcoming-bg-raw), 0.3) !important;
   }
 
   /* Styles for promoter calendar */
@@ -373,3 +361,4 @@
     
 
     
+

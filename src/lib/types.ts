@@ -86,9 +86,6 @@ export type AppPermissions = {
     clients_edit: boolean;
     clients_delete: boolean;
     clients_view: boolean;
-    documents_create: boolean;
-    documents_edit: boolean;
-    documents_delete: boolean;
     documents_view: boolean;
     tasks_create: boolean;
     tasks_edit: boolean;
@@ -96,7 +93,6 @@ export type AppPermissions = {
     tasks_view: boolean;
     crm_edit: boolean;
     crm_view: boolean;
-    reports_view: boolean;
     audit_view: boolean;
     admin_view: boolean;
     dashboard: boolean;
