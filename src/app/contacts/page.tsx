@@ -4,7 +4,7 @@
 import React, { useState, useMemo, useEffect } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { Header } from "@/components/header";
-import { Users, UserCheck, PlusCircle, Building } from "lucide-react";
+import { Users, UserCheck, PlusCircle, Truck } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ClientsTab } from "@/components/shared/ClientsTab";
 import { PromotersTab } from "@/components/shared/PromotersTab";
@@ -136,7 +136,7 @@ export default function DirectoryPage() {
             <Tabs defaultValue="clients" className="w-full" onValueChange={setActiveTab}>
                 <TabsList className="grid w-full grid-cols-3 mb-6">
                      <TabsTrigger value="suppliers">
-                        <Building className="mr-2 h-4 w-4"/>
+                        <Truck className="mr-2 h-4 w-4"/>
                         Proveedores
                     </TabsTrigger>
                     <TabsTrigger value="clients">
