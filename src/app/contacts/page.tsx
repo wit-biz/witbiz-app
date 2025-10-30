@@ -4,7 +4,7 @@
 import React, { useState, useMemo, useEffect } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { Header } from "@/components/header";
-import { Users, UserCheck, PlusCircle } from "lucide-react";
+import { Users, UserCheck, PlusCircle, Building } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ClientsTab } from "@/components/shared/ClientsTab";
 import { PromotersTab } from "@/components/shared/PromotersTab";
@@ -14,6 +14,48 @@ import { AddEditClientDialog } from "@/components/shared/AddEditClientDialog";
 import { ClientDetailView } from "@/components/shared/ClientDetailView";
 import type { Client } from "@/lib/types";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+
+
+// Mock data for Suppliers
+const suppliers = [
+  { id: 'sup1', name: 'Tech Supplies Co.', contact: 'John Doe', service: 'IT Hardware' },
+  { id: 'sup2', name: 'Office Essentials', contact: 'Jane Smith', service: 'Office Supplies' },
+  { id: 'sup3', name: 'Creative Solutions', contact: 'Peter Jones', service: 'Marketing & Design' },
+];
+
+function SuppliersTab() {
+    return (
+        <Card>
+            <CardHeader>
+                <CardTitle>Proveedores</CardTitle>
+                <CardDescription>Lista de proveedores de bienes y servicios.</CardDescription>
+            </CardHeader>
+            <CardContent>
+                <Table>
+                    <TableHeader>
+                        <TableRow>
+                            <TableHead>Nombre del Proveedor</TableHead>
+                            <TableHead>Contacto</TableHead>
+                            <TableHead>Servicio/Producto</TableHead>
+                        </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                        {suppliers.map((supplier) => (
+                            <TableRow key={supplier.id}>
+                                <TableCell className="font-medium">{supplier.name}</TableCell>
+                                <TableCell>{supplier.contact}</TableCell>
+                                <TableCell>{supplier.service}</TableCell>
+                            </TableRow>
+                        ))}
+                    </TableBody>
+                </Table>
+            </CardContent>
+        </Card>
+    );
+}
+
 
 export default function DirectoryPage() {
   const { clients, isLoadingClients, getClientById, currentUser } = useCRMData();
@@ -56,12 +98,29 @@ export default function DirectoryPage() {
 
   const canCreateClient = currentUser?.permissions.clients_create ?? true;
 
+  const headerInfo: { [key: string]: { title: string; description: string } } = {
+    suppliers: {
+        title: "Directorio de Proveedores",
+        description: "Consulte y gestione la información de sus proveedores."
+    },
+    clients: {
+      title: "Base de Datos de Clientes",
+      description: "Gestione su base de datos de clientes.",
+    },
+    promoters: {
+      title: "Directorio de Promotores",
+      description: "Consulte la información de sus promotores.",
+    },
+  };
+  
+  const currentHeaderInfo = headerInfo[activeTab] || headerInfo.clients;
+
   return (
     <>
       <div className="flex flex-col min-h-screen">
         <Header 
-          title={activeTab === 'clients' ? "Base de Datos de Clientes" : "Directorio de Promotores"}
-          description={activeTab === 'clients' ? "Gestione su base de datos de clientes." : "Consulte la información de sus promotores."}
+          title={currentHeaderInfo.title}
+          description={currentHeaderInfo.description}
         >
           {canCreateClient && activeTab === 'clients' && (
               <button
@@ -75,7 +134,11 @@ export default function DirectoryPage() {
         </Header>
         <main className="flex-1 p-4 md:p-8">
             <Tabs defaultValue="clients" className="w-full" onValueChange={setActiveTab}>
-                <TabsList className="grid w-full grid-cols-2 mb-6">
+                <TabsList className="grid w-full grid-cols-3 mb-6">
+                     <TabsTrigger value="suppliers">
+                        <Building className="mr-2 h-4 w-4"/>
+                        Proveedores
+                    </TabsTrigger>
                     <TabsTrigger value="clients">
                         <Users className="mr-2 h-4 w-4"/>
                         Clientes
@@ -85,6 +148,9 @@ export default function DirectoryPage() {
                         Promotores
                     </TabsTrigger>
                 </TabsList>
+                <TabsContent value="suppliers">
+                    <SuppliersTab />
+                </TabsContent>
                 <TabsContent value="clients">
                     <ClientsTab 
                       clients={clients} 
