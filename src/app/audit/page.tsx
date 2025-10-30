@@ -10,7 +10,8 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { LineChart, History } from "lucide-react";
+import { LineChart, History, BarChart } from "lucide-react";
+import { ChartsTab } from "@/components/shared/ChartsTab";
 
 export default function AuditPage() {
   return (
@@ -21,7 +22,7 @@ export default function AuditPage() {
       />
       <main className="flex-1 p-4 md:p-8">
         <Tabs defaultValue="reports" className="w-full">
-          <TabsList className="grid w-full grid-cols-2">
+          <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="reports">
               <LineChart className="mr-2 h-4 w-4" />
               Reportes
@@ -29,6 +30,10 @@ export default function AuditPage() {
             <TabsTrigger value="logs">
               <History className="mr-2 h-4 w-4" />
               Bitácoras
+            </TabsTrigger>
+             <TabsTrigger value="charts">
+              <BarChart className="mr-2 h-4 w-4" />
+              Gráficos
             </TabsTrigger>
           </TabsList>
           <TabsContent value="reports" className="mt-6">
@@ -72,6 +77,9 @@ export default function AuditPage() {
                 </div>
               </CardContent>
             </Card>
+          </TabsContent>
+           <TabsContent value="charts" className="mt-6">
+            <ChartsTab />
           </TabsContent>
         </Tabs>
       </main>
