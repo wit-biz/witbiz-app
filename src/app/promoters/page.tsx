@@ -16,7 +16,7 @@ import { useRouter } from 'next/navigation';
 import { Logo } from '@/components/shared/logo';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
-import { ChartsTab } from '@/components/shared/ChartsTab';
+import { DateRangeChartsTab } from '@/components/shared/DateRangeChartsTab';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { PasswordInput } from '@/components/shared/PasswordInput';
@@ -385,7 +385,7 @@ function ProfileView() {
 const navItems = [
     { id: 'clients', label: 'Clientes', icon: Users, component: ClientsView },
     { id: 'commissions', label: 'Comisiones', icon: CircleDollarSign, component: CommissionsView },
-    { id: 'charts', label: 'Gráficos', icon: BarChart, component: ChartsTab },
+    { id: 'charts', label: 'Gráficos', icon: BarChart, component: DateRangeChartsTab },
     { id: 'resources', label: 'Recursos', icon: BookText, component: ResourcesView },
 ];
 

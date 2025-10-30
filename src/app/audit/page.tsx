@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { LineChart, History, BarChart } from "lucide-react";
-import { ChartsTab } from "@/components/shared/ChartsTab";
+import { DateRangeChartsTab } from "@/components/shared/DateRangeChartsTab";
 
 export default function AuditPage() {
   return (
@@ -79,7 +79,7 @@ export default function AuditPage() {
             </Card>
           </TabsContent>
            <TabsContent value="charts" className="mt-6">
-            <ChartsTab />
+            <DateRangeChartsTab />
           </TabsContent>
         </Tabs>
       </main>
