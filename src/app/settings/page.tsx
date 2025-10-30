@@ -2,8 +2,7 @@
 "use client";
 
 import React, { useState, useMemo } from "react";
-import { Header } from "@/components/header";
-import { Landmark, Briefcase, PlusCircle, ArrowRightLeft, DollarSign, BarChart as BarChartIcon, Settings, Edit, Trash2, KeyRound, Filter } from "lucide-react";
+import { Landmark, Briefcase, PlusCircle, ArrowRightLeft, DollarSign, BarChart as BarChartIcon, Settings, Edit, Trash2, KeyRound, Filter, ChevronsUpDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -67,16 +66,46 @@ const chartConfig = {
   Ingresos: { label: "Ingresos", color: "hsl(var(--primary))" },
 };
 
-const mockCategories = [
-    { id: 'cat1', name: 'Ingreso por Consultoría', type: 'Ingreso', nature: 'N/A' },
-    { id: 'cat2', name: 'Ingreso por Desarrollo', type: 'Ingreso', nature: 'N/A' },
-    { id: 'cat3', name: 'Sueldos', type: 'Egreso', nature: 'Fijo' },
-    { id: 'cat4', name: 'Renta', type: 'Egreso', nature: 'Fijo' },
-    { id: 'cat5', name: 'Software', type: 'Egreso', nature: 'Fijo' },
-    { id: 'cat6', name: 'Publicidad', type: 'Egreso', nature: 'Variable' },
-    { id: 'cat7', name: 'Servicios (Luz, Agua)', type: 'Egreso', nature: 'Variable' },
-    { id: 'cat8', name: 'Transferencia Interna', type: 'Transferencia', nature: 'N/A' },
+const initialCategoryGroups = [
+    { 
+        id: 'group-income', 
+        name: 'Fuentes de Ingreso',
+        type: 'Ingreso',
+        categories: [
+            { id: 'cat-income-1', name: 'Ingreso por Desarrollo' },
+            { id: 'cat-income-2', name: 'Ingreso por Consultoría' },
+        ]
+    },
+    {
+        id: 'group-fixed',
+        name: 'Gastos Fijos',
+        type: 'Egreso',
+        categories: [
+            { id: 'cat-fixed-1', name: 'Sueldos' },
+            { id: 'cat-fixed-2', name: 'Renta' },
+            { id: 'cat-fixed-3', name: 'Software' },
+        ]
+    },
+    {
+        id: 'group-variable',
+        name: 'Gastos Variables',
+        type: 'Egreso',
+        categories: [
+            { id: 'cat-var-1', name: 'Publicidad' },
+            { id: 'cat-var-2', name: 'Servicios (Luz, Agua)' },
+            { id: 'cat-var-3', name: 'Comida y Viáticos' },
+        ]
+    },
+    {
+        id: 'group-transfer',
+        name: 'Movimientos Internos',
+        type: 'Transferencia',
+        categories: [
+            { id: 'cat-transfer-1', name: 'Transferencia Interna' },
+        ]
+    }
 ];
+
 
 const mockAccounts = [
     { id: 'acc1', name: 'Principal', company: 'WitBiz Core', type: 'Débito' },
@@ -96,6 +125,11 @@ export default function SettingsPage() {
   const [selectedCategoryId, setSelectedCategoryId] = useState<string>("all");
   const [selectedType, setSelectedType] = useState<string>("all");
 
+  const [categoryGroups, setCategoryGroups] = useState(initialCategoryGroups);
+
+  const allCategories = useMemo(() => categoryGroups.flatMap(g => g.categories.map(c => ({...c, groupName: g.name}))), [categoryGroups]);
+
+
   const filteredTransactions = useMemo(() => {
     return mockTransactions.filter(item => {
         const itemDate = new Date(item.date);
@@ -105,7 +139,7 @@ export default function SettingsPage() {
         const isTypeMatch = selectedType === 'all' || item.type.startsWith(selectedType);
         return isDateInRange && isCompanyMatch && isCategoryMatch && isTypeMatch;
     });
-  }, [date, selectedCompanyId, selectedCategoryId, selectedType]);
+  }, [date, selectedCompanyId, selectedCategoryId, selectedType, allCategories]);
   
   return (
     <>
@@ -199,7 +233,7 @@ export default function SettingsPage() {
                             <SelectTrigger className="w-full md:w-[200px]"><SelectValue placeholder="Filtrar por categoría..." /></SelectTrigger>
                             <SelectContent>
                               <SelectItem value="all">Todas las Categorías</SelectItem>
-                              {mockCategories.map(c => <SelectItem key={c.id} value={c.name}>{c.name}</SelectItem>)}
+                              {allCategories.map(c => <SelectItem key={c.id} value={c.name}>{c.name}</SelectItem>)}
                             </SelectContent>
                           </Select>
                           <Select value={selectedType} onValueChange={setSelectedType}>
@@ -246,86 +280,99 @@ export default function SettingsPage() {
             </TabsContent>
 
             <TabsContent value="configuracion">
-              <Accordion type="single" collapsible defaultValue="item-1" className="w-full space-y-4">
-                <AccordionItem value="item-1">
-                  <Card>
-                    <AccordionTrigger className="w-full p-0 [&_svg]:ml-auto [&_svg]:mr-4">
-                      <CardHeader className="flex-1 text-left">
-                        <CardTitle className="flex items-center gap-2"><KeyRound className="h-5 w-5 text-accent"/>Gestión de Cuentas</CardTitle>
-                        <CardDescription>Añada o edite las cuentas bancarias de sus empresas.</CardDescription>
-                      </CardHeader>
-                    </AccordionTrigger>
-                    <AccordionContent className="p-6 pt-0">
-                      <div className="flex justify-end mb-4">
-                          <Button><PlusCircle className="mr-2 h-4 w-4"/>Añadir Cuenta</Button>
-                      </div>
-                      <Table>
-                          <TableHeader>
-                              <TableRow>
-                                  <TableHead>Nombre de Cuenta</TableHead>
-                                  <TableHead>Empresa</TableHead>
-                                  <TableHead>Tipo</TableHead>
-                                  <TableHead className="text-right">Acciones</TableHead>
-                              </TableRow>
-                          </TableHeader>
-                          <TableBody>
-                              {mockAccounts.map(account => (
-                                  <TableRow key={account.id}>
-                                      <TableCell className="font-medium">{account.name}</TableCell>
-                                      <TableCell>{account.company}</TableCell>
-                                      <TableCell><Badge variant="outline">{account.type}</Badge></TableCell>
-                                      <TableCell className="text-right">
-                                          <Button variant="ghost" size="icon"><Edit className="h-4 w-4"/></Button>
-                                          <Button variant="ghost" size="icon" className="text-destructive"><Trash2 className="h-4 w-4"/></Button>
-                                      </TableCell>
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <Card>
+                        <CardHeader>
+                            <CardTitle className="flex items-center justify-between">
+                                <span>Grupos y Categorías</span>
+                                <Button size="sm"><PlusCircle className="mr-2 h-4 w-4"/>Añadir Grupo</Button>
+                            </CardTitle>
+                            <CardDescription>Organice sus transacciones creando grupos y asignando categorías específicas.</CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                           <Accordion type="multiple" className="w-full space-y-4">
+                                {categoryGroups.map((group) => (
+                                    <AccordionItem value={group.id} key={group.id} className="border-none">
+                                     <Card className="overflow-hidden">
+                                        <AccordionTrigger className="w-full p-0 bg-muted/50 hover:no-underline [&_svg]:ml-auto [&_svg]:mr-4">
+                                            <CardHeader className="flex-1 text-left p-4">
+                                                 <CardTitle className="text-base flex items-center justify-between">
+                                                    <div className="flex items-center gap-2">
+                                                      <ChevronsUpDown className="h-4 w-4 text-muted-foreground" />
+                                                      {group.name}
+                                                    </div>
+                                                    <div className="flex items-center gap-1">
+                                                      <Button variant="ghost" size="icon" className="h-7 w-7"><Edit className="h-4 w-4"/></Button>
+                                                      <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive"><Trash2 className="h-4 w-4"/></Button>
+                                                    </div>
+                                                </CardTitle>
+                                            </CardHeader>
+                                        </AccordionTrigger>
+                                        <AccordionContent className="p-4 pt-0">
+                                            <div className="flex justify-end mb-2">
+                                                <Button variant="outline" size="sm"><PlusCircle className="mr-2 h-4 w-4"/>Añadir Categoría</Button>
+                                            </div>
+                                            <Table>
+                                                <TableHeader>
+                                                    <TableRow>
+                                                        <TableHead>Nombre de Categoría</TableHead>
+                                                        <TableHead className="text-right">Acciones</TableHead>
+                                                    </TableRow>
+                                                </TableHeader>
+                                                <TableBody>
+                                                    {group.categories.map(cat => (
+                                                        <TableRow key={cat.id}>
+                                                            <TableCell className="font-medium">{cat.name}</TableCell>
+                                                            <TableCell className="text-right">
+                                                                <Button variant="ghost" size="icon" className="h-7 w-7"><Edit className="h-4 w-4"/></Button>
+                                                                <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive"><Trash2 className="h-4 w-4"/></Button>
+                                                            </TableCell>
+                                                        </TableRow>
+                                                    ))}
+                                                </TableBody>
+                                            </Table>
+                                        </AccordionContent>
+                                      </Card>
+                                    </AccordionItem>
+                                ))}
+                            </Accordion>
+                        </CardContent>
+                    </Card>
+                    <Card>
+                        <CardHeader>
+                            <CardTitle className="flex items-center justify-between">
+                                <span>Cuentas Bancarias</span>
+                                <Button size="sm"><PlusCircle className="mr-2 h-4 w-4"/>Añadir Cuenta</Button>
+                            </CardTitle>
+                            <CardDescription>Añada o edite las cuentas bancarias de sus empresas.</CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                          <Table>
+                              <TableHeader>
+                                  <TableRow>
+                                      <TableHead>Nombre</TableHead>
+                                      <TableHead>Empresa</TableHead>
+                                      <TableHead>Tipo</TableHead>
+                                      <TableHead className="text-right">Acciones</TableHead>
                                   </TableRow>
-                              ))}
-                          </TableBody>
-                      </Table>
-                    </AccordionContent>
-                  </Card>
-                </AccordionItem>
-                <AccordionItem value="item-2">
-                  <Card>
-                     <AccordionTrigger className="w-full p-0 [&_svg]:ml-auto [&_svg]:mr-4">
-                      <CardHeader className="flex-1 text-left">
-                        <CardTitle className="flex items-center gap-2"><Briefcase className="h-5 w-5 text-accent"/>Gestión de Categorías</CardTitle>
-                        <CardDescription>Defina las categorías para clasificar sus transacciones.</CardDescription>
-                      </CardHeader>
-                    </AccordionTrigger>
-                    <AccordionContent className="p-6 pt-0">
-                      <div className="flex justify-end mb-4">
-                          <Button><PlusCircle className="mr-2 h-4 w-4"/>Añadir Categoría</Button>
-                      </div>
-                       <Table>
-                          <TableHeader>
-                              <TableRow>
-                                  <TableHead>Nombre</TableHead>
-                                  <TableHead>Tipo</TableHead>
-                                  <TableHead>Naturaleza del Gasto</TableHead>
-                                  <TableHead className="text-right">Acciones</TableHead>
-                              </TableRow>
-                          </TableHeader>
-                          <TableBody>
-                              {mockCategories.map(cat => (
-                                  <TableRow key={cat.id}>
-                                      <TableCell className="font-medium">{cat.name}</TableCell>
-                                      <TableCell><Badge variant={cat.type === 'Ingreso' ? 'default' : 'secondary'}>{cat.type}</Badge></TableCell>
-                                      <TableCell>
-                                          {cat.nature !== 'N/A' && <Badge variant="outline">{cat.nature}</Badge>}
-                                      </TableCell>
-                                      <TableCell className="text-right">
-                                          <Button variant="ghost" size="icon"><Edit className="h-4 w-4"/></Button>
-                                          <Button variant="ghost" size="icon" className="text-destructive"><Trash2 className="h-4 w-4"/></Button>
-                                      </TableCell>
-                                  </TableRow>
-                              ))}
-                          </TableBody>
-                      </Table>
-                    </AccordionContent>
-                  </Card>
-                </AccordionItem>
-              </Accordion>
+                              </TableHeader>
+                              <TableBody>
+                                  {mockAccounts.map(account => (
+                                      <TableRow key={account.id}>
+                                          <TableCell className="font-medium">{account.name}</TableCell>
+                                          <TableCell>{account.company}</TableCell>
+                                          <TableCell><Badge variant="outline">{account.type}</Badge></TableCell>
+                                          <TableCell className="text-right">
+                                              <Button variant="ghost" size="icon"><Edit className="h-4 w-4"/></Button>
+                                              <Button variant="ghost" size="icon" className="text-destructive"><Trash2 className="h-4 w-4"/></Button>
+                                          </TableCell>
+                                      </TableRow>
+                                  ))}
+                              </TableBody>
+                          </Table>
+                        </CardContent>
+                    </Card>
+                </div>
             </TabsContent>
           </Tabs>
         </main>
@@ -335,7 +382,7 @@ export default function SettingsPage() {
         onOpenChange={setIsTransactionDialogOpen}
         companies={mockCompanies}
         accounts={mockBankAccounts}
-        categories={mockCategories}
+        categories={allCategories}
         onTransactionAdd={(data) => {
             console.log("Nueva transacción:", data);
             // Aquí iría la lógica para añadir la transacción al estado
@@ -344,3 +391,5 @@ export default function SettingsPage() {
     </>
   );
 }
+
+    

@@ -23,6 +23,8 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
+  SelectGroup,
+  SelectLabel,
 } from '@/components/ui/select';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
@@ -60,7 +62,7 @@ interface AddTransactionDialogProps {
   onOpenChange: (open: boolean) => void;
   companies: { id: string; name: string }[];
   accounts: { id: string; companyId: string; bankName: string }[];
-  categories: { id: string; name: string, type: string }[];
+  categories: { id: string; name: string, groupName: string }[];
   onTransactionAdd: (data: TransactionFormValues) => void;
 }
 
@@ -87,6 +89,17 @@ export function AddTransactionDialog({
   const selectedCompanyId = form.watch('companyId');
 
   const filteredAccounts = accounts.filter(acc => acc.companyId === selectedCompanyId);
+  
+  const groupedCategories = useMemo(() => {
+    return categories.reduce((acc, category) => {
+        const groupName = category.groupName;
+        if (!acc[groupName]) {
+            acc[groupName] = [];
+        }
+        acc[groupName].push(category);
+        return acc;
+    }, {} as Record<string, typeof categories>);
+  }, [categories]);
 
   const onDrop = useCallback((acceptedFiles: File[]) => {
     if (acceptedFiles.length > 0) {
@@ -222,7 +235,7 @@ export function AddTransactionDialog({
                                 <Select onValueChange={field.onChange} defaultValue={field.value}>
                                     <SelectTrigger><SelectValue placeholder="Seleccione cuenta destino..." /></SelectTrigger>
                                     <SelectContent>
-                                        {accounts.map(acc => <SelectItem key={acc.id} value={acc.id}>{`${acc.companyName} - ${acc.bankName}`}</SelectItem>)}
+                                        {accounts.map(acc => <SelectItem key={acc.id} value={acc.id}>{`${companies.find(c => c.id === acc.companyId)?.name} - ${acc.bankName}`}</SelectItem>)}
                                     </SelectContent>
                                 </Select>
                             )}
@@ -232,24 +245,29 @@ export function AddTransactionDialog({
                 )}
             </div>
 
-            {transactionType !== 'transfer' && (
-                <div>
-                    <Label>Categoría</Label>
-                     <Controller
-                        name="categoryId"
-                        control={form.control}
-                        render={({ field }) => (
-                             <Select onValueChange={field.onChange} defaultValue={field.value}>
-                                <SelectTrigger><SelectValue placeholder="Seleccione una categoría..." /></SelectTrigger>
-                                <SelectContent>
-                                    {categories.filter(c => c.type === (transactionType === 'income' ? 'Ingreso' : 'Egreso')).map(cat => <SelectItem key={cat.id} value={cat.id}>{cat.name}</SelectItem>)}
-                                </SelectContent>
-                            </Select>
-                        )}
-                    />
-                    {form.formState.errors.categoryId && <p className="text-sm text-red-500 mt-1">{form.formState.errors.categoryId.message}</p>}
-                </div>
-            )}
+            
+            <div>
+                <Label>Categoría</Label>
+                <Controller
+                    name="categoryId"
+                    control={form.control}
+                    render={({ field }) => (
+                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                            <SelectTrigger><SelectValue placeholder="Seleccione una categoría..." /></SelectTrigger>
+                            <SelectContent>
+                                {Object.entries(groupedCategories).map(([groupName, groupCategories]) => (
+                                    <SelectGroup key={groupName}>
+                                        <SelectLabel>{groupName}</SelectLabel>
+                                        {groupCategories.map(cat => <SelectItem key={cat.id} value={cat.id}>{cat.name}</SelectItem>)}
+                                    </SelectGroup>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                    )}
+                />
+                {form.formState.errors.categoryId && <p className="text-sm text-red-500 mt-1">{form.formState.errors.categoryId.message}</p>}
+            </div>
+            
             
             <div>
               <Label>Comprobante (Opcional)</Label>
