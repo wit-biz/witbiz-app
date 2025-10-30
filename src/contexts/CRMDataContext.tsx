@@ -205,12 +205,8 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
         const newService: ServiceWorkflow = {
             id: `service-${Date.now()}`,
             name: "Nuevo Servicio (sin título)",
-            subServices: [{
-                id: `sub-service-${Date.now()}`,
-                name: 'General',
-                stages: []
-            }],
-            stages: [] // Keep for legacy compatibility if needed
+            subServices: [],
+            stages: [] // Legacy
         };
         setServiceWorkflows(prev => [...prev, newService]);
         return newService;

@@ -3,6 +3,7 @@
 
 import React, { useState, useMemo, useEffect, useCallback } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { Header } from "@/components/header";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { useCRMData, type WorkflowStage, type ServiceWorkflow, type WorkflowStageObjective, type SubObjective, type SubService, type Task } from "@/contexts/CRMDataContext"; 
@@ -36,7 +37,6 @@ export default function WorkflowConfigurationPage() {
     currentUser,
     serviceWorkflows,
     isLoadingWorkflows,
-    addService, 
     updateService, 
     deleteService, 
     isLoadingClients,
@@ -52,13 +52,13 @@ export default function WorkflowConfigurationPage() {
     addTask
   } = useCRMData();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { showNotification } = useGlobalNotification();
 
   const [selectedWorkflowId, setSelectedWorkflowId] = useState<string | null>(null);
   const [editingServiceId, setEditingServiceId] = useState<string | null>(null);
   const [editableServiceName, setEditableServiceName] = useState("");
   const [isSavingService, setIsSavingService] = useState(false);
-  const [isAddingService, setIsAddingService] = useState(false);
   
   const [editingSubServiceId, setEditingSubServiceId] = useState<string | null>(null);
   const [editableSubServiceName, setEditableSubServiceName] = useState("");
@@ -82,14 +82,13 @@ export default function WorkflowConfigurationPage() {
   };
 
   useEffect(() => {
-    if (!serviceWorkflows) return;
-    if (!selectedWorkflowId && serviceWorkflows.length > 0) {
+    const serviceIdFromUrl = searchParams.get('serviceId');
+    if (serviceIdFromUrl) {
+      setSelectedWorkflowId(serviceIdFromUrl);
+    } else if (!selectedWorkflowId && serviceWorkflows.length > 0) {
       setSelectedWorkflowId(serviceWorkflows[0].id);
     }
-    if (selectedWorkflowId && !serviceWorkflows.some(wf => wf.id === selectedWorkflowId)) {
-      setSelectedWorkflowId(serviceWorkflows.length > 0 ? serviceWorkflows[0].id : null);
-    }
-  }, [serviceWorkflows, selectedWorkflowId]);
+  }, [searchParams, serviceWorkflows, selectedWorkflowId]);
 
   const selectedWorkflow = useMemo(() => {
     if (!serviceWorkflows) return null;
@@ -129,15 +128,6 @@ export default function WorkflowConfigurationPage() {
     if (!editableSubServiceName.trim()) return;
     updateSubServiceName(serviceId, subServiceId, editableSubServiceName);
     handleCancelEditSubService();
-  };
-
-  const handleAddNewService = async () => {
-    setIsAddingService(true);
-    const newService = await addService();
-    if (newService) {
-      setSelectedWorkflowId(newService.id);
-    }
-    setIsAddingService(false);
   };
 
   const confirmDeleteService = async () => {
@@ -391,12 +381,6 @@ export default function WorkflowConfigurationPage() {
               <UploadCloud className="mr-2 h-4 w-4"/>
               Subir Documento
             </Button>
-            {canEditWorkflow && (
-              <Button onClick={handleAddNewService} disabled={isAddingService || !canEditWorkflow}>
-                {isAddingService ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Plus className="mr-2 h-4 w-4"/>}
-                Añadir Nuevo Servicio
-              </Button>
-            )}
           </div>
         }
       />
@@ -425,7 +409,7 @@ export default function WorkflowConfigurationPage() {
                         ) : (
                             <Select value={selectedWorkflowId || ""} onValueChange={(id) => setSelectedWorkflowId(id)} disabled={!serviceWorkflows || !serviceWorkflows.length}>
                                 <SelectTrigger id="service-selector" className="mt-1">
-                                    <SelectValue placeholder="Seleccione un servicio..." />
+                                    <SelectValue placeholder="Seleccione un servicio para configurar..." />
                                 </SelectTrigger>
                                 <SelectContent>
                                     {serviceWorkflows && serviceWorkflows.map(service => (
@@ -512,8 +496,8 @@ export default function WorkflowConfigurationPage() {
               </div>
             ) : (
                 <div className="text-center text-muted-foreground py-10 border border-dashed rounded-lg">
-                    <p>No hay servicios creados o seleccionados.</p>
-                    <p className="text-sm">Empiece por añadir un nuevo servicio usando el botón de arriba.</p>
+                    <p>No ha seleccionado un servicio o no hay servicios creados.</p>
+                    <p className="text-sm">Vaya a la página de Servicios para crear uno nuevo.</p>
                 </div>
             )}
             </CardContent>
@@ -541,7 +525,7 @@ export default function WorkflowConfigurationPage() {
             isOpen={isSmartUploadDialogOpen}
             onOpenChange={setIsSmartUploadDialogOpen}
             onClientAdded={(client) => {
-                router.push(`/clients?openClient=${client.id}`);
+                router.push(`/contacts?openClient=${client.id}`);
             }}
         />
 
