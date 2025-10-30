@@ -49,6 +49,18 @@ export type Document = {
   uploadDate?: string; // ISO String YYYY-MM-DD
 };
 
+export type Transaction = {
+  id: string;
+  date: string; // ISO String YYYY-MM-DD
+  description: string;
+  type: 'income' | 'expense' | 'transfer_in' | 'transfer_out';
+  category: string;
+  amount: number;
+  companyId: string;
+  accountId: string;
+  attachmentUrl?: string; // URL al comprobante
+}
+
 export type Note = {
   id: string;
   content: string; // Legado o para visualización
@@ -150,3 +162,5 @@ export interface NavItem {
   exactMatch?: boolean;
   requiredPermission: keyof AppPermissions;
 }
+
+    
