@@ -10,12 +10,35 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { LineChart, History, BarChart, Download } from "lucide-react";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { LineChart, History, BarChart, Download, ArrowUpCircle, ArrowDownCircle } from "lucide-react";
 import { DateRangeChartsTab } from "@/components/shared/DateRangeChartsTab";
 import { useCRMData } from "@/contexts/CRMDataContext";
 import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
+import { Badge } from "@/components/ui/badge";
+import { format } from "date-fns";
+import { es } from "date-fns/locale";
+
+// Mock Data for Reports (Transactions)
+const reportData = [
+  { id: 'rep1', date: '2024-07-15T10:00:00Z', description: 'Comisión por Cierre - Synergy Corp.', amount: 2500, type: 'income', clientName: 'Synergy Corp.' },
+  { id: 'rep2', date: '2024-07-14T14:30:00Z', description: 'Pago de Software de Análisis', amount: -150, type: 'expense', clientName: null },
+  { id: 'rep3', date: '2024-07-12T09:00:00Z', description: 'Adelanto de Asesoría - Global Net', amount: 1000, type: 'income', clientName: 'Global Net' },
+  { id: 'rep4', date: '2024-07-11T18:00:00Z', description: 'Gastos de Representación', amount: -200, type: 'expense', clientName: null },
+  { id: 'rep5', date: '2024-07-10T11:00:00Z', description: 'Comisión por Firma - Innovate Inc.', amount: 5000, type: 'income', clientName: 'Innovate Inc.' },
+];
+
+// Mock Data for Logs (Activities)
+const logData = [
+  { id: 'log1', date: '2024-07-15T10:02:00Z', user: 'Andrea Admin', action: 'Tarea Completada', details: 'Tarea "Preparar contrato de Synergy Corp." marcada como completada.' },
+  { id: 'log2', date: '2024-07-15T09:30:00Z', user: 'Carla Collaborator', action: 'Cliente Creado', details: 'Nuevo cliente "Futura Dynamics" fue añadido a la base de datos.' },
+  { id: 'log3', date: '2024-07-14T16:00:00Z', user: 'Admin User', action: 'Permisos Modificados', details: 'El rol "Colaborador" fue actualizado.' },
+  { id: 'log4', date: '2024-07-14T11:00:00Z', user: 'Andrea Admin', action: 'Documento Subido', details: 'Se subió el documento "Propuesta_Final.pdf" para el cliente "Global Net".' },
+  { id: 'log5', date: '2024-07-13T12:00:00Z', user: 'Carla Collaborator', action: 'Inicio de Sesión', details: 'El usuario ha iniciado sesión en la plataforma.' },
+];
+
 
 export default function AuditPage() {
   const { clients, serviceWorkflows, isLoadingClients, isLoadingWorkflows } = useCRMData();
@@ -68,15 +91,34 @@ export default function AuditPage() {
                 </Button>
               </CardHeader>
               <CardContent>
-                <div className="text-center text-muted-foreground py-12">
-                  <LineChart className="mx-auto h-16 w-16 mb-4 text-gray-400" />
-                  <p className="text-lg font-semibold">
-                    Los reportes y gráficos se mostrarán aquí.
-                  </p>
-                  <p className="text-sm mt-1">
-                    Esta sección contendrá análisis visuales de los datos de su negocio.
-                  </p>
-                </div>
+                <Table>
+                    <TableHeader>
+                        <TableRow>
+                            <TableHead>Fecha</TableHead>
+                            <TableHead>Descripción</TableHead>
+                            <TableHead>Cliente</TableHead>
+                            <TableHead>Tipo</TableHead>
+                            <TableHead className="text-right">Monto</TableHead>
+                        </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                        {reportData.map((item) => (
+                            <TableRow key={item.id}>
+                                <TableCell>{format(new Date(item.date), 'dd/MM/yyyy HH:mm')}</TableCell>
+                                <TableCell className="font-medium">{item.description}</TableCell>
+                                <TableCell>{item.clientName || 'N/A'}</TableCell>
+                                <TableCell>
+                                    <Badge variant={item.type === 'income' ? 'default' : 'destructive'} className={item.type === 'income' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}>
+                                        {item.type === 'income' ? 'Ingreso' : 'Egreso'}
+                                    </Badge>
+                                </TableCell>
+                                <TableCell className={`text-right font-semibold ${item.type === 'income' ? 'text-green-600' : 'text-red-600'}`}>
+                                    {item.amount.toLocaleString('en-US', { style: 'currency', currency: 'USD' })}
+                                </TableCell>
+                            </TableRow>
+                        ))}
+                    </TableBody>
+                </Table>
               </CardContent>
             </Card>
           </TabsContent>
@@ -95,15 +137,28 @@ export default function AuditPage() {
                 </Button>
               </CardHeader>
               <CardContent>
-                 <div className="text-center text-muted-foreground py-12">
-                  <History className="mx-auto h-16 w-16 mb-4 text-gray-400" />
-                  <p className="text-lg font-semibold">
-                    La bitácora de acciones del sistema aparecerá aquí.
-                  </p>
-                  <p className="text-sm mt-1">
-                    Se registrarán eventos como creación de clientes, actualización de tareas, etc.
-                  </p>
-                </div>
+                 <Table>
+                    <TableHeader>
+                        <TableRow>
+                            <TableHead>Fecha</TableHead>
+                            <TableHead>Usuario</TableHead>
+                            <TableHead>Acción</TableHead>
+                            <TableHead>Detalle</TableHead>
+                        </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                        {logData.map((log) => (
+                            <TableRow key={log.id}>
+                                <TableCell>{format(new Date(log.date), 'dd/MM/yyyy HH:mm:ss')}</TableCell>
+                                <TableCell className="font-medium">{log.user}</TableCell>
+                                <TableCell>
+                                  <Badge variant="secondary">{log.action}</Badge>
+                                </TableCell>
+                                <TableCell>{log.details}</TableCell>
+                            </TableRow>
+                        ))}
+                    </TableBody>
+                </Table>
               </CardContent>
             </Card>
           </TabsContent>
