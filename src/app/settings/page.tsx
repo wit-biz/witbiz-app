@@ -203,8 +203,8 @@ export default function SettingsPage() {
   return (
     <div className="flex flex-col min-h-screen">
       <Header
-        title="Administración"
-        description="Gestiona la configuración financiera, de equipo y los recursos del sistema."
+        title="Contabilidad"
+        description="Gestiona la configuración financiera y los recursos del sistema."
       />
       <main className="flex-1 p-4 md:p-8">
         <Tabs defaultValue="finances" className="w-full">

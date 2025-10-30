@@ -60,7 +60,7 @@ export default function DirectoryPage() {
     <>
       <div className="flex flex-col min-h-screen">
         <Header 
-          title={activeTab === 'clients' ? "Directorio de Clientes" : "Directorio de Promotores"}
+          title={activeTab === 'clients' ? "Base de Datos de Clientes" : "Directorio de Promotores"}
           description={activeTab === 'clients' ? "Gestione su base de datos de clientes." : "Consulte la información de sus promotores."}
         >
           {canCreateClient && activeTab === 'clients' && (
