@@ -20,6 +20,8 @@ import {
   DollarSign,
   BookText,
   Briefcase,
+  Database,
+  Landmark,
   type LucideIcon,
 } from "lucide-react";
 import {
@@ -49,7 +51,9 @@ const icons: { [key: string]: LucideIcon } = {
     User,
     BookText,
     DollarSign,
-    Briefcase
+    Briefcase,
+    Database,
+    Landmark
 };
 
 export function SidebarNav() {

@@ -235,12 +235,12 @@ export const notes: Note[] = [
 
 export const navItems: NavItem[] = [
     { href: '/', label: 'Inicio', icon: 'LayoutDashboard', exactMatch: true, requiredPermission: 'dashboard' },
-    { href: '/contacts', label: 'Base de Datos', icon: 'Users', requiredPermission: 'clients_view' },
+    { href: '/contacts', label: 'Base de Datos', icon: 'Database', requiredPermission: 'clients_view' },
     { href: '/tasks', label: 'Tareas', icon: 'ListTodo', requiredPermission: 'tasks_view' },
     { href: '/crm', label: 'CRM', icon: 'Workflow', requiredPermission: 'crm_view' },
     { href: '/services', label: 'Servicios', icon: 'Briefcase', requiredPermission: 'services_view' },
     { href: '/audit', label: 'Auditoría', icon: 'Scale', requiredPermission: 'audit_view' },
-    { href: '/settings', label: 'Contabilidad', icon: 'Shield', requiredPermission: 'admin_view' },
+    { href: '/settings', label: 'Contabilidad', icon: 'Landmark', requiredPermission: 'admin_view' },
 ];
 
     
