@@ -3,23 +3,13 @@
 
 import React, { useState, useMemo } from "react";
 import { Header } from "@/components/header";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { Landmark, Briefcase, PlusCircle, ArrowRightLeft, DollarSign, BarChart, Settings, Edit, Trash2, KeyRound } from "lucide-react";
+import { Landmark, Briefcase, PlusCircle, ArrowRightLeft, DollarSign, BarChart as BarChartIcon, Settings, Edit, Trash2, KeyRound, Filter } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import {
-  ChartContainer,
-  ChartTooltip,
-  ChartTooltipContent,
-} from "@/components/ui/chart";
-import { Bar, XAxis, YAxis, ResponsiveContainer, CartesianGrid, BarChart as RechartsBarChart } from "recharts";
+import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
+import { Bar, XAxis, YAxis, ResponsiveContainer, CartesianGrid, BarChart } from "recharts";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Accordion,
@@ -28,7 +18,14 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import { AddTransactionDialog } from "@/components/shared/AddTransactionDialog";
-
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
+import { format, isWithinInterval, startOfDay, endOfDay } from "date-fns";
+import { es } from "date-fns/locale";
+import { DateRange } from "react-day-picker";
+import { cn } from "@/lib/utils";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Calendar as CalendarIcon } from "lucide-react";
 
 // --- Mock Data ---
 
@@ -93,7 +90,23 @@ export default function SettingsPage() {
   const totalBalance = useMemo(() => mockCompanies.reduce((sum, comp) => sum + comp.totalBalance, 0), []);
   const totalIncome = useMemo(() => mockTransactions.filter(t => t.type === 'income').reduce((sum, t) => sum + t.amount, 0), []);
   const totalExpense = useMemo(() => mockTransactions.filter(t => t.type === 'expense').reduce((sum, t) => sum + t.amount, 0), []);
+  
+  const [date, setDate] = useState<DateRange | undefined>();
+  const [selectedCompanyId, setSelectedCompanyId] = useState<string>("all");
+  const [selectedCategoryId, setSelectedCategoryId] = useState<string>("all");
+  const [selectedType, setSelectedType] = useState<string>("all");
 
+  const filteredTransactions = useMemo(() => {
+    return mockTransactions.filter(item => {
+        const itemDate = new Date(item.date);
+        const isDateInRange = date?.from && date.to ? isWithinInterval(itemDate, { start: startOfDay(date.from), end: endOfDay(date.to) }) : true;
+        const isCompanyMatch = selectedCompanyId === 'all' || item.companyId === selectedCompanyId;
+        const isCategoryMatch = selectedCategoryId === 'all' || item.category === selectedCategoryId;
+        const isTypeMatch = selectedType === 'all' || item.type.startsWith(selectedType);
+        return isDateInRange && isCompanyMatch && isCategoryMatch && isTypeMatch;
+    });
+  }, [date, selectedCompanyId, selectedCategoryId, selectedType]);
+  
   return (
     <>
       <div className="flex flex-col min-h-screen">
@@ -112,7 +125,7 @@ export default function SettingsPage() {
         <main className="flex-1 p-4 md:p-8">
           <Tabs defaultValue="resumen">
             <TabsList className="grid w-full grid-cols-3 mb-6">
-              <TabsTrigger value="resumen"><BarChart className="mr-2 h-4 w-4"/>Resumen</TabsTrigger>
+              <TabsTrigger value="resumen"><BarChartIcon className="mr-2 h-4 w-4"/>Resumen</TabsTrigger>
               <TabsTrigger value="transacciones"><DollarSign className="mr-2 h-4 w-4"/>Transacciones</TabsTrigger>
               <TabsTrigger value="configuracion"><Settings className="mr-2 h-4 w-4"/>Configuración</TabsTrigger>
             </TabsList>
@@ -144,13 +157,13 @@ export default function SettingsPage() {
                   </CardHeader>
                   <CardContent className="pl-2">
                       <ChartContainer config={chartConfig} className="h-[250px] w-full">
-                          <RechartsBarChart data={mockChartData} accessibilityLayer>
+                          <BarChart data={mockChartData} accessibilityLayer>
                               <CartesianGrid vertical={false} />
                               <XAxis dataKey="month" tickLine={false} tickMargin={10} axisLine={false} tickFormatter={(value) => value.slice(0, 3)} />
                               <ChartTooltip content={<ChartTooltipContent indicator="dot" />} />
                               <Bar dataKey="Ingresos" fill="var(--color-Ingresos)" radius={4} />
                               <Bar dataKey="Egresos" fill="var(--color-Egresos)" radius={4} />
-                          </RechartsBarChart>
+                          </BarChart>
                       </ChartContainer>
                   </CardContent>
               </Card>
@@ -162,7 +175,44 @@ export default function SettingsPage() {
                       <CardTitle>Registro de Movimientos</CardTitle>
                       <CardDescription>Listado completo de todas las transacciones financieras.</CardDescription>
                   </CardHeader>
-                  <CardContent>
+                  <CardContent className="space-y-4">
+                       <div className="flex flex-col md:flex-row gap-2 border p-4 rounded-lg">
+                           <Popover>
+                            <PopoverTrigger asChild>
+                              <Button id="date" variant={"outline"} className={cn("w-full md:w-auto justify-start text-left font-normal", !date && "text-muted-foreground")}>
+                                <CalendarIcon className="mr-2 h-4 w-4" />
+                                {date?.from ? (date.to ? (<>{format(date.from, "LLL dd, y")} - {format(date.to, "LLL dd, y")}</>) : (format(date.from, "LLL dd, y"))) : (<span>Seleccione un rango</span>)}
+                              </Button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-auto p-0" align="start">
+                              <Calendar initialFocus mode="range" defaultMonth={date?.from} selected={date} onSelect={setDate} numberOfMonths={2} locale={es} />
+                            </PopoverContent>
+                          </Popover>
+                          <Select value={selectedCompanyId} onValueChange={setSelectedCompanyId}>
+                            <SelectTrigger className="w-full md:w-[200px]"><SelectValue placeholder="Filtrar por empresa..." /></SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="all">Todas las Empresas</SelectItem>
+                              {mockCompanies.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+                            </SelectContent>
+                          </Select>
+                          <Select value={selectedCategoryId} onValueChange={setSelectedCategoryId}>
+                            <SelectTrigger className="w-full md:w-[200px]"><SelectValue placeholder="Filtrar por categoría..." /></SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="all">Todas las Categorías</SelectItem>
+                              {mockCategories.map(c => <SelectItem key={c.id} value={c.name}>{c.name}</SelectItem>)}
+                            </SelectContent>
+                          </Select>
+                          <Select value={selectedType} onValueChange={setSelectedType}>
+                            <SelectTrigger className="w-full md:w-[180px]"><SelectValue placeholder="Filtrar por tipo..." /></SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="all">Todos los Tipos</SelectItem>
+                              <SelectItem value="income">Ingreso</SelectItem>
+                              <SelectItem value="expense">Egreso</SelectItem>
+                              <SelectItem value="transfer">Transferencia</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <Button variant="ghost" onClick={() => { setDate(undefined); setSelectedCompanyId("all"); setSelectedCategoryId("all"); setSelectedType("all");}}>Limpiar</Button>
+                       </div>
                        <Table>
                           <TableHeader>
                               <TableRow>
@@ -174,14 +224,14 @@ export default function SettingsPage() {
                               </TableRow>
                           </TableHeader>
                           <TableBody>
-                              {mockTransactions.map((trx) => (
+                              {filteredTransactions.map((trx) => (
                                   <TableRow key={trx.id}>
                                       <TableCell>{trx.date}</TableCell>
                                       <TableCell className="font-medium">{trx.description}</TableCell>
                                       <TableCell>{trx.category}</TableCell>
                                       <TableCell>
                                           <Badge variant={trx.type === 'income' ? 'default' : trx.type === 'expense' ? 'destructive' : 'secondary'}>
-                                              {trx.type === 'income' ? 'Ingreso' : trx.type === 'expense' ? 'Egreso' : 'Transferencia'}
+                                              {trx.type === 'income' ? 'Ingreso' : trx.type.startsWith('transfer') ? 'Transferencia' : 'Egreso'}
                                           </Badge>
                                       </TableCell>
                                       <TableCell className={`text-right font-semibold ${trx.amount > 0 ? 'text-green-600' : 'text-red-600'}`}>
@@ -294,5 +344,3 @@ export default function SettingsPage() {
     </>
   );
 }
-
-    
