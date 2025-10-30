@@ -10,16 +10,26 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { LineChart, History, BarChart } from "lucide-react";
+import { LineChart, History, BarChart, Download } from "lucide-react";
 import { DateRangeChartsTab } from "@/components/shared/DateRangeChartsTab";
 import { useCRMData } from "@/contexts/CRMDataContext";
 import { Loader2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { useToast } from "@/hooks/use-toast";
 
 export default function AuditPage() {
   const { clients, serviceWorkflows, isLoadingClients, isLoadingWorkflows } = useCRMData();
+  const { toast } = useToast();
 
   const chartServices = serviceWorkflows.map(s => ({ id: s.id, name: s.name }));
   const chartClients = clients.map(c => ({ id: c.id, name: c.name }));
+
+  const handleDownload = (section: string) => {
+      toast({
+          title: "Descarga Simulada",
+          description: `Se ha iniciado la descarga de la sección "${section}".`
+      });
+  };
 
   return (
     <div className="flex flex-col min-h-screen">
@@ -45,11 +55,17 @@ export default function AuditPage() {
           </TabsList>
           <TabsContent value="reports" className="mt-6">
             <Card>
-              <CardHeader>
-                <CardTitle>Reportes de Desempeño</CardTitle>
-                <CardDescription>
-                  Visualización de métricas clave, KPIs y números internos del negocio.
-                </CardDescription>
+              <CardHeader className="flex flex-row items-start justify-between">
+                <div>
+                  <CardTitle>Reportes de Desempeño</CardTitle>
+                  <CardDescription>
+                    Visualización de métricas clave, KPIs y números internos del negocio.
+                  </CardDescription>
+                </div>
+                <Button variant="outline" size="sm" onClick={() => handleDownload('Reportes')}>
+                  <Download className="mr-2 h-4 w-4" />
+                  Descargar
+                </Button>
               </CardHeader>
               <CardContent>
                 <div className="text-center text-muted-foreground py-12">
@@ -66,11 +82,17 @@ export default function AuditPage() {
           </TabsContent>
           <TabsContent value="logs" className="mt-6">
             <Card>
-              <CardHeader>
-                <CardTitle>Bitácora de Actividades</CardTitle>
-                <CardDescription>
-                  Registro de todas las acciones importantes realizadas dentro de la aplicación.
-                </CardDescription>
+              <CardHeader className="flex flex-row items-start justify-between">
+                 <div>
+                    <CardTitle>Bitácora de Actividades</CardTitle>
+                    <CardDescription>
+                      Registro de todas las acciones importantes realizadas dentro de la aplicación.
+                    </CardDescription>
+                 </div>
+                <Button variant="outline" size="sm" onClick={() => handleDownload('Bitácoras')}>
+                  <Download className="mr-2 h-4 w-4" />
+                  Descargar
+                </Button>
               </CardHeader>
               <CardContent>
                  <div className="text-center text-muted-foreground py-12">

@@ -6,7 +6,7 @@ import { addDays, format, subDays, startOfMonth, endOfMonth, startOfYesterday, e
 import { es } from "date-fns/locale"
 import { DateRange } from "react-day-picker"
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis, ResponsiveContainer, Line, LineChart } from "recharts"
-import { Calendar as CalendarIcon, Users, Briefcase } from "lucide-react"
+import { Calendar as CalendarIcon, Users, Briefcase, Download } from "lucide-react"
 
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
@@ -29,6 +29,7 @@ import {
   ChartTooltipContent,
 } from "@/components/ui/chart"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { useToast } from "@/hooks/use-toast"
 
 const allData = Array.from({ length: 180 }, (_, i) => {
     const date = subDays(new Date(), i);
@@ -55,6 +56,7 @@ interface DateRangeChartsTabProps extends React.HTMLAttributes<HTMLDivElement> {
 }
 
 export function DateRangeChartsTab({ className, clients, services }: DateRangeChartsTabProps) {
+  const { toast } = useToast();
   const [date, setDate] = React.useState<DateRange | undefined>({
     from: subDays(new Date(), 29),
     to: new Date(),
@@ -94,6 +96,21 @@ export function DateRangeChartsTab({ className, clients, services }: DateRangeCh
         peak: { label: format(new Date(peakItem.date), "dd/MM/yy"), value: peakItem.commissions },
     };
   }, [filteredData]);
+  
+  const handleDownload = () => {
+    const clientName = clients.find(c => c.id === selectedClientId)?.name || "Todos";
+    const serviceName = services.find(s => s.id === selectedServiceId)?.name || "Todos";
+
+    let description = `Iniciando descarga de gráficos. Filtros aplicados: Cliente - ${clientName}, Servicio - ${serviceName}.`;
+    if (date?.from && date.to) {
+        description += ` Rango: ${format(date.from, "dd/MM/yy")} a ${format(date.to, "dd/MM/yy")}.`;
+    }
+
+    toast({
+        title: "Descarga Simulada",
+        description: description,
+    });
+  };
 
   return (
     <div className="space-y-6">
@@ -168,6 +185,10 @@ export function DateRangeChartsTab({ className, clients, services }: DateRangeCh
                         </SelectContent>
                     </Select>
                 </div>
+                <Button variant="outline" onClick={handleDownload} className="w-full md:w-auto">
+                  <Download className="mr-2 h-4 w-4" />
+                  Descargar Gráficos
+                </Button>
             </div>
 
           <ChartContainer config={chartConfig}>
