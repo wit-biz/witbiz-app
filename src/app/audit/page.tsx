@@ -3,7 +3,7 @@
 
 import React, { useState, useMemo } from 'react';
 import { DateRange } from 'react-day-picker';
-import { subDays, startOfDay, endOfDay, isWithinInterval } from 'date-fns';
+import { subDays, startOfDay, endOfDay, isWithinInterval, endOfMonth } from 'date-fns';
 import { Header } from "@/components/header";
 import {
   Card,
@@ -231,18 +231,33 @@ export default function AuditPage() {
           </TabsContent>
 
            <TabsContent value="charts" className="mt-6">
-             {isLoadingClients || isLoadingWorkflows ? (
-                <div className="flex items-center justify-center py-12">
-                  <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                </div>
-             ) : (
-                <DateRangeChartsTab 
-                    date={date}
-                    selectedClientId={selectedClientId}
-                    selectedServiceId={selectedServiceId}
-                    onDownload={() => handleDownload('Gráficos')}
-                />
-             )}
+            <Card>
+                <CardHeader className="flex flex-row items-start justify-between">
+                    <div>
+                        <CardTitle>Análisis Gráfico</CardTitle>
+                        <CardDescription>
+                            Visualización gráfica de los datos según los filtros aplicados.
+                        </CardDescription>
+                    </div>
+                    <Button variant="outline" size="sm" onClick={() => handleDownload('Gráficos')}>
+                        <Download className="mr-2 h-4 w-4" />
+                        Descargar
+                    </Button>
+                </CardHeader>
+                <CardContent>
+                 {isLoadingClients || isLoadingWorkflows ? (
+                    <div className="flex items-center justify-center py-12">
+                      <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                    </div>
+                 ) : (
+                    <DateRangeChartsTab 
+                        date={date}
+                        selectedClientId={selectedClientId}
+                        selectedServiceId={selectedServiceId}
+                    />
+                 )}
+                </CardContent>
+             </Card>
           </TabsContent>
         </Tabs>
       </main>

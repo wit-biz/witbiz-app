@@ -43,10 +43,9 @@ interface DateRangeChartsTabProps extends React.HTMLAttributes<HTMLDivElement> {
   date: DateRange | undefined;
   selectedClientId: string;
   selectedServiceId: string;
-  onDownload: () => void;
 }
 
-export function DateRangeChartsTab({ className, date, selectedClientId, selectedServiceId, onDownload }: DateRangeChartsTabProps) {
+export function DateRangeChartsTab({ className, date, selectedClientId, selectedServiceId }: DateRangeChartsTabProps) {
   
   const filteredData = React.useMemo(() => {
     return allData.filter(item => {
@@ -76,7 +75,7 @@ export function DateRangeChartsTab({ className, date, selectedClientId, selected
     <div className="space-y-6">
       <Card>
         <CardHeader>
-          <CardTitle>Análisis Gráfico de Comisiones</CardTitle>
+          <CardTitle>Análisis de Comisiones</CardTitle>
           <CardDescription>
             {date?.from ? (
               date.to ? (
