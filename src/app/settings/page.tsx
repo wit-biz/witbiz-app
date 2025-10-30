@@ -10,7 +10,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Landmark, Briefcase, PlusCircle, ArrowRightLeft, DollarSign, BarChart, Settings, Edit, Trash2, KeyRound } from "lucide-react";
+import { Landmark, Briefcase, PlusCircle, ArrowRightLeft, DollarSign, BarChart as BarChartIcon, Settings, Edit, Trash2, KeyRound } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
@@ -18,9 +18,8 @@ import {
   ChartContainer,
   ChartTooltip,
   ChartTooltipContent,
-  BarChart as RechartsBarChart,
 } from "@/components/ui/chart";
-import { Bar, XAxis, YAxis, ResponsiveContainer, CartesianGrid } from "recharts";
+import { Bar, BarChart, XAxis, YAxis, ResponsiveContainer, CartesianGrid } from "recharts";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Accordion,
@@ -106,7 +105,7 @@ export default function SettingsPage() {
       <main className="flex-1 p-4 md:p-8">
         <Tabs defaultValue="resumen">
           <TabsList className="grid w-full grid-cols-3 mb-6">
-            <TabsTrigger value="resumen"><BarChart className="mr-2 h-4 w-4"/>Resumen</TabsTrigger>
+            <TabsTrigger value="resumen"><BarChartIcon className="mr-2 h-4 w-4"/>Resumen</TabsTrigger>
             <TabsTrigger value="transacciones"><DollarSign className="mr-2 h-4 w-4"/>Transacciones</TabsTrigger>
             <TabsTrigger value="configuracion"><Settings className="mr-2 h-4 w-4"/>Configuración</TabsTrigger>
           </TabsList>
@@ -138,13 +137,13 @@ export default function SettingsPage() {
                 </CardHeader>
                 <CardContent className="pl-2">
                     <ChartContainer config={chartConfig} className="h-[250px] w-full">
-                        <RechartsBarChart data={mockChartData} accessibilityLayer>
+                        <BarChart data={mockChartData} accessibilityLayer>
                             <CartesianGrid vertical={false} />
                             <XAxis dataKey="month" tickLine={false} tickMargin={10} axisLine={false} tickFormatter={(value) => value.slice(0, 3)} />
                             <ChartTooltip content={<ChartTooltipContent indicator="dot" />} />
                             <Bar dataKey="Ingresos" fill="var(--color-Ingresos)" radius={4} />
                             <Bar dataKey="Egresos" fill="var(--color-Egresos)" radius={4} />
-                        </RechartsBarChart>
+                        </BarChart>
                     </ChartContainer>
                 </CardContent>
             </Card>
