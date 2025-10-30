@@ -131,8 +131,7 @@ export default function ServicesPage() {
                      <Card>
                         <AccordionTrigger className="w-full p-0 [&_svg]:ml-auto [&_svg]:mr-4">
                             <CardHeader className="flex-1 text-left">
-                                <CardTitle className="flex items-center gap-2 text-lg">
-                                    <Briefcase className="h-5 w-5 text-accent" />
+                                <CardTitle className="text-lg">
                                     {service.name}
                                 </CardTitle>
                             </CardHeader>
