@@ -9,7 +9,6 @@ import {
     type Task, 
     type Document, 
     type Note, 
-    type Reservation, 
     type ServiceWorkflow, 
     type WorkflowStage, 
     type WorkflowStageObjective,
@@ -22,7 +21,7 @@ import { useUser, useFirestore, useMemoFirebase, useDoc, useAuth } from '@/fireb
 import { collection, doc, writeBatch, setDoc, getDoc, addDoc, updateDoc, deleteDoc, serverTimestamp } from 'firebase/firestore';
 import { setDocumentNonBlocking, addDocumentNonBlocking, updateDocumentNonBlocking, deleteDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
-import { clients as mockClients, tasks as mockTasks, documents as mockDocuments, notes as mockNotes, reservations as mockReservations, serviceWorkflows as mockWorkflows } from '@/lib/data';
+import { clients as mockClients, tasks as mockTasks, documents as mockDocuments, notes as mockNotes, serviceWorkflows as mockWorkflows } from '@/lib/data';
 
 interface CRMContextType {
   currentUser: AuthenticatedUser | null;
@@ -36,7 +35,7 @@ interface CRMContextType {
   
   tasks: Task[];
   isLoadingTasks: boolean;
-  addTask: (newTaskData: Omit<Task, 'id' | 'status'>) => Promise<Task | null>;
+  addTask: (newTaskData: Omit<Task, 'id' | 'status' | 'clientName'>) => Promise<Task | null>;
   updateTask: (taskId: string, updates: Partial<Task>) => Promise<boolean>;
   deleteTask: (taskId: string) => Promise<boolean>;
   getTasksByClientId: (clientId: string) => Task[];
@@ -53,12 +52,6 @@ interface CRMContextType {
   addNote: (clientId: string, text: string) => Promise<Note | null>;
   updateNote: (noteId: string, newText: string, clientId?: string) => Promise<boolean>;
   deleteNote: (noteId: string, clientId?: string) => Promise<boolean>;
-
-  reservations: Reservation[];
-  isLoadingReservations: boolean;
-  addReservation: (newReservationData: Omit<Reservation, 'id'>) => Promise<Reservation | null>;
-  updateReservation: (reservationId: string, updates: Partial<Reservation>) => Promise<boolean>;
-  deleteReservation: (reservationId: string) => Promise<boolean>;
 
   serviceWorkflows: ServiceWorkflow[];
   isLoadingWorkflows: boolean;
@@ -92,7 +85,6 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
     const [tasks, setTasks] = useState<Task[]>(mockTasks);
     const [documents, setDocuments] = useState<Document[]>(mockDocuments);
     const [notes, setNotes] = useState<Note[]>(mockNotes);
-    const [reservations, setReservations] = useState<Reservation[]>(mockReservations);
     const [serviceWorkflows, setServiceWorkflows] = useState<ServiceWorkflow[]>(mockWorkflows);
     
     // LOADING STATES
@@ -100,7 +92,6 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
     const [isLoadingTasks, setIsLoadingTasks] = useState(false);
     const [isLoadingDocuments, setIsLoadingDocuments] = useState(false);
     const [isLoadingNotes, setIsLoadingNotes] = useState(false);
-    const [isLoadingReservations, setIsLoadingReservations] = useState(false);
     const [isLoadingWorkflows, setIsLoadingWorkflows] = useState(false);
     
     const [currentUser, setCurrentUser] = useState<AuthenticatedUser | null>(null);
@@ -116,7 +107,6 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
                   dashboard: true, 
                   clients_view: true, 
                   tasks_view: true, 
-                  reservations_view: true, 
                   crm_view: true, 
                   audit_view: true, 
                   admin_view: true,
@@ -126,9 +116,6 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
                   tasks_create: true,
                   tasks_edit: true,
                   tasks_delete: true,
-                  reservations_create: true,
-                  reservations_edit: true,
-                  reservations_delete: true,
                   crm_edit: true,
                   team_invite: true,
                   documents_view: true,
@@ -184,7 +171,7 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
         const client = clients.find(c => c.id === newTaskData.clientId);
         if (!client) return null;
         const newTask: Task = { ...newTaskData, id: `task-${Date.now()}`, status: 'Pendiente', clientName: client.name };
-        setTasks(prev => [...prev, newTask]);
+        setTasks(prev => [...prev, newTask].sort((a, b) => (a.dueTime || "23:59").localeCompare(b.dueTime || "23:59")));
         return newTask;
     };
     const updateTask = async (taskId: string, updates: Partial<Task>): Promise<boolean> => {
@@ -200,22 +187,6 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
         const newDoc: Document = { ...newDocumentData, id: `doc-${Date.now()}`, uploadedAt: new Date(), downloadURL: '#' };
         setDocuments(prev => [...prev, newDoc]);
         return newDoc;
-    }
-
-    const addReservation = async (newReservationData: Omit<Reservation, 'id'>): Promise<Reservation | null> => {
-        const newReservation: Reservation = { ...newReservationData, id: `res-${Date.now()}` };
-        setReservations(prev => [...prev, newReservation]);
-        return newReservation;
-    }
-
-    const updateReservation = async (reservationId: string, updates: Partial<Reservation>): Promise<boolean> => {
-        setReservations(prev => prev.map(r => r.id === reservationId ? { ...r, ...updates } : r));
-        return true;
-    }
-
-    const deleteReservation = async (reservationId: string): Promise<boolean> => {
-        setReservations(prev => prev.filter(r => r.id !== reservationId));
-        return true;
     }
 
     const getObjectiveById = useCallback((objectiveId: string): WorkflowStageObjective | null => {
@@ -313,11 +284,6 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
         updateNote: (id, text) => placeholderPromise(false),
         deleteNote: (id) => placeholderPromise(false),
 
-        reservations, isLoadingReservations,
-        addReservation,
-        updateReservation,
-        deleteReservation,
-
         serviceWorkflows, isLoadingWorkflows,
         addService,
         updateService: (id, d) => placeholderPromise(false),
@@ -337,7 +303,7 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
     }), [
         currentUser, isUserLoading, clients, isLoadingClients, 
         tasks, isLoadingTasks, documents, isLoadingDocuments, notes, isLoadingNotes,
-        reservations, isLoadingReservations, serviceWorkflows, isLoadingWorkflows, getObjectiveById
+        serviceWorkflows, isLoadingWorkflows, getObjectiveById
     ]);
 
     return (

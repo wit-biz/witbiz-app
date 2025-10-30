@@ -87,31 +87,32 @@ export function SidebarNav() {
           return null;
         }
 
-        if (!item.requiredPermission || currentUser.permissions[item.requiredPermission]) {
-          const Icon = item.icon as LucideIcon;
-          // For exactMatch, we want to match only the exact href.
-          // For non-exactMatch, we check if the pathname starts with the href,
-          // but we also ensure href isn't just "/" to avoid matching all routes.
-          const isActive = item.exactMatch
-            ? pathname === item.href
-            : (pathname.startsWith(item.href) && item.href !== '/') || (item.href === '/crm' && pathname.startsWith('/workflows'));
-            
-          return (
-            <SidebarMenuItem key={item.href}>
-              <SidebarMenuButton
-                asChild
-                isActive={isActive}
-                tooltip={item.label}
-              >
-                <Link href={item.href} onClick={handleLinkClick}>
-                  <Icon />
-                  <span>{item.label}</span>
-                </Link>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-          );
+        if (item.requiredPermission && !currentUser.permissions[item.requiredPermission]) {
+            return null;
         }
-        return null;
+
+        const Icon = item.icon as LucideIcon;
+        // For exactMatch, we want to match only the exact href.
+        // For non-exactMatch, we check if the pathname starts with the href,
+        // but we also ensure href isn't just "/" to avoid matching all routes.
+        const isActive = item.exactMatch
+          ? pathname === item.href
+          : (pathname.startsWith(item.href) && item.href !== '/') || (item.href === '/crm' && pathname.startsWith('/workflows'));
+            
+        return (
+          <SidebarMenuItem key={item.href}>
+            <SidebarMenuButton
+              asChild
+              isActive={isActive}
+              tooltip={item.label}
+            >
+              <Link href={item.href} onClick={handleLinkClick}>
+                <Icon />
+                <span>{item.label}</span>
+              </Link>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+        );
       })}
     </SidebarMenu>
   );

@@ -16,7 +16,9 @@ import { Edit, Trash, CheckCircle, Loader2 } from 'lucide-react';
 import { Task } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
+import { es } from 'date-fns/locale';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { parseDateString, formatTimeString } from '@/lib/utils';
 
 
 interface TaskDetailDialogProps {
@@ -46,6 +48,8 @@ export function TaskDetailDialog({
   }, [task]);
 
   if (!task) return null;
+  
+  const dueDate = parseDateString(task.dueDate);
 
   const handleMarkAsComplete = async () => {
     if (!onUpdateTask) return;
@@ -88,7 +92,7 @@ export function TaskDetailDialog({
             <DialogHeader>
             <DialogTitle>{task.title}</DialogTitle>
             <DialogDescription>
-                Vence: {format(new Date(task.dueDate), 'PPP')} | Estado: {task.status}
+                Vence: {dueDate ? format(dueDate, 'PPP', { locale: es }) : 'N/A'} {task.dueTime && `a las ${formatTimeString(task.dueTime)}`} | Estado: {task.status}
             </DialogDescription>
             </DialogHeader>
             <div className="py-4 space-y-2">
@@ -112,7 +116,7 @@ export function TaskDetailDialog({
                             <Edit className="h-4 w-4" />
                         </Button>
                     </TooltipTrigger>
-                    <TooltipContent><p>Editar</p></TooltipContent>
+                    <TooltipContent><p>Editar (Próximamente)</p></TooltipContent>
                 </Tooltip>
                 <Tooltip>
                     <TooltipTrigger asChild>
@@ -120,9 +124,9 @@ export function TaskDetailDialog({
                             variant="destructive"
                             size="icon"
                             onClick={handleDelete}
-                            disabled={isSubmitting}
+                            disabled={isSubmitting || !onDeleteTask}
                         >
-                            {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash className="h-4 w-4" />}
+                            {isSubmitting && onDeleteTask ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash className="h-4 w-4" />}
                         </Button>
                     </TooltipTrigger>
                     <TooltipContent><p>Eliminar</p></TooltipContent>
@@ -131,12 +135,12 @@ export function TaskDetailDialog({
             <Tooltip>
                 <TooltipTrigger asChild>
                     <Button
-                        size="icon"
                         onClick={handleMarkAsComplete}
-                        disabled={isSubmitting || task.status === 'Completada'}
+                        disabled={isSubmitting || task.status === 'Completada' || !onUpdateTask}
                         className="bg-green-600 hover:bg-green-700 text-white"
                     >
-                         {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle className="h-4 w-4" />}
+                         {isSubmitting && onUpdateTask ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <CheckCircle className="mr-2 h-4 w-4" />}
+                         Marcar como Completada
                     </Button>
                 </TooltipTrigger>
                 <TooltipContent><p>Marcar como Completada</p></TooltipContent>

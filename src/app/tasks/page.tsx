@@ -23,7 +23,7 @@ import { Task } from "@/lib/types";
 
 
 const MemoizedTaskItemDisplay = React.memo(function TaskItemDisplay({ task, icon: Icon, iconColor = "text-gray-500", showDate = true, isClient, onClickHandler }: { task: Task; icon?: React.ElementType; iconColor?: string, showDate?: boolean, isClient: boolean, onClickHandler: (task: Task) => void }) {
-  const taskDueDate = new Date(task.dueDate);
+  const taskDueDate = parseDateString(task.dueDate);
   return ( 
     <div 
       className="flex items-start gap-3 p-3 bg-background hover:bg-secondary/50 rounded-md border cursor-pointer transition-colors" 
@@ -41,19 +41,19 @@ const MemoizedTaskItemDisplay = React.memo(function TaskItemDisplay({ task, icon
             <Briefcase className="h-3 w-3" /> {task.clientName} 
           </p> 
         )} 
-        {showDate && taskDueDate && ( 
+        {showDate && taskDueDate && isClient && ( 
           <p className="text-xs text-muted-foreground mt-1"> 
              {format(taskDueDate, 'PPP', { locale: es })}
             {task.dueTime && ( 
               <span className="ml-2 inline-flex items-center"> 
-                <Clock className="h-3 w-3 mr-1" /> {task.dueTime}
+                <Clock className="h-3 w-3 mr-1" /> {formatTimeString(task.dueTime)}
               </span> 
             )} 
           </p> 
         )} 
         {!showDate && task.dueTime && ( 
           <p className="text-xs text-muted-foreground mt-1 inline-flex items-center"> 
-            <Clock className="h-3 w-3 mr-1" /> {task.dueTime}
+            <Clock className="h-3 w-3 mr-1" /> {formatTimeString(task.dueTime)}
           </p> 
         )} 
       </div> 
@@ -102,31 +102,31 @@ export default function TasksPage() {
   
     const overdue = pendingTasks
       .filter(task => {
-        const taskDueDate = new Date(task.dueDate);
+        const taskDueDate = parseDateString(task.dueDate);
         return taskDueDate && taskDueDate < today;
       })
       .sort((a, b) => {
-        const dateA = new Date(a.dueDate);
-        const dateB = new Date(b.dueDate);
+        const dateA = parseDateString(a.dueDate);
+        const dateB = parseDateString(b.dueDate);
         if (!dateA || !dateB) return 0;
         return dateA.getTime() - dateB.getTime() || (a.dueTime || "23:59").localeCompare(b.dueTime || "23:59");
       });
   
     const forToday = pendingTasks
       .filter(task => {
-        const taskDueDate = new Date(task.dueDate);
+        const taskDueDate = parseDateString(task.dueDate);
         return taskDueDate && taskDueDate.getTime() === today.getTime();
       })
       .sort((a, b) => (a.dueTime || "23:59").localeCompare(b.dueTime || "23:59"));
   
     const upcomingThisWeek = pendingTasks
       .filter(task => {
-        const taskDueDate = new Date(task.dueDate);
+        const taskDueDate = parseDateString(task.dueDate);
         return taskDueDate && taskDueDate > today && taskDueDate <= endOfWeek;
       })
       .sort((a, b) => {
-        const dateA = new Date(a.dueDate);
-        const dateB = new Date(b.dueDate);
+        const dateA = parseDateString(a.dueDate);
+        const dateB = parseDateString(b.dueDate);
         if (!dateA || !dateB) return 0;
         return dateA.getTime() - dateB.getTime() || (a.dueTime || "23:59").localeCompare(b.dueTime || "23:59");
       });
@@ -138,18 +138,18 @@ export default function TasksPage() {
   const dayModifiers = useMemo(() => {
     if (!currentClientDate || !Array.isArray(allTasks)) return {};
     const today = new Date(currentClientDate);
-    const pendingTasksWithValidDates = allTasks.filter(task => task && task.status !== 'Completada');
+    const pendingTasksWithValidDates = allTasks.filter(task => task && task.status !== 'Completada' && parseDateString(task.dueDate));
   
     const overdueDays = pendingTasksWithValidDates
-      .map(task => new Date(task.dueDate))
+      .map(task => parseDateString(task.dueDate))
       .filter((date): date is Date => date !== null && date < today);
     
     const todayTaskDays = pendingTasksWithValidDates
-      .map(task => new Date(task.dueDate))
+      .map(task => parseDateString(task.dueDate))
       .filter((date): date is Date => date !== null && date.getFullYear() === today.getFullYear() && date.getMonth() === today.getMonth() && date.getDate() === today.getDate());
       
     const upcomingTaskDays = pendingTasksWithValidDates
-      .map(task => new Date(task.dueDate))
+      .map(task => parseDateString(task.dueDate))
       .filter((date): date is Date => date !== null && date > today);
   
     return { 
@@ -167,7 +167,7 @@ export default function TasksPage() {
     selectedDayStart.setHours(0,0,0,0);
     return allTasks.filter(task => {
         if (!task) return false;
-        const taskDueDate = new Date(task.dueDate);
+        const taskDueDate = parseDateString(task.dueDate);
         return taskDueDate && taskDueDate.getTime() === selectedDayStart.getTime() && task.status !== 'Completada';
     }).sort((a,b) => (a.dueTime || "23:59").localeCompare(b.dueTime || "23:59"));
   }, [selectedDate, allTasks]);
@@ -219,6 +219,7 @@ export default function TasksPage() {
                       locale={es} 
                       className="rounded-md border" 
                       disabled={!currentClientDate ? (date) => true : (date) => {
+                          if (!currentClientDate) return true;
                           const oneYearAgo = new Date(currentClientDate);
                           oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
                           const twoYearsFromNow = new Date(currentClientDate);
@@ -247,7 +248,9 @@ export default function TasksPage() {
                       </AccordionTrigger> 
                       <AccordionContent> 
                         <CardContent className="space-y-3 pt-0 p-4"> 
-                          {section.tasks.length > 0 ? ( section.tasks.map(task => <MemoizedTaskItemDisplay key={task.id} task={task} icon={section.icon} iconColor={section.color} showDate={section.id !== 'today-tasks'} isClient={isClient} onClickHandler={handleTaskClick} />) ) : ( <div className="text-sm text-muted-foreground p-4 text-center flex flex-col items-center"> <Info className="h-8 w-8 text-muted-foreground mb-2"/> {section.emptyMsg} </div> )} 
+                          {isLoadingTasks ? (
+                             <div className="flex items-center justify-center p-12"><Loader2 className="h-8 w-8 animate-spin text-primary"/></div>
+                          ) : section.tasks.length > 0 ? ( section.tasks.map(task => <MemoizedTaskItemDisplay key={task.id} task={task} icon={section.icon} iconColor={section.color} showDate={section.id !== 'today-tasks'} isClient={isClient} onClickHandler={handleTaskClick} />) ) : ( <div className="text-sm text-muted-foreground p-4 text-center flex flex-col items-center"> <Info className="h-8 w-8 text-muted-foreground mb-2"/> {section.emptyMsg} </div> )} 
                         </CardContent> 
                       </AccordionContent> 
                     </Card> 
@@ -272,7 +275,3 @@ export default function TasksPage() {
     </TooltipProvider>
   );
 }
-
-    
-
-    

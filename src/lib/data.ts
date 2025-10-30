@@ -1,6 +1,6 @@
 
 
-import type { Client, Task, Document, Note, Reservation, WorkflowStage, NavItem, Promoter, ServiceWorkflow } from './types';
+import type { Client, Task, Document, Note, WorkflowStage, NavItem, Promoter, ServiceWorkflow } from './types';
 
 export const serviceWorkflows: ServiceWorkflow[] = [
   {
@@ -176,9 +176,12 @@ export const tasks: Task[] = [
     id: 'T1',
     title: 'Seguimiento con Innovate Inc.',
     dueDate: new Date().toISOString().split('T')[0],
+    dueTime: '10:00',
     status: 'Pendiente',
     clientId: '1',
     clientName: 'Innovate Inc.',
+    description: 'Llamada de seguimiento sobre la propuesta enviada.',
+    type: 'Cita',
   },
   {
     id: 'T2',
@@ -187,6 +190,8 @@ export const tasks: Task[] = [
     status: 'Pendiente',
     clientId: '2',
     clientName: 'Synergy Corp.',
+    description: 'Revisión final del contrato antes de enviarlo.',
+    type: 'Tarea'
   },
   {
     id: 'T3',
@@ -195,6 +200,7 @@ export const tasks: Task[] = [
     status: 'Pendiente',
     clientId: '3',
     clientName: 'Solutions LLC',
+    type: 'Tarea',
   },
   {
     id: 'T4',
@@ -203,6 +209,8 @@ export const tasks: Task[] = [
     status: 'Pendiente',
     clientId: '4',
     clientName: 'Global Net',
+    type: 'Cita',
+    dueTime: '14:30',
   },
    {
     id: 'T5',
@@ -211,6 +219,7 @@ export const tasks: Task[] = [
     status: 'Completada',
     clientId: '2',
     clientName: 'Synergy Corp.',
+    type: 'Tarea',
   },
 ];
 
@@ -224,18 +233,12 @@ export const notes: Note[] = [
   { id: 'N2', content: 'El cliente está revisando el contrato. Esperando comentarios sobre la sección 3.2.', text: 'El cliente está revisando el contrato. Esperando comentarios sobre la sección 3.2.', createdAt: new Date(), clientId: '2' },
 ];
 
-export const reservations: Reservation[] = [
-    { id: 'B1', clientName: 'Innovate Inc.', date: new Date(new Date().getTime() + 2 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], clientId: '1', type: 'Cita', time: '10:00', details: 'Llamada de seguimiento', status: 'Confirmada' },
-    { id: 'B2', clientName: 'Synergy Corp.', date: new Date(new Date().getTime() + 1 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], clientId: '2', type: 'Cita', time: '14:30', details: 'Revisión de contrato', status: 'Confirmada' },
-];
-
 export const navItems: NavItem[] = [
     { href: '/', label: 'Inicio', icon: 'LayoutDashboard', exactMatch: true, requiredPermission: 'dashboard' },
     { href: '/contacts', label: 'Directorio', icon: 'Users', requiredPermission: 'clients_view' },
     { href: '/tasks', label: 'Tareas', icon: 'ListTodo', requiredPermission: 'tasks_view' },
-    { href: '/bookings', label: 'Reservaciones', icon: 'Calendar', requiredPermission: 'reservations_view' },
     { href: '/crm', label: 'CRM', icon: 'Workflow', requiredPermission: 'crm_view' },
-    { href: '/services', label: 'Servicios', icon: 'Briefcase', requiredPermission: 'dashboard' },
+    { href: '/services', label: 'Servicios', icon: 'Briefcase', requiredPermission: 'services_view' },
     { href: '/resources', label: 'Recursos', icon: 'BookText', requiredPermission: 'dashboard' },
     { href: '/audit', label: 'Auditoría', icon: 'Scale', requiredPermission: 'audit_view' },
     { href: '/settings', label: 'Administración', icon: 'Shield', requiredPermission: 'admin_view' },

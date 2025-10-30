@@ -21,7 +21,7 @@ import { Calendar } from '@/components/ui/calendar';
 import { PlusCircle, Save, Calendar as CalendarIcon, Loader2 } from 'lucide-react';
 import { useCRMData, type Task } from '@/contexts/CRMDataContext';
 import { useGlobalNotification } from '@/contexts/NotificationContext';
-import { cn } from '@/lib/utils';
+import { cn, parseDateString } from '@/lib/utils';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 
@@ -48,7 +48,7 @@ export function AddTaskDialog({
     return {
       title: initialTaskData?.title || '',
       description: initialTaskData?.description || '',
-      clientId: preselectedClient?.id || '',
+      clientId: preselectedClient?.id || initialTaskData?.clientId || '',
       dueDate: initialTaskData?.dueDate || format(today, 'yyyy-MM-dd'),
       dueTime: initialTaskData?.dueTime || '',
     };
@@ -102,7 +102,7 @@ export function AddTaskDialog({
     }
   };
   
-  const dueDateAsDate = formData.dueDate ? new Date(formData.dueDate) : new Date();
+  const dueDateAsDate = parseDateString(formData.dueDate);
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
@@ -165,7 +165,7 @@ export function AddTaskDialog({
                       disabled={isSubmitting}
                     >
                       <CalendarIcon className="mr-2 h-4 w-4" />
-                      {formData.dueDate ? (
+                      {dueDateAsDate ? (
                         format(dueDateAsDate, 'PPP', { locale: es })
                       ) : (
                         <span>Seleccione fecha</span>
@@ -175,7 +175,7 @@ export function AddTaskDialog({
                   <PopoverContent className="w-auto p-0">
                     <Calendar
                       mode="single"
-                      selected={dueDateAsDate}
+                      selected={dueDateAsDate || undefined}
                       onSelect={handleDateChange}
                       initialFocus
                     />
@@ -226,5 +226,3 @@ export function AddTaskDialog({
     </Dialog>
   );
 }
-
-    

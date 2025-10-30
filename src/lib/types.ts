@@ -29,11 +29,13 @@ export type Task = {
   id: string;
   title: string;
   dueDate: string; // ISO String YYYY-MM-DD
+  dueTime?: string; // HH:MM
   status: 'Pendiente' | 'Completada';
   clientId: string;
   clientName: string;
   description?: string;
-  dueTime?: string; // HH:MM
+  type?: 'Tarea' | 'Cita' | 'Operación Divisas';
+  createdAt?: any;
 };
 
 export type Document = {
@@ -54,18 +56,6 @@ export type Note = {
   clientId: string;
   authorName?: string;
   updatedAt?: any; // Firestore Timestamp o Date
-};
-
-export type Reservation = {
-  id: string;
-  clientId: string;
-  clientName: string;
-  type: 'Cita' | 'Operación Divisas';
-  date: string; // ISO String YYYY-MM-DD
-  time: string; // HH:MM
-  details: string;
-  status: 'Confirmada' | 'Pendiente' | 'Cancelada';
-  createdAt?: any; // Firestore Timestamp o Date
 };
 
 export type WorkflowStage = {
@@ -104,10 +94,6 @@ export type AppPermissions = {
     tasks_edit: boolean;
     tasks_delete: boolean;
     tasks_view: boolean;
-    reservations_create: boolean;
-    reservations_edit: boolean;
-    reservations_delete: boolean;
-    reservations_view: boolean;
     crm_edit: boolean;
     crm_view: boolean;
     reports_view: boolean;
