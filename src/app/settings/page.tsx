@@ -26,21 +26,34 @@ import { cn } from "@/lib/utils";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Calendar as CalendarIcon } from "lucide-react";
 import { Header } from "@/components/header";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+  DialogClose,
+} from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { useToast } from '@/hooks/use-toast';
+import { Loader2 } from 'lucide-react';
 
 // --- Mock Data ---
 
-const mockCompanies = [
+const initialCompanies = [
   { id: 'emp1', name: 'WitBiz Core', totalBalance: 125000.75 },
   { id: 'emp2', name: 'WitBiz Servicios Digitales', totalBalance: 82500.50 },
   { id: 'emp3', name: 'WitBiz Consultoría', totalBalance: 210000.00 },
 ];
 
-const mockBankAccounts = [
-  { id: 'cta1', companyId: 'emp1', companyName: 'WitBiz Core', bankName: 'BBVA', balance: 75000.25 },
-  { id: 'cta2', companyId: 'emp1', companyName: 'WitBiz Core', bankName: 'Santander', balance: 50000.50 },
-  { id: 'cta3', companyId: 'emp2', companyName: 'WitBiz Servicios Digitales', bankName: 'Banorte', balance: 82500.50 },
-  { id: 'cta4', companyId: 'emp3', companyName: 'WitBiz Consultoría', bankName: 'HSBC', balance: 110000.00 },
-  { id: 'cta5', companyId: 'emp3', companyName: 'WitBiz Consultoría', bankName: 'Inbursa', balance: 100000.00 },
+const initialBankAccounts = [
+  { id: 'cta1', companyId: 'emp1', companyName: 'WitBiz Core', bankName: 'BBVA', balance: 75000.25, type: 'Débito' },
+  { id: 'cta2', companyId: 'emp1', companyName: 'WitBiz Core', bankName: 'Santander', balance: 50000.50, type: 'Débito' },
+  { id: 'cta3', companyId: 'emp2', companyName: 'WitBiz Servicios Digitales', bankName: 'Banorte', balance: 82500.50, type: 'Débito' },
+  { id: 'cta4', companyId: 'emp3', companyName: 'WitBiz Consultoría', bankName: 'HSBC', balance: 110000.00, type: 'Crédito' },
+  { id: 'cta5', companyId: 'emp3', companyName: 'WitBiz Consultoría', bankName: 'Inbursa', balance: 100000.00, type: 'Débito' },
 ];
 
 const mockTransactions = [
@@ -74,7 +87,6 @@ const initialCategoryGroups = [
         type: 'Ingreso',
         categories: [
             { id: 'cat-income-1', name: 'Ingreso por Desarrollo' },
-            { id: 'cat-income-2', name: 'Ingreso por Consultoría' },
         ]
     },
     {
@@ -84,7 +96,6 @@ const initialCategoryGroups = [
         categories: [
             { id: 'cat-fixed-1', name: 'Sueldos' },
             { id: 'cat-fixed-2', name: 'Renta' },
-            { id: 'cat-fixed-3', name: 'Software' },
         ]
     },
     {
@@ -92,6 +103,7 @@ const initialCategoryGroups = [
         name: 'Gastos Variables',
         type: 'Egreso',
         categories: [
+             { id: 'cat-fixed-3', name: 'Software' },
             { id: 'cat-var-1', name: 'Publicidad' },
             { id: 'cat-var-2', name: 'Servicios (Luz, Agua)' },
             { id: 'cat-var-3', name: 'Comida y Viáticos' },
@@ -107,17 +119,30 @@ const initialCategoryGroups = [
     }
 ];
 
-
-const mockAccounts = [
-    { id: 'acc1', name: 'Principal', company: 'WitBiz Core', type: 'Débito' },
-    { id: 'acc2', name: 'Operativa', company: 'WitBiz Servicios Digitales', type: 'Débito' },
-    { id: 'acc3', name: 'Consultoría', company: 'WitBiz Consultoría', type: 'Débito' },
-    { id: 'acc4', name: 'Tarjeta de Crédito Corporativa', company: 'WitBiz Core', type: 'Crédito' },
-];
-
 export default function SettingsPage() {
+  const { toast } = useToast();
+  
+  // State for mock data
+  const [mockCompanies, setMockCompanies] = useState(initialCompanies);
+  const [mockAccounts, setMockAccounts] = useState(initialBankAccounts);
+  const [categoryGroups, setCategoryGroups] = useState(initialCategoryGroups);
+
+  // State for dialogs
   const [isTransactionDialogOpen, setIsTransactionDialogOpen] = useState(false);
-  const totalBalance = useMemo(() => mockCompanies.reduce((sum, comp) => sum + comp.totalBalance, 0), []);
+  const [isAddCompanyOpen, setIsAddCompanyOpen] = useState(false);
+  const [isAddAccountOpen, setIsAddAccountOpen] = useState(false);
+  const [isAddGroupOpen, setIsAddGroupOpen] = useState(false);
+  const [isAddCategoryOpen, setIsAddCategoryOpen] = useState(false);
+  const [currentGroupIdForCategory, setCurrentGroupIdForCategory] = useState<string | null>(null);
+
+  const [newCompanyName, setNewCompanyName] = useState('');
+  const [newAccountData, setNewAccountData] = useState({ name: '', companyId: '', type: 'Débito' });
+  const [newGroupName, setNewGroupName] = useState('');
+  const [newCategoryName, setNewCategoryName] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Memoized calculations
+  const totalBalance = useMemo(() => mockCompanies.reduce((sum, comp) => sum + comp.totalBalance, 0), [mockCompanies]);
   const totalIncome = useMemo(() => mockTransactions.filter(t => t.type === 'income').reduce((sum, t) => sum + t.amount, 0), []);
   const totalExpense = useMemo(() => mockTransactions.filter(t => t.type === 'expense').reduce((sum, t) => sum + t.amount, 0), []);
   
@@ -125,22 +150,89 @@ export default function SettingsPage() {
   const [selectedCompanyId, setSelectedCompanyId] = useState<string>("all");
   const [selectedCategoryId, setSelectedCategoryId] = useState<string>("all");
   const [selectedType, setSelectedType] = useState<string>("all");
-
-  const [categoryGroups, setCategoryGroups] = useState(initialCategoryGroups);
-
+  
   const allCategories = useMemo(() => categoryGroups.flatMap(g => g.categories.map(c => ({...c, groupName: g.name}))), [categoryGroups]);
-
 
   const filteredTransactions = useMemo(() => {
     return mockTransactions.filter(item => {
         const itemDate = new Date(item.date);
         const isDateInRange = date?.from && date.to ? isWithinInterval(itemDate, { start: startOfDay(date.from), end: endOfDay(date.to) }) : true;
         const isCompanyMatch = selectedCompanyId === 'all' || item.companyId === selectedCompanyId;
-        const isCategoryMatch = selectedCategoryId === 'all' || item.category === selectedCategoryId;
+        const isCategoryMatch = selectedCategoryId === 'all' || allCategories.find(c => c.name === item.category)?.id === selectedCategoryId;
         const isTypeMatch = selectedType === 'all' || item.type.startsWith(selectedType);
         return isDateInRange && isCompanyMatch && isCategoryMatch && isTypeMatch;
     });
   }, [date, selectedCompanyId, selectedCategoryId, selectedType, allCategories]);
+
+  // --- Handlers for adding new entities ---
+
+  const handleAddCompany = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newCompanyName.trim()) return;
+    setIsSubmitting(true);
+    setTimeout(() => {
+        const newCompany = { id: `emp-${Date.now()}`, name: newCompanyName, totalBalance: 0 };
+        setMockCompanies(prev => [...prev, newCompany]);
+        toast({ title: "Empresa Añadida", description: `La empresa "${newCompanyName}" ha sido creada.` });
+        setIsSubmitting(false);
+        setNewCompanyName('');
+        setIsAddCompanyOpen(false);
+    }, 500);
+  };
+
+  const handleAddAccount = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newAccountData.name.trim() || !newAccountData.companyId) return;
+    setIsSubmitting(true);
+    setTimeout(() => {
+        const company = mockCompanies.find(c => c.id === newAccountData.companyId);
+        const newAccount = { id: `cta-${Date.now()}`, companyId: newAccountData.companyId, companyName: company?.name || '', bankName: newAccountData.name, balance: 0, type: newAccountData.type };
+        setMockAccounts(prev => [...prev, newAccount]);
+        toast({ title: "Cuenta Añadida", description: `La cuenta "${newAccountData.name}" ha sido creada.` });
+        setIsSubmitting(false);
+        setNewAccountData({ name: '', companyId: '', type: 'Débito' });
+        setIsAddAccountOpen(false);
+    }, 500);
+  };
+
+  const handleAddGroup = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newGroupName.trim()) return;
+    setIsSubmitting(true);
+    setTimeout(() => {
+        const newGroup = { id: `group-${Date.now()}`, name: newGroupName, type: 'Egreso', categories: [] };
+        setCategoryGroups(prev => [...prev, newGroup]);
+        toast({ title: "Grupo Añadido", description: `El grupo "${newGroupName}" ha sido creado.` });
+        setIsSubmitting(false);
+        setNewGroupName('');
+        setIsAddGroupOpen(false);
+    }, 500);
+  };
+  
+  const openAddCategoryDialog = (groupId: string) => {
+    setCurrentGroupIdForCategory(groupId);
+    setIsAddCategoryOpen(true);
+  };
+
+  const handleAddCategory = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newCategoryName.trim() || !currentGroupIdForCategory) return;
+    setIsSubmitting(true);
+    setTimeout(() => {
+        const newCategory = { id: `cat-${Date.now()}`, name: newCategoryName };
+        setCategoryGroups(prev => prev.map(group => {
+            if (group.id === currentGroupIdForCategory) {
+                return { ...group, categories: [...group.categories, newCategory] };
+            }
+            return group;
+        }));
+        toast({ title: "Categoría Añadida", description: `La categoría "${newCategoryName}" ha sido creada.` });
+        setIsSubmitting(false);
+        setNewCategoryName('');
+        setIsAddCategoryOpen(false);
+        setCurrentGroupIdForCategory(null);
+    }, 500);
+  };
   
   return (
     <>
@@ -229,11 +321,11 @@ export default function SettingsPage() {
                               {mockCompanies.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
                             </SelectContent>
                           </Select>
-                          <Select value={selectedCategoryId} onValueChange={setSelectedCategoryId}>
+                           <Select value={selectedCategoryId} onValueChange={setSelectedCategoryId}>
                             <SelectTrigger className="w-full md:w-[200px]"><SelectValue placeholder="Filtrar por categoría..." /></SelectTrigger>
                             <SelectContent>
                               <SelectItem value="all">Todas las Categorías</SelectItem>
-                              {allCategories.map(c => <SelectItem key={c.id} value={c.name}>{c.name}</SelectItem>)}
+                                {allCategories.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
                             </SelectContent>
                           </Select>
                           <Select value={selectedType} onValueChange={setSelectedType}>
@@ -260,7 +352,7 @@ export default function SettingsPage() {
                           <TableBody>
                               {filteredTransactions.map((trx) => (
                                   <TableRow key={trx.id}>
-                                      <TableCell>{trx.date}</TableCell>
+                                      <TableCell>{format(new Date(trx.date), "dd/MM/yyyy")}</TableCell>
                                       <TableCell className="font-medium">{trx.description}</TableCell>
                                       <TableCell>{trx.category}</TableCell>
                                       <TableCell>
@@ -299,7 +391,7 @@ export default function SettingsPage() {
                                     <CardHeader>
                                         <CardTitle className="flex items-center justify-between">
                                             <span>Listado de Empresas</span>
-                                            <Button size="sm"><PlusCircle className="mr-2 h-4 w-4"/>Añadir Empresa</Button>
+                                            <Button size="sm" onClick={() => setIsAddCompanyOpen(true)}><PlusCircle className="mr-2 h-4 w-4"/>Añadir Empresa</Button>
                                         </CardTitle>
                                         <CardDescription>Entidades de negocio principales.</CardDescription>
                                     </CardHeader>
@@ -331,7 +423,7 @@ export default function SettingsPage() {
                                     <CardHeader>
                                         <CardTitle className="flex items-center justify-between">
                                             <span>Cuentas Bancarias</span>
-                                            <Button size="sm"><PlusCircle className="mr-2 h-4 w-4"/>Añadir Cuenta</Button>
+                                            <Button size="sm" onClick={() => setIsAddAccountOpen(true)}><PlusCircle className="mr-2 h-4 w-4"/>Añadir Cuenta</Button>
                                         </CardTitle>
                                         <CardDescription>Añada o edite las cuentas bancarias de sus empresas.</CardDescription>
                                     </CardHeader>
@@ -348,8 +440,8 @@ export default function SettingsPage() {
                                           <TableBody>
                                               {mockAccounts.map(account => (
                                                   <TableRow key={account.id}>
-                                                      <TableCell className="font-medium">{account.name}</TableCell>
-                                                      <TableCell>{account.company}</TableCell>
+                                                      <TableCell className="font-medium">{account.bankName}</TableCell>
+                                                      <TableCell>{account.companyName}</TableCell>
                                                       <TableCell><Badge variant="outline">{account.type}</Badge></TableCell>
                                                       <TableCell className="text-right">
                                                           <Button variant="ghost" size="icon"><Edit className="h-4 w-4"/></Button>
@@ -367,7 +459,7 @@ export default function SettingsPage() {
                                     <CardHeader>
                                         <CardTitle className="flex items-center justify-between">
                                             <span>Grupos y Categorías</span>
-                                            <Button size="sm"><PlusCircle className="mr-2 h-4 w-4"/>Añadir Grupo</Button>
+                                            <Button size="sm" onClick={() => setIsAddGroupOpen(true)}><PlusCircle className="mr-2 h-4 w-4"/>Añadir Grupo</Button>
                                         </CardTitle>
                                         <CardDescription>Organice sus transacciones creando grupos y asignando categorías específicas.</CardDescription>
                                     </CardHeader>
@@ -376,7 +468,7 @@ export default function SettingsPage() {
                                             {categoryGroups.map((group) => (
                                                 <AccordionItem value={group.id} key={group.id} className="border-none">
                                                  <Card className="overflow-hidden">
-                                                    <div className="flex items-center justify-between p-0 bg-muted/50 hover:bg-muted/60">
+                                                    <div className="flex items-center p-0 bg-muted/50 hover:bg-muted/60">
                                                         <AccordionTrigger className="w-full p-4 hover:no-underline flex-1">
                                                           <CardTitle className="text-base flex items-center gap-2">
                                                             <ChevronsUpDown className="h-4 w-4 text-muted-foreground" />
@@ -390,7 +482,7 @@ export default function SettingsPage() {
                                                     </div>
                                                     <AccordionContent className="p-4 pt-0">
                                                         <div className="flex justify-end mb-2">
-                                                            <Button variant="outline" size="sm"><PlusCircle className="mr-2 h-4 w-4"/>Añadir Categoría</Button>
+                                                            <Button variant="outline" size="sm" onClick={() => openAddCategoryDialog(group.id)}><PlusCircle className="mr-2 h-4 w-4"/>Añadir Categoría</Button>
                                                         </div>
                                                         <Table>
                                                             <TableHeader>
@@ -430,13 +522,121 @@ export default function SettingsPage() {
         isOpen={isTransactionDialogOpen}
         onOpenChange={setIsTransactionDialogOpen}
         companies={mockCompanies}
-        accounts={mockBankAccounts}
+        accounts={mockAccounts}
         categories={allCategories}
         onTransactionAdd={(data) => {
             console.log("Nueva transacción:", data);
-            // Aquí iría la lógica para añadir la transacción al estado
         }}
       />
+       {/* Add Company Dialog */}
+      <Dialog open={isAddCompanyOpen} onOpenChange={setIsAddCompanyOpen}>
+          <DialogContent>
+              <form onSubmit={handleAddCompany}>
+                  <DialogHeader>
+                      <DialogTitle>Añadir Nueva Empresa</DialogTitle>
+                      <DialogDescription>
+                          Cree una nueva entidad de negocio en su sistema de contabilidad.
+                      </DialogDescription>
+                  </DialogHeader>
+                  <div className="py-4">
+                      <Label htmlFor="new-company-name">Nombre de la Empresa</Label>
+                      <Input id="new-company-name" value={newCompanyName} onChange={(e) => setNewCompanyName(e.target.value)} placeholder="Ej. WitBiz Inversiones" required />
+                  </div>
+                  <DialogFooter>
+                      <DialogClose asChild><Button type="button" variant="outline">Cancelar</Button></DialogClose>
+                      <Button type="submit" disabled={isSubmitting}>
+                          {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
+                          Guardar Empresa
+                      </Button>
+                  </DialogFooter>
+              </form>
+          </DialogContent>
+      </Dialog>
+
+      {/* Add Account Dialog */}
+      <Dialog open={isAddAccountOpen} onOpenChange={setIsAddAccountOpen}>
+          <DialogContent>
+              <form onSubmit={handleAddAccount}>
+                  <DialogHeader>
+                      <DialogTitle>Añadir Nueva Cuenta Bancaria</DialogTitle>
+                  </DialogHeader>
+                  <div className="py-4 space-y-4">
+                      <div>
+                          <Label htmlFor="new-account-name">Nombre del Banco</Label>
+                          <Input id="new-account-name" value={newAccountData.name} onChange={(e) => setNewAccountData(prev => ({ ...prev, name: e.target.value }))} placeholder="Ej. BBVA, Santander" required />
+                      </div>
+                      <div>
+                          <Label htmlFor="account-company">Empresa</Label>
+                          <Select value={newAccountData.companyId} onValueChange={(value) => setNewAccountData(prev => ({...prev, companyId: value}))} required>
+                              <SelectTrigger id="account-company"><SelectValue placeholder="Seleccione una empresa..." /></SelectTrigger>
+                              <SelectContent>
+                                  {mockCompanies.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+                              </SelectContent>
+                          </Select>
+                      </div>
+                       <div>
+                          <Label htmlFor="account-type">Tipo de Cuenta</Label>
+                          <Select value={newAccountData.type} onValueChange={(value) => setNewAccountData(prev => ({...prev, type: value}))} required>
+                              <SelectTrigger id="account-type"><SelectValue/></SelectTrigger>
+                              <SelectContent>
+                                  <SelectItem value="Débito">Débito</SelectItem>
+                                  <SelectItem value="Crédito">Crédito</SelectItem>
+                              </SelectContent>
+                          </Select>
+                      </div>
+                  </div>
+                  <DialogFooter>
+                      <DialogClose asChild><Button type="button" variant="outline">Cancelar</Button></DialogClose>
+                      <Button type="submit" disabled={isSubmitting}>
+                          {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
+                          Guardar Cuenta
+                      </Button>
+                  </DialogFooter>
+              </form>
+          </DialogContent>
+      </Dialog>
+      
+        {/* Add Group Dialog */}
+      <Dialog open={isAddGroupOpen} onOpenChange={setIsAddGroupOpen}>
+          <DialogContent>
+              <form onSubmit={handleAddGroup}>
+                  <DialogHeader><DialogTitle>Añadir Nuevo Grupo de Categorías</DialogTitle></DialogHeader>
+                  <div className="py-4">
+                      <Label htmlFor="new-group-name">Nombre del Grupo</Label>
+                      <Input id="new-group-name" value={newGroupName} onChange={(e) => setNewGroupName(e.target.value)} placeholder="Ej. Gastos de Oficina" required />
+                  </div>
+                  <DialogFooter>
+                      <DialogClose asChild><Button type="button" variant="outline">Cancelar</Button></DialogClose>
+                      <Button type="submit" disabled={isSubmitting}>
+                          {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
+                          Guardar Grupo
+                      </Button>
+                  </DialogFooter>
+              </form>
+          </DialogContent>
+      </Dialog>
+
+      {/* Add Category Dialog */}
+      <Dialog open={isAddCategoryOpen} onOpenChange={setIsAddCategoryOpen}>
+          <DialogContent>
+              <form onSubmit={handleAddCategory}>
+                  <DialogHeader><DialogTitle>Añadir Nueva Categoría</DialogTitle></DialogHeader>
+                  <div className="py-4">
+                      <Label htmlFor="new-category-name">Nombre de la Categoría</Label>
+                      <Input id="new-category-name" value={newCategoryName} onChange={(e) => setNewCategoryName(e.target.value)} placeholder="Ej. Papelería" required />
+                  </div>
+                  <DialogFooter>
+                      <DialogClose asChild><Button type="button" variant="outline">Cancelar</Button></DialogClose>
+                      <Button type="submit" disabled={isSubmitting}>
+                          {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
+                          Guardar Categoría
+                      </Button>
+                  </DialogFooter>
+              </form>
+          </DialogContent>
+      </Dialog>
     </>
   );
 }
+
+    
