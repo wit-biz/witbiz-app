@@ -164,26 +164,6 @@ export default function SettingsPage() {
             </TabsList>
 
             <TabsContent value="resumen" className="space-y-6">
-              <div className="grid gap-6 md:grid-cols-3">
-                  <Card>
-                      <CardHeader><CardTitle>Ingresos del Mes</CardTitle></CardHeader>
-                      <CardContent>
-                          <p className="text-3xl font-bold text-green-600">${totalIncome.toLocaleString('en-US')}</p>
-                      </CardContent>
-                  </Card>
-                  <Card>
-                      <CardHeader><CardTitle>Egresos del Mes</CardTitle></CardHeader>
-                      <CardContent>
-                          <p className="text-3xl font-bold text-red-600">${Math.abs(totalExpense).toLocaleString('en-US')}</p>
-                      </CardContent>
-                  </Card>
-                  <Card>
-                      <CardHeader><CardTitle>Beneficio Neto</CardTitle></CardHeader>
-                      <CardContent>
-                          <p className="text-3xl font-bold">${(totalIncome + totalExpense).toLocaleString('en-US')}</p>
-                      </CardContent>
-                  </Card>
-              </div>
               <Card>
                   <CardHeader>
                       <CardTitle>Flujo de Efectivo (Últimos 6 meses)</CardTitle>
