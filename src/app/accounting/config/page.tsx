@@ -288,10 +288,9 @@ export default function AccountingConfigPage() {
                                         {categoryGroups.map((group) => (
                                             <AccordionItem value={group.id} key={group.id} className="border-none">
                                                 <Card className="overflow-hidden">
-                                                <div className="flex items-center p-0 bg-muted/50 hover:bg-muted/60">
+                                                <div className="flex items-center bg-muted/50 hover:bg-muted/60">
                                                     <AccordionTrigger className="w-full p-4 hover:no-underline flex-1">
                                                         <CardTitle className="text-base flex items-center gap-2">
-                                                            <ChevronsUpDown className="h-4 w-4 text-muted-foreground" />
                                                             {group.name}
                                                         </CardTitle>
                                                     </AccordionTrigger>
