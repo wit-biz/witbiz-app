@@ -96,14 +96,14 @@ export default function AccountingConfigPage() {
   // State for dialogs
   const [isAddCompanyOpen, setIsAddCompanyOpen] = useState(false);
   const [isAddAccountOpen, setIsAddAccountOpen] = useState(false);
-  const [isAddGroupOpen, setIsAddGroupOpen] = useState(false);
-  const [isAddCategoryOpen, setIsAddCategoryOpen] = useState(false);
-  const [currentGroupIdForCategory, setCurrentGroupIdForCategory] = useState<string | null>(null);
+  const [isAddCategoryGroupOpen, setIsAddCategoryGroupOpen] = useState(false);
+  const [isAddTypeOpen, setIsAddTypeOpen] = useState(false);
+  const [currentCategoryGroupId, setCurrentCategoryGroupId] = useState<string | null>(null);
 
   const [newCompanyName, setNewCompanyName] = useState('');
   const [newAccountData, setNewAccountData] = useState({ name: '', companyId: '', type: 'Débito' });
-  const [newGroupName, setNewGroupName] = useState('');
-  const [newCategoryName, setNewCategoryName] = useState('');
+  const [newCategoryGroupName, setNewCategoryGroupName] = useState('');
+  const [newTypeName, setNewTypeName] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
 
@@ -138,42 +138,42 @@ export default function AccountingConfigPage() {
     }, 500);
   };
 
-  const handleAddGroup = (e: React.FormEvent) => {
+  const handleAddCategoryGroup = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newGroupName.trim()) return;
+    if (!newCategoryGroupName.trim()) return;
     setIsSubmitting(true);
     setTimeout(() => {
-        const newGroup = { id: `group-${Date.now()}`, name: newGroupName, type: 'Egreso', categories: [] };
+        const newGroup = { id: `group-${Date.now()}`, name: newCategoryGroupName, type: 'Egreso', categories: [] };
         setCategoryGroups(prev => [...prev, newGroup]);
-        toast({ title: "Grupo Añadido", description: `El grupo "${newGroupName}" ha sido creado.` });
+        toast({ title: "Categoría Añadida", description: `La categoría "${newCategoryGroupName}" ha sido creada.` });
         setIsSubmitting(false);
-        setNewGroupName('');
-        setIsAddGroupOpen(false);
+        setNewCategoryGroupName('');
+        setIsAddCategoryGroupOpen(false);
     }, 500);
   };
   
-  const openAddCategoryDialog = (groupId: string) => {
-    setCurrentGroupIdForCategory(groupId);
-    setIsAddCategoryOpen(true);
+  const openAddTypeDialog = (groupId: string) => {
+    setCurrentCategoryGroupId(groupId);
+    setIsAddTypeOpen(true);
   };
 
-  const handleAddCategory = (e: React.FormEvent) => {
+  const handleAddType = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newCategoryName.trim() || !currentGroupIdForCategory) return;
+    if (!newTypeName.trim() || !currentCategoryGroupId) return;
     setIsSubmitting(true);
     setTimeout(() => {
-        const newCategory = { id: `cat-${Date.now()}`, name: newCategoryName };
+        const newType = { id: `cat-${Date.now()}`, name: newTypeName };
         setCategoryGroups(prev => prev.map(group => {
-            if (group.id === currentGroupIdForCategory) {
-                return { ...group, categories: [...group.categories, newCategory] };
+            if (group.id === currentCategoryGroupId) {
+                return { ...group, categories: [...group.categories, newType] };
             }
             return group;
         }));
-        toast({ title: "Categoría Añadida", description: `La categoría "${newCategoryName}" ha sido creada.` });
+        toast({ title: "Tipo Añadido", description: `El tipo "${newTypeName}" ha sido creado.` });
         setIsSubmitting(false);
-        setNewCategoryName('');
-        setIsAddCategoryOpen(false);
-        setCurrentGroupIdForCategory(null);
+        setNewTypeName('');
+        setIsAddTypeOpen(false);
+        setCurrentCategoryGroupId(null);
     }, 500);
   };
   
@@ -204,7 +204,7 @@ export default function AccountingConfigPage() {
                         <TabsList className="grid w-full grid-cols-3">
                             <TabsTrigger value="empresas"><Building className="mr-2 h-4 w-4"/>Empresas</TabsTrigger>
                             <TabsTrigger value="cuentas"><Landmark className="mr-2 h-4 w-4"/>Cuentas Bancarias</TabsTrigger>
-                            <TabsTrigger value="categorias"><KeyRound className="mr-2 h-4 w-4"/>Categorías</TabsTrigger>
+                            <TabsTrigger value="categorias"><KeyRound className="mr-2 h-4 w-4"/>Categorías y Tipos</TabsTrigger>
                         </TabsList>
                         <TabsContent value="empresas" className="mt-4">
                             <Card>
@@ -278,10 +278,10 @@ export default function AccountingConfigPage() {
                             <Card>
                                 <CardHeader>
                                     <CardTitle className="flex items-center justify-between">
-                                        <span>Grupos y Categorías</span>
-                                        <Button size="sm" onClick={() => setIsAddGroupOpen(true)}><PlusCircle className="mr-2 h-4 w-4"/>Añadir Grupo</Button>
+                                        <span>Categorías y Tipos</span>
+                                        <Button size="sm" onClick={() => setIsAddCategoryGroupOpen(true)}><PlusCircle className="mr-2 h-4 w-4"/>Añadir Categoría</Button>
                                     </CardTitle>
-                                    <CardDescription>Organice sus transacciones creando grupos y asignando categorías específicas.</CardDescription>
+                                    <CardDescription>Organice sus transacciones creando categorías y asignando tipos específicos.</CardDescription>
                                 </CardHeader>
                                 <CardContent>
                                     <Accordion type="multiple" className="w-full space-y-4">
@@ -302,12 +302,12 @@ export default function AccountingConfigPage() {
                                                 </div>
                                                 <AccordionContent className="p-4 pt-0">
                                                     <div className="flex justify-end mb-2">
-                                                        <Button variant="outline" size="sm" onClick={() => openAddCategoryDialog(group.id)}><PlusCircle className="mr-2 h-4 w-4"/>Añadir Categoría</Button>
+                                                        <Button variant="outline" size="sm" onClick={() => openAddTypeDialog(group.id)}><PlusCircle className="mr-2 h-4 w-4"/>Añadir Tipo</Button>
                                                     </div>
                                                     <Table>
                                                         <TableHeader>
                                                             <TableRow>
-                                                                <TableHead>Nombre de Categoría</TableHead>
+                                                                <TableHead>Nombre del Tipo</TableHead>
                                                                 <TableHead className="text-right">Acciones</TableHead>
                                                             </TableRow>
                                                         </TableHeader>
@@ -405,34 +405,14 @@ export default function AccountingConfigPage() {
           </DialogContent>
       </Dialog>
       
-        {/* Add Group Dialog */}
-      <Dialog open={isAddGroupOpen} onOpenChange={setIsAddGroupOpen}>
+        {/* Add Category Group Dialog */}
+      <Dialog open={isAddCategoryGroupOpen} onOpenChange={setIsAddCategoryGroupOpen}>
           <DialogContent>
-              <form onSubmit={handleAddGroup}>
-                  <DialogHeader><DialogTitle>Añadir Nuevo Grupo de Categorías</DialogTitle></DialogHeader>
-                  <div className="py-4">
-                      <Label htmlFor="new-group-name">Nombre del Grupo</Label>
-                      <Input id="new-group-name" value={newGroupName} onChange={(e) => setNewGroupName(e.target.value)} placeholder="Ej. Gastos de Oficina" required />
-                  </div>
-                  <DialogFooter>
-                      <DialogClose asChild><Button type="button" variant="outline">Cancelar</Button></DialogClose>
-                      <Button type="submit" disabled={isSubmitting}>
-                          {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
-                          Guardar Grupo
-                      </Button>
-                  </DialogFooter>
-              </form>
-          </DialogContent>
-      </Dialog>
-
-      {/* Add Category Dialog */}
-      <Dialog open={isAddCategoryOpen} onOpenChange={setIsAddCategoryOpen}>
-          <DialogContent>
-              <form onSubmit={handleAddCategory}>
+              <form onSubmit={handleAddCategoryGroup}>
                   <DialogHeader><DialogTitle>Añadir Nueva Categoría</DialogTitle></DialogHeader>
                   <div className="py-4">
-                      <Label htmlFor="new-category-name">Nombre de la Categoría</Label>
-                      <Input id="new-category-name" value={newCategoryName} onChange={(e) => setNewCategoryName(e.target.value)} placeholder="Ej. Papelería" required />
+                      <Label htmlFor="new-group-name">Nombre de la Categoría</Label>
+                      <Input id="new-group-name" value={newCategoryGroupName} onChange={(e) => setNewCategoryGroupName(e.target.value)} placeholder="Ej. Gastos de Oficina" required />
                   </div>
                   <DialogFooter>
                       <DialogClose asChild><Button type="button" variant="outline">Cancelar</Button></DialogClose>
@@ -444,8 +424,26 @@ export default function AccountingConfigPage() {
               </form>
           </DialogContent>
       </Dialog>
+
+      {/* Add Type Dialog */}
+      <Dialog open={isAddTypeOpen} onOpenChange={setIsAddTypeOpen}>
+          <DialogContent>
+              <form onSubmit={handleAddType}>
+                  <DialogHeader><DialogTitle>Añadir Nuevo Tipo</DialogTitle></DialogHeader>
+                  <div className="py-4">
+                      <Label htmlFor="new-type-name">Nombre del Tipo</Label>
+                      <Input id="new-type-name" value={newTypeName} onChange={(e) => setNewTypeName(e.target.value)} placeholder="Ej. Papelería" required />
+                  </div>
+                  <DialogFooter>
+                      <DialogClose asChild><Button type="button" variant="outline">Cancelar</Button></DialogClose>
+                      <Button type="submit" disabled={isSubmitting}>
+                          {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
+                          Guardar Tipo
+                      </Button>
+                  </DialogFooter>
+              </form>
+          </DialogContent>
+      </Dialog>
     </>
   );
 }
-
-    
