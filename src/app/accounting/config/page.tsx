@@ -289,10 +289,10 @@ export default function AccountingConfigPage() {
                                             <AccordionItem value={group.id} key={group.id} className="border-none">
                                                 <Card className="overflow-hidden">
                                                 <AccordionTrigger className="w-full p-4 hover:no-underline bg-muted/50 hover:bg-muted/60 flex justify-between items-center">
-                                                    <CardTitle className="text-base flex-grow">
+                                                    <CardTitle className="text-base text-left">
                                                         {group.name}
                                                     </CardTitle>
-                                                    <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+                                                    <div className="flex items-center gap-1 ml-auto" onClick={(e) => e.stopPropagation()}>
                                                         <Button variant="ghost" size="icon" className="h-7 w-7"><Edit className="h-4 w-4"/></Button>
                                                         <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive"><Trash2 className="h-4 w-4"/></Button>
                                                     </div>
