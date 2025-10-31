@@ -74,9 +74,13 @@ export function ClientsTab({ clients, isLoading, onClientSelect, selectedClientI
 
   return (
       <>
-        <Card className="shadow-none border-none">
-          <CardContent className="p-0">
-            <div className="flex items-center py-4">
+        <Card>
+          <CardHeader>
+            <CardTitle>Listado de Clientes</CardTitle>
+            <CardDescription>Clientes registrados en el sistema.</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex items-center">
                 <div className="relative flex-grow">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                     <Input
