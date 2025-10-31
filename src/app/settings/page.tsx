@@ -3,7 +3,7 @@
 
 import React, { useState, useMemo } from "react";
 import Link from "next/link";
-import { Landmark, Briefcase, PlusCircle, ArrowRightLeft, DollarSign, BarChart as BarChartIcon, Settings, Edit, Trash2, KeyRound, Filter, ChevronsUpDown, Building, Loader2, Save, Calendar as CalendarIcon } from "lucide-react";
+import { Landmark, Briefcase, PlusCircle, ArrowRightLeft, DollarSign, BarChart as BarChartIcon, Settings, Edit, Trash2, KeyRound, Filter, ChevronsUpDown, Building, Loader2, Save, Calendar as CalendarIcon, ArrowUpCircle, ArrowDownCircle, TrendingUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -108,10 +108,36 @@ export default function SettingsPage() {
         const isDateInRange = date?.from && date.to ? isWithinInterval(itemDate, { start: startOfDay(date.from), end: endOfDay(date.to) }) : true;
         const isCompanyMatch = selectedCompanyId === 'all' || item.companyId === selectedCompanyId;
         const isCategoryMatch = selectedCategoryId === 'all' || allCategories.find(c => c.name === item.category)?.id === selectedCategoryId;
-        const isTypeMatch = selectedType === 'all' || item.type.startsWith(selectedType);
-        return isDateInRange && isCompanyMatch && isCategoryMatch && isTypeMatch;
+        
+        let typeMatch = false;
+        if (selectedType === 'all') {
+            typeMatch = true;
+        } else if (selectedType === 'income') {
+            typeMatch = item.type === 'income';
+        } else if (selectedType === 'expense') {
+            typeMatch = item.type === 'expense';
+        } else if (selectedType === 'transfer') {
+            typeMatch = item.type.startsWith('transfer');
+        }
+        
+        return isDateInRange && isCompanyMatch && isCategoryMatch && typeMatch;
     });
   }, [date, selectedCompanyId, selectedCategoryId, selectedType, allCategories]);
+
+
+  const summary = useMemo(() => {
+    const totalIncome = filteredTransactions
+        .filter(t => t.type === 'income' || t.type === 'transfer_in')
+        .reduce((sum, t) => sum + t.amount, 0);
+
+    const totalExpense = filteredTransactions
+        .filter(t => t.type === 'expense' || t.type === 'transfer_out')
+        .reduce((sum, t) => sum + t.amount, 0);
+
+    const netTotal = totalIncome + totalExpense; // totalExpense is already negative
+    
+    return { totalIncome, totalExpense, netTotal };
+  }, [filteredTransactions]);
 
   
   return (
@@ -134,7 +160,44 @@ export default function SettingsPage() {
               </Button>
           </div>
         </Header>
-        <main className="flex-1 p-4 md:p-8">
+        <main className="flex-1 p-4 md:p-8 space-y-6">
+            <Card>
+                <CardHeader>
+                    <CardTitle>Resumen de Selección</CardTitle>
+                    <CardDescription>Totales calculados basados en los filtros actuales.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <Card>
+                            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                                <CardTitle className="text-sm font-medium">Ingresos Totales</CardTitle>
+                                <ArrowUpCircle className="h-4 w-4 text-green-500" />
+                            </CardHeader>
+                            <CardContent>
+                                <div className="text-2xl font-bold text-green-600">{summary.totalIncome.toLocaleString('en-US', { style: 'currency', currency: 'USD' })}</div>
+                            </CardContent>
+                        </Card>
+                         <Card>
+                            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                                <CardTitle className="text-sm font-medium">Egresos Totales</CardTitle>
+                                <ArrowDownCircle className="h-4 w-4 text-red-500" />
+                            </CardHeader>
+                            <CardContent>
+                                <div className="text-2xl font-bold text-red-600">{summary.totalExpense.toLocaleString('en-US', { style: 'currency', currency: 'USD' })}</div>
+                            </CardContent>
+                        </Card>
+                         <Card>
+                            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                                <CardTitle className="text-sm font-medium">Beneficio Neto</CardTitle>
+                                <TrendingUp className={`h-4 w-4 ${summary.netTotal >= 0 ? 'text-blue-500' : 'text-orange-500'}`} />
+                            </CardHeader>
+                            <CardContent>
+                                <div className={`text-2xl font-bold ${summary.netTotal >= 0 ? 'text-blue-600' : 'text-orange-600'}`}>{summary.netTotal.toLocaleString('en-US', { style: 'currency', currency: 'USD' })}</div>
+                            </CardContent>
+                        </Card>
+                    </div>
+                </CardContent>
+            </Card>
             <Card>
                 <CardHeader>
                     <CardTitle>Registro de Movimientos</CardTitle>
