@@ -65,6 +65,16 @@ export function PromotersTab({ promoters, isLoading }: PromotersTabProps) {
                             onChange={(e) => setSearchTerm(e.target.value)}
                         />
                     </div>
+                    <Select value={sortBy} onValueChange={setSortBy}>
+                        <SelectTrigger className="w-full sm:w-[220px]">
+                            <SelectValue placeholder="Ordenar por..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="name-asc">Nombre (A-Z)</SelectItem>
+                            <SelectItem value="commissions-desc">Mayor Comisión</SelectItem>
+                            <SelectItem value="clients-desc">Más Clientes Referidos</SelectItem>
+                        </SelectContent>
+                    </Select>
                     <Select value={statusFilter} onValueChange={setStatusFilter}>
                         <SelectTrigger className="w-full sm:w-[180px]">
                             <SelectValue placeholder="Filtrar por estado..." />
@@ -73,16 +83,6 @@ export function PromotersTab({ promoters, isLoading }: PromotersTabProps) {
                             <SelectItem value="all">Todos los Estados</SelectItem>
                             <SelectItem value="Activo">Activo</SelectItem>
                             <SelectItem value="Inactivo">Inactivo</SelectItem>
-                        </SelectContent>
-                    </Select>
-                     <Select value={sortBy} onValueChange={setSortBy}>
-                        <SelectTrigger className="w-full sm:w-[220px]">
-                            <SelectValue placeholder="Ordenar por..." />
-                        </SelectTrigger>
-                        <SelectContent>
-                            <SelectItem value="name-asc">Nombre (A-Z)</SelectItem>
-                            <SelectItem value="commissions-desc">Mayor Comisión</SelectItem>
-                            <SelectItem value="clients-desc">Más Clientes Referidos</SelectItem>
                         </SelectContent>
                     </Select>
                 </div>
