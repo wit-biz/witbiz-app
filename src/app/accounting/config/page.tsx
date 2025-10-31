@@ -284,12 +284,12 @@ export default function AccountingConfigPage() {
                                     <CardDescription>Organice sus transacciones creando categorías y asignando tipos específicos.</CardDescription>
                                 </CardHeader>
                                 <CardContent>
-                                    <Accordion type="multiple" className="w-full space-y-4">
+                                    <Accordion type="single" collapsible className="w-full space-y-4">
                                         {categoryGroups.map((group) => (
                                             <AccordionItem value={group.id} key={group.id} className="border-none">
                                                 <Card className="overflow-hidden">
                                                 <AccordionTrigger className="w-full p-4 hover:no-underline bg-muted/50 hover:bg-muted/60 flex justify-between items-center">
-                                                    <CardTitle className="text-base text-left">
+                                                    <CardTitle className="text-base flex-grow text-left">
                                                         {group.name}
                                                     </CardTitle>
                                                     <div className="flex items-center gap-1 ml-auto" onClick={(e) => e.stopPropagation()}>
