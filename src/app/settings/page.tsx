@@ -8,7 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
-import { Bar, XAxis, YAxis, ResponsiveContainer, CartesianGrid, BarChart } from "recharts";
+import { Bar, BarChart, XAxis, YAxis, ResponsiveContainer, CartesianGrid } from "recharts";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Accordion,
@@ -376,20 +376,18 @@ export default function SettingsPage() {
                                             {categoryGroups.map((group) => (
                                                 <AccordionItem value={group.id} key={group.id} className="border-none">
                                                  <Card className="overflow-hidden">
-                                                    <AccordionTrigger className="w-full p-0 bg-muted/50 hover:no-underline [&_svg]:ml-auto [&_svg]:mr-4">
-                                                        <CardHeader className="flex-1 text-left p-4">
-                                                             <CardTitle className="text-base flex items-center justify-between">
-                                                                <div className="flex items-center gap-2">
-                                                                  <ChevronsUpDown className="h-4 w-4 text-muted-foreground" />
-                                                                  {group.name}
-                                                                </div>
-                                                                <div className="flex items-center gap-1">
-                                                                  <Button variant="ghost" size="icon" className="h-7 w-7"><Edit className="h-4 w-4"/></Button>
-                                                                  <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive"><Trash2 className="h-4 w-4"/></Button>
-                                                                </div>
-                                                            </CardTitle>
-                                                        </CardHeader>
-                                                    </AccordionTrigger>
+                                                    <div className="flex items-center justify-between p-0 bg-muted/50 hover:bg-muted/60">
+                                                        <AccordionTrigger className="w-full p-4 hover:no-underline flex-1">
+                                                          <CardTitle className="text-base flex items-center gap-2">
+                                                            <ChevronsUpDown className="h-4 w-4 text-muted-foreground" />
+                                                            {group.name}
+                                                          </CardTitle>
+                                                        </AccordionTrigger>
+                                                        <div className="flex items-center gap-1 pr-4">
+                                                          <Button variant="ghost" size="icon" className="h-7 w-7"><Edit className="h-4 w-4"/></Button>
+                                                          <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive"><Trash2 className="h-4 w-4"/></Button>
+                                                        </div>
+                                                    </div>
                                                     <AccordionContent className="p-4 pt-0">
                                                         <div className="flex justify-end mb-2">
                                                             <Button variant="outline" size="sm"><PlusCircle className="mr-2 h-4 w-4"/>Añadir Categoría</Button>
