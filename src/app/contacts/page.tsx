@@ -16,6 +16,8 @@ import { ClientDetailView } from "@/components/shared/ClientDetailView";
 import type { Client } from "@/lib/types";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Button } from "@/components/ui/button";
 
 
 export default function DirectoryPage() {
@@ -60,56 +62,47 @@ export default function DirectoryPage() {
 
   const canCreate = currentUser?.permissions.clients_create ?? true; // Assuming similar permissions for others
 
-  const headerInfo: { [key: string]: { title: string; description: string } } = {
-    suppliers: {
-        title: "Directorio de Proveedores",
-        description: "Consulte y gestione la información de sus proveedores."
-    },
-    clients: {
-      title: "Base de Datos de Clientes",
-      description: "Gestione su base de datos de clientes.",
-    },
-    promoters: {
-      title: "Directorio de Promotores",
-      description: "Consulte y filtre la información de sus promotores.",
-    },
-  };
-
-  const buttonLabels: { [key: string]: string } = {
-    suppliers: "Añadir Proveedor",
-    clients: "Añadir Cliente",
-    promoters: "Añadir Promotor",
-  };
-
-  const handleAddButtonClick = () => {
-    if (activeTab === 'clients') {
+  const handleAddOptionClick = (type: 'client' | 'supplier' | 'promoter') => {
+    if (type === 'client') {
       setIsAddClientDialogOpen(true);
     } else {
       toast({
         title: "Función en desarrollo",
-        description: `La funcionalidad para añadir un nuevo ${activeTab === 'suppliers' ? 'proveedor' : 'promotor'} aún no está implementada.`,
+        description: `La funcionalidad para añadir un nuevo ${type === 'supplier' ? 'proveedor' : 'promotor'} aún no está implementada.`,
       });
     }
   };
   
-  const currentHeaderInfo = headerInfo[activeTab] || headerInfo.clients;
-  const currentButtonLabel = buttonLabels[activeTab] || "Añadir";
-
   return (
     <>
       <div className="flex flex-col min-h-screen">
         <Header 
-          title={currentHeaderInfo.title}
-          description={currentHeaderInfo.description}
+          title="Base de Datos de Contactos"
+          description="Gestione sus clientes, proveedores y promotores."
         >
           {canCreate && (
-              <button
-                onClick={handleAddButtonClick}
-                className="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2"
-              >
-                  <PlusCircle />
-                  <span>{currentButtonLabel}</span>
-              </button>
+             <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                    <Button>
+                        <PlusCircle className="mr-2 h-4 w-4" />
+                        Añadir
+                    </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent>
+                    <DropdownMenuItem onSelect={() => handleAddOptionClick('client')}>
+                        <Users className="mr-2 h-4 w-4" />
+                        <span>Añadir Cliente</span>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onSelect={() => handleAddOptionClick('supplier')}>
+                        <Truck className="mr-2 h-4 w-4" />
+                        <span>Añadir Proveedor</span>
+                    </DropdownMenuItem>
+                     <DropdownMenuItem onSelect={() => handleAddOptionClick('promoter')}>
+                        <UserCheck className="mr-2 h-4 w-4" />
+                        <span>Añadir Promotor</span>
+                    </DropdownMenuItem>
+                </DropdownMenuContent>
+             </DropdownMenu>
           )}
         </Header>
         <main className="flex-1 p-4 md:p-8">
