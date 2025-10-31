@@ -126,7 +126,6 @@ export default function SettingsPage() {
     });
   }, [date, selectedCompanyId, selectedCategoryId, selectedType, allCategories]);
 
-
   const summary = useMemo(() => {
     const totalIncome = filteredTransactions
         .filter(t => t.type === 'income' || t.type === 'transfer_in')
@@ -141,7 +140,15 @@ export default function SettingsPage() {
     return { totalIncome, totalExpense, netTotal };
   }, [filteredTransactions]);
 
-  
+  const generalSummary = useMemo(() => {
+    const totalBalance = mockAccounts.reduce((sum, acc) => sum + acc.balance, 0);
+    return {
+      totalBalance,
+      companyCount: mockCompanies.length,
+      accountCount: mockAccounts.length,
+    }
+  }, [mockAccounts, mockCompanies]);
+
   return (
     <>
       <div className="flex flex-col min-h-screen">
@@ -162,7 +169,30 @@ export default function SettingsPage() {
               </Button>
           </div>
         </Header>
-        <main className="flex-1 p-4 md:p-8">
+        <main className="flex-1 p-4 md:p-8 space-y-6">
+            <Card>
+                <CardHeader>
+                    <CardTitle>Resumen General de Empresas</CardTitle>
+                    <CardDescription>Balance consolidado de todas las cuentas y empresas.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-center">
+                        <div className="p-4 rounded-lg bg-secondary">
+                            <h3 className="text-sm font-medium text-muted-foreground">Balance Total Consolidado</h3>
+                            <p className="text-2xl font-bold">{generalSummary.totalBalance.toLocaleString('en-US', { style: 'currency', currency: 'USD' })}</p>
+                        </div>
+                        <div className="p-4 rounded-lg bg-secondary">
+                            <h3 className="text-sm font-medium text-muted-foreground">Empresas</h3>
+                            <p className="text-2xl font-bold">{generalSummary.companyCount}</p>
+                        </div>
+                        <div className="p-4 rounded-lg bg-secondary">
+                            <h3 className="text-sm font-medium text-muted-foreground">Cuentas Bancarias</h3>
+                            <p className="text-2xl font-bold">{generalSummary.accountCount}</p>
+                        </div>
+                    </div>
+                </CardContent>
+            </Card>
+
             <Tabs defaultValue="ledger">
                 <TabsList className="grid w-full grid-cols-2">
                     <TabsTrigger value="ledger"><BookText className="mr-2 h-4 w-4"/>Libro Mayor</TabsTrigger>
@@ -171,7 +201,7 @@ export default function SettingsPage() {
                 <TabsContent value="ledger" className="mt-6 space-y-6">
                     <Card>
                         <CardHeader>
-                            <CardTitle>Resumen de Movimientos</CardTitle>
+                            <CardTitle>Resumen de Movimientos Filtrados</CardTitle>
                             <CardDescription>Totales calculados basados en los filtros actuales del Libro Mayor.</CardDescription>
                         </CardHeader>
                         <CardContent>
@@ -215,7 +245,7 @@ export default function SettingsPage() {
                             <div className="flex flex-col md:flex-row gap-2 border p-4 rounded-lg">
                                 <Popover>
                                 <PopoverTrigger asChild>
-                                    <Button id="date" variant={"outline"} className={cn("w-full md:w-auto justify-start text-left font-normal", !date && "text-muted-foreground")}>
+                                    <Button id="date" variant={"outline"} className={cn("w-full md:w-auto justify-start text-left font-normal")}>
                                     <CalendarIcon className="mr-2 h-4 w-4" />
                                     {date?.from ? (date.to ? (<>{format(date.from, "LLL dd, y")} - {format(date.to, "LLL dd, y")}</>) : (format(date.from, "LLL dd, y"))) : (<span>Calendario</span>)}
                                     </Button>
@@ -309,5 +339,3 @@ export default function SettingsPage() {
     </>
   );
 }
-
-    
