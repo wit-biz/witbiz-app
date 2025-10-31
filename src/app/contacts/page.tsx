@@ -29,7 +29,7 @@ export default function DirectoryPage() {
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
   const [isAddClientDialogOpen, setIsAddClientDialogOpen] = useState(false);
   const [isDetailDialogOpen, setIsDetailDialogOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState('clients');
+  const [activeTab, setActiveTab] = useState('suppliers');
   
   useEffect(() => {
     const openClientId = searchParams.get('openClient');
@@ -89,13 +89,13 @@ export default function DirectoryPage() {
                     </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent>
-                    <DropdownMenuItem onSelect={() => handleAddOptionClick('client')}>
-                        <Users className="mr-2 h-4 w-4" />
-                        <span>Añadir Cliente</span>
-                    </DropdownMenuItem>
                     <DropdownMenuItem onSelect={() => handleAddOptionClick('supplier')}>
                         <Truck className="mr-2 h-4 w-4" />
                         <span>Añadir Proveedor</span>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onSelect={() => handleAddOptionClick('client')}>
+                        <Users className="mr-2 h-4 w-4" />
+                        <span>Añadir Cliente</span>
                     </DropdownMenuItem>
                      <DropdownMenuItem onSelect={() => handleAddOptionClick('promoter')}>
                         <UserCheck className="mr-2 h-4 w-4" />
@@ -106,7 +106,7 @@ export default function DirectoryPage() {
           )}
         </Header>
         <main className="flex-1 p-4 md:p-8">
-            <Tabs defaultValue="clients" className="w-full" onValueChange={setActiveTab}>
+            <Tabs defaultValue="suppliers" className="w-full" onValueChange={setActiveTab}>
                 <TabsList className="grid w-full grid-cols-3 mb-6">
                      <TabsTrigger value="suppliers">
                         <Truck className="mr-2 h-4 w-4"/>
