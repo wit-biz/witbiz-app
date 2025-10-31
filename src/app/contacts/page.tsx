@@ -8,53 +8,13 @@ import { Users, UserCheck, PlusCircle, Truck } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ClientsTab } from "@/components/shared/ClientsTab";
 import { PromotersTab } from "@/components/shared/PromotersTab";
+import { SuppliersTab } from "@/components/shared/SuppliersTab";
 import { promoters } from "@/lib/data";
 import { useCRMData } from "@/contexts/CRMDataContext";
 import { AddEditClientDialog } from "@/components/shared/AddEditClientDialog";
 import { ClientDetailView } from "@/components/shared/ClientDetailView";
 import type { Client } from "@/lib/types";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-
-
-// Mock data for Suppliers
-const suppliers = [
-  { id: 'sup1', name: 'Tech Supplies Co.', contact: 'John Doe', service: 'IT Hardware' },
-  { id: 'sup2', name: 'Office Essentials', contact: 'Jane Smith', service: 'Office Supplies' },
-  { id: 'sup3', name: 'Creative Solutions', contact: 'Peter Jones', service: 'Marketing & Design' },
-];
-
-function SuppliersTab() {
-    return (
-        <Card>
-            <CardHeader>
-                <CardTitle>Proveedores</CardTitle>
-                <CardDescription>Lista de proveedores de bienes y servicios.</CardDescription>
-            </CardHeader>
-            <CardContent>
-                <Table>
-                    <TableHeader>
-                        <TableRow>
-                            <TableHead>Nombre del Proveedor</TableHead>
-                            <TableHead>Contacto</TableHead>
-                            <TableHead>Servicio/Producto</TableHead>
-                        </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                        {suppliers.map((supplier) => (
-                            <TableRow key={supplier.id}>
-                                <TableCell className="font-medium">{supplier.name}</TableCell>
-                                <TableCell>{supplier.contact}</TableCell>
-                                <TableCell>{supplier.service}</TableCell>
-                            </TableRow>
-                        ))}
-                    </TableBody>
-                </Table>
-            </CardContent>
-        </Card>
-    );
-}
 
 
 export default function DirectoryPage() {

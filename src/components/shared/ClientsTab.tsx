@@ -3,7 +3,7 @@
 
 import React, { useState, useMemo, useCallback } from "react";
 import { Button } from "@/components/ui/button";
-import { PlusCircle, Users, Edit3, Trash2, Loader2 } from "lucide-react";
+import { PlusCircle, Users, Edit3, Trash2, Loader2, Search } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
@@ -12,6 +12,7 @@ import type { Client } from '@/lib/types';
 import { useToast } from "@/hooks/use-toast";
 import { AddEditClientDialog } from "@/components/shared/AddEditClientDialog";
 import { cn } from "@/lib/utils";
+import { Input } from "@/components/ui/input";
 
 interface ClientsTabProps {
     clients: Client[];
@@ -22,17 +23,26 @@ interface ClientsTabProps {
 
 export function ClientsTab({ clients, isLoading, onClientSelect, selectedClientId }: ClientsTabProps) {
   const { toast } = useToast();
-
   const { deleteClient, currentUser } = useCRMData();
 
+  const [searchTerm, setSearchTerm] = useState('');
   const [editDialogState, setEditDialogState] = useState<{ open: boolean; client: Client | null }>({ open: false, client: null });
   const [clientToDelete, setClientToDelete] = useState<Client | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
 
-  const sortedClients = useMemo(() => {
+  const filteredClients = useMemo(() => {
     if (!clients) return [];
-    return [...clients].sort((a, b) => a.name.localeCompare(b.name));
-  }, [clients]);
+    let filtered = [...clients];
+    if (searchTerm) {
+      const lowerSearchTerm = searchTerm.toLowerCase();
+      filtered = filtered.filter(client =>
+        client.name.toLowerCase().includes(lowerSearchTerm) ||
+        (client.owner && client.owner.toLowerCase().includes(lowerSearchTerm)) ||
+        (client.category && client.category.toLowerCase().includes(lowerSearchTerm))
+      );
+    }
+    return filtered.sort((a, b) => a.name.localeCompare(b.name));
+  }, [clients, searchTerm]);
 
   const handleEditClick = useCallback((e: React.MouseEvent, client: Client) => {
       e.stopPropagation();
@@ -66,11 +76,22 @@ export function ClientsTab({ clients, isLoading, onClientSelect, selectedClientI
       <>
         <Card className="shadow-none border-none">
           <CardContent className="p-0">
+            <div className="flex items-center py-4">
+                <div className="relative flex-grow">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                        placeholder="Buscar por nombre, propietario o categoría..."
+                        className="pl-10"
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                    />
+                </div>
+            </div>
             {isLoading ? (
               <div className="flex items-center justify-center p-12">
                 <Loader2 className="h-8 w-8 animate-spin text-primary" />
               </div>
-            ) : sortedClients.length > 0 ? (
+            ) : filteredClients.length > 0 ? (
               <div className="relative w-full overflow-auto">
                 <Table>
                   <TableHeader>
@@ -82,7 +103,7 @@ export function ClientsTab({ clients, isLoading, onClientSelect, selectedClientI
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {sortedClients.map((client) => (
+                    {filteredClients.map((client) => (
                       <TableRow
                         key={client.id}
                         onClick={() => onClientSelect(client)}
@@ -113,7 +134,7 @@ export function ClientsTab({ clients, isLoading, onClientSelect, selectedClientI
                 <Users className="h-16 w-16 mb-4 text-gray-400" />
                 <p className="text-lg font-semibold">No se encontraron clientes.</p>
                 <p className="text-sm mt-1">
-                    Intente añadir un nuevo cliente.
+                    Intente ajustar su búsqueda o añada un nuevo cliente.
                 </p>
               </div>
             )}
