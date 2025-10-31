@@ -288,11 +288,11 @@ export default function AccountingConfigPage() {
                                         {categoryGroups.map((group) => (
                                             <AccordionItem value={group.id} key={group.id} className="border-none">
                                                 <Card className="overflow-hidden">
-                                                <AccordionTrigger className="w-full p-4 hover:no-underline bg-muted/50 hover:bg-muted/60 flex justify-between">
-                                                    <div className="flex items-center gap-2">
-                                                        <CardTitle className="text-base">
-                                                            {group.name}
-                                                        </CardTitle>
+                                                <AccordionTrigger className="w-full p-4 hover:no-underline bg-muted/50 hover:bg-muted/60 flex justify-between items-center">
+                                                    <CardTitle className="text-base">
+                                                        {group.name}
+                                                    </CardTitle>
+                                                    <div className="flex items-center gap-1">
                                                         <Button variant="ghost" size="icon" className="h-7 w-7"><Edit className="h-4 w-4"/></Button>
                                                         <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive"><Trash2 className="h-4 w-4"/></Button>
                                                     </div>
@@ -444,5 +444,3 @@ export default function AccountingConfigPage() {
     </>
   );
 }
-
-    
