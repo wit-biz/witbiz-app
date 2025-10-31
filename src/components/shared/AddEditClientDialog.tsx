@@ -29,6 +29,8 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { promoters } from '@/lib/data';
 
 
 const clientSchema = z.object({
@@ -38,6 +40,7 @@ const clientSchema = z.object({
   contactEmail: z.string().email({ message: "Por favor, introduzca un email válido." }).optional().or(z.literal('')),
   contactPhone: z.string().optional(),
   website: z.string().url({ message: "Por favor, introduzca una URL válida." }).optional().or(z.literal('')),
+  promoterId: z.string().optional(),
 });
 
 
@@ -63,6 +66,7 @@ export function AddEditClientDialog({ client, isOpen, onClose }: AddEditClientDi
       contactEmail: client?.contactEmail || '',
       contactPhone: client?.contactPhone || '',
       website: client?.website || '',
+      promoterId: '',
     },
   });
   
@@ -75,6 +79,7 @@ export function AddEditClientDialog({ client, isOpen, onClose }: AddEditClientDi
             contactEmail: client?.contactEmail || '',
             contactPhone: client?.contactPhone || '',
             website: client?.website || '',
+            promoterId: '',
         });
     }
   }, [isOpen, client, form]);
@@ -87,7 +92,7 @@ export function AddEditClientDialog({ client, isOpen, onClose }: AddEditClientDi
     if (isEditMode && client) {
         success = await updateClient(client.id, values);
     } else {
-        const newClient = await addClient(values);
+        const newClient = await addClient(values as Omit<Client, 'id'>);
         success = !!newClient;
     }
     
@@ -124,6 +129,29 @@ export function AddEditClientDialog({ client, isOpen, onClose }: AddEditClientDi
                                 <FormControl>
                                     <Input placeholder="Nombre del cliente" {...field} disabled={isSubmitting}/>
                                 </FormControl>
+                                <FormMessage />
+                            </FormItem>
+                        )}
+                    />
+                     <FormField
+                        control={form.control}
+                        name="promoterId"
+                        render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>Referido por (Promotor)</FormLabel>
+                                 <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                    <FormControl>
+                                        <SelectTrigger>
+                                            <SelectValue placeholder="Seleccione un promotor (opcional)..." />
+                                        </SelectTrigger>
+                                    </FormControl>
+                                    <SelectContent>
+                                        <SelectItem value="none">Ninguno</SelectItem>
+                                        {promoters.map(promoter => (
+                                            <SelectItem key={promoter.id} value={promoter.id}>{promoter.name}</SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
                                 <FormMessage />
                             </FormItem>
                         )}
@@ -216,5 +244,3 @@ export function AddEditClientDialog({ client, isOpen, onClose }: AddEditClientDi
     </Dialog>
   );
 }
-
-    

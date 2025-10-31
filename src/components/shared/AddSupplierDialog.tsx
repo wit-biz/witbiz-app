@@ -26,11 +26,15 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { promoters } from '@/lib/data';
+
 
 const supplierSchema = z.object({
   name: z.string().min(2, { message: "El nombre debe tener al menos 2 caracteres." }),
   contact: z.string().optional(),
   service: z.string().optional(),
+  promoterId: z.string().optional(),
 });
 
 type SupplierFormValues = z.infer<typeof supplierSchema>;
@@ -51,6 +55,7 @@ export function AddSupplierDialog({ isOpen, onClose, onAdd }: AddSupplierDialogP
       name: '',
       contact: '',
       service: '',
+      promoterId: '',
     },
   });
   
@@ -95,6 +100,29 @@ export function AddSupplierDialog({ isOpen, onClose, onAdd }: AddSupplierDialogP
                                 <FormControl>
                                     <Input placeholder="Ej. Tech Solutions" {...field} disabled={isSubmitting}/>
                                 </FormControl>
+                                <FormMessage />
+                            </FormItem>
+                        )}
+                    />
+                    <FormField
+                        control={form.control}
+                        name="promoterId"
+                        render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>Referido por (Promotor)</FormLabel>
+                                 <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                    <FormControl>
+                                        <SelectTrigger>
+                                            <SelectValue placeholder="Seleccione un promotor (opcional)..." />
+                                        </SelectTrigger>
+                                    </FormControl>
+                                    <SelectContent>
+                                        <SelectItem value="none">Ninguno</SelectItem>
+                                        {promoters.map(promoter => (
+                                            <SelectItem key={promoter.id} value={promoter.id}>{promoter.name}</SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
                                 <FormMessage />
                             </FormItem>
                         )}
