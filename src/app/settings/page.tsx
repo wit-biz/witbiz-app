@@ -172,7 +172,7 @@ export default function SettingsPage() {
         <main className="flex-1 p-4 md:p-8 space-y-6">
             <Card>
                 <CardHeader>
-                    <CardTitle>Resumen General de Empresas</CardTitle>
+                    <CardTitle>Resumen General</CardTitle>
                     <CardDescription>Balance consolidado de todas las cuentas y empresas.</CardDescription>
                 </CardHeader>
                 <CardContent>
