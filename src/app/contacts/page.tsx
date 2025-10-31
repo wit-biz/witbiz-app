@@ -109,7 +109,7 @@ export default function DirectoryPage() {
     },
     promoters: {
       title: "Directorio de Promotores",
-      description: "Consulte la información de sus promotores.",
+      description: "Consulte y filtre la información de sus promotores.",
     },
   };
   
