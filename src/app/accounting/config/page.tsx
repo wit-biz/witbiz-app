@@ -288,17 +288,15 @@ export default function AccountingConfigPage() {
                                         {categoryGroups.map((group) => (
                                             <AccordionItem value={group.id} key={group.id} className="border-none">
                                                 <Card className="overflow-hidden">
-                                                <div className="flex items-center bg-muted/50 hover:bg-muted/60">
-                                                    <AccordionTrigger className="w-full p-4 hover:no-underline flex-1">
-                                                        <CardTitle className="text-base flex items-center gap-2">
+                                                <AccordionTrigger className="w-full p-4 hover:no-underline bg-muted/50 hover:bg-muted/60 flex justify-between">
+                                                    <div className="flex items-center gap-2">
+                                                        <CardTitle className="text-base">
                                                             {group.name}
                                                         </CardTitle>
-                                                    </AccordionTrigger>
-                                                    <div className="flex items-center gap-1 pr-4">
                                                         <Button variant="ghost" size="icon" className="h-7 w-7"><Edit className="h-4 w-4"/></Button>
                                                         <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive"><Trash2 className="h-4 w-4"/></Button>
                                                     </div>
-                                                </div>
+                                                </AccordionTrigger>
                                                 <AccordionContent className="p-4 pt-0">
                                                     <div className="flex justify-end mb-2">
                                                         <Button variant="outline" size="sm" onClick={() => openAddTypeDialog(group.id)}><PlusCircle className="mr-2 h-4 w-4"/>Añadir Tipo</Button>
@@ -446,3 +444,5 @@ export default function AccountingConfigPage() {
     </>
   );
 }
+
+    
