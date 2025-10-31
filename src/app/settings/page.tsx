@@ -2,7 +2,7 @@
 "use client";
 
 import React, { useState, useMemo } from "react";
-import { Landmark, Briefcase, PlusCircle, ArrowRightLeft, DollarSign, BarChart as BarChartIcon, Settings, Edit, Trash2, KeyRound, Filter, ChevronsUpDown } from "lucide-react";
+import { Landmark, Briefcase, PlusCircle, ArrowRightLeft, DollarSign, BarChart as BarChartIcon, Settings, Edit, Trash2, KeyRound, Filter, ChevronsUpDown, Building } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -150,7 +150,6 @@ export default function SettingsPage() {
           description="Centro de operaciones financieras y gestión de cuentas."
         >
           <div className="flex flex-col sm:flex-row gap-2">
-              <Button><PlusCircle className="mr-2 h-4 w-4" />Añadir Empresa</Button>
               <Button variant="outline" onClick={() => setIsTransactionDialogOpen(true)}>
                 <ArrowRightLeft className="mr-2 h-4 w-4" />
                 Registrar Transacción
@@ -281,99 +280,150 @@ export default function SettingsPage() {
             </TabsContent>
 
             <TabsContent value="configuracion">
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    <Card>
-                        <CardHeader>
-                            <CardTitle className="flex items-center justify-between">
-                                <span>Grupos y Categorías</span>
-                                <Button size="sm"><PlusCircle className="mr-2 h-4 w-4"/>Añadir Grupo</Button>
-                            </CardTitle>
-                            <CardDescription>Organice sus transacciones creando grupos y asignando categorías específicas.</CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                           <Accordion type="multiple" className="w-full space-y-4">
-                                {categoryGroups.map((group) => (
-                                    <AccordionItem value={group.id} key={group.id} className="border-none">
-                                     <Card className="overflow-hidden">
-                                        <AccordionTrigger className="w-full p-0 bg-muted/50 hover:no-underline [&_svg]:ml-auto [&_svg]:mr-4">
-                                            <CardHeader className="flex-1 text-left p-4">
-                                                 <CardTitle className="text-base flex items-center justify-between">
-                                                    <div className="flex items-center gap-2">
-                                                      <ChevronsUpDown className="h-4 w-4 text-muted-foreground" />
-                                                      {group.name}
-                                                    </div>
-                                                    <div className="flex items-center gap-1">
-                                                      <Button variant="ghost" size="icon" className="h-7 w-7"><Edit className="h-4 w-4"/></Button>
-                                                      <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive"><Trash2 className="h-4 w-4"/></Button>
-                                                    </div>
-                                                </CardTitle>
-                                            </CardHeader>
-                                        </AccordionTrigger>
-                                        <AccordionContent className="p-4 pt-0">
-                                            <div className="flex justify-end mb-2">
-                                                <Button variant="outline" size="sm"><PlusCircle className="mr-2 h-4 w-4"/>Añadir Categoría</Button>
-                                            </div>
-                                            <Table>
-                                                <TableHeader>
-                                                    <TableRow>
-                                                        <TableHead>Nombre de Categoría</TableHead>
-                                                        <TableHead className="text-right">Acciones</TableHead>
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Gestión de Entidades Contables</CardTitle>
+                        <CardDescription>
+                            Configure las empresas, cuentas bancarias y categorías que estructuran su contabilidad.
+                        </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <Tabs defaultValue="empresas" className="w-full">
+                            <TabsList className="grid w-full grid-cols-3">
+                                <TabsTrigger value="empresas"><Building className="mr-2 h-4 w-4"/>Empresas</TabsTrigger>
+                                <TabsTrigger value="cuentas"><Landmark className="mr-2 h-4 w-4"/>Cuentas Bancarias</TabsTrigger>
+                                <TabsTrigger value="categorias"><KeyRound className="mr-2 h-4 w-4"/>Categorías</TabsTrigger>
+                            </TabsList>
+                            <TabsContent value="empresas" className="mt-4">
+                                <Card>
+                                    <CardHeader>
+                                        <CardTitle className="flex items-center justify-between">
+                                            <span>Listado de Empresas</span>
+                                            <Button size="sm"><PlusCircle className="mr-2 h-4 w-4"/>Añadir Empresa</Button>
+                                        </CardTitle>
+                                        <CardDescription>Entidades de negocio principales.</CardDescription>
+                                    </CardHeader>
+                                    <CardContent>
+                                        <Table>
+                                            <TableHeader>
+                                                <TableRow>
+                                                    <TableHead>Nombre de la Empresa</TableHead>
+                                                    <TableHead className="text-right">Acciones</TableHead>
+                                                </TableRow>
+                                            </TableHeader>
+                                            <TableBody>
+                                                {mockCompanies.map(company => (
+                                                    <TableRow key={company.id}>
+                                                        <TableCell className="font-medium">{company.name}</TableCell>
+                                                        <TableCell className="text-right">
+                                                            <Button variant="ghost" size="icon"><Edit className="h-4 w-4"/></Button>
+                                                            <Button variant="ghost" size="icon" className="text-destructive"><Trash2 className="h-4 w-4"/></Button>
+                                                        </TableCell>
                                                     </TableRow>
-                                                </TableHeader>
-                                                <TableBody>
-                                                    {group.categories.map(cat => (
-                                                        <TableRow key={cat.id}>
-                                                            <TableCell className="font-medium">{cat.name}</TableCell>
-                                                            <TableCell className="text-right">
-                                                                <Button variant="ghost" size="icon" className="h-7 w-7"><Edit className="h-4 w-4"/></Button>
-                                                                <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive"><Trash2 className="h-4 w-4"/></Button>
-                                                            </TableCell>
-                                                        </TableRow>
-                                                    ))}
-                                                </TableBody>
-                                            </Table>
-                                        </AccordionContent>
-                                      </Card>
-                                    </AccordionItem>
-                                ))}
-                            </Accordion>
-                        </CardContent>
-                    </Card>
-                    <Card>
-                        <CardHeader>
-                            <CardTitle className="flex items-center justify-between">
-                                <span>Cuentas Bancarias</span>
-                                <Button size="sm"><PlusCircle className="mr-2 h-4 w-4"/>Añadir Cuenta</Button>
-                            </CardTitle>
-                            <CardDescription>Añada o edite las cuentas bancarias de sus empresas.</CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                          <Table>
-                              <TableHeader>
-                                  <TableRow>
-                                      <TableHead>Nombre</TableHead>
-                                      <TableHead>Empresa</TableHead>
-                                      <TableHead>Tipo</TableHead>
-                                      <TableHead className="text-right">Acciones</TableHead>
-                                  </TableRow>
-                              </TableHeader>
-                              <TableBody>
-                                  {mockAccounts.map(account => (
-                                      <TableRow key={account.id}>
-                                          <TableCell className="font-medium">{account.name}</TableCell>
-                                          <TableCell>{account.company}</TableCell>
-                                          <TableCell><Badge variant="outline">{account.type}</Badge></TableCell>
-                                          <TableCell className="text-right">
-                                              <Button variant="ghost" size="icon"><Edit className="h-4 w-4"/></Button>
-                                              <Button variant="ghost" size="icon" className="text-destructive"><Trash2 className="h-4 w-4"/></Button>
-                                          </TableCell>
-                                      </TableRow>
-                                  ))}
-                              </TableBody>
-                          </Table>
-                        </CardContent>
-                    </Card>
-                </div>
+                                                ))}
+                                            </TableBody>
+                                        </Table>
+                                    </CardContent>
+                                </Card>
+                            </TabsContent>
+                            <TabsContent value="cuentas" className="mt-4">
+                                <Card>
+                                    <CardHeader>
+                                        <CardTitle className="flex items-center justify-between">
+                                            <span>Cuentas Bancarias</span>
+                                            <Button size="sm"><PlusCircle className="mr-2 h-4 w-4"/>Añadir Cuenta</Button>
+                                        </CardTitle>
+                                        <CardDescription>Añada o edite las cuentas bancarias de sus empresas.</CardDescription>
+                                    </CardHeader>
+                                    <CardContent>
+                                      <Table>
+                                          <TableHeader>
+                                              <TableRow>
+                                                  <TableHead>Nombre / Banco</TableHead>
+                                                  <TableHead>Empresa</TableHead>
+                                                  <TableHead>Tipo</TableHead>
+                                                  <TableHead className="text-right">Acciones</TableHead>
+                                              </TableRow>
+                                          </TableHeader>
+                                          <TableBody>
+                                              {mockAccounts.map(account => (
+                                                  <TableRow key={account.id}>
+                                                      <TableCell className="font-medium">{account.name}</TableCell>
+                                                      <TableCell>{account.company}</TableCell>
+                                                      <TableCell><Badge variant="outline">{account.type}</Badge></TableCell>
+                                                      <TableCell className="text-right">
+                                                          <Button variant="ghost" size="icon"><Edit className="h-4 w-4"/></Button>
+                                                          <Button variant="ghost" size="icon" className="text-destructive"><Trash2 className="h-4 w-4"/></Button>
+                                                      </TableCell>
+                                                  </TableRow>
+                                              ))}
+                                          </TableBody>
+                                      </Table>
+                                    </CardContent>
+                                </Card>
+                            </TabsContent>
+                             <TabsContent value="categorias" className="mt-4">
+                                <Card>
+                                    <CardHeader>
+                                        <CardTitle className="flex items-center justify-between">
+                                            <span>Grupos y Categorías</span>
+                                            <Button size="sm"><PlusCircle className="mr-2 h-4 w-4"/>Añadir Grupo</Button>
+                                        </CardTitle>
+                                        <CardDescription>Organice sus transacciones creando grupos y asignando categorías específicas.</CardDescription>
+                                    </CardHeader>
+                                    <CardContent>
+                                       <Accordion type="multiple" className="w-full space-y-4">
+                                            {categoryGroups.map((group) => (
+                                                <AccordionItem value={group.id} key={group.id} className="border-none">
+                                                 <Card className="overflow-hidden">
+                                                    <AccordionTrigger className="w-full p-0 bg-muted/50 hover:no-underline [&_svg]:ml-auto [&_svg]:mr-4">
+                                                        <CardHeader className="flex-1 text-left p-4">
+                                                             <CardTitle className="text-base flex items-center justify-between">
+                                                                <div className="flex items-center gap-2">
+                                                                  <ChevronsUpDown className="h-4 w-4 text-muted-foreground" />
+                                                                  {group.name}
+                                                                </div>
+                                                                <div className="flex items-center gap-1">
+                                                                  <Button variant="ghost" size="icon" className="h-7 w-7"><Edit className="h-4 w-4"/></Button>
+                                                                  <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive"><Trash2 className="h-4 w-4"/></Button>
+                                                                </div>
+                                                            </CardTitle>
+                                                        </CardHeader>
+                                                    </AccordionTrigger>
+                                                    <AccordionContent className="p-4 pt-0">
+                                                        <div className="flex justify-end mb-2">
+                                                            <Button variant="outline" size="sm"><PlusCircle className="mr-2 h-4 w-4"/>Añadir Categoría</Button>
+                                                        </div>
+                                                        <Table>
+                                                            <TableHeader>
+                                                                <TableRow>
+                                                                    <TableHead>Nombre de Categoría</TableHead>
+                                                                    <TableHead className="text-right">Acciones</TableHead>
+                                                                </TableRow>
+                                                            </TableHeader>
+                                                            <TableBody>
+                                                                {group.categories.map(cat => (
+                                                                    <TableRow key={cat.id}>
+                                                                        <TableCell className="font-medium">{cat.name}</TableCell>
+                                                                        <TableCell className="text-right">
+                                                                            <Button variant="ghost" size="icon" className="h-7 w-7"><Edit className="h-4 w-4"/></Button>
+                                                                            <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive"><Trash2 className="h-4 w-4"/></Button>
+                                                                        </TableCell>
+                                                                    </TableRow>
+                                                                ))}
+                                                            </TableBody>
+                                                        </Table>
+                                                    </AccordionContent>
+                                                  </Card>
+                                                </AccordionItem>
+                                            ))}
+                                        </Accordion>
+                                    </CardContent>
+                                </Card>
+                            </TabsContent>
+                        </Tabs>
+                    </CardContent>
+                </Card>
             </TabsContent>
           </Tabs>
         </main>
