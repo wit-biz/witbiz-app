@@ -2,7 +2,7 @@
 "use client";
 
 import React, { useState, useMemo } from "react";
-import { Landmark, Briefcase, PlusCircle, ArrowRightLeft, DollarSign, BarChart as BarChartIcon, Settings, Edit, Trash2, KeyRound, Filter, ChevronsUpDown, Building, Loader2, Save } from "lucide-react";
+import { Landmark, Briefcase, PlusCircle, ArrowRightLeft, DollarSign, BarChart, Settings, Edit, Trash2, KeyRound, Filter, ChevronsUpDown, Building, Loader2, Save, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -186,7 +186,7 @@ export default function AccountingConfigPage() {
         >
              <Button variant="outline" asChild>
                 <Link href="/settings">
-                    <BarChartIcon className="mr-2 h-4 w-4" />
+                    <ArrowLeft className="mr-2 h-4 w-4" />
                     Volver a Contabilidad
                 </Link>
             </Button>
@@ -447,3 +447,5 @@ export default function AccountingConfigPage() {
     </>
   );
 }
+
+    

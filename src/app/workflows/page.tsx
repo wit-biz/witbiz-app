@@ -7,7 +7,7 @@ import { useSearchParams } from "next/navigation";
 import { Header } from "@/components/header";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { useCRMData, type WorkflowStage, type ServiceWorkflow, type WorkflowStageObjective, type SubObjective, type SubService, type Task } from "@/contexts/CRMDataContext"; 
-import { Edit, Save, Trash2, Plus, X, Loader2, UploadCloud, ChevronsRight, FileText, ListTodo, Workflow as WorkflowIcon } from "lucide-react";
+import { Edit, Save, Trash2, Plus, X, Loader2, UploadCloud, ChevronsRight, FileText, ListTodo, Workflow as WorkflowIcon, ArrowLeft } from "lucide-react";
 import { Card, CardHeader, CardTitle, CardContent, CardDescription, CardFooter } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
@@ -373,7 +373,7 @@ export default function WorkflowConfigurationPage() {
           <div className="flex flex-col sm:flex-row gap-2">
             <Button variant="outline" asChild>
                 <Link href="/crm">
-                    <WorkflowIcon className="mr-2 h-4 w-4" />
+                    <ArrowLeft className="mr-2 h-4 w-4" />
                     Volver al CRM
                 </Link>
             </Button>
