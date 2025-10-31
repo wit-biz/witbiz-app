@@ -200,7 +200,7 @@ export default function AccountingConfigPage() {
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
-                    <Tabs defaultValue="empresas" className="w-full">
+                    <Tabs defaultValue="categorias" className="w-full">
                         <TabsList className="grid w-full grid-cols-3">
                             <TabsTrigger value="empresas"><Building className="mr-2 h-4 w-4"/>Empresas</TabsTrigger>
                             <TabsTrigger value="cuentas"><Landmark className="mr-2 h-4 w-4"/>Cuentas Bancarias</TabsTrigger>
@@ -274,11 +274,11 @@ export default function AccountingConfigPage() {
                                 </CardContent>
                             </Card>
                         </TabsContent>
-                            <TabsContent value="categorias" className="mt-4">
+                        <TabsContent value="categorias" className="mt-4">
                             <Card>
                                 <CardHeader>
                                     <CardTitle className="flex items-center justify-between">
-                                        <span>Categorías y Tipos</span>
+                                        <span>Listado de Categorías</span>
                                         <Button size="sm" onClick={() => setIsAddCategoryGroupOpen(true)}><PlusCircle className="mr-2 h-4 w-4"/>Añadir Categoría</Button>
                                     </CardTitle>
                                     <CardDescription>Organice sus transacciones creando categorías y asignando tipos específicos.</CardDescription>
@@ -288,39 +288,43 @@ export default function AccountingConfigPage() {
                                         {categoryGroups.map((group) => (
                                             <AccordionItem value={group.id} key={group.id} className="border-none">
                                                 <Card className="overflow-hidden">
-                                                <AccordionTrigger className="w-full p-4 hover:no-underline bg-muted/50 hover:bg-muted/60 flex justify-between items-center">
-                                                    <CardTitle className="text-base flex-grow text-left">
-                                                        {group.name}
-                                                    </CardTitle>
-                                                    <div className="flex items-center gap-1 ml-auto" onClick={(e) => e.stopPropagation()}>
-                                                        <Button variant="ghost" size="icon" className="h-7 w-7"><Edit className="h-4 w-4"/></Button>
-                                                        <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive"><Trash2 className="h-4 w-4"/></Button>
-                                                    </div>
-                                                </AccordionTrigger>
-                                                <AccordionContent className="p-4 pt-0">
-                                                    <div className="flex justify-end mb-2">
-                                                        <Button variant="outline" size="sm" onClick={() => openAddTypeDialog(group.id)}><PlusCircle className="mr-2 h-4 w-4"/>Añadir Tipo</Button>
-                                                    </div>
-                                                    <Table>
-                                                        <TableHeader>
-                                                            <TableRow>
-                                                                <TableHead>Nombre del Tipo</TableHead>
-                                                                <TableHead className="text-right">Acciones</TableHead>
-                                                            </TableRow>
-                                                        </TableHeader>
-                                                        <TableBody>
-                                                            {group.categories.map(cat => (
-                                                                <TableRow key={cat.id}>
-                                                                    <TableCell className="font-medium">{cat.name}</TableCell>
-                                                                    <TableCell className="text-right">
-                                                                        <Button variant="ghost" size="icon" className="h-7 w-7"><Edit className="h-4 w-4"/></Button>
-                                                                        <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive"><Trash2 className="h-4 w-4"/></Button>
-                                                                    </TableCell>
+                                                    <AccordionTrigger className="w-full p-4 hover:no-underline bg-muted/50 hover:bg-muted/60 flex justify-between items-center">
+                                                        <CardTitle className="text-base flex-grow text-left">
+                                                            {group.name}
+                                                        </CardTitle>
+                                                        <div className="flex items-center gap-1 ml-auto" onClick={(e) => e.stopPropagation()}>
+                                                            <Button variant="ghost" size="icon" className="h-7 w-7"><Edit className="h-4 w-4"/></Button>
+                                                            <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive"><Trash2 className="h-4 w-4"/></Button>
+                                                        </div>
+                                                    </AccordionTrigger>
+                                                    <AccordionContent className="p-4 pt-0">
+                                                        <div className="flex justify-end mb-2">
+                                                            <Button variant="outline" size="sm" onClick={() => openAddTypeDialog(group.id)}><PlusCircle className="mr-2 h-4 w-4"/>Añadir Tipo</Button>
+                                                        </div>
+                                                        <Table>
+                                                            <TableHeader>
+                                                                <TableRow>
+                                                                    <TableHead>Nombre del Tipo</TableHead>
+                                                                    <TableHead className="text-right">Acciones</TableHead>
                                                                 </TableRow>
-                                                            ))}
-                                                        </TableBody>
-                                                    </Table>
-                                                </AccordionContent>
+                                                            </TableHeader>
+                                                            <TableBody>
+                                                                {group.categories.length > 0 ? group.categories.map(cat => (
+                                                                    <TableRow key={cat.id}>
+                                                                        <TableCell className="font-medium">{cat.name}</TableCell>
+                                                                        <TableCell className="text-right">
+                                                                            <Button variant="ghost" size="icon" className="h-7 w-7"><Edit className="h-4 w-4"/></Button>
+                                                                            <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive"><Trash2 className="h-4 w-4"/></Button>
+                                                                        </TableCell>
+                                                                    </TableRow>
+                                                                )) : (
+                                                                    <TableRow>
+                                                                        <TableCell colSpan={2} className="text-center text-muted-foreground">No hay tipos en esta categoría.</TableCell>
+                                                                    </TableRow>
+                                                                )}
+                                                            </TableBody>
+                                                        </Table>
+                                                    </AccordionContent>
                                                 </Card>
                                             </AccordionItem>
                                         ))}
