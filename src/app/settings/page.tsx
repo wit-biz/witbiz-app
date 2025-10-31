@@ -8,9 +8,6 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
-import { Bar, BarChart, XAxis, YAxis, ResponsiveContainer, CartesianGrid } from "recharts";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AddTransactionDialog } from "@/components/shared/AddTransactionDialog";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
@@ -47,20 +44,6 @@ const mockTransactions = [
     { id: 'trx6', date: '2024-07-15', description: 'Ingreso por servicio web - Cliente Beta', type: 'income', category: 'Ingreso por Desarrollo', amount: 15000, companyId: 'emp2', accountId: 'cta3' },
     { id: 'trx7', date: '2024-07-14', description: 'Pago de renta de oficina', type: 'expense', category: 'Renta', amount: -12000, companyId: 'emp1', accountId: 'cta2' },
 ];
-
-const mockChartData = [
-  { month: "Feb", Ingresos: 186000, Egresos: 80000 },
-  { month: "Mar", Ingresos: 305000, Egresos: 120000 },
-  { month: "Abr", Ingresos: 237000, Egresos: 95000 },
-  { month: "May", Ingresos: 273000, Egresos: 140000 },
-  { month: "Jun", Ingresos: 209000, Egresos: 110000 },
-  { month: "Jul", Ingresos: 214000, Egresos: 130000 },
-];
-
-const chartConfig = {
-  Egresos: { label: "Egresos", color: "hsl(var(--destructive))" },
-  Ingresos: { label: "Ingresos", color: "hsl(var(--primary))" },
-};
 
 const initialCategoryGroups = [
     { 
@@ -111,11 +94,6 @@ export default function SettingsPage() {
 
   // State for dialogs
   const [isTransactionDialogOpen, setIsTransactionDialogOpen] = useState(false);
-
-  // Memoized calculations
-  const totalBalance = useMemo(() => mockCompanies.reduce((sum, comp) => sum + comp.totalBalance, 0), [mockCompanies]);
-  const totalIncome = useMemo(() => mockTransactions.filter(t => t.type === 'income').reduce((sum, t) => sum + t.amount, 0), []);
-  const totalExpense = useMemo(() => mockTransactions.filter(t => t.type === 'expense').reduce((sum, t) => sum + t.amount, 0), []);
   
   const [date, setDate] = useState<DateRange | undefined>();
   const [selectedCompanyId, setSelectedCompanyId] = useState<string>("all");
@@ -157,108 +135,79 @@ export default function SettingsPage() {
           </div>
         </Header>
         <main className="flex-1 p-4 md:p-8">
-          <Tabs defaultValue="resumen">
-            <TabsList className="grid w-full grid-cols-2 mb-6">
-              <TabsTrigger value="resumen"><BarChartIcon className="mr-2 h-4 w-4"/>Resumen</TabsTrigger>
-              <TabsTrigger value="transacciones"><DollarSign className="mr-2 h-4 w-4"/>Transacciones</TabsTrigger>
-            </TabsList>
-
-            <TabsContent value="resumen" className="space-y-6">
-              <Card>
-                  <CardHeader>
-                      <CardTitle>Flujo de Efectivo (Últimos 6 meses)</CardTitle>
-                  </CardHeader>
-                  <CardContent className="pl-2">
-                      <ChartContainer config={chartConfig} className="h-[250px] w-full">
-                          <BarChart data={mockChartData} accessibilityLayer>
-                              <CartesianGrid vertical={false} />
-                              <XAxis dataKey="month" tickLine={false} tickMargin={10} axisLine={false} tickFormatter={(value) => value.slice(0, 3)} />
-                              <ChartTooltip content={<ChartTooltipContent indicator="dot" />} />
-                              <Bar dataKey="Ingresos" fill="var(--color-Ingresos)" radius={4} />
-                              <Bar dataKey="Egresos" fill="var(--color-Egresos)" radius={4} />
-                          </BarChart>
-                      </ChartContainer>
-                  </CardContent>
-              </Card>
-            </TabsContent>
-
-            <TabsContent value="transacciones">
-               <Card>
-                  <CardHeader>
-                      <CardTitle>Registro de Movimientos</CardTitle>
-                      <CardDescription>Listado completo de todas las transacciones financieras.</CardDescription>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                       <div className="flex flex-col md:flex-row gap-2 border p-4 rounded-lg">
-                           <Popover>
-                            <PopoverTrigger asChild>
-                              <Button id="date" variant={"outline"} className={cn("w-full md:w-auto justify-start text-left font-normal", !date && "text-muted-foreground")}>
-                                <CalendarIcon className="mr-2 h-4 w-4" />
-                                {date?.from ? (date.to ? (<>{format(date.from, "LLL dd, y")} - {format(date.to, "LLL dd, y")}</>) : (format(date.from, "LLL dd, y"))) : (<span>Seleccione un rango</span>)}
-                              </Button>
-                            </PopoverTrigger>
-                            <PopoverContent className="w-auto p-0" align="start">
-                              <Calendar initialFocus mode="range" defaultMonth={date?.from} selected={date} onSelect={setDate} numberOfMonths={2} locale={es} />
-                            </PopoverContent>
-                          </Popover>
-                          <Select value={selectedCompanyId} onValueChange={setSelectedCompanyId}>
-                            <SelectTrigger className="w-full md:w-[200px]"><SelectValue placeholder="Filtrar por empresa..." /></SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="all">Todas las Empresas</SelectItem>
-                              {mockCompanies.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
-                            </SelectContent>
-                          </Select>
-                           <Select value={selectedCategoryId} onValueChange={setSelectedCategoryId}>
-                            <SelectTrigger className="w-full md:w-[200px]"><SelectValue placeholder="Filtrar por categoría..." /></SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="all">Todas las Categorías</SelectItem>
-                                {allCategories.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
-                            </SelectContent>
-                          </Select>
-                          <Select value={selectedType} onValueChange={setSelectedType}>
-                            <SelectTrigger className="w-full md:w-[180px]"><SelectValue placeholder="Filtrar por tipo..." /></SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="all">Todos los Tipos</SelectItem>
-                              <SelectItem value="income">Ingreso</SelectItem>
-                              <SelectItem value="expense">Egreso</SelectItem>
-                              <SelectItem value="transfer">Transferencia</SelectItem>
-                            </SelectContent>
-                          </Select>
-                          <Button variant="ghost" onClick={() => { setDate(undefined); setSelectedCompanyId("all"); setSelectedCategoryId("all"); setSelectedType("all");}}>Limpiar</Button>
-                       </div>
-                       <Table>
-                          <TableHeader>
-                              <TableRow>
-                                  <TableHead>Fecha</TableHead>
-                                  <TableHead>Descripción</TableHead>
-                                  <TableHead>Categoría</TableHead>
-                                  <TableHead>Tipo</TableHead>
-                                  <TableHead className="text-right">Monto</TableHead>
-                              </TableRow>
-                          </TableHeader>
-                          <TableBody>
-                              {filteredTransactions.map((trx) => (
-                                  <TableRow key={trx.id}>
-                                      <TableCell>{format(new Date(trx.date), "dd/MM/yyyy")}</TableCell>
-                                      <TableCell className="font-medium">{trx.description}</TableCell>
-                                      <TableCell>{trx.category}</TableCell>
-                                      <TableCell>
-                                          <Badge variant={trx.type === 'income' ? 'default' : trx.type === 'expense' ? 'destructive' : 'secondary'}>
-                                              {trx.type === 'income' ? 'Ingreso' : trx.type.startsWith('transfer') ? 'Transferencia' : 'Egreso'}
-                                          </Badge>
-                                      </TableCell>
-                                      <TableCell className={`text-right font-semibold ${trx.amount > 0 ? 'text-green-600' : 'text-red-600'}`}>
-                                          {trx.amount.toLocaleString('en-US', { style: 'currency', currency: 'USD' })}
-                                      </TableCell>
-                                  </TableRow>
-                              ))}
-                          </TableBody>
-                      </Table>
-                  </CardContent>
-              </Card>
-            </TabsContent>
-
-          </Tabs>
+            <Card>
+                <CardHeader>
+                    <CardTitle>Registro de Movimientos</CardTitle>
+                    <CardDescription>Listado completo de todas las transacciones financieras.</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                    <div className="flex flex-col md:flex-row gap-2 border p-4 rounded-lg">
+                        <Popover>
+                        <PopoverTrigger asChild>
+                            <Button id="date" variant={"outline"} className={cn("w-full md:w-auto justify-start text-left font-normal", !date && "text-muted-foreground")}>
+                            <CalendarIcon className="mr-2 h-4 w-4" />
+                            {date?.from ? (date.to ? (<>{format(date.from, "LLL dd, y")} - {format(date.to, "LLL dd, y")}</>) : (format(date.from, "LLL dd, y"))) : (<span>Seleccione un rango</span>)}
+                            </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0" align="start">
+                            <Calendar initialFocus mode="range" defaultMonth={date?.from} selected={date} onSelect={setDate} numberOfMonths={2} locale={es} />
+                        </PopoverContent>
+                        </Popover>
+                        <Select value={selectedCompanyId} onValueChange={setSelectedCompanyId}>
+                        <SelectTrigger className="w-full md:w-[200px]"><SelectValue placeholder="Filtrar por empresa..." /></SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="all">Todas las Empresas</SelectItem>
+                            {mockCompanies.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+                        </SelectContent>
+                        </Select>
+                        <Select value={selectedCategoryId} onValueChange={setSelectedCategoryId}>
+                        <SelectTrigger className="w-full md:w-[200px]"><SelectValue placeholder="Filtrar por categoría..." /></SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="all">Todas las Categorías</SelectItem>
+                            {allCategories.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+                        </SelectContent>
+                        </Select>
+                        <Select value={selectedType} onValueChange={setSelectedType}>
+                        <SelectTrigger className="w-full md:w-[180px]"><SelectValue placeholder="Filtrar por tipo..." /></SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="all">Todos los Tipos</SelectItem>
+                            <SelectItem value="income">Ingreso</SelectItem>
+                            <SelectItem value="expense">Egreso</SelectItem>
+                            <SelectItem value="transfer">Transferencia</SelectItem>
+                        </SelectContent>
+                        </Select>
+                        <Button variant="ghost" onClick={() => { setDate(undefined); setSelectedCompanyId("all"); setSelectedCategoryId("all"); setSelectedType("all");}}>Limpiar</Button>
+                    </div>
+                    <Table>
+                        <TableHeader>
+                            <TableRow>
+                                <TableHead>Fecha</TableHead>
+                                <TableHead>Descripción</TableHead>
+                                <TableHead>Categoría</TableHead>
+                                <TableHead>Tipo</TableHead>
+                                <TableHead className="text-right">Monto</TableHead>
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                            {filteredTransactions.map((trx) => (
+                                <TableRow key={trx.id}>
+                                    <TableCell>{format(new Date(trx.date), "dd/MM/yyyy")}</TableCell>
+                                    <TableCell className="font-medium">{trx.description}</TableCell>
+                                    <TableCell>{trx.category}</TableCell>
+                                    <TableCell>
+                                        <Badge variant={trx.type === 'income' ? 'default' : trx.type === 'expense' ? 'destructive' : 'secondary'}>
+                                            {trx.type === 'income' ? 'Ingreso' : trx.type.startsWith('transfer') ? 'Transferencia' : 'Egreso'}
+                                        </Badge>
+                                    </TableCell>
+                                    <TableCell className={`text-right font-semibold ${trx.amount > 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                        {trx.amount.toLocaleString('en-US', { style: 'currency', currency: 'USD' })}
+                                    </TableCell>
+                                </TableRow>
+                            ))}
+                        </TableBody>
+                    </Table>
+                </CardContent>
+            </Card>
         </main>
       </div>
       <AddTransactionDialog 
