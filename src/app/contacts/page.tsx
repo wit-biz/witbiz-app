@@ -15,12 +15,14 @@ import { AddEditClientDialog } from "@/components/shared/AddEditClientDialog";
 import { ClientDetailView } from "@/components/shared/ClientDetailView";
 import type { Client } from "@/lib/types";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { useToast } from "@/hooks/use-toast";
 
 
 export default function DirectoryPage() {
   const { clients, isLoadingClients, getClientById, currentUser } = useCRMData();
   const searchParams = useSearchParams();
   const router = useRouter();
+  const { toast } = useToast();
 
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
   const [isAddClientDialogOpen, setIsAddClientDialogOpen] = useState(false);
@@ -56,7 +58,7 @@ export default function DirectoryPage() {
     }, 300);
   }
 
-  const canCreateClient = currentUser?.permissions.clients_create ?? true;
+  const canCreate = currentUser?.permissions.clients_create ?? true; // Assuming similar permissions for others
 
   const headerInfo: { [key: string]: { title: string; description: string } } = {
     suppliers: {
@@ -72,8 +74,26 @@ export default function DirectoryPage() {
       description: "Consulte y filtre la información de sus promotores.",
     },
   };
+
+  const buttonLabels: { [key: string]: string } = {
+    suppliers: "Añadir Proveedor",
+    clients: "Añadir Cliente",
+    promoters: "Añadir Promotor",
+  };
+
+  const handleAddButtonClick = () => {
+    if (activeTab === 'clients') {
+      setIsAddClientDialogOpen(true);
+    } else {
+      toast({
+        title: "Función en desarrollo",
+        description: `La funcionalidad para añadir un nuevo ${activeTab === 'suppliers' ? 'proveedor' : 'promotor'} aún no está implementada.`,
+      });
+    }
+  };
   
   const currentHeaderInfo = headerInfo[activeTab] || headerInfo.clients;
+  const currentButtonLabel = buttonLabels[activeTab] || "Añadir";
 
   return (
     <>
@@ -82,13 +102,13 @@ export default function DirectoryPage() {
           title={currentHeaderInfo.title}
           description={currentHeaderInfo.description}
         >
-          {canCreateClient && activeTab === 'clients' && (
+          {canCreate && (
               <button
-                onClick={() => setIsAddClientDialogOpen(true)}
+                onClick={handleAddButtonClick}
                 className="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2"
               >
                   <PlusCircle />
-                  <span>Añadir Cliente</span>
+                  <span>{currentButtonLabel}</span>
               </button>
           )}
         </Header>
