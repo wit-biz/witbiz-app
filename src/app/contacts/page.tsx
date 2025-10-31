@@ -18,6 +18,8 @@ import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
+import { AddSupplierDialog } from "@/components/shared/AddSupplierDialog";
+import { AddPromoterDialog } from "@/components/shared/AddPromoterDialog";
 
 
 export default function DirectoryPage() {
@@ -28,6 +30,8 @@ export default function DirectoryPage() {
 
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
   const [isAddClientDialogOpen, setIsAddClientDialogOpen] = useState(false);
+  const [isAddSupplierDialogOpen, setIsAddSupplierDialogOpen] = useState(false);
+  const [isAddPromoterDialogOpen, setIsAddPromoterDialogOpen] = useState(false);
   const [isDetailDialogOpen, setIsDetailDialogOpen] = useState(false);
   const [activeTab, setActiveTab] = useState('suppliers');
   
@@ -65,11 +69,10 @@ export default function DirectoryPage() {
   const handleAddOptionClick = (type: 'client' | 'supplier' | 'promoter') => {
     if (type === 'client') {
       setIsAddClientDialogOpen(true);
-    } else {
-      toast({
-        title: "Función en desarrollo",
-        description: `La funcionalidad para añadir un nuevo ${type === 'supplier' ? 'proveedor' : 'promotor'} aún no está implementada.`,
-      });
+    } else if (type === 'supplier') {
+        setIsAddSupplierDialogOpen(true);
+    } else if (type === 'promoter') {
+        setIsAddPromoterDialogOpen(true);
     }
   };
   
@@ -144,6 +147,19 @@ export default function DirectoryPage() {
         isOpen={isAddClientDialogOpen}
         onClose={() => setIsAddClientDialogOpen(false)}
       />
+
+      <AddSupplierDialog
+        isOpen={isAddSupplierDialogOpen}
+        onClose={() => setIsAddSupplierDialogOpen(false)}
+        onAdd={(data) => console.log('New Supplier:', data)}
+      />
+
+      <AddPromoterDialog
+        isOpen={isAddPromoterDialogOpen}
+        onClose={() => setIsAddPromoterDialogOpen(false)}
+        onAdd={(data) => console.log('New Promoter:', data)}
+      />
+
 
       <Dialog open={isDetailDialogOpen} onOpenChange={(open) => !open && handleCloseDetailView()}>
         <DialogContent className="max-w-2xl">
