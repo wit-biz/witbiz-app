@@ -3,7 +3,7 @@
 
 import React, { useState, useMemo } from "react";
 import Link from "next/link";
-import { Landmark, Briefcase, PlusCircle, ArrowRightLeft, DollarSign, BarChart as BarChartIcon, Settings, Edit, Trash2, KeyRound, Filter, ChevronsUpDown, Building, Loader2, Save, Calendar as CalendarIcon, ArrowUpCircle, ArrowDownCircle, TrendingUp } from "lucide-react";
+import { Landmark, Briefcase, PlusCircle, ArrowRightLeft, DollarSign, BarChart as BarChartIcon, Settings, Edit, Trash2, KeyRound, Filter, ChevronsUpDown, Building, Loader2, Save, Calendar as CalendarIcon, ArrowUpCircle, ArrowDownCircle, TrendingUp, BookText } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -18,6 +18,7 @@ import { cn } from "@/lib/utils";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Header } from "@/components/header";
 import { useToast } from '@/hooks/use-toast';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 // --- Mock Data ---
 
@@ -52,6 +53,7 @@ const initialCategoryGroups = [
         type: 'Ingreso',
         categories: [
             { id: 'cat-income-1', name: 'Ingreso por Desarrollo' },
+            { id: 'cat-income-2', name: 'Ingreso por Consultoría' },
         ]
     },
     {
@@ -145,132 +147,153 @@ export default function SettingsPage() {
       <div className="flex flex-col min-h-screen">
         <Header
           title="Contabilidad"
-          description="Centro de operaciones financieras y gestión de cuentas."
+          description="Centro de operaciones financieras y análisis de rentabilidad."
         >
           <div className="flex flex-col sm:flex-row gap-2">
               <Button variant="outline" onClick={() => setIsTransactionDialogOpen(true)}>
                 <ArrowRightLeft className="mr-2 h-4 w-4" />
-                Registrar Transacción
+                Registrar Movimiento
               </Button>
                <Button asChild>
                   <Link href="/accounting/config">
                       <Settings className="mr-2 h-4 w-4" />
-                      Configurar Contabilidad
+                      Configurar Entidades
                   </Link>
               </Button>
           </div>
         </Header>
-        <main className="flex-1 p-4 md:p-8 space-y-6">
-            <Card>
-                <CardHeader>
-                    <CardTitle>Resumen de Selección</CardTitle>
-                    <CardDescription>Totales calculados basados en los filtros actuales.</CardDescription>
-                </CardHeader>
-                <CardContent>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <Card>
-                            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                                <CardTitle className="text-sm font-medium">Ingresos Totales</CardTitle>
-                                <ArrowUpCircle className="h-4 w-4 text-green-500" />
-                            </CardHeader>
-                            <CardContent>
-                                <div className="text-2xl font-bold text-green-600">{summary.totalIncome.toLocaleString('en-US', { style: 'currency', currency: 'USD' })}</div>
-                            </CardContent>
-                        </Card>
-                         <Card>
-                            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                                <CardTitle className="text-sm font-medium">Egresos Totales</CardTitle>
-                                <ArrowDownCircle className="h-4 w-4 text-red-500" />
-                            </CardHeader>
-                            <CardContent>
-                                <div className="text-2xl font-bold text-red-600">{summary.totalExpense.toLocaleString('en-US', { style: 'currency', currency: 'USD' })}</div>
-                            </CardContent>
-                        </Card>
-                         <Card>
-                            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                                <CardTitle className="text-sm font-medium">Beneficio Neto</CardTitle>
-                                <TrendingUp className={`h-4 w-4 ${summary.netTotal >= 0 ? 'text-blue-500' : 'text-orange-500'}`} />
-                            </CardHeader>
-                            <CardContent>
-                                <div className={`text-2xl font-bold ${summary.netTotal >= 0 ? 'text-blue-600' : 'text-orange-600'}`}>{summary.netTotal.toLocaleString('en-US', { style: 'currency', currency: 'USD' })}</div>
-                            </CardContent>
-                        </Card>
-                    </div>
-                </CardContent>
-            </Card>
-            <Card>
-                <CardHeader>
-                    <CardTitle>Registro de Movimientos</CardTitle>
-                    <CardDescription>Listado completo de todas las transacciones financieras.</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                    <div className="flex flex-col md:flex-row gap-2 border p-4 rounded-lg">
-                        <Popover>
-                        <PopoverTrigger asChild>
-                            <Button id="date" variant={"outline"} className={cn("w-full md:w-auto justify-start text-left font-normal", !date && "text-muted-foreground")}>
-                            <CalendarIcon className="mr-2 h-4 w-4" />
-                            {date?.from ? (date.to ? (<>{format(date.from, "LLL dd, y")} - {format(date.to, "LLL dd, y")}</>) : (format(date.from, "LLL dd, y"))) : (<span>Calendario</span>)}
-                            </Button>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-auto p-0" align="start">
-                            <Calendar initialFocus mode="range" defaultMonth={date?.from} selected={date} onSelect={setDate} numberOfMonths={2} locale={es} />
-                        </PopoverContent>
-                        </Popover>
-                        <Select value={selectedCompanyId} onValueChange={setSelectedCompanyId}>
-                        <SelectTrigger className="w-full md:w-[200px]"><SelectValue placeholder="Filtrar por empresa..." /></SelectTrigger>
-                        <SelectContent>
-                            <SelectItem value="all">Todas las Empresas</SelectItem>
-                            {mockCompanies.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
-                        </SelectContent>
-                        </Select>
-                        <Select value={selectedCategoryId} onValueChange={setSelectedCategoryId}>
-                        <SelectTrigger className="w-full md:w-[200px]"><SelectValue placeholder="Filtrar por categoría..." /></SelectTrigger>
-                        <SelectContent>
-                            <SelectItem value="all">Todas las Categorías</SelectItem>
-                            {allCategories.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
-                        </SelectContent>
-                        </Select>
-                        <Select value={selectedType} onValueChange={setSelectedType}>
-                        <SelectTrigger className="w-full md:w-[180px]"><SelectValue placeholder="Filtrar por tipo..." /></SelectTrigger>
-                        <SelectContent>
-                            <SelectItem value="all">Todos los Tipos</SelectItem>
-                            <SelectItem value="income">Ingreso</SelectItem>
-                            <SelectItem value="expense">Egreso</SelectItem>
-                            <SelectItem value="transfer">Transferencia</SelectItem>
-                        </SelectContent>
-                        </Select>
-                        <Button variant="ghost" onClick={() => { setDate(undefined); setSelectedCompanyId("all"); setSelectedCategoryId("all"); setSelectedType("all");}}>Limpiar</Button>
-                    </div>
-                    <Table>
-                        <TableHeader>
-                            <TableRow>
-                                <TableHead>Fecha</TableHead>
-                                <TableHead>Descripción</TableHead>
-                                <TableHead>Categoría</TableHead>
-                                <TableHead>Tipo</TableHead>
-                                <TableHead className="text-right">Monto</TableHead>
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {filteredTransactions.map((trx) => (
-                                <TableRow key={trx.id}>
-                                    <TableCell>{format(new Date(trx.date), "dd/MM/yyyy")}</TableCell>
-                                    <TableCell className="font-medium">{trx.description}</TableCell>
-                                    <TableCell>{trx.category}</TableCell>
-                                    <TableCell>
-                                        <Badge variant={trx.type === 'income' ? 'default' : trx.type === 'expense' ? 'destructive' : 'secondary'}>
-                                            {trx.type === 'income' ? 'Ingreso' : trx.type.startsWith('transfer') ? 'Transferencia' : 'Egreso'}
-                                        </Badge>
-                                    </TableCell>
-                                    <TableCell className={`text-right font-semibold ${trx.amount > 0 ? 'text-green-600' : 'text-red-600'}`}>
-                                        {trx.amount.toLocaleString('en-US', { style: 'currency', currency: 'USD' })}
-                                    </TableCell>
-                                </TableRow>
-                            ))}
-                        </TableBody>
-                    </Table>
-                </CardContent>
-            </Card>
+        <main className="flex-1 p-4 md:p-8">
+            <Tabs defaultValue="ledger">
+                <TabsList className="grid w-full grid-cols-2">
+                    <TabsTrigger value="ledger"><BookText className="mr-2 h-4 w-4"/>Libro Mayor</TabsTrigger>
+                    <TabsTrigger value="pnl"><BarChartIcon className="mr-2 h-4 w-4"/>Estado de Resultados</TabsTrigger>
+                </TabsList>
+                <TabsContent value="ledger" className="mt-6 space-y-6">
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Resumen de Movimientos</CardTitle>
+                            <CardDescription>Totales calculados basados en los filtros actuales del Libro Mayor.</CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                <Card>
+                                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                                        <CardTitle className="text-sm font-medium">Ingresos Totales</CardTitle>
+                                        <ArrowUpCircle className="h-4 w-4 text-green-500" />
+                                    </CardHeader>
+                                    <CardContent>
+                                        <div className="text-2xl font-bold text-green-600">{summary.totalIncome.toLocaleString('en-US', { style: 'currency', currency: 'USD' })}</div>
+                                    </CardContent>
+                                </Card>
+                                <Card>
+                                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                                        <CardTitle className="text-sm font-medium">Egresos Totales</CardTitle>
+                                        <ArrowDownCircle className="h-4 w-4 text-red-500" />
+                                    </CardHeader>
+                                    <CardContent>
+                                        <div className="text-2xl font-bold text-red-600">{summary.totalExpense.toLocaleString('en-US', { style: 'currency', currency: 'USD' })}</div>
+                                    </CardContent>
+                                </Card>
+                                <Card>
+                                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                                        <CardTitle className="text-sm font-medium">Flujo Neto</CardTitle>
+                                        <TrendingUp className={`h-4 w-4 ${summary.netTotal >= 0 ? 'text-blue-500' : 'text-orange-500'}`} />
+                                    </CardHeader>
+                                    <CardContent>
+                                        <div className={`text-2xl font-bold ${summary.netTotal >= 0 ? 'text-blue-600' : 'text-orange-600'}`}>{summary.netTotal.toLocaleString('en-US', { style: 'currency', currency: 'USD' })}</div>
+                                    </CardContent>
+                                </Card>
+                            </div>
+                        </CardContent>
+                    </Card>
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Registro de Movimientos Internos</CardTitle>
+                            <CardDescription>Listado completo de todas las transacciones financieras de la empresa.</CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                            <div className="flex flex-col md:flex-row gap-2 border p-4 rounded-lg">
+                                <Popover>
+                                <PopoverTrigger asChild>
+                                    <Button id="date" variant={"outline"} className={cn("w-full md:w-auto justify-start text-left font-normal", !date && "text-muted-foreground")}>
+                                    <CalendarIcon className="mr-2 h-4 w-4" />
+                                    {date?.from ? (date.to ? (<>{format(date.from, "LLL dd, y")} - {format(date.to, "LLL dd, y")}</>) : (format(date.from, "LLL dd, y"))) : (<span>Calendario</span>)}
+                                    </Button>
+                                </PopoverTrigger>
+                                <PopoverContent className="w-auto p-0" align="start">
+                                    <Calendar initialFocus mode="range" defaultMonth={date?.from} selected={date} onSelect={setDate} numberOfMonths={2} locale={es} />
+                                </PopoverContent>
+                                </Popover>
+                                <Select value={selectedCompanyId} onValueChange={setSelectedCompanyId}>
+                                <SelectTrigger className="w-full md:w-[200px]"><SelectValue placeholder="Filtrar por empresa..." /></SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="all">Todas las Empresas</SelectItem>
+                                    {mockCompanies.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+                                </SelectContent>
+                                </Select>
+                                <Select value={selectedCategoryId} onValueChange={setSelectedCategoryId}>
+                                <SelectTrigger className="w-full md:w-[200px]"><SelectValue placeholder="Filtrar por categoría..." /></SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="all">Todas las Categorías</SelectItem>
+                                    {allCategories.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+                                </SelectContent>
+                                </Select>
+                                <Select value={selectedType} onValueChange={setSelectedType}>
+                                <SelectTrigger className="w-full md:w-[180px]"><SelectValue placeholder="Filtrar por tipo..." /></SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="all">Todos los Tipos</SelectItem>
+                                    <SelectItem value="income">Ingreso</SelectItem>
+                                    <SelectItem value="expense">Egreso</SelectItem>
+                                    <SelectItem value="transfer">Transferencia</SelectItem>
+                                </SelectContent>
+                                </Select>
+                                <Button variant="ghost" onClick={() => { setDate(undefined); setSelectedCompanyId("all"); setSelectedCategoryId("all"); setSelectedType("all");}}>Limpiar</Button>
+                            </div>
+                            <Table>
+                                <TableHeader>
+                                    <TableRow>
+                                        <TableHead>Fecha</TableHead>
+                                        <TableHead>Descripción</TableHead>
+                                        <TableHead>Categoría</TableHead>
+                                        <TableHead>Tipo</TableHead>
+                                        <TableHead className="text-right">Monto</TableHead>
+                                    </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                    {filteredTransactions.map((trx) => (
+                                        <TableRow key={trx.id}>
+                                            <TableCell>{format(new Date(trx.date), "dd/MM/yyyy")}</TableCell>
+                                            <TableCell className="font-medium">{trx.description}</TableCell>
+                                            <TableCell>{trx.category}</TableCell>
+                                            <TableCell>
+                                                <Badge variant={trx.type === 'income' ? 'default' : trx.type === 'expense' ? 'destructive' : 'secondary'}>
+                                                    {trx.type === 'income' ? 'Ingreso' : trx.type.startsWith('transfer') ? 'Transferencia' : 'Egreso'}
+                                                </Badge>
+                                            </TableCell>
+                                            <TableCell className={`text-right font-semibold ${trx.amount > 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                                {trx.amount.toLocaleString('en-US', { style: 'currency', currency: 'USD' })}
+                                            </TableCell>
+                                        </TableRow>
+                                    ))}
+                                </TableBody>
+                            </Table>
+                        </CardContent>
+                    </Card>
+                </TabsContent>
+                 <TabsContent value="pnl" className="mt-6">
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Estado de Resultados (P&L)</CardTitle>
+                            <CardDescription>Análisis de rentabilidad por cliente y servicio. Esta sección está en desarrollo.</CardDescription>
+                        </CardHeader>
+                        <CardContent className="text-center text-muted-foreground py-16">
+                            <BarChartIcon className="mx-auto h-12 w-12 mb-4" />
+                            <h3 className="text-lg font-semibold">Próximamente</h3>
+                            <p className="text-sm">Aquí podrá analizar la rentabilidad detallada de su negocio.</p>
+                        </CardContent>
+                    </Card>
+                </TabsContent>
+            </Tabs>
         </main>
       </div>
       <AddTransactionDialog 
@@ -286,3 +309,5 @@ export default function SettingsPage() {
     </>
   );
 }
+
+    
