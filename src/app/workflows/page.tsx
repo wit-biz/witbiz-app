@@ -21,6 +21,7 @@ import { useRouter } from "next/navigation";
 import { Tooltip, TooltipProvider, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useGlobalNotification } from "@/contexts/NotificationContext";
 import { AddTaskDialog } from "@/components/shared/AddTaskDialog";
+import { PromptNameDialog } from "@/components/shared/PromptNameDialog";
 
 
 const StageNumberIcon = ({ index }: { index: number }) => {
@@ -37,6 +38,7 @@ export default function WorkflowConfigurationPage() {
     currentUser,
     serviceWorkflows,
     isLoadingWorkflows,
+    addService,
     updateService, 
     deleteService, 
     isLoadingClients,
@@ -73,11 +75,55 @@ export default function WorkflowConfigurationPage() {
   const [isAddTaskDialogOpen, setIsAddTaskDialogOpen] = useState(false);
   const [initialTaskDataForDialog, setInitialTaskDataForDialog] = useState<Partial<Omit<Task, 'id'>>>({});
 
+  const [isPromptNameOpen, setIsPromptNameOpen] = useState(false);
+  const [promptNameConfig, setPromptNameConfig] = useState<{
+    title: string;
+    description: string;
+    label: string;
+    onSave: (name: string) => void;
+  } | null>(null);
+
+
   const canEditWorkflow = currentUser?.permissions.crm_edit ?? true;
 
   const handleOpenTaskDialog = (title: string) => {
     setInitialTaskDataForDialog({ title: title });
     setIsAddTaskDialogOpen(true);
+  };
+  
+  const handleAddService = () => {
+    setPromptNameConfig({
+      title: "Añadir Nuevo Servicio",
+      description: "Introduzca un nombre para el nuevo servicio. Podrá configurar los detalles más tarde.",
+      label: "Nombre del Servicio",
+      onSave: async (name) => {
+        const newService = await addService(name);
+        if (newService) {
+          setSelectedWorkflowId(newService.id);
+        }
+      },
+    });
+    setIsPromptNameOpen(true);
+  };
+
+  const handleAddSubService = (serviceId: string) => {
+    setPromptNameConfig({
+      title: "Añadir Nuevo Sub-Servicio",
+      description: "Introduzca un nombre para el nuevo sub-servicio.",
+      label: "Nombre del Sub-Servicio",
+      onSave: (name) => addSubServiceToService(serviceId, name),
+    });
+    setIsPromptNameOpen(true);
+  };
+
+  const handleAddStage = (serviceId: string, subServiceId: string | null) => {
+    setPromptNameConfig({
+      title: "Añadir Nueva Etapa",
+      description: "Introduzca un nombre para la nueva etapa del flujo.",
+      label: "Nombre de la Etapa",
+      onSave: (name) => addStageToSubService(serviceId, subServiceId, name),
+    });
+    setIsPromptNameOpen(true);
   };
 
   useEffect(() => {
@@ -132,23 +178,27 @@ export default function WorkflowConfigurationPage() {
   const confirmDeleteService = async () => {
     if (!serviceToDelete) return;
     
-    const wasSelected = serviceToDelete.id === selectedWorkflowId;
     const index = serviceWorkflows.findIndex(s => s.id === serviceToDelete.id);
-
-    await deleteService(serviceToDelete.id);
-    const remainingServices = serviceWorkflows.filter(s => s.id !== serviceToDelete.id);
+    const wasSelected = serviceToDelete.id === selectedWorkflowId;
     
-    if (wasSelected) {
-        if (remainingServices.length > 0) {
-            const nextIndex = Math.max(0, index -1);
-            setSelectedWorkflowId(remainingServices[nextIndex].id);
-        } else {
-            setSelectedWorkflowId(null);
-        }
-    }
-
+    await deleteService(serviceToDelete.id);
+    
     setServiceToDelete(null);
     setIsDeleteConfirmOpen(false);
+
+    // This needs to be done AFTER the state updates from deleteService propagate
+    // A timeout is a simple way to achieve this.
+    setTimeout(() => {
+        const remainingServices = serviceWorkflows.filter(s => s.id !== serviceToDelete.id);
+        if (wasSelected) {
+            if (remainingServices.length > 0) {
+                const nextIndex = Math.max(0, index -1);
+                setSelectedWorkflowId(remainingServices[nextIndex]?.id || null);
+            } else {
+                setSelectedWorkflowId(null);
+            }
+        }
+    }, 0);
 };
 
   const handleStartEditStage = (stage: WorkflowStage) => {
@@ -387,6 +437,10 @@ export default function WorkflowConfigurationPage() {
               <UploadCloud className="mr-2 h-4 w-4"/>
               Subir Documento
             </Button>
+            <Button onClick={handleAddService}>
+                <Plus className="mr-2 h-4 w-4" />
+                Añadir Servicio
+            </Button>
           </div>
         }
       />
@@ -475,7 +529,7 @@ export default function WorkflowConfigurationPage() {
                           {renderStages(subService.stages, selectedWorkflow.id, subService.id)}
                           {canEditWorkflow && (
                             <div className="mt-4">
-                              <Button variant="outline" onClick={() => addStageToSubService(selectedWorkflow.id, subService.id)} disabled={!canEditWorkflow}><Plus className="h-4 w-4 mr-2"/>Añadir Etapa a este Sub-Servicio</Button>
+                              <Button variant="outline" onClick={() => handleAddStage(selectedWorkflow.id, subService.id)} disabled={!canEditWorkflow}><Plus className="h-4 w-4 mr-2"/>Añadir Etapa a este Sub-Servicio</Button>
                             </div>
                           )}
                         </AccordionContent>
@@ -487,7 +541,7 @@ export default function WorkflowConfigurationPage() {
                     {renderStages(selectedWorkflow.subServices?.[0]?.stages ?? [], selectedWorkflow.id, selectedWorkflow.subServices?.[0]?.id ?? null)}
                     {canEditWorkflow && (
                        <div className="mt-4">
-                        <Button variant="outline" onClick={() => addStageToSubService(selectedWorkflow.id, selectedWorkflow.subServices?.[0]?.id ?? null)} disabled={!canEditWorkflow}><Plus className="h-4 w-4 mr-2"/>Añadir Nueva Etapa</Button>
+                        <Button variant="outline" onClick={() => handleAddStage(selectedWorkflow.id, selectedWorkflow.subServices?.[0]?.id ?? null)} disabled={!canEditWorkflow}><Plus className="h-4 w-4 mr-2"/>Añadir Nueva Etapa</Button>
                       </div>
                     )}
                   </div>
@@ -496,14 +550,14 @@ export default function WorkflowConfigurationPage() {
                 {/* Global actions for the service */}
                 {canEditWorkflow && selectedWorkflow.subServices && (
                   <div className="mt-6 pt-6 border-t">
-                    <Button variant="outline" onClick={() => addSubServiceToService(selectedWorkflow.id)} disabled={!canEditWorkflow}><Plus className="h-4 w-4 mr-2"/>Añadir Sub-Servicio</Button>
+                    <Button variant="outline" onClick={() => handleAddSubService(selectedWorkflow.id)} disabled={!canEditWorkflow}><Plus className="h-4 w-4 mr-2"/>Añadir Sub-Servicio</Button>
                   </div>
                 )}
               </div>
             ) : (
                 <div className="text-center text-muted-foreground py-10 border border-dashed rounded-lg">
                     <p>No ha seleccionado un servicio o no hay servicios creados.</p>
-                    <p className="text-sm">Vaya a la página de Servicios para crear uno nuevo.</p>
+                    <p className="text-sm">Haga clic en "Añadir Servicio" para empezar.</p>
                 </div>
             )}
             </CardContent>
@@ -540,6 +594,17 @@ export default function WorkflowConfigurationPage() {
                 return false;
             }}
         />
+
+        {promptNameConfig && (
+            <PromptNameDialog
+                isOpen={isPromptNameOpen}
+                onOpenChange={setIsPromptNameOpen}
+                title={promptNameConfig.title}
+                description={promptNameConfig.description}
+                label={promptNameConfig.label}
+                onSave={promptNameConfig.onSave}
+            />
+        )}
     </TooltipProvider>
   );
 }

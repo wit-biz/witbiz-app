@@ -56,13 +56,13 @@ interface CRMContextType {
 
   serviceWorkflows: ServiceWorkflow[];
   isLoadingWorkflows: boolean;
-  addService: () => Promise<ServiceWorkflow | null>;
+  addService: (name: string) => Promise<ServiceWorkflow | null>;
   updateService: (serviceId: string, updates: Partial<ServiceWorkflow>) => Promise<boolean>;
   deleteService: (serviceId: string) => Promise<boolean>;
-  addSubServiceToService: (serviceId: string) => Promise<boolean>;
+  addSubServiceToService: (serviceId: string, name: string) => Promise<boolean>;
   updateSubServiceName: (serviceId: string, subServiceId: string, newName: string) => Promise<boolean>;
   deleteSubServiceFromService: (serviceId: string, subServiceId: string) => Promise<boolean>;
-  addStageToSubService: (serviceId: string, subServiceId: string | null) => Promise<boolean>;
+  addStageToSubService: (serviceId: string, subServiceId: string | null, name: string) => Promise<boolean>;
   updateStageInSubService: (serviceId: string, subServiceId: string | null, stageId: string, updates: Partial<WorkflowStage>) => Promise<boolean>;
   deleteStageFromSubService: (serviceId: string, subServiceId: string | null, stageId: string) => Promise<boolean>;
   addObjectiveToStage: (serviceId: string, subServiceId: string | null, stageId: string) => Promise<boolean>;
@@ -202,10 +202,10 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
         return null;
     }, [serviceWorkflows]);
 
-    const addService = async (): Promise<ServiceWorkflow | null> => {
+    const addService = async (name: string): Promise<ServiceWorkflow | null> => {
         const newService: ServiceWorkflow = {
             id: `service-${Date.now()}`,
-            name: "Nuevo Servicio (sin título)",
+            name: name,
             description: "",
             clientRequirements: "",
             subServices: [],
@@ -222,15 +222,17 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
     }
 
     const deleteService = async (serviceId: string): Promise<boolean> => {
+        // We need to use the functional form of setState to ensure we have the latest state
+        // when calculating the next selected ID in the component.
         setServiceWorkflows(prev => prev.filter(s => s.id !== serviceId));
         showNotification('success', 'Servicio Eliminado', 'El servicio ha sido eliminado.');
         return true;
     }
 
-    const addSubServiceToService = async (serviceId: string): Promise<boolean> => {
+    const addSubServiceToService = async (serviceId: string, name: string): Promise<boolean> => {
         const newSubService: SubService = {
             id: `sub-service-${Date.now()}`,
-            name: "Nuevo Sub-Servicio",
+            name: name,
             stages: [],
         };
         setServiceWorkflows(prev => prev.map(service => 
@@ -266,21 +268,23 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
         return true;
     };
 
-    const addStageToSubService = async (serviceId: string, subServiceId: string | null): Promise<boolean> => {
+    const addStageToSubService = async (serviceId: string, subServiceId: string | null, name: string): Promise<boolean> => {
         const newStage: WorkflowStage = {
             id: `stage-${Date.now()}`,
-            title: "Nueva Etapa",
+            title: name,
             order: 100, // Append to the end
             objectives: [],
         };
 
         setServiceWorkflows(prev => prev.map(service => {
             if (service.id === serviceId) {
-                const targetSubServiceId = subServiceId ?? service.subServices[0]?.id;
-                if (!targetSubServiceId && service.subServices.length === 0) { // Handle case with no sub-services yet
-                    const newSubService: SubService = { id: `sub-service-${Date.now()}`, name: "General", stages: [newStage] };
-                    return { ...service, subServices: [newSubService] };
+                // If there are no sub-services, create one.
+                if (service.subServices.length === 0) {
+                     const newSubService: SubService = { id: `sub-service-${Date.now()}`, name: "General", stages: [{ ...newStage, order: 1 }] };
+                     return { ...service, subServices: [newSubService] };
                 }
+                
+                const targetSubServiceId = subServiceId ?? service.subServices[0]?.id;
                 if (!targetSubServiceId) return service;
 
                 const newSubServices = service.subServices.map(sub => {
