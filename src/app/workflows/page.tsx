@@ -137,16 +137,15 @@ export default function WorkflowConfigurationPage() {
 
     await deleteService(serviceToDelete.id);
 
+    // This part is tricky because the context update might be async.
+    // A better approach is to rely on the useEffect that watches serviceWorkflows.
+    // For now, let's derive the next state from the current state.
+    const remainingServices = serviceWorkflows.filter(s => s.id !== serviceToDelete.id);
     if (wasSelected) {
-        // After deletion, the serviceWorkflows array in context will update.
-        // We need to decide what to select next.
-        const remainingServices = serviceWorkflows.filter(s => s.id !== serviceToDelete.id);
         if (remainingServices.length > 0) {
-            // Try to select the service at the same index, or the last one if it was the last.
-            const nextIndex = Math.min(index, remainingServices.length - 1);
-            setSelectedWorkflowId(remainingServices[nextIndex]?.id || null);
+            const nextIndex = Math.max(0, Math.min(index, remainingServices.length - 1));
+            setSelectedWorkflowId(remainingServices[nextIndex].id);
         } else {
-            // No services left.
             setSelectedWorkflowId(null);
         }
     }
