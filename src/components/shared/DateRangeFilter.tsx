@@ -62,7 +62,7 @@ export function DateRangeFilter({
           <Button
             id="date"
             variant={"outline"}
-            className={cn("w-full sm:w-[260px] justify-start text-left font-normal", !date && "text-muted-foreground")}
+            className={cn("w-full sm:w-auto justify-start text-left font-normal", !date && "text-muted-foreground")}
           >
             <CalendarIcon className="mr-2 h-4 w-4" />
             {date?.from ? (
@@ -97,41 +97,39 @@ export function DateRangeFilter({
         </PopoverContent>
       </Popover>
       
-      <div className="flex flex-1 items-center gap-2 justify-start sm:justify-end">
-        <Select value={selectedClientId} onValueChange={setSelectedClientId}>
-          <SelectTrigger className="w-full sm:w-[180px]">
-            <SelectValue placeholder="Cliente: Todos">
-                <span className="flex items-center gap-2">
-                    <Users className="h-4 w-4" /> 
-                    Cliente: {selectedClientId === 'all' ? 'Todos' : clients.find(c=> c.id === selectedClientId)?.name}
-                </span>
-            </SelectValue>
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Todos los Clientes</SelectItem>
-            {clients.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
-          </SelectContent>
-        </Select>
+      <Select value={selectedClientId} onValueChange={setSelectedClientId}>
+        <SelectTrigger className="w-full sm:w-[180px]">
+          <SelectValue placeholder="Cliente: Todos">
+              <span className="flex items-center gap-2">
+                  <Users className="h-4 w-4" /> 
+                  Cliente: {selectedClientId === 'all' ? 'Todos' : clients.find(c=> c.id === selectedClientId)?.name}
+              </span>
+          </SelectValue>
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="all">Todos los Clientes</SelectItem>
+          {clients.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+        </SelectContent>
+      </Select>
 
-        <Select value={selectedServiceId} onValueChange={setSelectedServiceId}>
-          <SelectTrigger className="w-full sm:w-[180px]">
-            <SelectValue placeholder="Servicio: Todos">
-                <span className="flex items-center gap-2">
-                    <Briefcase className="h-4 w-4" />
-                    Servicio: {selectedServiceId === 'all' ? 'Todos' : services.find(s=>s.id === selectedServiceId)?.name}
-                </span>
-            </SelectValue>
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Todos los Servicios</SelectItem>
-            {services.map(s => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}
-          </SelectContent>
-        </Select>
-        <Button variant="ghost" onClick={onClearFilters} size="icon">
-            <FilterX className="h-4 w-4 text-muted-foreground" />
-            <span className="sr-only">Limpiar filtros</span>
-        </Button>
-      </div>
+      <Select value={selectedServiceId} onValueChange={setSelectedServiceId}>
+        <SelectTrigger className="w-full sm:w-[180px]">
+          <SelectValue placeholder="Servicio: Todos">
+              <span className="flex items-center gap-2">
+                  <Briefcase className="h-4 w-4" />
+                  Servicio: {selectedServiceId === 'all' ? 'Todos' : services.find(s=>s.id === selectedServiceId)?.name}
+              </span>
+          </SelectValue>
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="all">Todos los Servicios</SelectItem>
+          {services.map(s => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}
+        </SelectContent>
+      </Select>
+      <Button variant="ghost" onClick={onClearFilters} size="icon">
+          <FilterX className="h-4 w-4 text-muted-foreground" />
+          <span className="sr-only">Limpiar filtros</span>
+      </Button>
     </div>
   );
 }
