@@ -169,6 +169,9 @@ export default function ServicesPage() {
                                             <Label htmlFor="description">Descripción del Servicio</Label>
                                             <Textarea id="description" name="description" value={editableFields.description} onChange={handleDescriptionChange} placeholder="Describa en qué consiste el servicio..." />
                                         </div>
+                                        
+                                        <ServiceDocuments serviceId={service.id} />
+                                        
                                         <div>
                                           <Label>Requisitos del Cliente</Label>
                                           <div className="space-y-2">
@@ -197,6 +200,9 @@ export default function ServicesPage() {
                                             <h4 className="font-semibold text-sm">Descripción</h4>
                                             <p className="text-sm text-muted-foreground mt-1 whitespace-pre-wrap">{service.description || 'No hay descripción.'}</p>
                                         </div>
+
+                                        <ServiceDocuments serviceId={service.id} />
+
                                         <div>
                                             <h4 className="font-semibold text-sm">Requisitos del Cliente</h4>
                                             {service.clientRequirements && service.clientRequirements.length > 0 ? (
@@ -209,8 +215,6 @@ export default function ServicesPage() {
                                         </div>
                                     </>
                                 )}
-
-                                <ServiceDocuments serviceId={service.id} />
 
                                 <div className="flex flex-col sm:flex-row gap-2 mt-4">
                                     {isEditing ? (
