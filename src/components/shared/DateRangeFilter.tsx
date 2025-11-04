@@ -3,9 +3,9 @@
 
 import * as React from "react"
 import { DateRange } from "react-day-picker"
-import { format, subDays, startOfMonth, endOfMonth, startOfYesterday, endOfYesterday, startOfDay, endOfDay } from "date-fns"
+import { format, subDays, startOfMonth, endOfMonth, startOfYesterday, endOfYesterday } from "date-fns"
 import { es } from "date-fns/locale"
-import { Calendar as CalendarIcon, Users, Briefcase } from "lucide-react"
+import { Calendar as CalendarIcon, Users, Briefcase, FilterX } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Calendar } from "@/components/ui/calendar"
@@ -14,7 +14,13 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 
 interface DateRangeFilterProps {
   date: DateRange | undefined;
@@ -25,6 +31,7 @@ interface DateRangeFilterProps {
   setSelectedServiceId: (id: string) => void;
   clients: { id: string; name: string }[];
   services: { id: string; name: string }[];
+  onClearFilters: () => void;
 }
 
 export function DateRangeFilter({
@@ -36,9 +43,10 @@ export function DateRangeFilter({
   setSelectedServiceId,
   clients,
   services,
+  onClearFilters,
 }: DateRangeFilterProps) {
   const presets = [
-    { label: "Hoy", range: { from: startOfDay(new Date()), to: endOfDay(new Date()) } },
+    { label: "Hoy", range: { from: new Date(), to: new Date() } },
     { label: "Ayer", range: { from: startOfYesterday(), to: endOfYesterday() } },
     { label: "Últimos 7 días", range: { from: subDays(new Date(), 6), to: new Date() } },
     { label: "Últimos 30 días", range: { from: subDays(new Date(), 29), to: new Date() } },
@@ -47,26 +55,30 @@ export function DateRangeFilter({
   ];
 
   return (
-    <div className="flex flex-col md:flex-row gap-2">
+    <div className="flex flex-wrap items-center gap-2">
       <Popover>
         <PopoverTrigger asChild>
           <Button
             id="date"
             variant={"outline"}
-            className={cn("w-full md:w-auto justify-start text-left font-normal", !date && "text-muted-foreground")}
+            className={cn("w-[260px] justify-start text-left font-normal", !date && "text-muted-foreground")}
           >
             <CalendarIcon className="mr-2 h-4 w-4" />
-            <span>Calendario</span>
+            {date?.from ? (
+              date.to ? (
+                <>
+                  {format(date.from, "LLL dd, y", { locale: es })} -{" "}
+                  {format(date.to, "LLL dd, y", { locale: es })}
+                </>
+              ) : (
+                format(date.from, "LLL dd, y", { locale: es })
+              )
+            ) : (
+              <span>Seleccione un rango</span>
+            )}
           </Button>
         </PopoverTrigger>
         <PopoverContent className="w-auto p-0" align="start">
-          <div className="p-2 border-b">
-            <div className="grid grid-cols-2 gap-1">
-              {presets.map(p => (
-                <Button key={p.label} variant="ghost" size="sm" onClick={() => setDate(p.range)}>{p.label}</Button>
-              ))}
-            </div>
-          </div>
           <Calendar
             initialFocus
             mode="range"
@@ -78,12 +90,21 @@ export function DateRangeFilter({
           />
         </PopoverContent>
       </Popover>
+      
+      <div className="flex items-center gap-1">
+        {presets.map(p => (
+            <Button key={p.label} variant="ghost" size="sm" onClick={() => setDate(p.range)}>{p.label}</Button>
+        ))}
+      </div>
 
-      <div className="flex flex-1 flex-col sm:flex-row gap-2">
+      <div className="flex flex-1 items-center gap-2 justify-end">
         <Select value={selectedClientId} onValueChange={setSelectedClientId}>
           <SelectTrigger className="w-full sm:w-[180px]">
-            <SelectValue placeholder="Filtrar por cliente...">
-                <span className="flex items-center gap-2"><Users className="h-4 w-4" /> Cliente</span>
+            <SelectValue placeholder="Cliente: Todos">
+                <span className="flex items-center gap-2">
+                    <Users className="h-4 w-4" /> 
+                    Cliente: {selectedClientId === 'all' ? 'Todos' : clients.find(c=> c.id === selectedClientId)?.name}
+                </span>
             </SelectValue>
           </SelectTrigger>
           <SelectContent>
@@ -94,8 +115,11 @@ export function DateRangeFilter({
 
         <Select value={selectedServiceId} onValueChange={setSelectedServiceId}>
           <SelectTrigger className="w-full sm:w-[180px]">
-            <SelectValue placeholder="Filtrar por servicio...">
-                <span className="flex items-center gap-2"><Briefcase className="h-4 w-4" /> Servicio</span>
+            <SelectValue placeholder="Servicio: Todos">
+                <span className="flex items-center gap-2">
+                    <Briefcase className="h-4 w-4" />
+                    Servicio: {selectedServiceId === 'all' ? 'Todos' : services.find(s=>s.id === selectedServiceId)?.name}
+                </span>
             </SelectValue>
           </SelectTrigger>
           <SelectContent>
@@ -103,6 +127,10 @@ export function DateRangeFilter({
             {services.map(s => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}
           </SelectContent>
         </Select>
+        <Button variant="ghost" onClick={onClearFilters} size="icon">
+            <FilterX className="h-4 w-4 text-muted-foreground" />
+            <span className="sr-only">Limpiar filtros</span>
+        </Button>
       </div>
     </div>
   );

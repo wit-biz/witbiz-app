@@ -85,6 +85,12 @@ export default function AuditPage() {
           description: description
       });
   };
+  
+  const handleClearFilters = () => {
+    setDate({ from: subDays(new Date(), 29), to: new Date() });
+    setSelectedClientId("all");
+    setSelectedServiceId("all");
+  };
 
   return (
     <div className="flex flex-col min-h-screen">
@@ -115,6 +121,7 @@ export default function AuditPage() {
                     setSelectedServiceId={setSelectedServiceId}
                     clients={chartClients}
                     services={chartServices}
+                    onClearFilters={handleClearFilters}
                 />
             </CardContent>
         </Card>
