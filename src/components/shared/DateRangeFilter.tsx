@@ -22,6 +22,8 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { Separator } from "../ui/separator"
+import { Label } from "../ui/label"
+import { Switch } from "../ui/switch"
 
 interface DateRangeFilterProps {
   date: DateRange | undefined;
@@ -33,6 +35,8 @@ interface DateRangeFilterProps {
   clients: { id: string; name: string }[];
   services: { id: string; name: string }[];
   onClearFilters: () => void;
+  isComparative: boolean;
+  setIsComparative: (isComparative: boolean) => void;
 }
 
 export function DateRangeFilter({
@@ -45,6 +49,8 @@ export function DateRangeFilter({
   clients,
   services,
   onClearFilters,
+  isComparative,
+  setIsComparative
 }: DateRangeFilterProps) {
   const presets = [
     { label: "Hoy", range: { from: new Date(), to: new Date() } },
@@ -126,6 +132,10 @@ export function DateRangeFilter({
           {services.map(s => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}
         </SelectContent>
       </Select>
+      <div className="flex items-center space-x-2">
+        <Switch id="comparative-view" checked={isComparative} onCheckedChange={setIsComparative} />
+        <Label htmlFor="comparative-view">Vista Comparativa</Label>
+      </div>
       <Button variant="ghost" onClick={onClearFilters} size="icon">
           <FilterX className="h-4 w-4 text-muted-foreground" />
           <span className="sr-only">Limpiar filtros</span>

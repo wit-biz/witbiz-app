@@ -55,6 +55,8 @@ export default function AuditPage() {
   })
   const [selectedClientId, setSelectedClientId] = React.useState<string>("all");
   const [selectedServiceId, setSelectedServiceId] = React.useState<string>("all");
+  const [isComparativeView, setIsComparativeView] = useState(false);
+
 
   const chartServices = serviceWorkflows.map(s => ({ id: s.id, name: s.name }));
   const chartClients = clients.map(c => ({ id: c.id, name: c.name }));
@@ -90,6 +92,7 @@ export default function AuditPage() {
     setDate({ from: subDays(new Date(), 29), to: new Date() });
     setSelectedClientId("all");
     setSelectedServiceId("all");
+    setIsComparativeView(false);
   };
 
   return (
@@ -122,6 +125,8 @@ export default function AuditPage() {
                     clients={chartClients}
                     services={chartServices}
                     onClearFilters={handleClearFilters}
+                    isComparative={isComparativeView}
+                    setIsComparative={setIsComparativeView}
                 />
             </CardContent>
         </Card>
@@ -163,6 +168,9 @@ export default function AuditPage() {
                         date={date}
                         selectedClientId={selectedClientId}
                         selectedServiceId={selectedServiceId}
+                        isComparative={isComparativeView}
+                        clients={chartClients}
+                        services={chartServices}
                     />
                  )}
                 </CardContent>
