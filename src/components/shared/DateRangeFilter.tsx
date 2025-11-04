@@ -21,6 +21,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import { Separator } from "../ui/separator"
 
 interface DateRangeFilterProps {
   date: DateRange | undefined;
@@ -61,7 +62,7 @@ export function DateRangeFilter({
           <Button
             id="date"
             variant={"outline"}
-            className={cn("w-[260px] justify-start text-left font-normal", !date && "text-muted-foreground")}
+            className={cn("w-full sm:w-[260px] justify-start text-left font-normal", !date && "text-muted-foreground")}
           >
             <CalendarIcon className="mr-2 h-4 w-4" />
             {date?.from ? (
@@ -78,26 +79,25 @@ export function DateRangeFilter({
             )}
           </Button>
         </PopoverTrigger>
-        <PopoverContent className="w-auto p-0" align="start">
+        <PopoverContent className="w-auto p-0 flex" align="start">
+          <div className="flex flex-col gap-2 border-r p-4">
+              {presets.map(p => (
+                  <Button key={p.label} variant="ghost" size="sm" className="w-full justify-start" onClick={() => setDate(p.range)}>{p.label}</Button>
+              ))}
+          </div>
           <Calendar
             initialFocus
             mode="range"
             defaultMonth={date?.from}
             selected={date}
             onSelect={setDate}
-            numberOfMonths={2}
+            numberOfMonths={1}
             locale={es}
           />
         </PopoverContent>
       </Popover>
       
-      <div className="flex items-center gap-1">
-        {presets.map(p => (
-            <Button key={p.label} variant="ghost" size="sm" onClick={() => setDate(p.range)}>{p.label}</Button>
-        ))}
-      </div>
-
-      <div className="flex flex-1 items-center gap-2 justify-end">
+      <div className="flex flex-1 items-center gap-2 justify-start sm:justify-end">
         <Select value={selectedClientId} onValueChange={setSelectedClientId}>
           <SelectTrigger className="w-full sm:w-[180px]">
             <SelectValue placeholder="Cliente: Todos">
