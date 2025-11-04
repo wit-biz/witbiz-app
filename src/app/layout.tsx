@@ -94,7 +94,6 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const [isSmartUploadDialogOpen, setIsSmartUploadDialogOpen] = useState(false);
   const router = useRouter();
 
   return (
@@ -122,13 +121,6 @@ export default function RootLayout({
                   <TasksProvider>
                     <DialogsProvider>
                        <AppContent>{children}</AppContent>
-                       <SmartDocumentUploadDialog
-                            isOpen={isSmartUploadDialogOpen}
-                            onOpenChange={setIsSmartUploadDialogOpen}
-                            onClientAdded={(client) => {
-                                router.push(`/contacts?openClient=${client.id}`);
-                            }}
-                        />
                     </DialogsProvider>
                   </TasksProvider>
                 </CRMDataProvider>

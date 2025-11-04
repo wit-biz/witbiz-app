@@ -4,6 +4,8 @@
 import React, { createContext, useContext, useState, useMemo, type ReactNode } from 'react';
 import { type Client } from '@/lib/types';
 import { AddEditClientDialog } from '@/components/shared/AddEditClientDialog';
+import { SmartDocumentUploadDialog } from '@/components/shared/SmartDocumentUploadDialog';
+import { useRouter } from 'next/navigation';
 
 interface DialogsContextType {
   isSmartUploadDialogOpen: boolean;
@@ -20,6 +22,8 @@ export function DialogsProvider({ children }: { children: ReactNode }) {
   const [isSmartUploadDialogOpen, setIsSmartUploadDialogOpen] = useState(false);
   const [isAddClientDialogOpen, setIsAddClientDialogOpen] = useState(false);
   const [editingClient, setEditingClient] = useState<Client | null>(null);
+  const router = useRouter();
+
 
   const value = useMemo(() => ({
     isSmartUploadDialogOpen,
@@ -41,6 +45,13 @@ export function DialogsProvider({ children }: { children: ReactNode }) {
         }}
         client={editingClient}
       />
+      <SmartDocumentUploadDialog
+            isOpen={isSmartUploadDialogOpen}
+            onOpenChange={setIsSmartUploadDialogOpen}
+            onClientAdded={(client) => {
+                router.push(`/contacts?openClient=${client.id}`);
+            }}
+        />
     </DialogsContext.Provider>
   );
 }
