@@ -11,7 +11,7 @@ import {
     type Note, 
     type ServiceWorkflow, 
     type WorkflowStage, 
-    type WorkflowStageObjective,
+    type WorkflowAction,
     type AppUser,
     type UserRole,
     type AppPermissions,
@@ -65,11 +65,10 @@ interface CRMContextType {
   addStageToSubService: (serviceId: string, subServiceId: string | null, name: string) => Promise<boolean>;
   updateStageInSubService: (serviceId: string, subServiceId: string | null, stageId: string, updates: Partial<WorkflowStage>) => Promise<boolean>;
   deleteStageFromSubService: (serviceId: string, subServiceId: string | null, stageId: string) => Promise<boolean>;
-  addObjectiveToStage: (serviceId: string, subServiceId: string | null, stageId: string) => Promise<boolean>;
-  updateObjectiveInStage: (serviceId: string, subServiceId: string | null, stageId: string, objectiveId: string, updates: Partial<WorkflowStageObjective>) => Promise<boolean>;
-  deleteObjectiveFromStage: (serviceId: string, subServiceId: string | null, stageId: string, objectiveId: string) => Promise<boolean>;
-  getObjectiveById: (objectiveId: string) => WorkflowStageObjective | null;
-  completeClientObjective: (clientId: string) => Promise<{ nextObjective: WorkflowStageObjective | null; updatedClient: Client | null; }>;
+  addActionToStage: (serviceId: string, subServiceId: string | null, stageId: string) => Promise<boolean>;
+  updateActionInStage: (serviceId: string, subServiceId: string | null, stageId: string, actionId: string, updates: Partial<WorkflowAction>) => Promise<boolean>;
+  deleteActionFromStage: (serviceId: string, subServiceId: string | null, stageId: string, actionId: string) => Promise<boolean>;
+  getActionById: (actionId: string) => WorkflowAction | null;
   registerUser: (name: string, email: string, pass: string) => Promise<any>;
 }
 
@@ -190,12 +189,12 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
         return newDoc;
     }
 
-    const getObjectiveById = useCallback((objectiveId: string): WorkflowStageObjective | null => {
+    const getActionById = useCallback((actionId: string): WorkflowAction | null => {
         for (const service of serviceWorkflows) {
             for (const subService of service.subServices) {
                 for (const stage of subService.stages) {
-                    const objective = stage.objectives.find(o => o.id === objectiveId);
-                    if (objective) return objective;
+                    const action = stage.actions.find(o => o.id === actionId);
+                    if (action) return action;
                 }
             }
         }
@@ -273,7 +272,7 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
             id: `stage-${Date.now()}`,
             title: name,
             order: 100, // Append to the end
-            objectives: [],
+            actions: [],
         };
 
         setServiceWorkflows(prev => prev.map(service => {
@@ -343,12 +342,12 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
         return true;
     };
 
-    const addObjectiveToStage = async (serviceId: string, subServiceId: string | null, stageId: string): Promise<boolean> => {
-        const newObjective: WorkflowStageObjective = {
-            id: `obj-${Date.now()}`,
-            description: "Nuevo Objetivo",
+    const addActionToStage = async (serviceId: string, subServiceId: string | null, stageId: string): Promise<boolean> => {
+        const newAction: WorkflowAction = {
+            id: `action-${Date.now()}`,
+            description: "Nueva Acción",
             order: 100, // Append
-            subObjectives: []
+            subActions: []
         };
         
         setServiceWorkflows(prev => prev.map(service => {
@@ -360,8 +359,8 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
                     if (sub.id === targetSubServiceId) {
                         const newStages = sub.stages.map(stage => {
                             if (stage.id === stageId) {
-                                const newOrder = stage.objectives.length > 0 ? Math.max(...stage.objectives.map(o => o.order)) + 1 : 1;
-                                return { ...stage, objectives: [...stage.objectives, { ...newObjective, order: newOrder }] };
+                                const newOrder = stage.actions.length > 0 ? Math.max(...stage.actions.map(o => o.order)) + 1 : 1;
+                                return { ...stage, actions: [...stage.actions, { ...newAction, order: newOrder }] };
                             }
                             return stage;
                         });
@@ -376,12 +375,33 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
         return true;
     };
 
-    const updateObjectiveInStage = async (serviceId: string, subServiceId: string | null, stageId: string, objectiveId: string, updates: Partial<WorkflowStageObjective>): Promise<boolean> => {
-        // This is handled locally in the workflows page state. This function can be a no-op for mock data.
+    const updateActionInStage = async (serviceId: string, subServiceId: string | null, stageId: string, actionId: string, updates: Partial<WorkflowAction>): Promise<boolean> => {
+        setServiceWorkflows(prev => prev.map(service => {
+            if (service.id === serviceId) {
+                const targetSubServiceId = subServiceId ?? service.subServices[0]?.id;
+                if (!targetSubServiceId) return service;
+
+                const newSubServices = service.subServices.map(sub => {
+                    if (sub.id === targetSubServiceId) {
+                        const newStages = sub.stages.map(stage => {
+                            if (stage.id === stageId) {
+                                const newActions = stage.actions.map(act => act.id === actionId ? { ...act, ...updates } : act);
+                                return { ...stage, actions: newActions };
+                            }
+                            return stage;
+                        });
+                        return { ...sub, stages: newStages };
+                    }
+                    return sub;
+                });
+                return { ...service, subServices: newSubServices };
+            }
+            return service;
+        }));
         return true;
     };
 
-    const deleteObjectiveFromStage = async (serviceId: string, subServiceId: string | null, stageId: string, objectiveId: string): Promise<boolean> => {
+    const deleteActionFromStage = async (serviceId: string, subServiceId: string | null, stageId: string, actionId: string): Promise<boolean> => {
          setServiceWorkflows(prev => prev.map(service => {
             if (service.id === serviceId) {
                 const targetSubServiceId = subServiceId ?? service.subServices[0]?.id;
@@ -391,7 +411,7 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
                     if (sub.id === targetSubServiceId) {
                         const newStages = sub.stages.map(stage => {
                             if (stage.id === stageId) {
-                                return { ...stage, objectives: stage.objectives.filter(obj => obj.id !== objectiveId) };
+                                return { ...stage, actions: stage.actions.filter(act => act.id !== actionId) };
                             }
                             return stage;
                         });
@@ -448,17 +468,16 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
         addStageToSubService,
         updateStageInSubService,
         deleteStageFromSubService,
-        addObjectiveToStage,
-        updateObjectiveInStage,
-        deleteObjectiveFromStage,
-        getObjectiveById,
-        completeClientObjective: (id) => placeholderPromise({ nextObjective: null, updatedClient: null }),
+        addActionToStage,
+        updateActionInStage,
+        deleteActionFromStage,
+        getActionById,
         registerUser,
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }), [
         currentUser, isUserLoading, clients, isLoadingClients, 
         tasks, isLoadingTasks, documents, isLoadingDocuments, notes, isLoadingNotes,
-        serviceWorkflows, isLoadingWorkflows, getObjectiveById
+        serviceWorkflows, isLoadingWorkflows, getActionById
     ]);
 
     return (

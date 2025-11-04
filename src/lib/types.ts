@@ -8,13 +8,12 @@ export type Client = {
   owner: string;
   category: string;
   stage?: string; // Opcional, legado
-  currentAction?: string; // Opcional, legado
+  currentActionId?: string;
   contactEmail?: string;
   contactPhone?: string;
   website?: string;
   subscribedServiceIds?: string[];
   currentWorkflowStageId?: string;
-  currentActionId?: string;
 };
 
 export type Promoter = {
