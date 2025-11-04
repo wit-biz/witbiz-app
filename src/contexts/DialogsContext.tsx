@@ -14,6 +14,8 @@ interface DialogsContextType {
   setIsAddClientDialogOpen: (isOpen: boolean) => void;
   editingClient: Client | null;
   setEditingClient: (client: Client | null) => void;
+  preselectedServiceId: string | null;
+  setPreselectedServiceId: (serviceId: string | null) => void;
 }
 
 const DialogsContext = createContext<DialogsContextType | undefined>(undefined);
@@ -22,6 +24,7 @@ export function DialogsProvider({ children }: { children: ReactNode }) {
   const [isSmartUploadDialogOpen, setIsSmartUploadDialogOpen] = useState(false);
   const [isAddClientDialogOpen, setIsAddClientDialogOpen] = useState(false);
   const [editingClient, setEditingClient] = useState<Client | null>(null);
+  const [preselectedServiceId, setPreselectedServiceId] = useState<string | null>(null);
   const router = useRouter();
 
 
@@ -32,7 +35,16 @@ export function DialogsProvider({ children }: { children: ReactNode }) {
     setIsAddClientDialogOpen,
     editingClient,
     setEditingClient,
-  }), [isSmartUploadDialogOpen, isAddClientDialogOpen, editingClient]);
+    preselectedServiceId,
+    setPreselectedServiceId,
+  }), [isSmartUploadDialogOpen, isAddClientDialogOpen, editingClient, preselectedServiceId]);
+
+  const handleSmartUploadClose = (isOpen: boolean) => {
+      if(!isOpen) {
+          setPreselectedServiceId(null);
+      }
+      setIsSmartUploadDialogOpen(isOpen);
+  }
 
   return (
     <DialogsContext.Provider value={value}>
@@ -47,7 +59,8 @@ export function DialogsProvider({ children }: { children: ReactNode }) {
       />
       <SmartDocumentUploadDialog
             isOpen={isSmartUploadDialogOpen}
-            onOpenChange={setIsSmartUploadDialogOpen}
+            onOpenChange={handleSmartUploadClose}
+            preselectedServiceId={preselectedServiceId || undefined}
             onClientAdded={(client) => {
                 router.push(`/contacts?openClient=${client.id}`);
             }}

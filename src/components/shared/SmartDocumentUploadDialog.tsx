@@ -28,7 +28,7 @@ interface SmartDocumentUploadDialogProps {
   onDocumentUploaded?: (docId: string) => void;
   onClientAdded?: (client: Client) => void;
   preselectedClientId?: string;
-  preselectedServiceId?: string; // Add this prop
+  preselectedServiceId?: string; 
 }
 
 export function SmartDocumentUploadDialog({
@@ -47,10 +47,13 @@ export function SmartDocumentUploadDialog({
   const [associationType, setAssociationType] = useState<'client' | 'service' | 'none'>('client');
   const [selectedClientId, setSelectedClientId] = useState<string>('');
   const [selectedServiceId, setSelectedServiceId] = useState<string>('');
-  const [documentType, setDocumentType] = useState<DocumentType | 'Otro'>('Otro');
+  const [documentType, setDocumentType] = useState<DocumentType | 'Otro' | 'Descargable'>('Otro');
   const [customDocumentType, setCustomDocumentType] = useState('');
   const [isNewClient, setIsNewClient] = useState(false);
   const [newClientName, setNewClientName] = useState('');
+  
+  // A new state to determine if we are in the simplified "service resource" upload mode.
+  const isServiceResourceMode = !!preselectedServiceId;
 
   const resetState = useCallback(() => {
     setFile(null);
@@ -58,7 +61,7 @@ export function SmartDocumentUploadDialog({
     setAssociationType(preselectedServiceId ? 'service' : 'client');
     setSelectedClientId(preselectedClientId || '');
     setSelectedServiceId(preselectedServiceId || '');
-    setDocumentType('Otro');
+    setDocumentType(preselectedServiceId ? 'Descargable' : 'Otro');
     setCustomDocumentType('');
     setIsNewClient(false);
     setNewClientName('');
@@ -79,6 +82,7 @@ export function SmartDocumentUploadDialog({
           } else if (preselectedServiceId) {
               setAssociationType('service');
               setSelectedServiceId(preselectedServiceId);
+              setDocumentType('Descargable');
           } else {
               setAssociationType('client'); // Default
           }
@@ -94,23 +98,27 @@ export function SmartDocumentUploadDialog({
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
-    accept: { 'application/pdf': ['.pdf'], 'application/vnd.openxmlformats-officedocument.wordprocessingml.document': ['.docx'] },
+    accept: { 'application/pdf': ['.pdf'], 'application/vnd.openxmlformats-officedocument.wordprocessingml.document': ['.docx'], 'image/*': [] },
     maxFiles: 1,
   });
   
-  const finalDocumentType = documentType === 'Otro' ? customDocumentType : documentType;
+  const finalDocumentType = isServiceResourceMode ? 'Descargable' : (documentType === 'Otro' ? customDocumentType : documentType);
   
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!file || !finalDocumentType.trim()) {
-      toast({ variant: "destructive", title: 'Faltan datos', description: 'Por favor, suba un archivo y seleccione un tipo de documento.' });
+    if (!file) {
+      toast({ variant: "destructive", title: 'Faltan datos', description: 'Por favor, suba un archivo.' });
+      return;
+    }
+    if (!isServiceResourceMode && !finalDocumentType.trim()) {
+      toast({ variant: "destructive", title: 'Faltan datos', description: 'Por favor, seleccione un tipo de documento.' });
       return;
     }
     
     let finalClientId: string | undefined = undefined;
     let finalServiceId: string | undefined = undefined;
 
-    if (associationType === 'client') {
+    if (associationType === 'client' && !isServiceResourceMode) {
         if (!selectedClientId && !isNewClient) {
             toast({ variant: "destructive", title: 'Faltan datos', description: 'Por favor, asocie el documento a un cliente.' });
             return;
@@ -126,7 +134,7 @@ export function SmartDocumentUploadDialog({
 
     setIsSubmitting(true);
     
-    if (isNewClient && associationType === 'client') {
+    if (isNewClient && associationType === 'client' && !isServiceResourceMode) {
         if (!newClientName.trim()) {
              toast({ variant: "destructive", title: 'Faltan datos', description: 'Por favor, ingrese el nombre del nuevo cliente.' });
              setIsSubmitting(false);
@@ -184,7 +192,7 @@ export function SmartDocumentUploadDialog({
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2"><UploadCloud className="h-5 w-5 text-accent"/>Subir Nuevo Documento</DialogTitle>
             <DialogDescription>
-              Arrastre un documento PDF o DOCX para subirlo.
+              {isServiceResourceMode ? 'Seleccione un archivo para añadirlo como recurso descargable a este servicio.' : 'Arrastre un documento para subirlo y clasificarlo.'}
             </DialogDescription>
           </DialogHeader>
           <div className="py-4 space-y-4">
@@ -193,7 +201,7 @@ export function SmartDocumentUploadDialog({
                 <input {...getInputProps()} />
                 <UploadCloud className="h-10 w-10 text-muted-foreground mb-2" />
                 <p className="text-sm text-muted-foreground">{isDragActive ? 'Suelte el archivo aquí...' : 'Arrastre un archivo o haga clic para seleccionar'}</p>
-                <p className="text-xs text-muted-foreground/80">PDF, DOCX (Máx 1)</p>
+                <p className="text-xs text-muted-foreground/80">PDF, DOCX, JPG, PNG (Máx 1)</p>
               </div>
             ) : (
               <div className="p-3 border rounded-md bg-secondary/50 flex items-center justify-between">
@@ -205,7 +213,7 @@ export function SmartDocumentUploadDialog({
               </div>
             )}
             
-            {file && (
+            {file && !isServiceResourceMode && (
               <div className="space-y-4 pt-4 border-t">
                 <div>
                   <Label htmlFor="association-type">Asociar a</Label>

@@ -24,8 +24,13 @@ import { Input } from "@/components/ui/input";
 
 function ServiceDocuments({ serviceId }: { serviceId: string }) {
   const { getDocumentsByServiceId, deleteDocument } = useCRMData();
-  const { setIsSmartUploadDialogOpen } = useDialogs(); // Use shared dialog state
+  const { setIsSmartUploadDialogOpen, setPreselectedServiceId } = useDialogs();
   const documents = getDocumentsByServiceId(serviceId);
+
+  const handleOpenUploadDialog = () => {
+    setPreselectedServiceId(serviceId);
+    setIsSmartUploadDialogOpen(true);
+  };
 
   return (
     <div className="space-y-3">
@@ -47,7 +52,7 @@ function ServiceDocuments({ serviceId }: { serviceId: string }) {
       ) : (
         <p className="text-sm text-muted-foreground text-center py-4">No hay documentos para este servicio.</p>
       )}
-      <Button variant="outline" size="sm" onClick={() => setIsSmartUploadDialogOpen(true)}>
+      <Button variant="outline" size="sm" onClick={handleOpenUploadDialog}>
           <UploadCloud className="mr-2 h-4 w-4" />
           Subir Documento
       </Button>
