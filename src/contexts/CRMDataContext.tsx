@@ -241,6 +241,31 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
         return true;
     };
     
+    const updateSubServiceName = async (serviceId: string, subServiceId: string, newName: string): Promise<boolean> => {
+        setServiceWorkflows(prev => prev.map(service => {
+            if (service.id === serviceId) {
+                const newSubServices = service.subServices.map(sub => 
+                    sub.id === subServiceId ? { ...sub, name: newName } : sub
+                );
+                return { ...service, subServices: newSubServices };
+            }
+            return service;
+        }));
+        showNotification('success', 'Sub-Servicio Actualizado', 'El nombre se ha guardado.');
+        return true;
+    };
+
+    const deleteSubServiceFromService = async (serviceId: string, subServiceId: string): Promise<boolean> => {
+        setServiceWorkflows(prev => prev.map(service => {
+            if (service.id === serviceId) {
+                return { ...service, subServices: service.subServices.filter(sub => sub.id !== subServiceId) };
+            }
+            return service;
+        }));
+        showNotification('success', 'Sub-Servicio Eliminado', 'El sub-servicio ha sido eliminado.');
+        return true;
+    };
+
     const addStageToSubService = async (serviceId: string, subServiceId: string | null): Promise<boolean> => {
         const newStage: WorkflowStage = {
             id: `stage-${Date.now()}`,
@@ -252,7 +277,11 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
         setServiceWorkflows(prev => prev.map(service => {
             if (service.id === serviceId) {
                 const targetSubServiceId = subServiceId ?? service.subServices[0]?.id;
-                if (!targetSubServiceId) return service; // Should not happen if service exists
+                if (!targetSubServiceId && service.subServices.length === 0) { // Handle case with no sub-services yet
+                    const newSubService: SubService = { id: `sub-service-${Date.now()}`, name: "General", stages: [newStage] };
+                    return { ...service, subServices: [newSubService] };
+                }
+                if (!targetSubServiceId) return service;
 
                 const newSubServices = service.subServices.map(sub => {
                     if (sub.id === targetSubServiceId) {
@@ -267,6 +296,112 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
         }));
         return true;
     };
+    
+    const updateStageInSubService = async (serviceId: string, subServiceId: string | null, stageId: string, updates: Partial<WorkflowStage>): Promise<boolean> => {
+        setServiceWorkflows(prev => prev.map(service => {
+            if (service.id === serviceId) {
+                const targetSubServiceId = subServiceId ?? service.subServices[0]?.id;
+                 if (!targetSubServiceId) return service;
+                const newSubServices = service.subServices.map(sub => {
+                    if (sub.id === targetSubServiceId) {
+                        const newStages = sub.stages.map(stage => 
+                            stage.id === stageId ? { ...stage, ...updates } : stage
+                        );
+                        return { ...sub, stages: newStages };
+                    }
+                    return sub;
+                });
+                return { ...service, subServices: newSubServices };
+            }
+            return service;
+        }));
+        showNotification('success', 'Etapa Actualizada', 'Los cambios en la etapa se han guardado.');
+        return true;
+    };
+
+    const deleteStageFromSubService = async (serviceId: string, subServiceId: string | null, stageId: string): Promise<boolean> => {
+        setServiceWorkflows(prev => prev.map(service => {
+            if (service.id === serviceId) {
+                const targetSubServiceId = subServiceId ?? service.subServices[0]?.id;
+                if (!targetSubServiceId) return service;
+
+                const newSubServices = service.subServices.map(sub => {
+                    if (sub.id === targetSubServiceId) {
+                        return { ...sub, stages: sub.stages.filter(stage => stage.id !== stageId) };
+                    }
+                    return sub;
+                });
+                return { ...service, subServices: newSubServices };
+            }
+            return service;
+        }));
+        showNotification('success', 'Etapa Eliminada', 'La etapa ha sido eliminada del flujo.');
+        return true;
+    };
+
+    const addObjectiveToStage = async (serviceId: string, subServiceId: string | null, stageId: string): Promise<boolean> => {
+        const newObjective: WorkflowStageObjective = {
+            id: `obj-${Date.now()}`,
+            description: "Nuevo Objetivo",
+            order: 100, // Append
+            subObjectives: []
+        };
+        
+        setServiceWorkflows(prev => prev.map(service => {
+            if (service.id === serviceId) {
+                const targetSubServiceId = subServiceId ?? service.subServices[0]?.id;
+                if (!targetSubServiceId) return service;
+
+                const newSubServices = service.subServices.map(sub => {
+                    if (sub.id === targetSubServiceId) {
+                        const newStages = sub.stages.map(stage => {
+                            if (stage.id === stageId) {
+                                const newOrder = stage.objectives.length > 0 ? Math.max(...stage.objectives.map(o => o.order)) + 1 : 1;
+                                return { ...stage, objectives: [...stage.objectives, { ...newObjective, order: newOrder }] };
+                            }
+                            return stage;
+                        });
+                        return { ...sub, stages: newStages };
+                    }
+                    return sub;
+                });
+                return { ...service, subServices: newSubServices };
+            }
+            return service;
+        }));
+        return true;
+    };
+
+    const updateObjectiveInStage = async (serviceId: string, subServiceId: string | null, stageId: string, objectiveId: string, updates: Partial<WorkflowStageObjective>): Promise<boolean> => {
+        // This is handled locally in the workflows page state. This function can be a no-op for mock data.
+        return true;
+    };
+
+    const deleteObjectiveFromStage = async (serviceId: string, subServiceId: string | null, stageId: string, objectiveId: string): Promise<boolean> => {
+         setServiceWorkflows(prev => prev.map(service => {
+            if (service.id === serviceId) {
+                const targetSubServiceId = subServiceId ?? service.subServices[0]?.id;
+                if (!targetSubServiceId) return service;
+
+                const newSubServices = service.subServices.map(sub => {
+                    if (sub.id === targetSubServiceId) {
+                        const newStages = sub.stages.map(stage => {
+                            if (stage.id === stageId) {
+                                return { ...stage, objectives: stage.objectives.filter(obj => obj.id !== objectiveId) };
+                            }
+                            return stage;
+                        });
+                        return { ...sub, stages: newStages };
+                    }
+                    return sub;
+                });
+                return { ...service, subServices: newSubServices };
+            }
+            return service;
+        }));
+        return true;
+    };
+
 
     // Placeholder functions to avoid breaking the UI
     const placeholderPromise = async <T,>(data: T | null = null): Promise<any> => {
@@ -304,14 +439,14 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
         updateService,
         deleteService,
         addSubServiceToService,
-        updateSubServiceName: (id, subId, name) => placeholderPromise(false),
-        deleteSubServiceFromService: (id, subId) => placeholderPromise(false),
+        updateSubServiceName,
+        deleteSubServiceFromService,
         addStageToSubService,
-        updateStageInSubService: (id, subId, stageId, d) => placeholderPromise(false),
-        deleteStageFromSubService: (id, subId, stageId) => placeholderPromise(false),
-        addObjectiveToStage: (id, subId, stageId) => placeholderPromise(false),
-        updateObjectiveInStage: (id, subId, stageId, objId, d) => placeholderPromise(false),
-        deleteObjectiveFromStage: (id, subId, stageId, objId) => placeholderPromise(false),
+        updateStageInSubService,
+        deleteStageFromSubService,
+        addObjectiveToStage,
+        updateObjectiveInStage,
+        deleteObjectiveFromStage,
         getObjectiveById,
         completeClientObjective: (id) => placeholderPromise({ nextObjective: null, updatedClient: null }),
         registerUser,
