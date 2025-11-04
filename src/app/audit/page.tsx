@@ -131,15 +131,15 @@ export default function AuditPage() {
           <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="reports">
               <LineChart className="mr-2 h-4 w-4" />
-              Reportes
+              Reportes de Desempeño
+            </TabsTrigger>
+            <TabsTrigger value="charts">
+              <BarChart className="mr-2 h-4 w-4" />
+              Análisis Gráfico
             </TabsTrigger>
             <TabsTrigger value="logs">
               <History className="mr-2 h-4 w-4" />
-              Bitácoras
-            </TabsTrigger>
-             <TabsTrigger value="charts">
-              <BarChart className="mr-2 h-4 w-4" />
-              Gráficos
+              Bitácora de Actividades
             </TabsTrigger>
           </TabsList>
 
@@ -152,7 +152,7 @@ export default function AuditPage() {
                     Visualización de métricas clave, KPIs y números internos del negocio.
                   </CardDescription>
                 </div>
-                <Button variant="outline" size="sm" onClick={() => handleDownload('Reportes')}>
+                <Button variant="outline" size="sm" onClick={() => handleDownload('Reportes de Desempeño')}>
                   <Download className="mr-2 h-4 w-4" />
                   Descargar
                 </Button>
@@ -192,6 +192,36 @@ export default function AuditPage() {
                 </Table>
               </CardContent>
             </Card>
+          </TabsContent>
+
+          <TabsContent value="charts" className="mt-6">
+            <Card>
+                <CardHeader className="flex flex-row items-start justify-between">
+                    <div>
+                        <CardTitle>Análisis Gráfico</CardTitle>
+                        <CardDescription>
+                            Visualización gráfica de los datos según los filtros aplicados.
+                        </CardDescription>
+                    </div>
+                    <Button variant="outline" size="sm" onClick={() => handleDownload('Gráficos')}>
+                        <Download className="mr-2 h-4 w-4" />
+                        Descargar
+                    </Button>
+                </CardHeader>
+                <CardContent>
+                 {isLoadingClients || isLoadingWorkflows ? (
+                    <div className="flex items-center justify-center py-12">
+                      <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                    </div>
+                 ) : (
+                    <DateRangeChartsTab 
+                        date={date}
+                        selectedClientId={selectedClientId}
+                        selectedServiceId={selectedServiceId}
+                    />
+                 )}
+                </CardContent>
+             </Card>
           </TabsContent>
 
           <TabsContent value="logs" className="mt-6">
@@ -235,35 +265,6 @@ export default function AuditPage() {
             </Card>
           </TabsContent>
 
-           <TabsContent value="charts" className="mt-6">
-            <Card>
-                <CardHeader className="flex flex-row items-start justify-between">
-                    <div>
-                        <CardTitle>Análisis Gráfico</CardTitle>
-                        <CardDescription>
-                            Visualización gráfica de los datos según los filtros aplicados.
-                        </CardDescription>
-                    </div>
-                    <Button variant="outline" size="sm" onClick={() => handleDownload('Gráficos')}>
-                        <Download className="mr-2 h-4 w-4" />
-                        Descargar
-                    </Button>
-                </CardHeader>
-                <CardContent>
-                 {isLoadingClients || isLoadingWorkflows ? (
-                    <div className="flex items-center justify-center py-12">
-                      <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                    </div>
-                 ) : (
-                    <DateRangeChartsTab 
-                        date={date}
-                        selectedClientId={selectedClientId}
-                        selectedServiceId={selectedServiceId}
-                    />
-                 )}
-                </CardContent>
-             </Card>
-          </TabsContent>
         </Tabs>
       </main>
     </div>
