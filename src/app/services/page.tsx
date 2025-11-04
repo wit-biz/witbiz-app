@@ -19,6 +19,7 @@ import Link from "next/link";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { type Document } from "@/lib/types";
+import { PromptNameDialog } from "@/components/shared/PromptNameDialog";
 
 function ServiceDocuments({ serviceId }: { serviceId: string }) {
   const { getDocumentsByServiceId, deleteDocument } = useCRMData();
@@ -60,6 +61,7 @@ export default function ServicesPage() {
 
   const [editingServiceId, setEditingServiceId] = useState<string | null>(null);
   const [editableFields, setEditableFields] = useState<{ description: string; clientRequirements: string }>({ description: '', clientRequirements: '' });
+  const [isPromptNameOpen, setIsPromptNameOpen] = useState(false);
 
   const canEditWorkflow = currentUser?.permissions.crm_edit ?? true;
 
@@ -114,7 +116,7 @@ export default function ServicesPage() {
           description="Gestione los servicios y la documentación asociada."
         >
           {canEditWorkflow && (
-            <Button onClick={() => addService()}>
+            <Button onClick={() => setIsPromptNameOpen(true)}>
               <PlusCircle className="mr-2 h-4 w-4" />
               Añadir Nuevo Servicio
             </Button>
@@ -197,6 +199,16 @@ export default function ServicesPage() {
           )}
         </main>
       </div>
+      <PromptNameDialog
+        isOpen={isPromptNameOpen}
+        onOpenChange={setIsPromptNameOpen}
+        title="Añadir Nuevo Servicio"
+        description="Introduzca un nombre para el nuevo servicio. Podrá configurar los detalles más tarde."
+        label="Nombre del Servicio"
+        onSave={async (name) => {
+            await addService(name);
+        }}
+      />
     </>
   );
 }
