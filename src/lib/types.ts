@@ -93,7 +93,7 @@ export type SubAction = {
     order?: number; // Opcional para simplicidad en datos de ejemplo
 };
 
-export type DocumentType = "Contrato" | "Factura" | "Propuesta" | "Informe" | "Otro";
+export type DocumentType = "Contrato" | "Factura" | "Propuesta" | "Informe" | "Otro" | "Descargable";
 
 export type AppPermissions = {
     clients_create: boolean;

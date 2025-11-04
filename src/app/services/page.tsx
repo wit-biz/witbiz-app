@@ -1,37 +1,47 @@
 
 "use client";
 
-import React, { useState } from "react";
-import { Header } from "@/components/header";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { PlusCircle, Loader2, Briefcase, Workflow, Edit, Save, Trash2, FileText, UploadCloud, Plus } from "lucide-react";
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import { useCRMData } from "@/contexts/CRMDataContext";
-import { useDialogs } from "@/contexts/DialogsContext";
+import React, { useState, useMemo, useEffect, useCallback } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
+import { Header } from "@/components/header";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { useCRMData, type WorkflowStage, type ServiceWorkflow, type WorkflowAction, type SubObjective, type SubService, type Task, type ClientRequirement } from "@/contexts/CRMDataContext"; 
+import { Edit, Save, Trash2, Plus, X, Loader2, UploadCloud, ChevronsRight, FileText, ListTodo, Workflow as WorkflowIcon, ArrowLeft, Download } from "lucide-react";
+import { Card, CardHeader, CardTitle, CardContent, CardDescription, CardFooter } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { type Document, type ClientRequirement, type ServiceWorkflow } from "@/lib/types";
-import { PromptNameDialog } from "@/components/shared/PromptNameDialog";
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { cn } from "@/lib/utils";
+import { useDialogs } from "@/contexts/DialogsContext";
+import { useRouter } from "next/navigation";
+import { Tooltip, TooltipProvider, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { useGlobalNotification } from "@/contexts/NotificationContext";
+import { AddTaskDialog } from "@/components/shared/AddTaskDialog";
+import { PromptNameDialog } from "@/components/shared/PromptNameDialog";
+import { type Document } from "@/lib/types";
+import { useToast } from "@/hooks/use-toast";
 
 
 function ServiceDocuments({ serviceId }: { serviceId: string }) {
   const { getDocumentsByServiceId, deleteDocument } = useCRMData();
   const { setIsSmartUploadDialogOpen, setPreselectedServiceId } = useDialogs();
   const documents = getDocumentsByServiceId(serviceId);
+  const { toast } = useToast();
 
   const handleOpenUploadDialog = () => {
     setPreselectedServiceId(serviceId);
     setIsSmartUploadDialogOpen(true);
+  };
+  
+  const handleDownload = (doc: Document) => {
+    toast({
+        title: "Descarga Simulada",
+        description: `Se ha iniciado la descarga de "${doc.name}".`
+    });
   };
 
   return (
@@ -45,9 +55,14 @@ function ServiceDocuments({ serviceId }: { serviceId: string }) {
                 <FileText className="h-4 w-4 text-muted-foreground flex-shrink-0" />
                 <p className="font-medium truncate text-sm" title={doc.name}>{doc.name}</p>
               </div>
-              <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => deleteDocument(doc.id)}>
-                <Trash2 className="h-4 w-4" />
-              </Button>
+              <div className="flex items-center">
+                  <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleDownload(doc)}>
+                    <Download className="h-4 w-4" />
+                  </Button>
+                  <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => deleteDocument(doc.id)}>
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+              </div>
             </li>
           ))}
         </ul>
@@ -294,7 +309,7 @@ export default function ServicesPage() {
                                       )}
                                       <Button asChild>
                                           <Link href={`/workflows?serviceId=${service.id}`}>
-                                              <Workflow className="mr-2 h-4 w-4" />
+                                              <WorkflowIcon className="mr-2 h-4 w-4" />
                                               Configurar Flujo de Trabajo
                                           </Link>
                                       </Button>
