@@ -82,7 +82,7 @@ export default function WorkflowConfigurationPage() {
 
   useEffect(() => {
     const serviceIdFromUrl = searchParams.get('serviceId');
-    if (serviceIdFromUrl) {
+    if (serviceIdFromUrl && serviceWorkflows.some(s => s.id === serviceIdFromUrl)) {
       setSelectedWorkflowId(serviceIdFromUrl);
     } else if (!selectedWorkflowId && serviceWorkflows.length > 0) {
       setSelectedWorkflowId(serviceWorkflows[0].id);
@@ -136,14 +136,11 @@ export default function WorkflowConfigurationPage() {
     const index = serviceWorkflows.findIndex(s => s.id === serviceToDelete.id);
 
     await deleteService(serviceToDelete.id);
-
-    // This part is tricky because the context update might be async.
-    // A better approach is to rely on the useEffect that watches serviceWorkflows.
-    // For now, let's derive the next state from the current state.
     const remainingServices = serviceWorkflows.filter(s => s.id !== serviceToDelete.id);
+    
     if (wasSelected) {
         if (remainingServices.length > 0) {
-            const nextIndex = Math.max(0, Math.min(index, remainingServices.length - 1));
+            const nextIndex = Math.max(0, index -1);
             setSelectedWorkflowId(remainingServices[nextIndex].id);
         } else {
             setSelectedWorkflowId(null);
@@ -260,15 +257,7 @@ export default function WorkflowConfigurationPage() {
                           <Button variant="ghost" size="sm" onClick={handleCancelEditStage}><X className="h-4 w-4 mr-2"/>Cancelar</Button>
                         </div>
                     ) : (
-                      <>
                         <Button variant="outline" size="sm" onClick={() => handleStartEditStage(stage)} disabled={!!editingServiceId}><Edit className="h-4 w-4 mr-2"/>Editar</Button>
-                        <Tooltip>
-                            <TooltipTrigger asChild>
-                                <Button variant="outline" size="icon" className="h-8 w-8 ml-1" onClick={(e) => { e.stopPropagation(); handleOpenTaskDialog(stage.title);}}><ListTodo className="h-4 w-4"/></Button>
-                            </TooltipTrigger>
-                            <TooltipContent><p>Crear tarea desde esta etapa</p></TooltipContent>
-                        </Tooltip>
-                      </>
                     )}
                     <Button variant="ghost" size="icon" className="h-8 w-8 ml-1" onClick={() => deleteStageFromSubService(serviceId, subServiceId, stage.id)}><Trash2 className="h-4 w-4 text-destructive"/></Button>
                   </div>
@@ -343,12 +332,12 @@ export default function WorkflowConfigurationPage() {
                     {stage.objectives.length > 0 ? (
                       <div className="space-y-2">
                         {stage.objectives.map((objective, objectiveIndex) => (
-                          <div key={objective.id} className="flex items-center gap-2 group">
+                          <div key={objective.id} className="flex items-center justify-between gap-2 group">
                             <div className="flex items-baseline gap-2 flex-grow"><div className="w-5 flex-shrink-0 text-right font-semibold">{objectiveIndex + 1}.</div><p className="font-semibold flex-grow">{objective.description}</p></div>
                              {canEditWorkflow && (
                                 <Tooltip>
                                     <TooltipTrigger asChild>
-                                        <Button variant="ghost" size="icon" className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity" onClick={() => handleOpenTaskDialog(objective.description)}><ListTodo className="h-4 w-4"/></Button>
+                                        <Button variant="default" size="icon" className="h-7 w-7 bg-primary/80 text-primary-foreground hover:bg-primary" onClick={() => handleOpenTaskDialog(objective.description)}><ListTodo className="h-4 w-4"/></Button>
                                     </TooltipTrigger>
                                     <TooltipContent><p>Crear tarea desde este objetivo</p></TooltipContent>
                                 </Tooltip>
@@ -474,7 +463,7 @@ export default function WorkflowConfigurationPage() {
                               <Button variant="outline" size="sm" onClick={() => handleStartEditSubService(subService)} disabled={!!editingSubServiceId || !canEditWorkflow}><Edit className="h-4 w-4 mr-2"/>Editar</Button>
                                <Tooltip>
                                     <TooltipTrigger asChild>
-                                        <Button variant="outline" size="icon" className="h-8 w-8 ml-1" onClick={(e) => { e.stopPropagation(); handleOpenTaskDialog(subService.name);}}><ListTodo className="h-4 w-4"/></Button>
+                                        <Button variant="default" size="icon" className="h-8 w-8 ml-1 bg-primary/80 text-primary-foreground hover:bg-primary" onClick={(e) => { e.stopPropagation(); handleOpenTaskDialog(subService.name);}}><ListTodo className="h-4 w-4"/></Button>
                                     </TooltipTrigger>
                                     <TooltipContent><p>Crear tarea desde este sub-servicio</p></TooltipContent>
                                 </Tooltip>
