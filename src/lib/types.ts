@@ -8,13 +8,13 @@ export type Client = {
   owner: string;
   category: string;
   stage?: string; // Opcional, legado
-  currentObjective?: string; // Opcional, legado
+  currentAction?: string; // Opcional, legado
   contactEmail?: string;
   contactPhone?: string;
   website?: string;
   subscribedServiceIds?: string[];
   currentWorkflowStageId?: string;
-  currentObjectiveId?: string;
+  currentActionId?: string;
 };
 
 export type Promoter = {
@@ -77,18 +77,18 @@ export type WorkflowStage = {
   id: string;
   title: string;
   order: number;
-  objectives: WorkflowStageObjective[];
+  actions: WorkflowAction[];
 };
 
-export type WorkflowStageObjective = {
+export type WorkflowAction = {
   id: string;
   description: string;
   order: number;
-  subObjectives: SubObjective[];
+  subActions: SubAction[];
   requiredDocumentForCompletion?: string;
 };
 
-export type SubObjective = {
+export type SubAction = {
     id: string;
     text: string;
     order?: number; // Opcional para simplicidad en datos de ejemplo
@@ -164,5 +164,3 @@ export interface NavItem {
   exactMatch?: boolean;
   requiredPermission: keyof AppPermissions;
 }
-
-    

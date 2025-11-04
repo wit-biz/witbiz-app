@@ -2,7 +2,7 @@
 "use client";
 
 import React, { useState, useCallback } from "react";
-import { type Client, type Document, type Task } from "@/lib/types";
+import { type Client, type Document, type Task, type WorkflowAction } from "@/lib/types";
 import { useCRMData } from "@/contexts/CRMDataContext";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -33,7 +33,7 @@ const DetailItem = ({ label, value, href }: { label: string; value?: string; hre
 };
 
 export function ClientDetailView({ client, onClose }: ClientDetailViewProps) {
-    const { getDocumentsByClientId, getTasksByClientId, getObjectiveById } = useCRMData();
+    const { getDocumentsByClientId, getTasksByClientId, getActionById } = useCRMData();
     const { toast } = useToast();
     
     const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
@@ -52,7 +52,7 @@ export function ClientDetailView({ client, onClose }: ClientDetailViewProps) {
     const clientDocuments = getDocumentsByClientId(client.id);
     const clientTasks = getTasksByClientId(client.id);
     const pendingTasks = clientTasks.filter(task => task.status === 'Pendiente');
-    const currentStageObjective = client?.currentObjectiveId ? getObjectiveById(client.currentObjectiveId) : null;
+    const currentStageAction = client?.currentActionId ? getActionById(client.currentActionId) : null;
 
     const handleDownload = (doc: Document) => {
         toast({
@@ -90,7 +90,7 @@ export function ClientDetailView({ client, onClose }: ClientDetailViewProps) {
                         </CardContent>
                     </Card>
 
-                    {currentStageObjective && (
+                    {currentStageAction && (
                         <Card>
                             <CardHeader>
                                 <CardTitle>Estado Actual en el Flujo</CardTitle>
@@ -98,7 +98,7 @@ export function ClientDetailView({ client, onClose }: ClientDetailViewProps) {
                             <CardContent>
                                 <div className="flex items-start gap-2">
                                     <Target className="h-4 w-4 text-blue-500 mt-1 flex-shrink-0" />
-                                    <DetailItem label="Objetivo Actual" value={currentStageObjective.description} />
+                                    <DetailItem label="Acción Actual" value={currentStageAction.description} />
                                 </div>
                             </CardContent>
                         </Card>

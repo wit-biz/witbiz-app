@@ -6,7 +6,7 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Header } from "@/components/header";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import { useCRMData, type WorkflowStage, type ServiceWorkflow, type WorkflowStageObjective, type SubObjective, type SubService, type Task } from "@/contexts/CRMDataContext"; 
+import { useCRMData, type WorkflowStage, type ServiceWorkflow, type WorkflowAction, type SubObjective, type SubService, type Task } from "@/contexts/CRMDataContext"; 
 import { Edit, Save, Trash2, Plus, X, Loader2, UploadCloud, ChevronsRight, FileText, ListTodo, Workflow as WorkflowIcon, ArrowLeft } from "lucide-react";
 import { Card, CardHeader, CardTitle, CardContent, CardDescription, CardFooter } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
@@ -48,9 +48,9 @@ export default function WorkflowConfigurationPage() {
     updateStageInSubService, 
     addStageToSubService, 
     deleteStageFromSubService, 
-    updateObjectiveInStage, 
-    addObjectiveToStage, 
-    deleteObjectiveFromStage,
+    updateActionInStage, 
+    addActionToStage, 
+    deleteActionFromStage,
     addTask
   } = useCRMData();
   const router = useRouter();
@@ -177,9 +177,8 @@ export default function WorkflowConfigurationPage() {
 
   const confirmDeleteService = async () => {
     if (!serviceToDelete) return;
-    
-    const index = serviceWorkflows.findIndex(s => s.id === serviceToDelete.id);
-    const wasSelected = serviceToDelete.id === selectedWorkflowId;
+    const currentServices = [...serviceWorkflows];
+    const index = currentServices.findIndex(s => s.id === serviceToDelete.id);
     
     await deleteService(serviceToDelete.id);
     
@@ -189,8 +188,8 @@ export default function WorkflowConfigurationPage() {
     // This needs to be done AFTER the state updates from deleteService propagate
     // A timeout is a simple way to achieve this.
     setTimeout(() => {
-        const remainingServices = serviceWorkflows.filter(s => s.id !== serviceToDelete.id);
-        if (wasSelected) {
+        const remainingServices = currentServices.filter(s => s.id !== serviceToDelete.id);
+        if (selectedWorkflowId === serviceToDelete.id) {
             if (remainingServices.length > 0) {
                 const nextIndex = Math.max(0, index -1);
                 setSelectedWorkflowId(remainingServices[nextIndex]?.id || null);
@@ -223,67 +222,24 @@ export default function WorkflowConfigurationPage() {
     setEditableStageData({ ...editableStageData, [name]: value });
   }, [editableStageData]);
 
-  const handleObjectiveChange = (objectiveId: string, field: 'description' | 'requiredDocumentForCompletion', value: string) => {
-    if (!editableStageData || !editableStageData.objectives) return;
+  const handleActionChange = (actionId: string, field: 'description' | 'requiredDocumentForCompletion', value: string) => {
+    if (!editableStageData || !editableStageData.actions) return;
     
     let finalValue = value;
     if (field === 'requiredDocumentForCompletion' && value === 'ninguno') {
         finalValue = '';
     }
     
-    const newObjectives = editableStageData.objectives.map((obj) => {
-      if (obj.id === objectiveId) {
-        return { ...obj, [field]: finalValue };
+    const newActions = editableStageData.actions.map((act) => {
+      if (act.id === actionId) {
+        return { ...act, [field]: finalValue };
       }
-      return obj;
+      return act;
     });
   
-    setEditableStageData({ ...editableStageData, objectives: newObjectives });
+    setEditableStageData({ ...editableStageData, actions: newActions });
   };
   
-
-  const handleSubObjectiveChange = (objectiveId: string, subObjectiveId: string, text: string) => {
-    if (!editableStageData || !editableStageData.objectives) return;
-    const newObjectives = (editableStageData.objectives || []).map(obj => {
-        if (obj.id === objectiveId) {
-            const newSubObjectives = (obj.subObjectives || []).map(sub => 
-                sub.id === subObjectiveId ? { ...sub, text } : sub
-            );
-            return { ...obj, subObjectives: newSubObjectives };
-        }
-        return obj;
-    });
-    setEditableStageData({ ...editableStageData, objectives: newObjectives });
-  };
-
-  const handleAddSubObjective = (objectiveId: string) => {
-    if (!editableStageData || !editableStageData.objectives) return;
-    const newObjectives = (editableStageData.objectives || []).map(obj => {
-        if (obj.id === objectiveId) {
-            const currentSubObjectives = obj.subObjectives || [];
-            const newSubObjective: SubObjective = {
-                id: `sub-${Date.now()}-${Math.random()}`,
-                text: ""
-            };
-            return { ...obj, subObjectives: [...currentSubObjectives, newSubObjective] };
-        }
-        return obj;
-    });
-    setEditableStageData({ ...editableStageData, objectives: newObjectives });
-  };
-
-  const handleDeleteSubObjective = (objectiveId: string, subObjectiveId: string) => {
-    if (!editableStageData || !editableStageData.objectives) return;
-    const newObjectives = editableStageData.objectives.map(obj => {
-        if (obj.id === objectiveId) {
-            const filteredSubObjectives = (obj.subObjectives || []).filter(sub => sub.id !== subObjectiveId);
-            return { ...obj, subObjectives: filteredSubObjectives };
-        }
-        return obj;
-    });
-    setEditableStageData({ ...editableStageData, objectives: newObjectives });
-  };
-
   const renderStages = (stages: WorkflowStage[], serviceId: string, subServiceId: string | null) => {
     if (!stages) return null;
     return (
@@ -318,27 +274,27 @@ export default function WorkflowConfigurationPage() {
                   <div className="space-y-4">
                     <div><Label>Título de la Etapa</Label><Input name="title" value={editableStageData.title || ''} onChange={handleStageDataChange} /></div>
                     <div className="space-y-3">
-                      {(editableStageData.objectives || []).map((objective, objIndex) => {
-                          const customDocValue = objective.requiredDocumentForCompletion || '';
+                      {(editableStageData.actions || []).map((action, actIndex) => {
+                          const customDocValue = action.requiredDocumentForCompletion || '';
                           const isCustomDoc = customDocValue && !["Contrato", "Factura", "Propuesta", "Informe", ""].includes(customDocValue);
                           const selectValue = isCustomDoc ? 'Otro' : customDocValue || 'ninguno';
 
                           return (
-                              <div key={objective.id} className="flex flex-col gap-2 p-3 border rounded-md bg-secondary/30">
+                              <div key={action.id} className="flex flex-col gap-2 p-3 border rounded-md bg-secondary/30">
                                 <div className="flex items-center gap-2">
-                                  <div className="w-6 flex-shrink-0 text-lg font-bold text-accent/80">{objIndex + 1}.</div>
-                                  <Input value={objective.description} onChange={(e) => handleObjectiveChange(objective.id, 'description', e.target.value)} placeholder="Descripción del Objetivo..." className="font-semibold flex-grow"/>
-                                  <Button type="button" size="icon" variant="ghost" onClick={() => deleteObjectiveFromStage(serviceId, subServiceId, stage.id, objective.id)} className="self-center"><Trash2 className="h-4 w-4 text-destructive" /></Button>
+                                  <div className="w-6 flex-shrink-0 text-lg font-bold text-accent/80">{actIndex + 1}.</div>
+                                  <Input value={action.description} onChange={(e) => handleActionChange(action.id, 'description', e.target.value)} placeholder="Descripción de la Acción..." className="font-semibold flex-grow"/>
+                                  <Button type="button" size="icon" variant="ghost" onClick={() => deleteActionFromStage(serviceId, subServiceId, stage.id, action.id)} className="self-center"><Trash2 className="h-4 w-4 text-destructive" /></Button>
                                 </div>
                                 <div className="pl-8 pt-2 border-t border-border/50">
-                                  <Label htmlFor={`doc-req-${objective.id}`} className="text-xs">Documento Requerido (Opcional)</Label>
+                                  <Label htmlFor={`doc-req-${action.id}`} className="text-xs">Documento Requerido (Opcional)</Label>
                                     <div className="flex items-center gap-2 mt-1">
                                         <div className="flex-grow">
                                             <Select
                                                 value={selectValue}
-                                                onValueChange={(value) => handleObjectiveChange(objective.id, 'requiredDocumentForCompletion', value)}
+                                                onValueChange={(value) => handleActionChange(action.id, 'requiredDocumentForCompletion', value)}
                                             >
-                                                <SelectTrigger id={`doc-req-${objective.id}`} className="h-8 text-sm"><SelectValue placeholder="Ninguno" /></SelectTrigger>
+                                                <SelectTrigger id={`doc-req-${action.id}`} className="h-8 text-sm"><SelectValue placeholder="Ninguno" /></SelectTrigger>
                                                 <SelectContent>
                                                     <SelectItem value="ninguno">Ninguno</SelectItem>
                                                     <SelectItem value="Contrato">Contrato</SelectItem>
@@ -364,38 +320,40 @@ export default function WorkflowConfigurationPage() {
                                               type="text"
                                               placeholder="Escriba el nombre del documento"
                                               value={isCustomDoc ? customDocValue : ''}
-                                              onChange={(e) => handleObjectiveChange(objective.id, 'requiredDocumentForCompletion', e.target.value)}
+                                              onChange={(e) => handleActionChange(action.id, 'requiredDocumentForCompletion', e.target.value)}
                                               className="h-8 text-sm" autoFocus
                                           />
                                         </div>
                                     )}
-                                  <p className="text-[10px] text-muted-foreground mt-1">Si se define, el objetivo se completará automáticamente al subir el documento.</p>
+                                  <p className="text-[10px] text-muted-foreground mt-1">Si se define, la acción se completará automáticamente al subir el documento.</p>
                                 </div>
                               </div>
                           )
                         })}
                       </div>
-                      <Button type="button" size="sm" variant="outline" onClick={() => addObjectiveToStage(serviceId, subServiceId, stage.id)}><Plus className="h-4 w-4 mr-2"/>Añadir Objetivo</Button>
+                      <Button type="button" size="sm" variant="outline" onClick={() => addActionToStage(serviceId, subServiceId, stage.id)}><Plus className="h-4 w-4 mr-2"/>Añadir Acción</Button>
                     </div>
                 ) : (
                   <div>
-                    {stage.objectives.length > 0 ? (
+                    {stage.actions.length > 0 ? (
                       <div className="space-y-2">
-                        {stage.objectives.map((objective, objectiveIndex) => (
-                          <div key={objective.id} className="flex items-center justify-between gap-2 group">
-                            <div className="flex items-baseline gap-2 flex-grow"><div className="w-5 flex-shrink-0 text-right font-semibold">{objectiveIndex + 1}.</div><p className="font-semibold flex-grow">{objective.description}</p></div>
+                        {stage.actions.map((action, actionIndex) => (
+                          <div key={action.id} className="flex items-center justify-between gap-2 group">
+                            <div className="flex items-baseline gap-2 flex-grow"><div className="w-5 flex-shrink-0 text-right font-semibold">{actionIndex + 1}.</div><p className="font-semibold flex-grow">{action.description}</p></div>
                              {canEditWorkflow && (
                                 <Tooltip>
                                     <TooltipTrigger asChild>
-                                        <Button variant="default" size="icon" className="h-7 w-7 bg-primary/80 text-primary-foreground hover:bg-primary" onClick={() => handleOpenTaskDialog(objective.description)}><ListTodo className="h-4 w-4"/></Button>
+                                      <Button variant="default" size="icon" className="h-7 w-7 bg-primary/80 text-primary-foreground hover:bg-primary" onClick={() => handleOpenTaskDialog(action.description)}>
+                                          <ListTodo className="h-4 w-4" />
+                                      </Button>
                                     </TooltipTrigger>
-                                    <TooltipContent><p>Crear tarea desde este objetivo</p></TooltipContent>
+                                    <TooltipContent><p>Crear tarea desde esta acción</p></TooltipContent>
                                 </Tooltip>
                              )}
                           </div>
                         ))}
                       </div>
-                    ) : (<p className="text-sm text-muted-foreground pl-2">No hay objetivos definidos.</p>)}
+                    ) : (<p className="text-sm text-muted-foreground pl-2">No hay acciones definidas.</p>)}
                   </div>
                 )}
               </AccordionContent>
@@ -411,7 +369,7 @@ export default function WorkflowConfigurationPage() {
         <div className="flex flex-col min-h-screen">
             <Header 
                 title="Configuración de Flujos de Trabajo" 
-                description="Gestione las etapas y objetivos de sus servicios."
+                description="Gestione las etapas y acciones de sus servicios."
             />
             <div className="flex-1 flex items-center justify-center">
                 <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -424,7 +382,7 @@ export default function WorkflowConfigurationPage() {
     <TooltipProvider>
       <Header 
         title="Configuración de Flujos de Trabajo" 
-        description="Gestione las etapas y objetivos de sus servicios."
+        description="Gestione las etapas y acciones de sus servicios."
         children={
           <div className="flex flex-col sm:flex-row gap-2">
             <Button variant="outline" asChild>
@@ -569,7 +527,7 @@ export default function WorkflowConfigurationPage() {
             <AlertDialogHeader>
               <AlertDialogTitle>¿Confirmar Eliminación?</AlertDialogTitle>
               <AlertDialogDescription>
-                Esta acción no se puede deshacer. ¿Está seguro de que desea eliminar el servicio "{serviceToDelete?.name}" y todos sus sub-servicios, etapas y objetivos asociados?
+                Esta acción no se puede deshacer. ¿Está seguro de que desea eliminar el servicio "{serviceToDelete?.name}" y todos sus sub-servicios, etapas y acciones asociados?
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>

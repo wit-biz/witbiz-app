@@ -49,16 +49,16 @@ export function ClientStageDetailDialog({ client, stage, isOpen, onClose }: Clie
         <div className="py-4">
             <h4 className="flex items-center gap-2 text-sm font-semibold mb-2">
                 <ListChecks className="h-4 w-4 text-accent" />
-                Objetivos Pendientes para esta Etapa
+                Acciones Pendientes para esta Etapa
             </h4>
-            {stage.objectives && stage.objectives.length > 0 ? (
+            {stage.actions && stage.actions.length > 0 ? (
                 <ul className="space-y-1 list-disc list-inside text-muted-foreground pl-2">
-                    {stage.objectives.map(obj => (
-                        <li key={obj.id} className="text-sm">{obj.description}</li>
+                    {stage.actions.map(act => (
+                        <li key={act.id} className="text-sm">{act.description}</li>
                     ))}
                 </ul>
             ) : (
-                <p className="text-sm text-muted-foreground">No hay objetivos definidos para esta etapa.</p>
+                <p className="text-sm text-muted-foreground">No hay acciones definidas para esta etapa.</p>
             )}
         </div>
 
