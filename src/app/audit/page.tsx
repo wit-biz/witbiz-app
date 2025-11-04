@@ -37,11 +37,11 @@ const reportData = [
 
 // Mock Data for Logs (Activities)
 const logData = [
-  { id: 'log1', date: new Date(), user: 'Andrea Admin', action: 'Tarea Completada', details: 'Tarea "Preparar contrato de Synergy Corp." marcada como completada.' },
-  { id: 'log2', date: subDays(new Date(), 1), user: 'Carla Collaborator', action: 'Cliente Creado', details: 'Nuevo cliente "Futura Dynamics" fue añadido a la base de datos.' },
-  { id: 'log3', date: subDays(new Date(), 3), user: 'Admin User', action: 'Permisos Modificados', details: 'El rol "Colaborador" fue actualizado.' },
-  { id: 'log4', date: subDays(new Date(), 8), user: 'Andrea Admin', action: 'Documento Subido', details: 'Se subió el documento "Propuesta_Final.pdf" para el cliente "Global Net".' },
-  { id: 'log5', date: subDays(new Date(), 40), user: 'Carla Collaborator', action: 'Inicio de Sesión', details: 'El usuario ha iniciado sesión en la plataforma.' },
+  { id: 'log1', date: new Date(), user: 'Andrea Admin', action: 'Tarea Completada', details: 'Tarea "Preparar contrato de Synergy Corp." marcada como completada.', clientId: '2', serviceId: 'service-1' },
+  { id: 'log2', date: subDays(new Date(), 1), user: 'Carla Collaborator', action: 'Cliente Creado', details: 'Nuevo cliente "Futura Dynamics" fue añadido a la base de datos.', clientId: null, serviceId: null },
+  { id: 'log3', date: subDays(new Date(), 3), user: 'Admin User', action: 'Permisos Modificados', details: 'El rol "Colaborador" fue actualizado.', clientId: null, serviceId: null },
+  { id: 'log4', date: subDays(new Date(), 8), user: 'Andrea Admin', action: 'Documento Subido', details: 'Se subió el documento "Propuesta_Final.pdf" para el cliente "Global Net".', clientId: '4', serviceId: 'service-1' },
+  { id: 'log5', date: subDays(new Date(), 40), user: 'Carla Collaborator', action: 'Inicio de Sesión', details: 'El usuario ha iniciado sesión en la plataforma.', clientId: null, serviceId: null },
 ];
 
 
@@ -63,10 +63,12 @@ export default function AuditPage() {
      return logData.filter(item => {
         const itemDate = new Date(item.date);
         const isDateInRange = date?.from && date.to ? isWithinInterval(itemDate, { start: startOfDay(date.from), end: endOfDay(date.to) }) : true;
-        // Add user/action filtering logic here if needed
-        return isDateInRange;
+        const isClientMatch = selectedClientId === 'all' || item.clientId === selectedClientId;
+        const isServiceMatch = selectedServiceId === 'all' || item.serviceId === selectedServiceId;
+        
+        return isDateInRange && isClientMatch && isServiceMatch;
     })
-  }, [date]);
+  }, [date, selectedClientId, selectedServiceId]);
 
 
   const handleDownload = (section: string) => {
