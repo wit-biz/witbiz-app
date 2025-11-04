@@ -11,7 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { AddTransactionDialog } from "@/components/shared/AddTransactionDialog";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
-import { format, isWithinInterval, startOfDay, endOfDay } from "date-fns";
+import { format, isWithinInterval, startOfDay, endOfDay, subDays } from "date-fns";
 import { es } from "date-fns/locale";
 import { DateRange } from "react-day-picker";
 import { cn } from "@/lib/utils";
@@ -101,7 +101,10 @@ export default function SettingsPage() {
   const [isTransactionDialogOpen, setIsTransactionDialogOpen] = useState(false);
   
   // -- General Filter States --
-  const [date, setDate] = useState<DateRange | undefined>();
+  const [date, setDate] = useState<DateRange | undefined>({
+    from: subDays(new Date(), 30),
+    to: new Date()
+  });
   const [selectedCompanyId, setSelectedCompanyId] = useState<string>("all");
   const [selectedCategoryId, setSelectedCategoryId] = useState<string>("all");
   const [selectedType, setSelectedType] = useState<string>("all");
@@ -205,63 +208,80 @@ export default function SettingsPage() {
   }, [mockAccounts, mockCompanies]);
 
   const incomeStatementData = useMemo(() => {
-    const income = filteredTransactions
-        .filter(t => t.type === 'income')
-        .reduce((sum, t) => sum + t.amount, 0);
-    const expenses = filteredTransactions
-        .filter(t => t.type === 'expense')
-        .reduce((sum, t) => sum + Math.abs(t.amount), 0);
-    return {
-        income,
-        expenses,
-        netIncome: income - expenses,
-    }
+      const revenueByCategory = filteredTransactions
+          .filter(t => t.type === 'income')
+          .reduce((acc, t) => {
+              acc[t.category] = (acc[t.category] || 0) + t.amount;
+              return acc;
+          }, {} as Record<string, number>);
+      
+      const totalRevenue = Object.values(revenueByCategory).reduce((sum, amount) => sum + amount, 0);
+
+      const expensesByCategory = filteredTransactions
+          .filter(t => t.type === 'expense' && t.category !== 'Transferencia Interna')
+          .reduce((acc, t) => {
+              acc[t.category] = (acc[t.category] || 0) + Math.abs(t.amount);
+              return acc;
+          }, {} as Record<string, number>);
+
+      const totalExpenses = Object.values(expensesByCategory).reduce((sum, amount) => sum + amount, 0);
+
+      // For this model, COGS is not explicitly tracked, so Gross Profit = Total Revenue.
+      const grossProfit = totalRevenue;
+      const operatingIncome = grossProfit - totalExpenses;
+      const netIncome = operatingIncome; // Assuming no taxes or other non-operating items for now
+
+      return {
+          revenueByCategory,
+          totalRevenue,
+          grossProfit,
+          expensesByCategory,
+          totalExpenses,
+          operatingIncome,
+          netIncome,
+      };
   }, [filteredTransactions]);
 
-  const balanceSheetData = useMemo(() => {
-    const assets = {
-        cash: mockAccounts.reduce((sum, acc) => sum + acc.balance, 0)
-    };
-    const liabilities = {
-        accountsPayable: 0, // Placeholder
-    };
-    const equity = {
-        retainedEarnings: 0, // Placeholder
-        netIncome: incomeStatementData.netIncome,
-    };
+  const { balanceSheetData, cashFlowData } = useMemo(() => {
+    const fromDate = date?.from ? startOfDay(date.from) : new Date(0);
+    const toDate = date?.to ? endOfDay(date.to) : new Date();
 
-    const totalAssets = assets.cash;
-    const totalLiabilities = liabilities.accountsPayable;
-    const totalEquity = equity.retainedEarnings + equity.netIncome;
+    const priorTransactions = mockTransactions.filter(t => new Date(t.date) < fromDate);
+    const retainedEarnings = priorTransactions
+      .filter(t => t.type === 'income' || t.type === 'expense')
+      .reduce((sum, t) => sum + t.amount, 0);
 
-    return {
-        assets,
-        liabilities,
-        equity,
-        totalAssets,
-        totalLiabilities,
-        totalEquity,
-        totalLiabilitiesAndEquity: totalLiabilities + totalEquity
-    };
-  }, [mockAccounts, incomeStatementData.netIncome]);
-  
-  const cashFlowData = useMemo(() => {
-    const operatingActivities = filteredTransactions
+    const initialCash = priorTransactions.reduce((sum, t) => sum + t.amount, 0);
+    
+    const cashFromOperations = filteredTransactions
         .filter(t => t.type === 'income' || t.type === 'expense')
         .reduce((sum, t) => sum + t.amount, 0);
     
-    // Placeholders for future implementation
-    const investingActivities = 0;
-    const financingActivities = 0;
-
-    return {
-        operating: operatingActivities,
-        investing: investingActivities,
-        financing: financingActivities,
-        netCashFlow: operatingActivities + investingActivities + financingActivities
+    const finalCash = initialCash + cashFromOperations;
+    
+    const bsData = {
+        assets: { cash: finalCash },
+        liabilities: { accountsPayable: 0 }, // Placeholder
+        equity: {
+            retainedEarnings: retainedEarnings,
+            netIncome: incomeStatementData.netIncome,
+        },
+        totalAssets: finalCash,
+        totalLiabilitiesAndEquity: retainedEarnings + incomeStatementData.netIncome,
+    };
+    
+    const cfData = {
+        operating: cashFromOperations,
+        investing: 0, // Placeholder
+        financing: 0, // Placeholder
+        netCashFlow: cashFromOperations,
+        initialCash,
+        finalCash
     }
-  }, [filteredTransactions]);
 
+    return { balanceSheetData: bsData, cashFlowData: cfData };
+  }, [date, incomeStatementData.netIncome]);
+  
   return (
     <>
       <div className="flex flex-col min-h-screen">
@@ -405,36 +425,36 @@ export default function SettingsPage() {
                                 <TabsTrigger value="auxiliaries">Auxiliares Contables</TabsTrigger>
                             </TabsList>
                             <TabsContent value="daily-journal" className="p-6">
-                                    <CardTitle>Libro Diario</CardTitle>
-                                    <CardDescription className="mb-4">Registro cronológico de todas las operaciones financieras de la empresa.</CardDescription>
-                                    <Table>
-                                        <TableHeader>
-                                            <TableRow>
-                                                <TableHead>Fecha</TableHead>
-                                                <TableHead>Descripción</TableHead>
-                                                <TableHead>Categoría</TableHead>
-                                                <TableHead>Tipo</TableHead>
-                                                <TableHead className="text-right">Monto</TableHead>
+                                <CardTitle>Libro Diario</CardTitle>
+                                <CardDescription className="mb-4">Registro cronológico de todas las operaciones financieras de la empresa.</CardDescription>
+                                <Table>
+                                    <TableHeader>
+                                        <TableRow>
+                                            <TableHead>Fecha</TableHead>
+                                            <TableHead>Descripción</TableHead>
+                                            <TableHead>Categoría</TableHead>
+                                            <TableHead>Tipo</TableHead>
+                                            <TableHead className="text-right">Monto</TableHead>
+                                        </TableRow>
+                                    </TableHeader>
+                                    <TableBody>
+                                        {filteredTransactions.map((trx) => (
+                                            <TableRow key={trx.id}>
+                                                <TableCell>{format(new Date(trx.date), "dd/MM/yyyy")}</TableCell>
+                                                <TableCell className="font-medium">{trx.description}</TableCell>
+                                                <TableCell>{trx.category}</TableCell>
+                                                <TableCell>
+                                                    <Badge variant={trx.type === 'income' ? 'default' : trx.type === 'expense' ? 'destructive' : 'secondary'}>
+                                                        {trx.type === 'income' ? 'Ingreso' : trx.type.startsWith('transfer') ? 'Transferencia' : 'Egreso'}
+                                                    </Badge>
+                                                </TableCell>
+                                                <TableCell className={`text-right font-semibold ${trx.amount > 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                                    {trx.amount.toLocaleString('en-US', { style: 'currency', currency: 'USD' })}
+                                                </TableCell>
                                             </TableRow>
-                                        </TableHeader>
-                                        <TableBody>
-                                            {filteredTransactions.map((trx) => (
-                                                <TableRow key={trx.id}>
-                                                    <TableCell>{format(new Date(trx.date), "dd/MM/yyyy")}</TableCell>
-                                                    <TableCell className="font-medium">{trx.description}</TableCell>
-                                                    <TableCell>{trx.category}</TableCell>
-                                                    <TableCell>
-                                                        <Badge variant={trx.type === 'income' ? 'default' : trx.type === 'expense' ? 'destructive' : 'secondary'}>
-                                                            {trx.type === 'income' ? 'Ingreso' : trx.type.startsWith('transfer') ? 'Transferencia' : 'Egreso'}
-                                                        </Badge>
-                                                    </TableCell>
-                                                    <TableCell className={`text-right font-semibold ${trx.amount > 0 ? 'text-green-600' : 'text-red-600'}`}>
-                                                        {trx.amount.toLocaleString('en-US', { style: 'currency', currency: 'USD' })}
-                                                    </TableCell>
-                                                </TableRow>
-                                            ))}
-                                        </TableBody>
-                                    </Table>
+                                        ))}
+                                    </TableBody>
+                                </Table>
                             </TabsContent>
                             <TabsContent value="general-ledger" className="p-6">
                                     <CardTitle>Libro Mayor</CardTitle>
@@ -569,7 +589,7 @@ export default function SettingsPage() {
                         </Tabs>
                     </Card>
                 </TabsContent>
-                 <TabsContent value="pnl" className="mt-4">
+                 <TabsContent value="pnl" className="mt-4 bg-muted/40 p-4 rounded-lg">
                     <Card>
                         <Tabs defaultValue="income-statement" className="w-full">
                             <TabsList className="grid w-full grid-cols-4 rounded-t-lg rounded-b-none">
@@ -579,49 +599,56 @@ export default function SettingsPage() {
                                 <TabsTrigger value="equity-changes">Cambios en el Capital</TabsTrigger>
                             </TabsList>
                             <TabsContent value="balance-sheet" className="p-6">
-                                    <CardTitle>Balance General (Estado de Situación Financiera)</CardTitle>
-                                    <CardDescription className="mb-4">Presenta activos, pasivos y capital contable en una fecha específica.</CardDescription>
-                                    <Table>
-                                        <TableHeader>
-                                            <TableRow><TableHead colSpan={2}>Activos</TableHead></TableRow>
-                                        </TableHeader>
-                                        <TableBody>
-                                            <TableRow><TableCell>Efectivo y Equivalentes</TableCell><TableCell className="text-right">{balanceSheetData.assets.cash.toLocaleString('en-US', { style: 'currency', currency: 'USD' })}</TableCell></TableRow>
-                                        </TableBody>
-                                        <TableFooter>
-                                            <TableRow className="font-bold bg-muted/50"><TableCell>Total de Activos</TableCell><TableCell className="text-right">{balanceSheetData.totalAssets.toLocaleString('en-US', { style: 'currency', currency: 'USD' })}</TableCell></TableRow>
-                                        </TableFooter>
-                                    </Table>
-                                     <Table className="mt-4">
-                                        <TableHeader>
-                                            <TableRow><TableHead colSpan={2}>Pasivos y Capital Contable</TableHead></TableRow>
-                                        </TableHeader>
-                                        <TableBody>
-                                            <TableRow><TableCell>Cuentas por Pagar (Pasivo)</TableCell><TableCell className="text-right">{balanceSheetData.liabilities.accountsPayable.toLocaleString('en-US', { style: 'currency', currency: 'USD' })}</TableCell></TableRow>
-                                            <TableRow><TableCell>Utilidades Retenidas (Capital)</TableCell><TableCell className="text-right">{balanceSheetData.equity.retainedEarnings.toLocaleString('en-US', { style: 'currency', currency: 'USD' })}</TableCell></TableRow>
-                                            <TableRow><TableCell>Utilidad del Ejercicio (Capital)</TableCell><TableCell className="text-right">{balanceSheetData.equity.netIncome.toLocaleString('en-US', { style: 'currency', currency: 'USD' })}</TableCell></TableRow>
-                                        </TableBody>
-                                        <TableFooter>
-                                            <TableRow className="font-bold bg-muted/50"><TableCell>Total Pasivo y Capital</TableCell><TableCell className="text-right">{balanceSheetData.totalLiabilitiesAndEquity.toLocaleString('en-US', { style: 'currency', currency: 'USD' })}</TableCell></TableRow>
-                                        </TableFooter>
-                                    </Table>
+                                <CardTitle>Balance General (al {date?.to ? format(date.to, "dd/MM/yyyy") : 'hoy'})</CardTitle>
+                                <CardDescription className="mb-4">Presenta activos, pasivos y capital contable en una fecha específica.</CardDescription>
+                                <Table>
+                                    <TableHeader>
+                                        <TableRow><TableHead colSpan={2}>Activos</TableHead></TableRow>
+                                    </TableHeader>
+                                    <TableBody>
+                                        <TableRow><TableCell>Efectivo y Equivalentes</TableCell><TableCell className="text-right">{balanceSheetData.assets.cash.toLocaleString('en-US', { style: 'currency', currency: 'USD' })}</TableCell></TableRow>
+                                    </TableBody>
+                                    <TableFooter>
+                                        <TableRow className="font-bold bg-muted/50"><TableCell>Total de Activos</TableCell><TableCell className="text-right">{balanceSheetData.totalAssets.toLocaleString('en-US', { style: 'currency', currency: 'USD' })}</TableCell></TableRow>
+                                    </TableFooter>
+                                </Table>
+                                <Table className="mt-4">
+                                    <TableHeader>
+                                        <TableRow><TableHead colSpan={2}>Pasivos y Capital Contable</TableHead></TableRow>
+                                    </TableHeader>
+                                    <TableBody>
+                                        <TableRow><TableCell>Cuentas por Pagar (Pasivo)</TableCell><TableCell className="text-right">{balanceSheetData.liabilities.accountsPayable.toLocaleString('en-US', { style: 'currency', currency: 'USD' })}</TableCell></TableRow>
+                                        <TableRow><TableCell>Utilidades Retenidas</TableCell><TableCell className="text-right">{balanceSheetData.equity.retainedEarnings.toLocaleString('en-US', { style: 'currency', currency: 'USD' })}</TableCell></TableRow>
+                                        <TableRow><TableCell>Utilidad del Ejercicio</TableCell><TableCell className="text-right">{balanceSheetData.equity.netIncome.toLocaleString('en-US', { style: 'currency', currency: 'USD' })}</TableCell></TableRow>
+                                    </TableBody>
+                                    <TableFooter>
+                                        <TableRow className="font-bold bg-muted/50"><TableCell>Total Pasivo y Capital</TableCell><TableCell className="text-right">{balanceSheetData.totalLiabilitiesAndEquity.toLocaleString('en-US', { style: 'currency', currency: 'USD' })}</TableCell></TableRow>
+                                    </TableFooter>
+                                </Table>
                             </TabsContent>
                             <TabsContent value="income-statement" className="p-6">
                                 <CardTitle>Estado de Resultados (Pérdidas y Ganancias)</CardTitle>
                                 <CardDescription className="mb-4">Muestra ingresos, costos y gastos para determinar la utilidad o pérdida neta.</CardDescription>
                                 <Table>
                                     <TableBody>
-                                        <TableRow>
-                                            <TableCell className="font-medium">Ingresos Totales</TableCell>
-                                            <TableCell className="text-right text-green-600">{incomeStatementData.income.toLocaleString('en-US', { style: 'currency', currency: 'USD' })}</TableCell>
-                                        </TableRow>
-                                        <TableRow>
-                                            <TableCell className="font-medium">Gastos Totales</TableCell>
-                                            <TableCell className="text-right text-red-600">{incomeStatementData.expenses.toLocaleString('en-US', { style: 'currency', currency: 'USD' })}</TableCell>
-                                        </TableRow>
+                                        <TableRow className="font-semibold text-secondary-foreground"><TableCell>Ingresos</TableCell><TableCell></TableCell></TableRow>
+                                        {Object.entries(incomeStatementData.revenueByCategory).map(([category, amount]) => (
+                                            <TableRow key={category}><TableCell className="pl-8">{category}</TableCell><TableCell className="text-right">{amount.toLocaleString('en-US', { style: 'currency', currency: 'USD' })}</TableCell></TableRow>
+                                        ))}
+                                        <TableRow className="font-semibold border-t"><TableCell>Total de Ingresos</TableCell><TableCell className="text-right">{incomeStatementData.totalRevenue.toLocaleString('en-US', { style: 'currency', currency: 'USD' })}</TableCell></TableRow>
+                                        
+                                        <TableRow className="font-semibold text-secondary-foreground"><TableCell>Utilidad Bruta</TableCell><TableCell className="text-right">{incomeStatementData.grossProfit.toLocaleString('en-US', { style: 'currency', currency: 'USD' })}</TableCell></TableRow>
+                                        
+                                        <TableRow className="font-semibold text-secondary-foreground"><TableCell>Gastos Operativos</TableCell><TableCell></TableCell></TableRow>
+                                        {Object.entries(incomeStatementData.expensesByCategory).map(([category, amount]) => (
+                                            <TableRow key={category}><TableCell className="pl-8">{category}</TableCell><TableCell className="text-right text-red-600">({amount.toLocaleString('en-US', { style: 'currency', currency: 'USD' })})</TableCell></TableRow>
+                                        ))}
+                                        <TableRow className="font-semibold border-t"><TableCell>Total de Gastos Operativos</TableCell><TableCell className="text-right text-red-600">({incomeStatementData.totalExpenses.toLocaleString('en-US', { style: 'currency', currency: 'USD' })})</TableCell></TableRow>
+                                        
+                                        <TableRow className="font-bold text-lg bg-muted"><TableCell>Utilidad Operativa</TableCell><TableCell className={cn("text-right", incomeStatementData.operatingIncome >= 0 ? "text-blue-600" : "text-orange-600")}>{incomeStatementData.operatingIncome.toLocaleString('en-US', { style: 'currency', currency: 'USD' })}</TableCell></TableRow>
                                     </TableBody>
                                     <TableFooter>
-                                        <TableRow className="font-bold text-lg bg-muted">
+                                        <TableRow className="font-bold text-xl bg-muted/80">
                                             <TableCell>Utilidad Neta</TableCell>
                                             <TableCell className={cn("text-right", incomeStatementData.netIncome >= 0 ? "text-blue-600" : "text-orange-600")}>
                                                 {incomeStatementData.netIncome.toLocaleString('en-US', { style: 'currency', currency: 'USD' })}
@@ -635,23 +662,19 @@ export default function SettingsPage() {
                                 <CardDescription className="mb-4">Detalla entradas y salidas de efectivo por actividades.</CardDescription>
                                 <Table>
                                     <TableBody>
-                                        <TableRow>
-                                            <TableCell>Flujo de Efectivo por Actividades de Operación</TableCell>
-                                            <TableCell className="text-right">{cashFlowData.operating.toLocaleString('en-US', { style: 'currency', currency: 'USD' })}</TableCell>
-                                        </TableRow>
-                                        <TableRow>
-                                            <TableCell>Flujo de Efectivo por Actividades de Inversión</TableCell>
-                                            <TableCell className="text-right">{cashFlowData.investing.toLocaleString('en-US', { style: 'currency', currency: 'USD' })}</TableCell>
-                                        </TableRow>
-                                        <TableRow>
-                                            <TableCell>Flujo de Efectivo por Actividades de Financiación</TableCell>
-                                            <TableCell className="text-right">{cashFlowData.financing.toLocaleString('en-US', { style: 'currency', currency: 'USD' })}</TableCell>
-                                        </TableRow>
+                                        <TableRow><TableCell>Efectivo al inicio del período</TableCell><TableCell className="text-right">{cashFlowData.initialCash.toLocaleString('en-US', { style: 'currency', currency: 'USD' })}</TableCell></TableRow>
+                                        <TableRow><TableCell>Flujo de Efectivo por Actividades de Operación</TableCell><TableCell className="text-right">{cashFlowData.operating.toLocaleString('en-US', { style: 'currency', currency: 'USD' })}</TableCell></TableRow>
+                                        <TableRow><TableCell>Flujo de Efectivo por Actividades de Inversión</TableCell><TableCell className="text-right text-red-600">({cashFlowData.investing.toLocaleString('en-US', { style: 'currency', currency: 'USD' })})</TableCell></TableRow>
+                                        <TableRow><TableCell>Flujo de Efectivo por Actividades de Financiación</TableCell><TableCell className="text-right">{cashFlowData.financing.toLocaleString('en-US', { style: 'currency', currency: 'USD' })}</TableCell></TableRow>
                                     </TableBody>
                                     <TableFooter>
                                         <TableRow className="font-bold bg-muted">
                                             <TableCell>Flujo Neto de Efectivo</TableCell>
                                             <TableCell className="text-right">{cashFlowData.netCashFlow.toLocaleString('en-US', { style: 'currency', currency: 'USD' })}</TableCell>
+                                        </TableRow>
+                                        <TableRow className="font-bold bg-muted/80">
+                                            <TableCell>Efectivo al final del período</TableCell>
+                                            <TableCell className="text-right">{cashFlowData.finalCash.toLocaleString('en-US', { style: 'currency', currency: 'USD' })}</TableCell>
                                         </TableRow>
                                     </TableFooter>
                                 </Table>
@@ -661,23 +684,14 @@ export default function SettingsPage() {
                                 <CardDescription className="mb-4">Refleja variaciones en el patrimonio de los socios.</CardDescription>
                                 <Table>
                                      <TableBody>
-                                        <TableRow>
-                                            <TableCell>Capital Inicial</TableCell>
-                                            <TableCell className="text-right">$0.00</TableCell>
-                                        </TableRow>
-                                        <TableRow>
-                                            <TableCell>+ Utilidad Neta del Ejercicio</TableCell>
-                                            <TableCell className="text-right">{incomeStatementData.netIncome.toLocaleString('en-US', { style: 'currency', currency: 'USD' })}</TableCell>
-                                        </TableRow>
-                                         <TableRow>
-                                            <TableCell>- Dividendos o Retiros</TableCell>
-                                            <TableCell className="text-right text-red-600">$0.00</TableCell>
-                                        </TableRow>
+                                        <TableRow><TableCell>Capital Inicial (Utilidades Retenidas)</TableCell><TableCell className="text-right">{balanceSheetData.equity.retainedEarnings.toLocaleString('en-US', { style: 'currency', currency: 'USD' })}</TableCell></TableRow>
+                                        <TableRow><TableCell>+ Utilidad Neta del Ejercicio</TableCell><TableCell className="text-right">{balanceSheetData.equity.netIncome.toLocaleString('en-US', { style: 'currency', currency: 'USD' })}</TableCell></TableRow>
+                                         <TableRow><TableCell>- Dividendos o Retiros</TableCell><TableCell className="text-right text-red-600">($0.00)</TableCell></TableRow>
                                     </TableBody>
                                     <TableFooter>
                                         <TableRow className="font-bold bg-muted">
                                             <TableCell>Capital Final</TableCell>
-                                            <TableCell className="text-right">{incomeStatementData.netIncome.toLocaleString('en-US', { style: 'currency', currency: 'USD' })}</TableCell>
+                                            <TableCell className="text-right">{balanceSheetData.totalLiabilitiesAndEquity.toLocaleString('en-US', { style: 'currency', currency: 'USD' })}</TableCell>
                                         </TableRow>
                                     </TableFooter>
                                 </Table>
