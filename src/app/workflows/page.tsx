@@ -185,14 +185,13 @@ export default function WorkflowConfigurationPage() {
     setServiceToDelete(null);
     setIsDeleteConfirmOpen(false);
 
-    // This needs to be done AFTER the state updates from deleteService propagate
-    // A timeout is a simple way to achieve this.
     setTimeout(() => {
         const remainingServices = currentServices.filter(s => s.id !== serviceToDelete.id);
         if (selectedWorkflowId === serviceToDelete.id) {
             if (remainingServices.length > 0) {
                 const nextIndex = Math.max(0, index -1);
-                setSelectedWorkflowId(remainingServices[nextIndex]?.id || null);
+                const nextService = remainingServices[nextIndex] || remainingServices[0];
+                setSelectedWorkflowId(nextService?.id || null);
             } else {
                 setSelectedWorkflowId(null);
             }
@@ -335,7 +334,7 @@ export default function WorkflowConfigurationPage() {
                     </div>
                 ) : (
                   <div>
-                    {stage.actions.length > 0 ? (
+                    {stage.actions && stage.actions.length > 0 ? (
                       <div className="space-y-2">
                         {stage.actions.map((action, actionIndex) => (
                           <div key={action.id} className="flex items-center justify-between gap-2 group">
@@ -390,10 +389,6 @@ export default function WorkflowConfigurationPage() {
                     <ArrowLeft className="mr-2 h-4 w-4" />
                     Volver al CRM
                 </Link>
-            </Button>
-            <Button variant="outline" onClick={() => setIsSmartUploadDialogOpen(true)}>
-              <UploadCloud className="mr-2 h-4 w-4"/>
-              Subir Documento
             </Button>
             <Button onClick={handleAddService}>
                 <Plus className="mr-2 h-4 w-4" />
