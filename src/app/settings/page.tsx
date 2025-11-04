@@ -137,15 +137,15 @@ export default function SettingsPage() {
   }, [date, selectedCompanyId, selectedCategoryId, selectedType, allCategories]);
   
   const generalLedgerData = useMemo(() => {
-    if (selectedLedgerAccountId === 'all') return mockTransactions;
+    if (selectedLedgerAccountId === 'all') return filteredTransactions;
     const categoryName = allCategories.find(c => c.id === selectedLedgerAccountId)?.name;
-    return mockTransactions.filter(t => t.category === categoryName);
-  }, [selectedLedgerAccountId, allCategories]);
+    return filteredTransactions.filter(t => t.category === categoryName);
+  }, [selectedLedgerAccountId, allCategories, filteredTransactions]);
 
   const trialBalanceData = useMemo(() => {
     const balances = allCategories.reduce((acc, category) => {
         if(category.type === 'Transferencia') return acc; // Ignore internal transfers for trial balance
-        const total = mockTransactions
+        const total = filteredTransactions
             .filter(t => t.category === category.name)
             .reduce((sum, t) => sum + Math.abs(t.amount), 0);
         
@@ -159,7 +159,7 @@ export default function SettingsPage() {
     }, {} as Record<string, {debit: number, credit: number}>);
 
     return Object.entries(balances).map(([account, {debit, credit}]) => ({ account, debit, credit }));
-  }, [allCategories]);
+  }, [allCategories, filteredTransactions]);
 
   const totalTrialBalance = useMemo(() => {
       return trialBalanceData.reduce((acc, row) => {
@@ -172,13 +172,13 @@ export default function SettingsPage() {
   const auxiliaryLedgerData = useMemo(() => {
       if (selectedAuxiliaryId === 'all') return [];
       if (auxiliaryType === 'banks') {
-          return mockTransactions.filter(t => t.accountId === selectedAuxiliaryId);
+          return filteredTransactions.filter(t => t.accountId === selectedAuxiliaryId);
       }
       if (auxiliaryType === 'clients') {
-          return mockTransactions.filter(t => t.clientId === selectedAuxiliaryId && t.type === 'income');
+          return filteredTransactions.filter(t => t.clientId === selectedAuxiliaryId && t.type === 'income');
       }
       return [];
-  }, [auxiliaryType, selectedAuxiliaryId]);
+  }, [auxiliaryType, selectedAuxiliaryId, filteredTransactions]);
 
 
   const summary = useMemo(() => {
