@@ -211,18 +211,10 @@ export default function SettingsPage() {
           title="Contabilidad"
           description="Centro de operaciones financieras y análisis de rentabilidad."
         >
-          <div className="flex flex-col sm:flex-row gap-2">
-              <Button variant="outline" onClick={() => setIsTransactionDialogOpen(true)}>
-                <ArrowRightLeft className="mr-2 h-4 w-4" />
-                Registrar Movimiento
-              </Button>
-               <Button asChild>
-                  <Link href="/accounting/config">
-                      <Settings className="mr-2 h-4 w-4" />
-                      Configurar Entidades
-                  </Link>
-              </Button>
-          </div>
+          <Button variant="outline" onClick={() => setIsTransactionDialogOpen(true)}>
+            <ArrowRightLeft className="mr-2 h-4 w-4" />
+            Registrar Movimiento
+          </Button>
         </Header>
         <main className="flex-1 p-4 md:p-8 space-y-6">
             <Card>
@@ -290,6 +282,14 @@ export default function SettingsPage() {
                                 </Card>
                             </div>
                         </CardContent>
+                         <CardFooter className="justify-end">
+                            <Button asChild variant="outline">
+                                <Link href="/accounting/config">
+                                    <Settings className="mr-2 h-4 w-4" />
+                                    Configurar Entidades
+                                </Link>
+                            </Button>
+                        </CardFooter>
                     </Card>
                     <Tabs defaultValue="daily-journal" className="w-full">
                        <TabsList className="grid w-full grid-cols-4">
@@ -595,5 +595,3 @@ export default function SettingsPage() {
     </>
   );
 }
-
-    
