@@ -21,6 +21,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { type Document, type ClientRequirement, type ServiceWorkflow } from "@/lib/types";
 import { PromptNameDialog } from "@/components/shared/PromptNameDialog";
 import { Input } from "@/components/ui/input";
+import { cn } from "@/lib/utils";
+
 
 function ServiceDocuments({ serviceId }: { serviceId: string }) {
   const { getDocumentsByServiceId, deleteDocument } = useCRMData();
@@ -62,12 +64,18 @@ function ServiceDocuments({ serviceId }: { serviceId: string }) {
 
 
 export default function ServicesPage() {
-  const { serviceWorkflows, isLoadingWorkflows, addService, updateService, currentUser } = useCRMData();
+  const { serviceWorkflows, isLoadingWorkflows, addService, updateService, setServiceWorkflows, currentUser } = useCRMData();
   const { setIsSmartUploadDialogOpen } = useDialogs();
 
   const [editingServiceId, setEditingServiceId] = useState<string | null>(null);
   const [editableFields, setEditableFields] = useState<{ description: string; clientRequirements: ClientRequirement[] }>({ description: '', clientRequirements: [] });
   const [isPromptNameOpen, setIsPromptNameOpen] = useState(false);
+  const [openAccordionItem, setOpenAccordionItem] = useState<string | undefined>(undefined);
+  
+  // State for drag-and-drop
+  const [draggedItemId, setDraggedItemId] = useState<string | null>(null);
+  const [dragOverId, setDragOverId] = useState<string | null>(null);
+
 
   const canEditWorkflow = currentUser?.permissions.crm_edit ?? true;
 
@@ -114,7 +122,48 @@ export default function ServicesPage() {
     const newRequirements = editableFields.clientRequirements.filter((_, i) => i !== index);
     setEditableFields(prev => ({ ...prev, clientRequirements: newRequirements }));
   };
+  
+  const handleAddNewService = async (name: string) => {
+      const newService = await addService(name);
+      if(newService) {
+        setOpenAccordionItem(newService.id);
+        handleStartEdit(newService);
+      }
+  };
+  
+  // --- Drag and Drop Handlers ---
+  const handleDragStart = (e: React.DragEvent<HTMLDivElement>, id: string) => {
+    setDraggedItemId(id);
+    e.dataTransfer.effectAllowed = 'move';
+  };
 
+  const handleDragOver = (e: React.DragEvent<HTMLDivElement>, id: string) => {
+    e.preventDefault();
+    if(id !== draggedItemId) {
+        setDragOverId(id);
+    }
+  };
+  
+  const handleDragLeave = () => {
+      setDragOverId(null);
+  };
+
+  const handleDrop = (e: React.DragEvent<HTMLDivElement>, dropId: string) => {
+    e.preventDefault();
+    if (!draggedItemId || draggedItemId === dropId) return;
+
+    const newServices = [...serviceWorkflows];
+    const draggedIndex = newServices.findIndex(s => s.id === draggedItemId);
+    const dropIndex = newServices.findIndex(s => s.id === dropId);
+    
+    const [reorderedItem] = newServices.splice(draggedIndex, 1);
+    newServices.splice(dropIndex, 0, reorderedItem);
+
+    setServiceWorkflows(newServices); // Update state in context
+    setDraggedItemId(null);
+    setDragOverId(null);
+  };
+  
 
   if (isLoadingWorkflows) {
     return (
@@ -153,94 +202,108 @@ export default function ServicesPage() {
         </Header>
         <main className="flex-1 p-4 md:p-8">
           {serviceWorkflows && serviceWorkflows.length > 0 ? (
-            <Accordion type="single" collapsible className="w-full space-y-4">
+            <Accordion type="single" collapsible className="w-full space-y-4" value={openAccordionItem} onValueChange={setOpenAccordionItem}>
               {serviceWorkflows.map((service) => {
                 const isEditing = editingServiceId === service.id;
                 return (
-                  <AccordionItem value={service.id} key={service.id} asChild>
-                     <Card>
-                        <AccordionTrigger className="w-full p-0 [&_svg]:ml-auto [&_svg]:mr-4">
-                            <CardHeader className="flex-1 text-left">
-                                <CardTitle className="text-lg">
-                                    {service.name}
-                                </CardTitle>
-                            </CardHeader>
-                        </AccordionTrigger>
-                        <AccordionContent className="p-6 pt-0">
-                            <div className="space-y-6">
-                                {isEditing ? (
-                                    <div className="space-y-4">
-                                        <div>
-                                            <Label htmlFor="description">Descripción del Servicio</Label>
-                                            <Textarea id="description" name="description" value={editableFields.description} onChange={handleDescriptionChange} placeholder="Describa en qué consiste el servicio..." />
-                                        </div>
-                                        
-                                        <ServiceDocuments serviceId={service.id} />
-                                        
-                                        <div>
-                                          <Label>Requisitos del Cliente</Label>
-                                          <div className="space-y-2">
-                                            {editableFields.clientRequirements.map((req, index) => (
-                                              <div key={req.id} className="flex items-center gap-2">
-                                                <Input
-                                                  value={req.text}
-                                                  onChange={(e) => handleRequirementChange(index, e.target.value)}
-                                                  placeholder={`Requisito ${index + 1}`}
-                                                />
-                                                <Button variant="ghost" size="icon" onClick={() => handleRemoveRequirement(index)}>
-                                                  <Trash2 className="h-4 w-4 text-destructive" />
-                                                </Button>
-                                              </div>
-                                            ))}
-                                            <Button variant="outline" size="sm" onClick={handleAddRequirement}>
-                                              <Plus className="h-4 w-4 mr-2" />
-                                              Añadir Requisito
-                                            </Button>
+                   <div
+                    key={service.id}
+                    draggable={canEditWorkflow}
+                    onDragStart={(e) => handleDragStart(e, service.id)}
+                    onDragOver={(e) => handleDragOver(e, service.id)}
+                    onDragLeave={handleDragLeave}
+                    onDrop={(e) => handleDrop(e, service.id)}
+                    className={cn(
+                        "transition-all",
+                        draggedItemId === service.id ? "opacity-50" : "opacity-100",
+                        dragOverId === service.id && "border-t-2 border-primary"
+                    )}
+                   >
+                    <AccordionItem value={service.id} asChild>
+                       <Card>
+                          <AccordionTrigger className="w-full p-0 [&_svg]:ml-auto [&_svg]:mr-4 cursor-grab active:cursor-grabbing">
+                              <CardHeader className="flex-1 text-left">
+                                  <CardTitle className="text-lg">
+                                      {service.name}
+                                  </CardTitle>
+                              </CardHeader>
+                          </AccordionTrigger>
+                          <AccordionContent className="p-6 pt-0">
+                              <div className="space-y-6">
+                                  {isEditing ? (
+                                      <div className="space-y-4">
+                                          <div>
+                                              <Label htmlFor="description">Descripción del Servicio</Label>
+                                              <Textarea id="description" name="description" value={editableFields.description} onChange={handleDescriptionChange} placeholder="Describa en qué consiste el servicio..." />
                                           </div>
-                                        </div>
-                                    </div>
-                                ) : (
-                                    <>
-                                        <div>
-                                            <h4 className="font-semibold text-sm">Descripción</h4>
-                                            <p className="text-sm text-muted-foreground mt-1 whitespace-pre-wrap">{service.description || 'No hay descripción.'}</p>
-                                        </div>
+                                          
+                                          <ServiceDocuments serviceId={service.id} />
+                                          
+                                          <div>
+                                            <Label>Requisitos del Cliente</Label>
+                                            <div className="space-y-2">
+                                              {editableFields.clientRequirements.map((req, index) => (
+                                                <div key={req.id} className="flex items-center gap-2">
+                                                  <Input
+                                                    value={req.text}
+                                                    onChange={(e) => handleRequirementChange(index, e.target.value)}
+                                                    placeholder={`Requisito ${index + 1}`}
+                                                  />
+                                                  <Button variant="ghost" size="icon" onClick={() => handleRemoveRequirement(index)}>
+                                                    <Trash2 className="h-4 w-4 text-destructive" />
+                                                  </Button>
+                                                </div>
+                                              ))}
+                                              <Button variant="outline" size="sm" onClick={handleAddRequirement}>
+                                                <Plus className="h-4 w-4 mr-2" />
+                                                Añadir Requisito
+                                              </Button>
+                                            </div>
+                                          </div>
+                                      </div>
+                                  ) : (
+                                      <>
+                                          <div>
+                                              <h4 className="font-semibold text-sm">Descripción</h4>
+                                              <p className="text-sm text-muted-foreground mt-1 whitespace-pre-wrap">{service.description || 'No hay descripción.'}</p>
+                                          </div>
+                                          
+                                          <ServiceDocuments serviceId={service.id} />
 
-                                        <ServiceDocuments serviceId={service.id} />
+                                          <div>
+                                              <h4 className="font-semibold text-sm">Requisitos del Cliente</h4>
+                                              {service.clientRequirements && service.clientRequirements.length > 0 ? (
+                                                  <ul className="list-disc list-inside space-y-1 mt-1 text-sm text-muted-foreground">
+                                                      {service.clientRequirements.map(req => <li key={req.id}>{req.text}</li>)}
+                                                  </ul>
+                                              ) : (
+                                                  <p className="text-sm text-muted-foreground mt-1">No hay requisitos especificados.</p>
+                                              )}
+                                          </div>
+                                      </>
+                                  )}
 
-                                        <div>
-                                            <h4 className="font-semibold text-sm">Requisitos del Cliente</h4>
-                                            {service.clientRequirements && service.clientRequirements.length > 0 ? (
-                                                <ul className="list-disc list-inside space-y-1 mt-1 text-sm text-muted-foreground">
-                                                    {service.clientRequirements.map(req => <li key={req.id}>{req.text}</li>)}
-                                                </ul>
-                                            ) : (
-                                                <p className="text-sm text-muted-foreground mt-1">No hay requisitos especificados.</p>
-                                            )}
-                                        </div>
-                                    </>
-                                )}
-
-                                <div className="flex flex-col sm:flex-row gap-2 mt-4">
-                                    {isEditing ? (
-                                        <>
-                                            <Button onClick={() => handleSave(service.id)}><Save className="mr-2 h-4 w-4"/>Guardar</Button>
-                                            <Button variant="outline" onClick={handleCancelEdit}>Cancelar</Button>
-                                        </>
-                                    ) : (
-                                        <Button variant="outline" onClick={() => handleStartEdit(service)}><Edit className="mr-2 h-4 w-4"/>Editar Descripción y Requisitos</Button>
-                                    )}
-                                    <Button asChild>
-                                        <Link href={`/workflows?serviceId=${service.id}`}>
-                                            <Workflow className="mr-2 h-4 w-4" />
-                                            Configurar Flujo de Trabajo
-                                        </Link>
-                                    </Button>
-                                </div>
-                            </div>
-                        </AccordionContent>
-                    </Card>
-                  </AccordionItem>
+                                  <div className="flex flex-col sm:flex-row gap-2 mt-4">
+                                      {isEditing ? (
+                                          <>
+                                              <Button onClick={() => handleSave(service.id)}><Save className="mr-2 h-4 w-4"/>Guardar</Button>
+                                              <Button variant="outline" onClick={handleCancelEdit}>Cancelar</Button>
+                                          </>
+                                      ) : (
+                                          <Button variant="outline" onClick={() => handleStartEdit(service)}><Edit className="mr-2 h-4 w-4"/>Editar Descripción y Requisitos</Button>
+                                      )}
+                                      <Button asChild>
+                                          <Link href={`/workflows?serviceId=${service.id}`}>
+                                              <Workflow className="mr-2 h-4 w-4" />
+                                              Configurar Flujo de Trabajo
+                                          </Link>
+                                      </Button>
+                                  </div>
+                              </div>
+                          </AccordionContent>
+                      </Card>
+                    </AccordionItem>
+                  </div>
                 )
               })}
             </Accordion>
@@ -261,9 +324,7 @@ export default function ServicesPage() {
         title="Añadir Nuevo Servicio"
         description="Introduzca un nombre para el nuevo servicio. Podrá configurar los detalles más tarde."
         label="Nombre del Servicio"
-        onSave={async (name) => {
-            await addService(name);
-        }}
+        onSave={handleAddNewService}
       />
     </>
   );

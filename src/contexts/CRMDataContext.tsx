@@ -56,6 +56,7 @@ interface CRMContextType {
   deleteNote: (noteId: string, clientId?: string) => Promise<boolean>;
 
   serviceWorkflows: ServiceWorkflow[];
+  setServiceWorkflows: React.Dispatch<React.SetStateAction<ServiceWorkflow[]>>;
   isLoadingWorkflows: boolean;
   addService: (name: string) => Promise<ServiceWorkflow | null>;
   updateService: (serviceId: string, updates: Partial<Omit<ServiceWorkflow, 'id' | 'name' | 'stages' | 'subServices'>>) => Promise<boolean>;
@@ -211,7 +212,7 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
             subServices: [],
             stages: [] // Legacy
         };
-        setServiceWorkflows(prev => [...prev, newService]);
+        setServiceWorkflows(prev => [newService, ...prev]);
         return newService;
     };
 
@@ -459,7 +460,7 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
         updateNote: (id, text) => placeholderPromise(false),
         deleteNote: (id) => placeholderPromise(false),
 
-        serviceWorkflows, isLoadingWorkflows,
+        serviceWorkflows, setServiceWorkflows, isLoadingWorkflows,
         addService,
         updateService,
         deleteService,
