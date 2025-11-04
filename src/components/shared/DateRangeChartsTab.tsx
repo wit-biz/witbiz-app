@@ -72,27 +72,9 @@ export function DateRangeChartsTab({ className, date, selectedClientId, selected
   }, [filteredData]);
   
   return (
-    <div className="space-y-6">
-      <Card>
-        <CardHeader>
-          <CardTitle>Análisis de Comisiones</CardTitle>
-          <CardDescription>
-            {date?.from ? (
-              date.to ? (
-                <>
-                  Mostrando datos desde {format(date.from, "LLL dd, y", { locale: es })} hasta{" "}
-                  {format(date.to, "LLL dd, y", { locale: es })}
-                </>
-              ) : (
-                format(date.from, "LLL dd, y", { locale: es })
-              )
-            ) : (
-              <span>Rango de fechas no seleccionado.</span>
-            )}
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <ChartContainer config={chartConfig}>
+    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="lg:col-span-2">
+         <ChartContainer config={chartConfig}>
             <ResponsiveContainer width="100%" height={350}>
                 <BarChart data={filteredData}>
                     <CartesianGrid vertical={false} />
@@ -109,32 +91,30 @@ export function DateRangeChartsTab({ className, date, selectedClientId, selected
                 </BarChart>
             </ResponsiveContainer>
           </ChartContainer>
-        </CardContent>
-      </Card>
+      </div>
       
-       <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="lg:col-span-1 space-y-6">
         <Card>
           <CardHeader>
             <CardTitle>Total en Rango</CardTitle>
+            <CardDescription>Total generado en el período y filtros seleccionados.</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="text-4xl font-bold">
+            <div className="text-3xl font-bold">
               ${total.toLocaleString()}
             </div>
-            <p className="text-xs text-muted-foreground">
-              Total generado en el período seleccionado.
-            </p>
           </CardContent>
         </Card>
          <Card>
           <CardHeader>
             <CardTitle>Pico de Rendimiento</CardTitle>
+            <CardDescription>El día con mayores ingresos en el período.</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="text-4xl font-bold">
+            <div className="text-3xl font-bold">
               {peak.label}
             </div>
-            <p className="text-xs text-muted-foreground">
+            <p className="text-sm text-muted-foreground">
               ${peak.value.toLocaleString()} en comisiones.
             </p>
           </CardContent>
@@ -142,14 +122,12 @@ export function DateRangeChartsTab({ className, date, selectedClientId, selected
          <Card>
           <CardHeader>
             <CardTitle>Promedio Diario</CardTitle>
+            <CardDescription>Promedio de ingresos por día en el período.</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="text-4xl font-bold">
+            <div className="text-3xl font-bold">
               ${(average).toLocaleString(undefined, { maximumFractionDigits: 0 })}
             </div>
-            <p className="text-xs text-muted-foreground">
-              Promedio de comisiones por día en el rango.
-            </p>
           </CardContent>
         </Card>
       </div>

@@ -58,15 +58,6 @@ export default function AuditPage() {
 
   const chartServices = serviceWorkflows.map(s => ({ id: s.id, name: s.name }));
   const chartClients = clients.map(c => ({ id: c.id, name: c.name }));
-  
-  const filteredReports = useMemo(() => {
-     return reportData.filter(item => {
-        const itemDate = new Date(item.date);
-        const isDateInRange = date?.from && date.to ? isWithinInterval(itemDate, { start: startOfDay(date.from), end: endOfDay(date.to) }) : true;
-        // Add client and service filtering logic here when applicable
-        return isDateInRange;
-    })
-  }, [date, selectedClientId, selectedServiceId]);
 
   const filteredLogs = useMemo(() => {
      return logData.filter(item => {
@@ -96,8 +87,8 @@ export default function AuditPage() {
   return (
     <div className="flex flex-col min-h-screen">
       <Header
-        title="Auditoría y Reportes"
-        description="Analice los reportes de negocio y revise la bitácora de actividades."
+        title="Análisis y Auditoría"
+        description="Dashboard de análisis de negocio y bitácora de actividades del sistema."
       >
         <Button onClick={() => handleDownload('Todo')}>
           <Download className="mr-2 h-4 w-4" />
@@ -127,15 +118,11 @@ export default function AuditPage() {
         </Card>
 
 
-        <Tabs defaultValue="reports" className="w-full">
-          <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="reports">
-              <LineChart className="mr-2 h-4 w-4" />
-              Reportes de Desempeño
-            </TabsTrigger>
-            <TabsTrigger value="charts">
+        <Tabs defaultValue="analysis" className="w-full">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="analysis">
               <BarChart className="mr-2 h-4 w-4" />
-              Análisis Gráfico
+              Análisis de Desempeño
             </TabsTrigger>
             <TabsTrigger value="logs">
               <History className="mr-2 h-4 w-4" />
@@ -143,67 +130,16 @@ export default function AuditPage() {
             </TabsTrigger>
           </TabsList>
 
-          <TabsContent value="reports" className="mt-6">
-            <Card>
-              <CardHeader className="flex flex-row items-start justify-between">
-                <div>
-                  <CardTitle>Reportes de Desempeño</CardTitle>
-                  <CardDescription>
-                    Visualización de métricas clave, KPIs y números internos del negocio.
-                  </CardDescription>
-                </div>
-                <Button variant="outline" size="sm" onClick={() => handleDownload('Reportes de Desempeño')}>
-                  <Download className="mr-2 h-4 w-4" />
-                  Descargar
-                </Button>
-              </CardHeader>
-              <CardContent>
-                <Table>
-                    <TableHeader>
-                        <TableRow>
-                            <TableHead>Fecha</TableHead>
-                            <TableHead>Descripción</TableHead>
-                            <TableHead>Cliente / Servicio</TableHead>
-                            <TableHead>Tipo</TableHead>
-                            <TableHead className="text-right">Monto</TableHead>
-                        </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                        {filteredReports.map((item) => (
-                            <TableRow key={item.id}>
-                                <TableCell>{format(new Date(item.date), 'dd/MM/yyyy HH:mm')}</TableCell>
-                                <TableCell className="font-medium">{item.description}</TableCell>
-                                <TableCell>
-                                    {item.clientName && <div className="flex items-center text-xs gap-1"><Users className="h-3 w-3"/>{item.clientName}</div>}
-                                    {item.serviceName && <div className="flex items-center text-xs gap-1 mt-1"><Briefcase className="h-3 w-3"/>{item.serviceName}</div>}
-                                    {!item.clientName && !item.serviceName && 'N/A'}
-                                </TableCell>
-                                <TableCell>
-                                    <Badge variant={item.type === 'income' ? 'default' : 'destructive'} className={item.type === 'income' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}>
-                                        {item.type === 'income' ? <><ArrowUpCircle className="h-3 w-3 mr-1"/> Ingreso</> : <><ArrowDownCircle className="h-3 w-3 mr-1"/> Egreso</>}
-                                    </Badge>
-                                </TableCell>
-                                <TableCell className={`text-right font-semibold ${item.type === 'income' ? 'text-green-600' : 'text-red-600'}`}>
-                                    {item.amount.toLocaleString('en-US', { style: 'currency', currency: 'USD' })}
-                                </TableCell>
-                            </TableRow>
-                        ))}
-                    </TableBody>
-                </Table>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="charts" className="mt-6">
-            <Card>
+          <TabsContent value="analysis" className="mt-6">
+             <Card>
                 <CardHeader className="flex flex-row items-start justify-between">
                     <div>
-                        <CardTitle>Análisis Gráfico</CardTitle>
+                        <CardTitle>Dashboard de Desempeño</CardTitle>
                         <CardDescription>
-                            Visualización gráfica de los datos según los filtros aplicados.
+                            Visualización de datos clave según los filtros aplicados.
                         </CardDescription>
                     </div>
-                    <Button variant="outline" size="sm" onClick={() => handleDownload('Gráficos')}>
+                    <Button variant="outline" size="sm" onClick={() => handleDownload('Dashboard de Desempeño')}>
                         <Download className="mr-2 h-4 w-4" />
                         Descargar
                     </Button>
