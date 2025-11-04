@@ -140,7 +140,7 @@ export default function SettingsPage() {
   }, [date, selectedCompanyId, selectedCategoryId, selectedType, allCategories]);
   
   const generalLedgerData = useMemo(() => {
-    if (selectedLedgerAccountId === 'all') return filteredTransactions;
+    if (selectedLedgerAccountId === 'all') return [];
     const categoryName = allCategories.find(c => c.id === selectedLedgerAccountId)?.name;
     return filteredTransactions.filter(t => t.category === categoryName);
   }, [selectedLedgerAccountId, allCategories, filteredTransactions]);
@@ -182,21 +182,6 @@ export default function SettingsPage() {
       }
       return [];
   }, [auxiliaryType, selectedAuxiliaryId, filteredTransactions]);
-
-
-  const summary = useMemo(() => {
-    const totalIncome = filteredTransactions
-        .filter(t => t.type === 'income')
-        .reduce((sum, t) => sum + t.amount, 0);
-
-    const totalExpense = filteredTransactions
-        .filter(t => t.type === 'expense')
-        .reduce((sum, t) => sum + t.amount, 0);
-
-    const netTotal = totalIncome + totalExpense;
-    
-    return { totalIncome, totalExpense, netTotal };
-  }, [filteredTransactions]);
 
   const generalSummary = useMemo(() => {
     const totalBalance = mockAccounts.reduce((sum, acc) => sum + acc.balance, 0);
@@ -289,10 +274,16 @@ export default function SettingsPage() {
           title="Contabilidad"
           description="Centro de operaciones financieras y análisis de rentabilidad."
         >
-          <Button variant="outline" onClick={() => setIsTransactionDialogOpen(true)}>
-            <ArrowRightLeft className="mr-2 h-4 w-4" />
-            Registrar Movimiento
-          </Button>
+            <Button variant="outline" onClick={() => setIsTransactionDialogOpen(true)}>
+                <ArrowRightLeft className="mr-2 h-4 w-4" />
+                Registrar Movimiento
+            </Button>
+            <Button asChild variant="outline">
+                <Link href="/accounting/config">
+                    <Settings className="mr-2 h-4 w-4" />
+                    Configurar Entidades
+                </Link>
+            </Button>
         </Header>
         <main className="flex-1 p-4 md:p-8 space-y-6">
             <Card>
@@ -316,14 +307,6 @@ export default function SettingsPage() {
                         </div>
                     </div>
                 </CardContent>
-                 <CardFooter className="justify-end">
-                    <Button asChild variant="outline">
-                        <Link href="/accounting/config">
-                            <Settings className="mr-2 h-4 w-4" />
-                            Configurar Entidades
-                        </Link>
-                    </Button>
-                </CardFooter>
             </Card>
 
             <Card>
