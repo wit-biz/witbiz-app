@@ -25,6 +25,16 @@ import {
   DialogFooter,
   DialogClose,
 } from '@/components/ui/dialog';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
@@ -85,6 +95,9 @@ const initialCategoryGroups = [
     }
 ];
 
+type EditableEntityType = 'company' | 'account' | 'categoryGroup' | 'type';
+type EntityToDelete = { id: string; name: string; type: EditableEntityType; parentId?: string };
+
 export default function AccountingConfigPage() {
   const { toast } = useToast();
   
@@ -93,12 +106,21 @@ export default function AccountingConfigPage() {
   const [mockAccounts, setMockAccounts] = useState(initialBankAccounts);
   const [categoryGroups, setCategoryGroups] = useState(initialCategoryGroups);
 
-  // State for dialogs
+  // State for Add dialogs
   const [isAddCompanyOpen, setIsAddCompanyOpen] = useState(false);
   const [isAddAccountOpen, setIsAddAccountOpen] = useState(false);
   const [isAddCategoryGroupOpen, setIsAddCategoryGroupOpen] = useState(false);
   const [isAddTypeOpen, setIsAddTypeOpen] = useState(false);
   const [currentCategoryGroupId, setCurrentCategoryGroupId] = useState<string | null>(null);
+
+  // State for Edit Dialog
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [editingEntity, setEditingEntity] = useState<any>(null);
+  const [editingEntityType, setEditingEntityType] = useState<EditableEntityType | null>(null);
+  const [editedName, setEditedName] = useState('');
+
+  // State for Delete Dialog
+  const [entityToDelete, setEntityToDelete] = useState<EntityToDelete | null>(null);
 
   const [newCompanyName, setNewCompanyName] = useState('');
   const [newAccountData, setNewAccountData] = useState({ name: '', companyId: '', type: 'Débito' });
@@ -176,6 +198,79 @@ export default function AccountingConfigPage() {
         setCurrentCategoryGroupId(null);
     }, 500);
   };
+
+  // --- Handlers for editing entities ---
+
+  const openEditDialog = (entity: any, type: EditableEntityType, parentId?: string) => {
+    setEditingEntityType(type);
+    let name = '';
+    if(type === 'company' || type === 'categoryGroup' || type === 'type') name = entity.name;
+    if(type === 'account') name = entity.bankName;
+    setEditingEntity({...entity, parentId });
+    setEditedName(name);
+    setIsEditDialogOpen(true);
+  };
+
+  const handleEditSave = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editedName.trim() || !editingEntity || !editingEntityType) return;
+    setIsSubmitting(true);
+    setTimeout(() => {
+        switch(editingEntityType) {
+            case 'company':
+                setMockCompanies(prev => prev.map(c => c.id === editingEntity.id ? { ...c, name: editedName } : c));
+                break;
+            case 'account':
+                setMockAccounts(prev => prev.map(a => a.id === editingEntity.id ? { ...a, bankName: editedName } : a));
+                break;
+            case 'categoryGroup':
+                setCategoryGroups(prev => prev.map(g => g.id === editingEntity.id ? { ...g, name: editedName } : g));
+                break;
+            case 'type':
+                setCategoryGroups(prev => prev.map(g => 
+                    g.id === editingEntity.parentId
+                        ? { ...g, categories: g.categories.map(c => c.id === editingEntity.id ? { ...c, name: editedName } : c) }
+                        : g
+                ));
+                break;
+        }
+        toast({ title: "Entidad Actualizada", description: `"${editingEntity.name || editingEntity.bankName}" ha sido actualizado a "${editedName}".` });
+        setIsSubmitting(false);
+        setIsEditDialogOpen(false);
+        setEditingEntity(null);
+        setEditingEntityType(null);
+    }, 500);
+  };
+  
+  // --- Handlers for deleting entities ---
+  
+  const confirmDelete = () => {
+    if (!entityToDelete) return;
+    const { id, type, parentId } = entityToDelete;
+    
+    switch(type) {
+        case 'company':
+            setMockCompanies(prev => prev.filter(c => c.id !== id));
+            // Also delete associated accounts
+            setMockAccounts(prev => prev.filter(a => a.companyId !== id));
+            break;
+        case 'account':
+            setMockAccounts(prev => prev.filter(a => a.id !== id));
+            break;
+        case 'categoryGroup':
+            setCategoryGroups(prev => prev.filter(g => g.id !== id));
+            break;
+        case 'type':
+            setCategoryGroups(prev => prev.map(g => 
+                g.id === parentId
+                    ? { ...g, categories: g.categories.filter(c => c.id !== id) }
+                    : g
+            ));
+            break;
+    }
+    toast({ title: "Entidad Eliminada", description: `"${entityToDelete.name}" ha sido eliminado.`, variant: "destructive" });
+    setEntityToDelete(null);
+  };
   
   return (
     <>
@@ -228,8 +323,8 @@ export default function AccountingConfigPage() {
                                                 <TableRow key={company.id}>
                                                     <TableCell className="font-medium">{company.name}</TableCell>
                                                     <TableCell className="text-right">
-                                                        <Button variant="ghost" size="icon"><Edit className="h-4 w-4"/></Button>
-                                                        <Button variant="ghost" size="icon" className="text-destructive"><Trash2 className="h-4 w-4"/></Button>
+                                                        <Button variant="ghost" size="icon" onClick={() => openEditDialog(company, 'company')}><Edit className="h-4 w-4"/></Button>
+                                                        <Button variant="ghost" size="icon" className="text-destructive" onClick={() => setEntityToDelete({ id: company.id, name: company.name, type: 'company' })}><Trash2 className="h-4 w-4"/></Button>
                                                     </TableCell>
                                                 </TableRow>
                                             ))}
@@ -264,8 +359,8 @@ export default function AccountingConfigPage() {
                                                     <TableCell>{account.companyName}</TableCell>
                                                     <TableCell><Badge variant="outline">{account.type}</Badge></TableCell>
                                                     <TableCell className="text-right">
-                                                        <Button variant="ghost" size="icon"><Edit className="h-4 w-4"/></Button>
-                                                        <Button variant="ghost" size="icon" className="text-destructive"><Trash2 className="h-4 w-4"/></Button>
+                                                        <Button variant="ghost" size="icon" onClick={() => openEditDialog(account, 'account')}><Edit className="h-4 w-4"/></Button>
+                                                        <Button variant="ghost" size="icon" className="text-destructive" onClick={() => setEntityToDelete({ id: account.id, name: account.bankName, type: 'account' })}><Trash2 className="h-4 w-4"/></Button>
                                                     </TableCell>
                                                 </TableRow>
                                             ))}
@@ -293,8 +388,8 @@ export default function AccountingConfigPage() {
                                                             {group.name}
                                                         </CardTitle>
                                                         <div className="flex items-center gap-1 ml-auto mr-2">
-                                                            <Button variant="ghost" size="icon" className="h-7 w-7"><Edit className="h-4 w-4"/></Button>
-                                                            <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive"><Trash2 className="h-4 w-4"/></Button>
+                                                            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEditDialog(group, 'categoryGroup')}><Edit className="h-4 w-4"/></Button>
+                                                            <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => setEntityToDelete({ id: group.id, name: group.name, type: 'categoryGroup' })}><Trash2 className="h-4 w-4"/></Button>
                                                         </div>
                                                         <AccordionTrigger className="p-0 w-auto hover:no-underline" />
                                                     </div>
@@ -314,8 +409,8 @@ export default function AccountingConfigPage() {
                                                                     <TableRow key={cat.id}>
                                                                         <TableCell className="font-medium">{cat.name}</TableCell>
                                                                         <TableCell className="text-right">
-                                                                            <Button variant="ghost" size="icon" className="h-7 w-7"><Edit className="h-4 w-4"/></Button>
-                                                                            <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive"><Trash2 className="h-4 w-4"/></Button>
+                                                                            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEditDialog(cat, 'type', group.id)}><Edit className="h-4 w-4"/></Button>
+                                                                            <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => setEntityToDelete({ id: cat.id, name: cat.name, type: 'type', parentId: group.id })}><Trash2 className="h-4 w-4"/></Button>
                                                                         </TableCell>
                                                                     </TableRow>
                                                                 )) : (
@@ -446,6 +541,49 @@ export default function AccountingConfigPage() {
               </form>
           </DialogContent>
       </Dialog>
+
+      {/* Generic Edit Dialog */}
+      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+          <DialogContent>
+              <form onSubmit={handleEditSave}>
+                  <DialogHeader>
+                      <DialogTitle>Editar Nombre</DialogTitle>
+                  </DialogHeader>
+                  <div className="py-4">
+                      <Label htmlFor="edit-name">Nombre</Label>
+                      <Input id="edit-name" value={editedName} onChange={(e) => setEditedName(e.target.value)} required />
+                  </div>
+                  <DialogFooter>
+                      <DialogClose asChild><Button type="button" variant="outline">Cancelar</Button></DialogClose>
+                      <Button type="submit" disabled={isSubmitting}>
+                          {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
+                          Guardar Cambios
+                      </Button>
+                  </DialogFooter>
+              </form>
+          </DialogContent>
+      </Dialog>
+
+      {/* Generic Delete Confirmation Dialog */}
+      <AlertDialog open={!!entityToDelete} onOpenChange={() => setEntityToDelete(null)}>
+        <AlertDialogContent>
+            <AlertDialogHeader>
+                <AlertDialogTitle>¿Está seguro?</AlertDialogTitle>
+                <AlertDialogDescription>
+                    Esta acción no se puede deshacer. Esto eliminará permanentemente "{entityToDelete?.name}".
+                    {entityToDelete?.type === 'company' && " También se eliminarán todas las cuentas bancarias asociadas."}
+                    {entityToDelete?.type === 'categoryGroup' && " También se eliminarán todos los tipos asociados."}
+                </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+                <AlertDialogCancel onClick={() => setEntityToDelete(null)}>Cancelar</AlertDialogCancel>
+                <AlertDialogAction onClick={confirmDelete} className="bg-destructive hover:bg-destructive/90">
+                    Eliminar
+                </AlertDialogAction>
+            </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 }
+
