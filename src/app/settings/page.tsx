@@ -195,120 +195,169 @@ export default function SettingsPage() {
 
             <Tabs defaultValue="ledger">
                 <TabsList className="grid w-full grid-cols-2">
-                    <TabsTrigger value="ledger"><BookText className="mr-2 h-4 w-4"/>Libro Mayor</TabsTrigger>
+                    <TabsTrigger value="ledger"><BookText className="mr-2 h-4 w-4"/>Libros y Registros Contables</TabsTrigger>
                     <TabsTrigger value="pnl"><BarChartIcon className="mr-2 h-4 w-4"/>Estado de Resultados</TabsTrigger>
                 </TabsList>
                 <TabsContent value="ledger" className="mt-6 space-y-6">
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>Resumen de Movimientos Filtrados</CardTitle>
-                            <CardDescription>Totales calculados basados en los filtros actuales del Libro Mayor.</CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                <Card>
-                                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                                        <CardTitle className="text-sm font-medium">Ingresos Totales</CardTitle>
-                                        <ArrowUpCircle className="h-4 w-4 text-green-500" />
-                                    </CardHeader>
-                                    <CardContent>
-                                        <div className="text-2xl font-bold text-green-600">{summary.totalIncome.toLocaleString('en-US', { style: 'currency', currency: 'USD' })}</div>
-                                    </CardContent>
-                                </Card>
-                                <Card>
-                                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                                        <CardTitle className="text-sm font-medium">Egresos Totales</CardTitle>
-                                        <ArrowDownCircle className="h-4 w-4 text-red-500" />
-                                    </CardHeader>
-                                    <CardContent>
-                                        <div className="text-2xl font-bold text-red-600">{summary.totalExpense.toLocaleString('en-US', { style: 'currency', currency: 'USD' })}</div>
-                                    </CardContent>
-                                </Card>
-                                <Card>
-                                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                                        <CardTitle className="text-sm font-medium">Flujo Neto</CardTitle>
-                                        <TrendingUp className={`h-4 w-4 ${summary.netTotal >= 0 ? 'text-blue-500' : 'text-orange-500'}`} />
-                                    </CardHeader>
-                                    <CardContent>
-                                        <div className={`text-2xl font-bold ${summary.netTotal >= 0 ? 'text-blue-600' : 'text-orange-600'}`}>{summary.netTotal.toLocaleString('en-US', { style: 'currency', currency: 'USD' })}</div>
-                                    </CardContent>
-                                </Card>
-                            </div>
-                        </CardContent>
-                    </Card>
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>Registro de Movimientos Internos</CardTitle>
-                            <CardDescription>Listado completo de todas las transacciones financieras de la empresa.</CardDescription>
-                        </CardHeader>
-                        <CardContent className="space-y-4">
-                            <div className="flex flex-col md:flex-row gap-2 border p-4 rounded-lg">
-                                <Popover>
-                                <PopoverTrigger asChild>
-                                    <Button id="date" variant={"outline"} className={cn("w-full md:w-auto justify-start text-left font-normal")}>
-                                    <CalendarIcon className="mr-2 h-4 w-4" />
-                                    {date?.from ? (date.to ? (<>{format(date.from, "LLL dd, y")} - {format(date.to, "LLL dd, y")}</>) : (format(date.from, "LLL dd, y"))) : (<span>Calendario</span>)}
-                                    </Button>
-                                </PopoverTrigger>
-                                <PopoverContent className="w-auto p-0" align="start">
-                                    <Calendar initialFocus mode="range" defaultMonth={date?.from} selected={date} onSelect={setDate} numberOfMonths={2} locale={es} />
-                                </PopoverContent>
-                                </Popover>
-                                <Select value={selectedCompanyId} onValueChange={setSelectedCompanyId}>
-                                <SelectTrigger className="w-full md:w-[200px]"><SelectValue placeholder="Filtrar por empresa..." /></SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="all">Todas las Empresas</SelectItem>
-                                    {mockCompanies.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
-                                </SelectContent>
-                                </Select>
-                                <Select value={selectedCategoryId} onValueChange={setSelectedCategoryId}>
-                                <SelectTrigger className="w-full md:w-[200px]"><SelectValue placeholder="Filtrar por categoría..." /></SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="all">Todas las Categorías</SelectItem>
-                                    {allCategories.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
-                                </SelectContent>
-                                </Select>
-                                <Select value={selectedType} onValueChange={setSelectedType}>
-                                <SelectTrigger className="w-full md:w-[180px]"><SelectValue placeholder="Filtrar por tipo..." /></SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="all">Todos los Tipos</SelectItem>
-                                    <SelectItem value="income">Ingreso</SelectItem>
-                                    <SelectItem value="expense">Egreso</SelectItem>
-                                    <SelectItem value="transfer">Transferencia</SelectItem>
-                                </SelectContent>
-                                </Select>
-                                <Button variant="ghost" onClick={() => { setDate(undefined); setSelectedCompanyId("all"); setSelectedCategoryId("all"); setSelectedType("all");}}>Limpiar</Button>
-                            </div>
-                            <Table>
-                                <TableHeader>
-                                    <TableRow>
-                                        <TableHead>Fecha</TableHead>
-                                        <TableHead>Descripción</TableHead>
-                                        <TableHead>Categoría</TableHead>
-                                        <TableHead>Tipo</TableHead>
-                                        <TableHead className="text-right">Monto</TableHead>
-                                    </TableRow>
-                                </TableHeader>
-                                <TableBody>
-                                    {filteredTransactions.map((trx) => (
-                                        <TableRow key={trx.id}>
-                                            <TableCell>{format(new Date(trx.date), "dd/MM/yyyy")}</TableCell>
-                                            <TableCell className="font-medium">{trx.description}</TableCell>
-                                            <TableCell>{trx.category}</TableCell>
-                                            <TableCell>
-                                                <Badge variant={trx.type === 'income' ? 'default' : trx.type === 'expense' ? 'destructive' : 'secondary'}>
-                                                    {trx.type === 'income' ? 'Ingreso' : trx.type.startsWith('transfer') ? 'Transferencia' : 'Egreso'}
-                                                </Badge>
-                                            </TableCell>
-                                            <TableCell className={`text-right font-semibold ${trx.amount > 0 ? 'text-green-600' : 'text-red-600'}`}>
-                                                {trx.amount.toLocaleString('en-US', { style: 'currency', currency: 'USD' })}
-                                            </TableCell>
-                                        </TableRow>
-                                    ))}
-                                </TableBody>
-                            </Table>
-                        </CardContent>
-                    </Card>
+                    <Tabs defaultValue="daily-journal" className="w-full">
+                       <TabsList className="grid w-full grid-cols-4">
+                           <TabsTrigger value="daily-journal">Libro Diario</TabsTrigger>
+                           <TabsTrigger value="general-ledger">Libro Mayor</TabsTrigger>
+                           <TabsTrigger value="trial-balance">Balanza de Comprobación</TabsTrigger>
+                           <TabsTrigger value="auxiliaries">Auxiliares contables</TabsTrigger>
+                       </TabsList>
+                       <TabsContent value="daily-journal" className="mt-6 space-y-6">
+                            <Card>
+                                <CardHeader>
+                                    <CardTitle>Resumen de Movimientos Filtrados</CardTitle>
+                                    <CardDescription>Totales calculados basados en los filtros actuales del Libro Diario.</CardDescription>
+                                </CardHeader>
+                                <CardContent>
+                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                        <Card>
+                                            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                                                <CardTitle className="text-sm font-medium">Ingresos Totales</CardTitle>
+                                                <ArrowUpCircle className="h-4 w-4 text-green-500" />
+                                            </CardHeader>
+                                            <CardContent>
+                                                <div className="text-2xl font-bold text-green-600">{summary.totalIncome.toLocaleString('en-US', { style: 'currency', currency: 'USD' })}</div>
+                                            </CardContent>
+                                        </Card>
+                                        <Card>
+                                            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                                                <CardTitle className="text-sm font-medium">Egresos Totales</CardTitle>
+                                                <ArrowDownCircle className="h-4 w-4 text-red-500" />
+                                            </CardHeader>
+                                            <CardContent>
+                                                <div className="text-2xl font-bold text-red-600">{summary.totalExpense.toLocaleString('en-US', { style: 'currency', currency: 'USD' })}</div>
+                                            </CardContent>
+                                        </Card>
+                                        <Card>
+                                            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                                                <CardTitle className="text-sm font-medium">Flujo Neto</CardTitle>
+                                                <TrendingUp className={`h-4 w-4 ${summary.netTotal >= 0 ? 'text-blue-500' : 'text-orange-500'}`} />
+                                            </CardHeader>
+                                            <CardContent>
+                                                <div className={`text-2xl font-bold ${summary.netTotal >= 0 ? 'text-blue-600' : 'text-orange-600'}`}>{summary.netTotal.toLocaleString('en-US', { style: 'currency', currency: 'USD' })}</div>
+                                            </CardContent>
+                                        </Card>
+                                    </div>
+                                </CardContent>
+                            </Card>
+                            <Card>
+                                <CardHeader>
+                                    <CardTitle>Registro Cronológico de Operaciones</CardTitle>
+                                    <CardDescription>Listado completo de todas las transacciones financieras de la empresa.</CardDescription>
+                                </CardHeader>
+                                <CardContent className="space-y-4">
+                                    <div className="flex flex-col md:flex-row gap-2 border p-4 rounded-lg">
+                                        <Popover>
+                                        <PopoverTrigger asChild>
+                                            <Button id="date" variant={"outline"} className={cn("w-full md:w-auto justify-start text-left font-normal")}>
+                                            <CalendarIcon className="mr-2 h-4 w-4" />
+                                            {date?.from ? (date.to ? (<>{format(date.from, "LLL dd, y")} - {format(date.to, "LLL dd, y")}</>) : (format(date.from, "LLL dd, y"))) : (<span>Calendario</span>)}
+                                            </Button>
+                                        </PopoverTrigger>
+                                        <PopoverContent className="w-auto p-0" align="start">
+                                            <Calendar initialFocus mode="range" defaultMonth={date?.from} selected={date} onSelect={setDate} numberOfMonths={2} locale={es} />
+                                        </PopoverContent>
+                                        </Popover>
+                                        <Select value={selectedCompanyId} onValueChange={setSelectedCompanyId}>
+                                        <SelectTrigger className="w-full md:w-[200px]"><SelectValue placeholder="Filtrar por empresa..." /></SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="all">Todas las Empresas</SelectItem>
+                                            {mockCompanies.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+                                        </SelectContent>
+                                        </Select>
+                                        <Select value={selectedCategoryId} onValueChange={setSelectedCategoryId}>
+                                        <SelectTrigger className="w-full md:w-[200px]"><SelectValue placeholder="Filtrar por categoría..." /></SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="all">Todas las Categorías</SelectItem>
+                                            {allCategories.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+                                        </SelectContent>
+                                        </Select>
+                                        <Select value={selectedType} onValueChange={setSelectedType}>
+                                        <SelectTrigger className="w-full md:w-[180px]"><SelectValue placeholder="Filtrar por tipo..." /></SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="all">Todos los Tipos</SelectItem>
+                                            <SelectItem value="income">Ingreso</SelectItem>
+                                            <SelectItem value="expense">Egreso</SelectItem>
+                                            <SelectItem value="transfer">Transferencia</SelectItem>
+                                        </SelectContent>
+                                        </Select>
+                                        <Button variant="ghost" onClick={() => { setDate(undefined); setSelectedCompanyId("all"); setSelectedCategoryId("all"); setSelectedType("all");}}>Limpiar</Button>
+                                    </div>
+                                    <Table>
+                                        <TableHeader>
+                                            <TableRow>
+                                                <TableHead>Fecha</TableHead>
+                                                <TableHead>Descripción</TableHead>
+                                                <TableHead>Categoría</TableHead>
+                                                <TableHead>Tipo</TableHead>
+                                                <TableHead className="text-right">Monto</TableHead>
+                                            </TableRow>
+                                        </TableHeader>
+                                        <TableBody>
+                                            {filteredTransactions.map((trx) => (
+                                                <TableRow key={trx.id}>
+                                                    <TableCell>{format(new Date(trx.date), "dd/MM/yyyy")}</TableCell>
+                                                    <TableCell className="font-medium">{trx.description}</TableCell>
+                                                    <TableCell>{trx.category}</TableCell>
+                                                    <TableCell>
+                                                        <Badge variant={trx.type === 'income' ? 'default' : trx.type === 'expense' ? 'destructive' : 'secondary'}>
+                                                            {trx.type === 'income' ? 'Ingreso' : trx.type.startsWith('transfer') ? 'Transferencia' : 'Egreso'}
+                                                        </Badge>
+                                                    </TableCell>
+                                                    <TableCell className={`text-right font-semibold ${trx.amount > 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                                        {trx.amount.toLocaleString('en-US', { style: 'currency', currency: 'USD' })}
+                                                    </TableCell>
+                                                </TableRow>
+                                            ))}
+                                        </TableBody>
+                                    </Table>
+                                </CardContent>
+                            </Card>
+                       </TabsContent>
+                       <TabsContent value="general-ledger" className="mt-6">
+                            <Card>
+                                <CardHeader>
+                                    <CardTitle>Libro Mayor</CardTitle>
+                                    <CardDescription>Concentración de movimientos por cuentas contables. Esta sección está en desarrollo.</CardDescription>
+                                </CardHeader>
+                                <CardContent className="text-center text-muted-foreground py-16">
+                                    <BookText className="mx-auto h-12 w-12 mb-4" />
+                                    <h3 className="text-lg font-semibold">Próximamente</h3>
+                                    <p className="text-sm">Aquí podrá ver los saldos y movimientos agrupados por cuenta contable.</p>
+                                </CardContent>
+                            </Card>
+                       </TabsContent>
+                       <TabsContent value="trial-balance" className="mt-6">
+                           <Card>
+                                <CardHeader>
+                                    <CardTitle>Balanza de Comprobación</CardTitle>
+                                    <CardDescription>Verificación de la suma de saldos deudores y acreedores. Esta sección está en desarrollo.</CardDescription>
+                                </CardHeader>
+                                <CardContent className="text-center text-muted-foreground py-16">
+                                    <Landmark className="mx-auto h-12 w-12 mb-4" />
+                                    <h3 className="text-lg font-semibold">Próximamente</h3>
+                                    <p className="text-sm">Aquí podrá verificar que los saldos de su contabilidad estén cuadrados.</p>
+                                </CardContent>
+                            </Card>
+                       </TabsContent>
+                       <TabsContent value="auxiliaries" className="mt-6">
+                            <Card>
+                                <CardHeader>
+                                    <CardTitle>Auxiliares Contables</CardTitle>
+                                    <CardDescription>Detalle de movimientos a nivel de subcuentas. Esta sección está en desarrollo.</CardDescription>
+                                </CardHeader>
+                                <CardContent className="text-center text-muted-foreground py-16">
+                                    <Briefcase className="mx-auto h-12 w-12 mb-4" />
+                                    <h3 className="text-lg font-semibold">Próximamente</h3>
+                                    <p className="text-sm">Aquí podrá analizar detalles de cuentas específicas como bancos, clientes o proveedores.</p>
+                                </CardContent>
+                            </Card>
+                       </TabsContent>
+                    </Tabs>
                 </TabsContent>
                  <TabsContent value="pnl" className="mt-6">
                     <Card>
@@ -339,3 +388,5 @@ export default function SettingsPage() {
     </>
   );
 }
+
+    
