@@ -218,7 +218,7 @@ export default function SettingsPage() {
       const totalRevenue = Object.values(revenueByCategory).reduce((sum, amount) => sum + amount, 0);
 
       const expensesByCategory = filteredTransactions
-          .filter(t => t.type === 'expense' && t.category !== 'Transferencia Interna')
+          .filter(t => t.type === 'expense' && !t.category.includes('Transferencia'))
           .reduce((acc, t) => {
               acc[t.category] = (acc[t.category] || 0) + Math.abs(t.amount);
               return acc;
@@ -251,7 +251,7 @@ export default function SettingsPage() {
       .filter(t => t.type === 'income' || t.type === 'expense')
       .reduce((sum, t) => sum + t.amount, 0);
 
-    const initialCash = priorTransactions.reduce((sum, t) => sum + t.amount, 0);
+    const initialCash = mockAccounts.reduce((sum, acc) => sum + acc.balance, 0) - mockTransactions.filter(t => new Date(t.date) >= fromDate).reduce((sum, t) => sum + t.amount, 0);
     
     const cashFromOperations = filteredTransactions
         .filter(t => t.type === 'income' || t.type === 'expense')
@@ -280,7 +280,7 @@ export default function SettingsPage() {
     }
 
     return { balanceSheetData: bsData, cashFlowData: cfData };
-  }, [date, incomeStatementData.netIncome]);
+  }, [date, incomeStatementData.netIncome, mockAccounts, mockTransactions, filteredTransactions]);
   
   return (
     <>
@@ -316,6 +316,14 @@ export default function SettingsPage() {
                         </div>
                     </div>
                 </CardContent>
+                 <CardFooter className="justify-end">
+                    <Button asChild variant="outline">
+                        <Link href="/accounting/config">
+                            <Settings className="mr-2 h-4 w-4" />
+                            Configurar Entidades
+                        </Link>
+                    </Button>
+                </CardFooter>
             </Card>
 
             <Card>
@@ -367,56 +375,10 @@ export default function SettingsPage() {
             <Tabs defaultValue="ledger">
                 <TabsList className="grid w-full grid-cols-2">
                     <TabsTrigger value="ledger"><BookText className="mr-2 h-4 w-4"/>Libros y Registros Contables</TabsTrigger>
-                    <TabsTrigger value="pnl"><BarChartIcon className="mr-2 h-4 w-4"/>Estados Financieros</TabsTrigger>
+                    <TabsTrigger value="pnl"><BarChartIcon className="mr-2 h-4 w-4"/>Estados Financieros Fundamentales</TabsTrigger>
                 </TabsList>
-                <TabsContent value="ledger">
+                <TabsContent value="ledger" className="space-y-4">
                     <Card>
-                        <CardHeader>
-                            <CardTitle>Resumen de Movimientos Filtrados</CardTitle>
-                            <CardDescription>Totales calculados basados en los filtros globales actuales.</CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                <Card>
-                                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                                        <CardTitle className="text-sm font-medium">Ingresos Totales</CardTitle>
-                                        <ArrowUpCircle className="h-4 w-4 text-green-500" />
-                                    </CardHeader>
-                                    <CardContent>
-                                        <div className="text-2xl font-bold text-green-600">{summary.totalIncome.toLocaleString('en-US', { style: 'currency', currency: 'USD' })}</div>
-                                    </CardContent>
-                                </Card>
-                                <Card>
-                                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                                        <CardTitle className="text-sm font-medium">Egresos Totales</CardTitle>
-                                        <ArrowDownCircle className="h-4 w-4 text-red-500" />
-                                    </CardHeader>
-                                    <CardContent>
-                                        <div className="text-2xl font-bold text-red-600">{summary.totalExpense.toLocaleString('en-US', { style: 'currency', currency: 'USD' })}</div>
-                                    </CardContent>
-                                </Card>
-                                <Card>
-                                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                                        <CardTitle className="text-sm font-medium">Flujo Neto</CardTitle>
-                                        <TrendingUp className={`h-4 w-4 ${summary.netTotal >= 0 ? 'text-blue-500' : 'text-orange-500'}`} />
-                                    </CardHeader>
-                                    <CardContent>
-                                        <div className={`text-2xl font-bold ${summary.netTotal >= 0 ? 'text-blue-600' : 'text-orange-600'}`}>{summary.netTotal.toLocaleString('en-US', { style: 'currency', currency: 'USD' })}</div>
-                                    </CardContent>
-                                </Card>
-                            </div>
-                        </CardContent>
-                         <CardFooter className="justify-end">
-                            <Button asChild variant="outline">
-                                <Link href="/accounting/config">
-                                    <Settings className="mr-2 h-4 w-4" />
-                                    Configurar Entidades
-                                </Link>
-                            </Button>
-                        </CardFooter>
-                    </Card>
-                    
-                    <Card className="mt-6">
                         <Tabs defaultValue="daily-journal" className="w-full">
                             <TabsList className="grid w-full grid-cols-4 rounded-t-lg rounded-b-none">
                                 <TabsTrigger value="daily-journal">Libro Diario</TabsTrigger>
@@ -589,8 +551,8 @@ export default function SettingsPage() {
                         </Tabs>
                     </Card>
                 </TabsContent>
-                 <TabsContent value="pnl">
-                    <Card>
+                 <TabsContent value="pnl" className="space-y-4">
+                     <Card>
                         <Tabs defaultValue="income-statement" className="w-full">
                             <TabsList className="grid w-full grid-cols-4 rounded-t-lg rounded-b-none">
                                 <TabsTrigger value="balance-sheet">Balance General</TabsTrigger>
