@@ -6,7 +6,7 @@ import Link from "next/link";
 import { Landmark, Briefcase, PlusCircle, ArrowRightLeft, DollarSign, BarChart as BarChartIcon, Settings, Edit, Trash2, KeyRound, Filter, ChevronsUpDown, Building, Loader2, Save, Calendar as CalendarIcon, ArrowUpCircle, ArrowDownCircle, TrendingUp, BookText, Users as UsersIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableFooter } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { AddTransactionDialog } from "@/components/shared/AddTransactionDialog";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -442,11 +442,13 @@ export default function SettingsPage() {
                                                 </TableRow>
                                             ))}
                                         </TableBody>
-                                        <TableRow className="font-bold bg-muted">
-                                            <TableCell>Sumas Iguales</TableCell>
-                                            <TableCell className="text-right">{totalTrialBalance.debit.toLocaleString('en-US', { style: 'currency', currency: 'USD' })}</TableCell>
-                                            <TableCell className="text-right">{totalTrialBalance.credit.toLocaleString('en-US', { style: 'currency', currency: 'USD' })}</TableCell>
-                                        </TableRow>
+                                        <TableFooter>
+                                            <TableRow className="font-bold bg-muted">
+                                                <TableCell>Sumas Iguales</TableCell>
+                                                <TableCell className="text-right">{totalTrialBalance.debit.toLocaleString('en-US', { style: 'currency', currency: 'USD' })}</TableCell>
+                                                <TableCell className="text-right">{totalTrialBalance.credit.toLocaleString('en-US', { style: 'currency', currency: 'USD' })}</TableCell>
+                                            </TableRow>
+                                        </TableFooter>
                                     </Table>
                                 </CardContent>
                             </Card>
@@ -593,3 +595,5 @@ export default function SettingsPage() {
     </>
   );
 }
+
+    
