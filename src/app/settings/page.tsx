@@ -278,7 +278,7 @@ export default function SettingsPage() {
                 <ArrowRightLeft className="mr-2 h-4 w-4" />
                 Registrar Movimiento
             </Button>
-            <Button asChild variant="outline">
+            <Button asChild>
                 <Link href="/accounting/config">
                     <Settings className="mr-2 h-4 w-4" />
                     Configurar Entidades
@@ -361,7 +361,7 @@ export default function SettingsPage() {
                     <TabsTrigger value="pnl"><BarChartIcon className="mr-2 h-4 w-4"/>Estados Financieros Fundamentales</TabsTrigger>
                 </TabsList>
                 <TabsContent value="ledger" className="space-y-4">
-                    <Card>
+                     <Card>
                         <Tabs defaultValue="daily-journal" className="w-full">
                             <TabsList className="grid w-full grid-cols-4 rounded-t-lg rounded-b-none">
                                 <TabsTrigger value="daily-journal">Libro Diario</TabsTrigger>
@@ -660,3 +660,4 @@ export default function SettingsPage() {
     </>
   );
 }
+
