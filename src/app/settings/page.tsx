@@ -553,7 +553,7 @@ export default function SettingsPage() {
                                 <TabsTrigger value="equity-changes">Cambios en el Capital</TabsTrigger>
                             </TabsList>
                             <TabsContent value="balance-sheet" className="p-6">
-                                <CardTitle>Balance General (al {date?.to ? format(date.to, "dd/MM/yyyy") : 'hoy'})</CardTitle>
+                                <CardTitle>Balance General (al {date?.to ? format(date.to, "dd/MM/yyyy") : format(new Date(), "dd/MM/yyyy")})</CardTitle>
                                 <CardDescription className="mb-4">Presenta activos, pasivos y capital contable en una fecha específica.</CardDescription>
                                 <Table>
                                     <TableHeader>
