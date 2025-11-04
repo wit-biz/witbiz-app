@@ -127,5 +127,3 @@ export const navItems: NavItem[] = [
     { href: '/settings', label: 'Contabilidad', icon: 'Landmark', requiredPermission: 'admin_view' },
     { href: '/finances', label: 'Finanzas', icon: 'DollarSign', requiredPermission: 'finances_view' },
 ];
-
-    
