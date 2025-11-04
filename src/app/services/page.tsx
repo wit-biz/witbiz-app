@@ -18,7 +18,6 @@ import { useDialogs } from "@/contexts/DialogsContext";
 import Link from "next/link";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { SmartDocumentUploadDialog } from "@/components/shared/SmartDocumentUploadDialog";
 import { type Document } from "@/lib/types";
 
 function ServiceDocuments({ serviceId }: { serviceId: string }) {
@@ -198,7 +197,6 @@ export default function ServicesPage() {
           )}
         </main>
       </div>
-      <SmartDocumentUploadDialog isOpen={false} onOpenChange={() => {}}/>
     </>
   );
 }

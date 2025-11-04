@@ -16,7 +16,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { cn } from "@/lib/utils";
-import { SmartDocumentUploadDialog } from "@/components/shared/SmartDocumentUploadDialog";
+import { useDialogs } from "@/contexts/DialogsContext";
 import { useRouter } from "next/navigation";
 import { Tooltip, TooltipProvider, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useGlobalNotification } from "@/contexts/NotificationContext";
@@ -54,6 +54,7 @@ export default function WorkflowConfigurationPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { showNotification } = useGlobalNotification();
+  const { isSmartUploadDialogOpen, setIsSmartUploadDialogOpen } = useDialogs();
 
   const [selectedWorkflowId, setSelectedWorkflowId] = useState<string | null>(null);
   const [editingServiceId, setEditingServiceId] = useState<string | null>(null);
@@ -68,8 +69,6 @@ export default function WorkflowConfigurationPage() {
   
   const [serviceToDelete, setServiceToDelete] = useState<ServiceWorkflow | null>(null);
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
-
-  const [isSmartUploadDialogOpen, setIsSmartUploadDialogOpen] = useState(false);
 
   const [isAddTaskDialogOpen, setIsAddTaskDialogOpen] = useState(false);
   const [initialTaskDataForDialog, setInitialTaskDataForDialog] = useState<Partial<Omit<Task, 'id'>>>({});
@@ -521,14 +520,6 @@ export default function WorkflowConfigurationPage() {
           </AlertDialogContent>
         </AlertDialog>
 
-        <SmartDocumentUploadDialog
-            isOpen={isSmartUploadDialogOpen}
-            onOpenChange={setIsSmartUploadDialogOpen}
-            onClientAdded={(client) => {
-                router.push(`/contacts?openClient=${client.id}`);
-            }}
-        />
-
         <AddTaskDialog
             isOpen={isAddTaskDialogOpen}
             onOpenChange={setIsAddTaskDialogOpen}
@@ -545,5 +536,3 @@ export default function WorkflowConfigurationPage() {
     </TooltipProvider>
   );
 }
-
-    

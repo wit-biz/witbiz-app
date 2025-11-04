@@ -15,6 +15,7 @@ import { TasksProvider } from '@/contexts/TasksContext';
 import { useRouter, usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { Loader2 } from 'lucide-react';
+import { SmartDocumentUploadDialog } from '@/components/shared/SmartDocumentUploadDialog';
 
 function AppContent({ children }: { children: React.ReactNode }) {
   const { user, isUserLoading } = useUser();
@@ -93,6 +94,8 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const [isSmartUploadDialogOpen, setIsSmartUploadDialogOpen] = useState(false);
+  const router = useRouter();
 
   return (
     <html lang="es" suppressHydrationWarning>
@@ -119,6 +122,13 @@ export default function RootLayout({
                   <TasksProvider>
                     <DialogsProvider>
                        <AppContent>{children}</AppContent>
+                       <SmartDocumentUploadDialog
+                            isOpen={isSmartUploadDialogOpen}
+                            onOpenChange={setIsSmartUploadDialogOpen}
+                            onClientAdded={(client) => {
+                                router.push(`/contacts?openClient=${client.id}`);
+                            }}
+                        />
                     </DialogsProvider>
                   </TasksProvider>
                 </CRMDataProvider>
