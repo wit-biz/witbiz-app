@@ -108,7 +108,7 @@ export function DateRangeFilter({
       
       <Select value={selectedClientId} onValueChange={setSelectedClientId}>
         <SelectTrigger className="w-full sm:w-[180px]">
-          <SelectValue placeholder="Cliente: Todos">
+          <SelectValue>
               <span className="flex items-center gap-2">
                   <Users className="h-4 w-4" /> 
                   Cliente: {selectedClientId === 'all' ? 'Todos' : clients.find(c=> c.id === selectedClientId)?.name}
@@ -123,7 +123,7 @@ export function DateRangeFilter({
 
       <Select value={selectedServiceId} onValueChange={setSelectedServiceId}>
         <SelectTrigger className="w-full sm:w-[180px]">
-          <SelectValue placeholder="Servicio: Todos">
+          <SelectValue>
               <span className="flex items-center gap-2">
                   <Briefcase className="h-4 w-4" />
                   Servicio: {selectedServiceId === 'all' ? 'Todos' : services.find(s=>s.id === selectedServiceId)?.name}
@@ -141,18 +141,12 @@ export function DateRangeFilter({
                 <div className="flex items-center space-x-2">
                     <Switch 
                       id="comparative-view" 
-                      checked={isComparative && canBeComparative} 
+                      checked={isComparative} 
                       onCheckedChange={setIsComparative}
-                      disabled={!canBeComparative}
                     />
                     <Label htmlFor="comparative-view">Vista Comparativa</Label>
                 </div>
             </TooltipTrigger>
-            {!canBeComparative && (
-                <TooltipContent>
-                    <p>Seleccione "Todos" en Clientes y/o Servicios para habilitar la comparación.</p>
-                </TooltipContent>
-            )}
         </Tooltip>
       </TooltipProvider>
       <Button variant="ghost" onClick={onClearFilters} size="icon">
@@ -162,5 +156,3 @@ export function DateRangeFilter({
     </div>
   );
 }
-
-    

@@ -57,15 +57,6 @@ export default function AuditPage() {
   const [selectedServiceId, setSelectedServiceId] = React.useState<string>("all");
   const [isComparativeView, setIsComparativeView] = useState(false);
 
-  useEffect(() => {
-    // If a specific client or service is selected, comparative view doesn't make sense.
-    if (selectedClientId !== 'all' && selectedServiceId !== 'all') {
-        if (isComparativeView) {
-            setIsComparativeView(false);
-        }
-    }
-  }, [selectedClientId, selectedServiceId, isComparativeView]);
-
   const chartServices = serviceWorkflows.map(s => ({ id: s.id, name: s.name }));
   const chartClients = clients.map(c => ({ id: c.id, name: c.name }));
 
@@ -179,7 +170,7 @@ export default function AuditPage() {
                         date={date}
                         selectedClientId={selectedClientId}
                         selectedServiceId={selectedServiceId}
-                        isComparative={isComparativeView && canBeComparative}
+                        isComparative={isComparativeView}
                         clients={chartClients}
                         services={chartServices}
                     />
@@ -234,5 +225,3 @@ export default function AuditPage() {
     </div>
   );
 }
-
-    
