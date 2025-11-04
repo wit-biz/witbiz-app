@@ -19,6 +19,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Header } from "@/components/header";
 import { useToast } from '@/hooks/use-toast';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useCRMData } from "@/contexts/CRMDataContext";
 
 // --- Mock Data ---
 
@@ -88,6 +89,7 @@ const initialCategoryGroups = [
 
 export default function SettingsPage() {
   const { toast } = useToast();
+  const { clients, serviceWorkflows } = useCRMData();
   
   // State for mock data
   const [mockCompanies, setMockCompanies] = useState(initialCompanies);
@@ -196,9 +198,46 @@ export default function SettingsPage() {
             <Tabs defaultValue="ledger">
                 <TabsList className="grid w-full grid-cols-2">
                     <TabsTrigger value="ledger"><BookText className="mr-2 h-4 w-4"/>Libros y Registros Contables</TabsTrigger>
-                    <TabsTrigger value="pnl"><BarChartIcon className="mr-2 h-4 w-4"/>Estado de Resultados</TabsTrigger>
+                    <TabsTrigger value="pnl"><BarChartIcon className="mr-2 h-4 w-4"/>Estados Financieros Fundamentales</TabsTrigger>
                 </TabsList>
                 <TabsContent value="ledger" className="mt-6 space-y-6">
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Resumen de Movimientos Filtrados</CardTitle>
+                            <CardDescription>Totales calculados basados en los filtros actuales del Libro Diario.</CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                <Card>
+                                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                                        <CardTitle className="text-sm font-medium">Ingresos Totales</CardTitle>
+                                        <ArrowUpCircle className="h-4 w-4 text-green-500" />
+                                    </CardHeader>
+                                    <CardContent>
+                                        <div className="text-2xl font-bold text-green-600">{summary.totalIncome.toLocaleString('en-US', { style: 'currency', currency: 'USD' })}</div>
+                                    </CardContent>
+                                </Card>
+                                <Card>
+                                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                                        <CardTitle className="text-sm font-medium">Egresos Totales</CardTitle>
+                                        <ArrowDownCircle className="h-4 w-4 text-red-500" />
+                                    </CardHeader>
+                                    <CardContent>
+                                        <div className="text-2xl font-bold text-red-600">{summary.totalExpense.toLocaleString('en-US', { style: 'currency', currency: 'USD' })}</div>
+                                    </CardContent>
+                                </Card>
+                                <Card>
+                                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                                        <CardTitle className="text-sm font-medium">Flujo Neto</CardTitle>
+                                        <TrendingUp className={`h-4 w-4 ${summary.netTotal >= 0 ? 'text-blue-500' : 'text-orange-500'}`} />
+                                    </CardHeader>
+                                    <CardContent>
+                                        <div className={`text-2xl font-bold ${summary.netTotal >= 0 ? 'text-blue-600' : 'text-orange-600'}`}>{summary.netTotal.toLocaleString('en-US', { style: 'currency', currency: 'USD' })}</div>
+                                    </CardContent>
+                                </Card>
+                            </div>
+                        </CardContent>
+                    </Card>
                     <Tabs defaultValue="daily-journal" className="w-full">
                        <TabsList className="grid w-full grid-cols-4">
                            <TabsTrigger value="daily-journal">Libro Diario</TabsTrigger>
@@ -209,43 +248,6 @@ export default function SettingsPage() {
                        <TabsContent value="daily-journal" className="mt-6 space-y-6">
                             <Card>
                                 <CardHeader>
-                                    <CardTitle>Resumen de Movimientos Filtrados</CardTitle>
-                                    <CardDescription>Totales calculados basados en los filtros actuales del Libro Diario.</CardDescription>
-                                </CardHeader>
-                                <CardContent>
-                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                        <Card>
-                                            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                                                <CardTitle className="text-sm font-medium">Ingresos Totales</CardTitle>
-                                                <ArrowUpCircle className="h-4 w-4 text-green-500" />
-                                            </CardHeader>
-                                            <CardContent>
-                                                <div className="text-2xl font-bold text-green-600">{summary.totalIncome.toLocaleString('en-US', { style: 'currency', currency: 'USD' })}</div>
-                                            </CardContent>
-                                        </Card>
-                                        <Card>
-                                            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                                                <CardTitle className="text-sm font-medium">Egresos Totales</CardTitle>
-                                                <ArrowDownCircle className="h-4 w-4 text-red-500" />
-                                            </CardHeader>
-                                            <CardContent>
-                                                <div className="text-2xl font-bold text-red-600">{summary.totalExpense.toLocaleString('en-US', { style: 'currency', currency: 'USD' })}</div>
-                                            </CardContent>
-                                        </Card>
-                                        <Card>
-                                            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                                                <CardTitle className="text-sm font-medium">Flujo Neto</CardTitle>
-                                                <TrendingUp className={`h-4 w-4 ${summary.netTotal >= 0 ? 'text-blue-500' : 'text-orange-500'}`} />
-                                            </CardHeader>
-                                            <CardContent>
-                                                <div className={`text-2xl font-bold ${summary.netTotal >= 0 ? 'text-blue-600' : 'text-orange-600'}`}>{summary.netTotal.toLocaleString('en-US', { style: 'currency', currency: 'USD' })}</div>
-                                            </CardContent>
-                                        </Card>
-                                    </div>
-                                </CardContent>
-                            </Card>
-                            <Card>
-                                <CardHeader>
                                     <CardTitle>Registro Cronológico de Operaciones</CardTitle>
                                     <CardDescription>Listado completo de todas las transacciones financieras de la empresa.</CardDescription>
                                 </CardHeader>
@@ -253,7 +255,7 @@ export default function SettingsPage() {
                                     <div className="flex flex-col md:flex-row gap-2 border p-4 rounded-lg">
                                         <Popover>
                                         <PopoverTrigger asChild>
-                                            <Button id="date" variant={"outline"} className={cn("w-full md:w-auto justify-start text-left font-normal")}>
+                                            <Button id="date" variant={"outline"} className={cn("w-full md:w-auto justify-start text-left font-normal", !date && "text-muted-foreground")}>
                                             <CalendarIcon className="mr-2 h-4 w-4" />
                                             {date?.from ? (date.to ? (<>{format(date.from, "LLL dd, y")} - {format(date.to, "LLL dd, y")}</>) : (format(date.from, "LLL dd, y"))) : (<span>Calendario</span>)}
                                             </Button>
@@ -360,17 +362,66 @@ export default function SettingsPage() {
                     </Tabs>
                 </TabsContent>
                  <TabsContent value="pnl" className="mt-6">
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>Estado de Resultados (P&L)</CardTitle>
-                            <CardDescription>Análisis de rentabilidad por cliente y servicio. Esta sección está en desarrollo.</CardDescription>
-                        </CardHeader>
-                        <CardContent className="text-center text-muted-foreground py-16">
-                            <BarChartIcon className="mx-auto h-12 w-12 mb-4" />
-                            <h3 className="text-lg font-semibold">Próximamente</h3>
-                            <p className="text-sm">Aquí podrá analizar la rentabilidad detallada de su negocio.</p>
-                        </CardContent>
-                    </Card>
+                    <Tabs defaultValue="income-statement" className="w-full">
+                       <TabsList className="grid w-full grid-cols-4">
+                           <TabsTrigger value="balance-sheet">Balance General</TabsTrigger>
+                           <TabsTrigger value="income-statement">Estado de Resultados</TabsTrigger>
+                           <TabsTrigger value="cash-flow">Flujo de Efectivo</TabsTrigger>
+                           <TabsTrigger value="equity-changes">Cambios en el Capital</TabsTrigger>
+                       </TabsList>
+                       <TabsContent value="balance-sheet" className="mt-6">
+                            <Card>
+                                <CardHeader>
+                                    <CardTitle>Balance General (Estado de Situación Financiera)</CardTitle>
+                                    <CardDescription>Presenta activos, pasivos y capital contable en una fecha específica. Esta sección está en desarrollo.</CardDescription>
+                                </CardHeader>
+                                <CardContent className="text-center text-muted-foreground py-16">
+                                    <BookText className="mx-auto h-12 w-12 mb-4" />
+                                    <h3 className="text-lg font-semibold">Próximamente</h3>
+                                    <p className="text-sm">Aquí podrá ver una foto de la situación financiera de su empresa.</p>
+                                </CardContent>
+                            </Card>
+                       </TabsContent>
+                       <TabsContent value="income-statement" className="mt-6">
+                           <Card>
+                                <CardHeader>
+                                    <CardTitle>Estado de Resultados (Pérdidas y Ganancias)</CardTitle>
+                                    <CardDescription>Muestra ingresos, costos y gastos para determinar la utilidad o pérdida neta. Esta sección está en desarrollo.</CardDescription>
+                                </CardHeader>
+                                <CardContent className="text-center text-muted-foreground py-16">
+                                    <BarChartIcon className="mx-auto h-12 w-12 mb-4" />
+                                    <h3 className="text-lg font-semibold">Próximamente</h3>
+                                    <p className="text-sm">Aquí podrá analizar la rentabilidad detallada de su negocio.</p>
+                                </CardContent>
+                            </Card>
+                       </TabsContent>
+                       <TabsContent value="cash-flow" className="mt-6">
+                            <Card>
+                                <CardHeader>
+                                    <CardTitle>Estado de Flujo de Efectivo</CardTitle>
+                                    <CardDescription>Detalla entradas y salidas de efectivo por actividades. Esta sección está en desarrollo.</CardDescription>
+                                </CardHeader>
+                                <CardContent className="text-center text-muted-foreground py-16">
+                                    <ArrowRightLeft className="mx-auto h-12 w-12 mb-4" />
+                                    <h3 className="text-lg font-semibold">Próximamente</h3>
+                                    <p className="text-sm">Aquí podrá analizar cómo se mueve el efectivo en su empresa.</p>
+                                </CardContent>
+                            </Card>
+                       </TabsContent>
+                         <TabsContent value="equity-changes" className="mt-6">
+                            <Card>
+                                <CardHeader>
+                                    <CardTitle>Estado de Cambios en el Capital Contable</CardTitle>
+                                    <CardDescription>Refleja variaciones en el patrimonio de los socios. Esta sección está en desarrollo.</CardDescription>
+                                </CardHeader>
+                                <CardContent className="text-center text-muted-foreground py-16">
+                                    <Users className="mx-auto h-12 w-12 mb-4" />
+                                    <h3 className="text-lg font-semibold">Próximamente</h3>
+                                    <p className="text-sm">Aquí podrá ver los cambios en la inversión de los propietarios.</p>
+                                </CardContent>
+                            </Card>
+                       </TabsContent>
+                    </Tabs>
                 </TabsContent>
             </Tabs>
         </main>
@@ -388,5 +439,3 @@ export default function SettingsPage() {
     </>
   );
 }
-
-    
