@@ -210,11 +210,9 @@ export default function SettingsPage() {
           }, {} as Record<string, number>);
 
       const totalExpenses = Object.values(expensesByCategory).reduce((sum, amount) => sum + amount, 0);
-
-      // For this model, COGS is not explicitly tracked, so Gross Profit = Total Revenue.
       const grossProfit = totalRevenue;
       const operatingIncome = grossProfit - totalExpenses;
-      const netIncome = operatingIncome; // Assuming no taxes or other non-operating items for now
+      const netIncome = operatingIncome;
 
       return {
           revenueByCategory,
@@ -226,6 +224,13 @@ export default function SettingsPage() {
           netIncome,
       };
   }, [filteredTransactions]);
+  
+   const periodSummary = useMemo(() => {
+    return {
+      totalIncome: incomeStatementData.totalRevenue,
+      totalExpenses: incomeStatementData.totalExpenses,
+    };
+  }, [incomeStatementData]);
 
   const { balanceSheetData, cashFlowData } = useMemo(() => {
     const fromDate = date?.from ? startOfDay(date.from) : new Date(0);
@@ -289,21 +294,25 @@ export default function SettingsPage() {
             <Card>
                 <CardHeader>
                     <CardTitle>Resumen General</CardTitle>
-                    <CardDescription>Balance consolidado de todas las cuentas y empresas.</CardDescription>
+                    <CardDescription>
+                        Balance consolidado actual e información clave del período seleccionado.
+                    </CardDescription>
                 </CardHeader>
                 <CardContent>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-center">
-                        <div className="p-4 rounded-lg bg-secondary">
-                            <h3 className="text-sm font-medium text-muted-foreground">Balance Total Consolidado</h3>
-                            <p className="text-2xl font-bold">{generalSummary.totalBalance.toLocaleString('en-US', { style: 'currency', currency: 'USD' })}</p>
+                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div className="md:col-span-1 p-4 rounded-lg bg-secondary flex flex-col justify-center">
+                            <h3 className="text-sm font-medium text-muted-foreground">Balance Total Consolidado (Actual)</h3>
+                            <p className="text-3xl font-bold">{generalSummary.totalBalance.toLocaleString('en-US', { style: 'currency', currency: 'USD' })}</p>
                         </div>
-                        <div className="p-4 rounded-lg bg-secondary">
-                            <h3 className="text-sm font-medium text-muted-foreground">Empresas</h3>
-                            <p className="text-2xl font-bold">{generalSummary.companyCount}</p>
-                        </div>
-                        <div className="p-4 rounded-lg bg-secondary">
-                            <h3 className="text-sm font-medium text-muted-foreground">Cuentas Bancarias</h3>
-                            <p className="text-2xl font-bold">{generalSummary.accountCount}</p>
+                        <div className="md:col-span-2 grid grid-cols-2 gap-4">
+                            <div className="p-4 rounded-lg bg-green-100 dark:bg-green-900/30 text-green-900 dark:text-green-200">
+                                <h3 className="text-sm font-medium flex items-center gap-2"><ArrowUpCircle className="h-4 w-4"/> Ingresos del Período</h3>
+                                <p className="text-2xl font-bold">{periodSummary.totalIncome.toLocaleString('en-US', { style: 'currency', currency: 'USD' })}</p>
+                            </div>
+                             <div className="p-4 rounded-lg bg-red-100 dark:bg-red-900/30 text-red-900 dark:text-red-200">
+                                <h3 className="text-sm font-medium flex items-center gap-2"><ArrowDownCircle className="h-4 w-4"/> Egresos del Período</h3>
+                                <p className="text-2xl font-bold">{periodSummary.totalExpenses.toLocaleString('en-US', { style: 'currency', currency: 'USD' })}</p>
+                            </div>
                         </div>
                     </div>
                 </CardContent>
@@ -660,4 +669,3 @@ export default function SettingsPage() {
     </>
   );
 }
-
