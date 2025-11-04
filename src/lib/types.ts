@@ -107,7 +107,7 @@ export type AppPermissions = {
     tasks_view: boolean;
     crm_edit: boolean;
     crm_view: boolean;
-    audit_view: boolean;
+    finances_view: boolean;
     admin_view: boolean;
     dashboard: boolean;
     team_invite: boolean;

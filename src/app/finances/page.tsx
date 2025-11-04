@@ -45,7 +45,7 @@ const logData = [
 ];
 
 
-export default function AuditPage() {
+export default function FinancesPage() {
   const { clients, serviceWorkflows, isLoadingClients, isLoadingWorkflows } = useCRMData();
   const { toast } = useToast();
 
@@ -99,8 +99,8 @@ export default function AuditPage() {
   return (
     <div className="flex flex-col min-h-screen">
       <Header
-        title="Análisis y Auditoría"
-        description="Dashboard de análisis de negocio y bitácora de actividades del sistema."
+        title="Finanzas"
+        description="Centro de análisis financiero y bitácora de actividades."
       >
         <Button onClick={() => handleDownload('Todo')}>
           <Download className="mr-2 h-4 w-4" />

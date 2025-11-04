@@ -15,43 +15,43 @@ export const promoters: Promoter[] = [
 export const clients: Client[] = [
   {
     id: '1', name: 'Innovate Inc.', owner: 'Mariana Fernandez', category: 'Tecnología',
-    subscribedServiceIds: ['service-1'], currentWorkflowStageId: 's1-st2', currentObjectiveId: 's1-st2-obj1',
+    subscribedServiceIds: ['service-1'], currentWorkflowStageId: 's1-st2', currentActionId: 's1-st2-obj1',
   },
   {
     id: '2', name: 'Synergy Corp.', owner: 'Juan Carlos Bodoque', category: 'Finanzas',
-    subscribedServiceIds: ['service-2'], currentWorkflowStageId: 's2-st1', currentObjectiveId: 's2-st1-obj2',
+    subscribedServiceIds: ['service-2'], currentWorkflowStageId: 's2-st1', currentActionId: 's2-st1-obj2',
   },
   {
     id: '3', name: 'Solutions LLC', owner: 'Mariana Fernandez', category: 'Salud',
-    subscribedServiceIds: ['service-3'], currentWorkflowStageId: 's3-st1', currentObjectiveId: 's3-st1-obj1',
+    subscribedServiceIds: ['service-3'], currentWorkflowStageId: 's3-st1', currentActionId: 's3-st1-obj1',
   },
   {
     id: '4', name: 'Global Net', owner: 'Sofía Rodriguez', category: 'Logística',
-    subscribedServiceIds: ['service-1'], currentWorkflowStageId: 's1-st4', currentObjectiveId: 's1-st4-obj2',
+    subscribedServiceIds: ['service-1'], currentWorkflowStageId: 's1-st4', currentActionId: 's1-st4-obj2',
   },
   {
     id: '5', name: 'Marketing Pro', owner: 'Carla Santamaria', category: 'Marketing',
-    subscribedServiceIds: ['service-3'], currentWorkflowStageId: 's3-st3', currentObjectiveId: 's3-st3-obj3',
+    subscribedServiceIds: ['service-3'], currentWorkflowStageId: 's3-st3', currentActionId: 's3-st3-obj3',
   },
   {
     id: '6', name: 'QuantumLeap', owner: 'Sofía Rodriguez', category: 'Investigación',
-    subscribedServiceIds: ['service-2'], currentWorkflowStageId: 's2-st2', currentObjectiveId: 's2-st2-obj1',
+    subscribedServiceIds: ['service-2'], currentWorkflowStageId: 's2-st2', currentActionId: 's2-st2-obj1',
   },
   {
     id: '7', name: 'Nexus Enterprises', owner: 'Mariana Fernandez', category: 'Retail',
-    subscribedServiceIds: ['service-1'], currentWorkflowStageId: 's1-st3', currentObjectiveId: 's1-st3-obj1',
+    subscribedServiceIds: ['service-1'], currentWorkflowStageId: 's1-st3', currentActionId: 's1-st3-obj1',
   },
   {
     id: '8', name: 'BioGen', owner: 'Juan Carlos Bodoque', category: 'Biotecnología',
-    subscribedServiceIds: ['service-2'], currentWorkflowStageId: 's2-st3', currentObjectiveId: 's2-st3-obj2',
+    subscribedServiceIds: ['service-2'], currentWorkflowStageId: 's2-st3', currentActionId: 's2-st3-obj2',
   },
   {
     id: '9', name: 'AeroDynamics', owner: 'Carla Santamaria', category: 'Aeroespacial',
-    subscribedServiceIds: ['service-1'], currentWorkflowStageId: 's1-st4', currentObjectiveId: 's1-st4-obj3',
+    subscribedServiceIds: ['service-1'], currentWorkflowStageId: 's1-st4', currentActionId: 's1-st4-obj3',
   },
   {
     id: '10', name: 'EcoBuild', owner: 'Mariana Fernandez', category: 'Construcción',
-    subscribedServiceIds: ['service-3'], currentWorkflowStageId: 's3-st2', currentObjectiveId: 's3-st2-obj2',
+    subscribedServiceIds: ['service-3'], currentWorkflowStageId: 's3-st2', currentActionId: 's3-st2-obj2',
   },
 ];
 
@@ -125,7 +125,7 @@ export const navItems: NavItem[] = [
     { href: '/crm', label: 'CRM', icon: 'Workflow', requiredPermission: 'crm_view' },
     { href: '/services', label: 'Servicios', icon: 'Briefcase', requiredPermission: 'services_view' },
     { href: '/settings', label: 'Contabilidad', icon: 'Landmark', requiredPermission: 'admin_view' },
-    { href: '/audit', label: 'Auditoría', icon: 'Scale', requiredPermission: 'audit_view' },
+    { href: '/finances', label: 'Finanzas', icon: 'Scale', requiredPermission: 'finances_view' },
 ];
 
     

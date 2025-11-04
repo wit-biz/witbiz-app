@@ -108,7 +108,7 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
                   clients_view: true, 
                   tasks_view: true, 
                   crm_view: true, 
-                  audit_view: true, 
+                  finances_view: true, 
                   admin_view: true,
                   clients_create: true,
                   clients_edit: true,
