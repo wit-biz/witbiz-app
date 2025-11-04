@@ -369,7 +369,7 @@ export default function SettingsPage() {
                     <TabsTrigger value="ledger"><BookText className="mr-2 h-4 w-4"/>Libros y Registros Contables</TabsTrigger>
                     <TabsTrigger value="pnl"><BarChartIcon className="mr-2 h-4 w-4"/>Estados Financieros Fundamentales</TabsTrigger>
                 </TabsList>
-                <TabsContent value="ledger" className="space-y-4">
+                <TabsContent value="ledger" className="mt-4">
                      <Card>
                         <Tabs defaultValue="daily-journal" className="w-full">
                             <TabsList className="grid w-full grid-cols-4 rounded-t-lg rounded-b-none">
@@ -543,44 +543,16 @@ export default function SettingsPage() {
                         </Tabs>
                     </Card>
                 </TabsContent>
-                 <TabsContent value="pnl" className="space-y-4">
-                     <Card>
+                 <TabsContent value="pnl" className="mt-4">
+                    <Card>
                         <Tabs defaultValue="income-statement" className="w-full">
-                            <TabsList className="grid w-full grid-cols-4 rounded-t-lg rounded-b-none">
-                                <TabsTrigger value="balance-sheet">Balance General</TabsTrigger>
+                             <TabsList className="grid w-full grid-cols-4 rounded-t-lg rounded-b-none">
                                 <TabsTrigger value="income-statement">Estado de Resultados</TabsTrigger>
+                                <TabsTrigger value="balance-sheet">Balance General</TabsTrigger>
                                 <TabsTrigger value="cash-flow">Flujo de Efectivo</TabsTrigger>
                                 <TabsTrigger value="equity-changes">Cambios en el Capital</TabsTrigger>
                             </TabsList>
-                            <TabsContent value="balance-sheet" className="p-6">
-                                <CardTitle>Balance General (al {date?.to ? format(date.to, "dd/MM/yyyy") : format(new Date(), "dd/MM/yyyy")})</CardTitle>
-                                <CardDescription className="mb-4">Presenta activos, pasivos y capital contable en una fecha específica.</CardDescription>
-                                <Table>
-                                    <TableHeader>
-                                        <TableRow><TableHead colSpan={2}>Activos</TableHead></TableRow>
-                                    </TableHeader>
-                                    <TableBody>
-                                        <TableRow><TableCell>Efectivo y Equivalentes</TableCell><TableCell className="text-right">{balanceSheetData.assets.cash.toLocaleString('en-US', { style: 'currency', currency: 'USD' })}</TableCell></TableRow>
-                                    </TableBody>
-                                    <TableFooter>
-                                        <TableRow className="font-bold bg-muted/50"><TableCell>Total de Activos</TableCell><TableCell className="text-right">{balanceSheetData.totalAssets.toLocaleString('en-US', { style: 'currency', currency: 'USD' })}</TableCell></TableRow>
-                                    </TableFooter>
-                                </Table>
-                                <Table className="mt-4">
-                                    <TableHeader>
-                                        <TableRow><TableHead colSpan={2}>Pasivos y Capital Contable</TableHead></TableRow>
-                                    </TableHeader>
-                                    <TableBody>
-                                        <TableRow><TableCell>Cuentas por Pagar (Pasivo)</TableCell><TableCell className="text-right">{balanceSheetData.liabilities.accountsPayable.toLocaleString('en-US', { style: 'currency', currency: 'USD' })}</TableCell></TableRow>
-                                        <TableRow><TableCell>Utilidades Retenidas</TableCell><TableCell className="text-right">{balanceSheetData.equity.retainedEarnings.toLocaleString('en-US', { style: 'currency', currency: 'USD' })}</TableCell></TableRow>
-                                        <TableRow><TableCell>Utilidad del Ejercicio</TableCell><TableCell className="text-right">{balanceSheetData.equity.netIncome.toLocaleString('en-US', { style: 'currency', currency: 'USD' })}</TableCell></TableRow>
-                                    </TableBody>
-                                    <TableFooter>
-                                        <TableRow className="font-bold bg-muted/50"><TableCell>Total Pasivo y Capital</TableCell><TableCell className="text-right">{balanceSheetData.totalLiabilitiesAndEquity.toLocaleString('en-US', { style: 'currency', currency: 'USD' })}</TableCell></TableRow>
-                                    </TableFooter>
-                                </Table>
-                            </TabsContent>
-                            <TabsContent value="income-statement" className="p-6">
+                             <TabsContent value="income-statement" className="p-6">
                                 <CardTitle>Estado de Resultados (Pérdidas y Ganancias)</CardTitle>
                                 <CardDescription className="mb-4">Muestra ingresos, costos y gastos para determinar la utilidad o pérdida neta.</CardDescription>
                                 <Table>
@@ -608,6 +580,34 @@ export default function SettingsPage() {
                                                 {incomeStatementData.netIncome.toLocaleString('en-US', { style: 'currency', currency: 'USD' })}
                                             </TableCell>
                                         </TableRow>
+                                    </TableFooter>
+                                </Table>
+                            </TabsContent>
+                            <TabsContent value="balance-sheet" className="p-6">
+                                <CardTitle>Balance General (al {date?.to ? format(date.to, "dd/MM/yyyy") : format(new Date(), "dd/MM/yyyy")})</CardTitle>
+                                <CardDescription className="mb-4">Presenta activos, pasivos y capital contable en una fecha específica.</CardDescription>
+                                <Table>
+                                    <TableHeader>
+                                        <TableRow><TableHead colSpan={2}>Activos</TableHead></TableRow>
+                                    </TableHeader>
+                                    <TableBody>
+                                        <TableRow><TableCell>Efectivo y Equivalentes</TableCell><TableCell className="text-right">{balanceSheetData.assets.cash.toLocaleString('en-US', { style: 'currency', currency: 'USD' })}</TableCell></TableRow>
+                                    </TableBody>
+                                    <TableFooter>
+                                        <TableRow className="font-bold bg-muted/50"><TableCell>Total de Activos</TableCell><TableCell className="text-right">{balanceSheetData.totalAssets.toLocaleString('en-US', { style: 'currency', currency: 'USD' })}</TableCell></TableRow>
+                                    </TableFooter>
+                                </Table>
+                                <Table className="mt-4">
+                                    <TableHeader>
+                                        <TableRow><TableHead colSpan={2}>Pasivos y Capital Contable</TableHead></TableRow>
+                                    </TableHeader>
+                                    <TableBody>
+                                        <TableRow><TableCell>Cuentas por Pagar (Pasivo)</TableCell><TableCell className="text-right">{balanceSheetData.liabilities.accountsPayable.toLocaleString('en-US', { style: 'currency', currency: 'USD' })}</TableCell></TableRow>
+                                        <TableRow><TableCell>Utilidades Retenidas</TableCell><TableCell className="text-right">{balanceSheetData.equity.retainedEarnings.toLocaleString('en-US', { style: 'currency', currency: 'USD' })}</TableCell></TableRow>
+                                        <TableRow><TableCell>Utilidad del Ejercicio</TableCell><TableCell className="text-right">{balanceSheetData.equity.netIncome.toLocaleString('en-US', { style: 'currency', currency: 'USD' })}</TableCell></TableRow>
+                                    </TableBody>
+                                    <TableFooter>
+                                        <TableRow className="font-bold bg-muted/50"><TableCell>Total Pasivo y Capital</TableCell><TableCell className="text-right">{balanceSheetData.totalLiabilitiesAndEquity.toLocaleString('en-US', { style: 'currency', currency: 'USD' })}</TableCell></TableRow>
                                     </TableFooter>
                                 </Table>
                             </TabsContent>
