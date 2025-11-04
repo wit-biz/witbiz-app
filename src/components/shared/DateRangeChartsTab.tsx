@@ -146,6 +146,20 @@ export function DateRangeChartsTab({ className, date, selectedClientId, selected
 
   }, [isComparative, filteredData, selectedClientId, selectedServiceId, clients, services]);
 
+  const aggregatedMetrics = React.useMemo(() => {
+    if (isComparative || filteredData.length === 0) {
+      return { total: 0, average: 0, peak: { label: "N/A", value: 0 } };
+    }
+    const totalCommissions = filteredData.reduce((acc, item) => acc + item.commissions, 0);
+    const peakItem = filteredData.reduce((max, item) => item.commissions > max.commissions ? item : max, filteredData[0]);
+    return {
+        total: totalCommissions,
+        average: totalCommissions / filteredData.length,
+        peak: { label: format(new Date(peakItem.date), "dd/MM/yy"), value: peakItem.commissions },
+    };
+  }, [filteredData, isComparative]);
+
+
   if (isComparative) {
       return (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -163,19 +177,7 @@ export function DateRangeChartsTab({ className, date, selectedClientId, selected
   }
 
   // AGGREGATED VIEW (DEFAULT)
-  const { total, average, peak } = React.useMemo(() => {
-    if (filteredData.length === 0) {
-      return { total: 0, average: 0, peak: { label: "N/A", value: 0 } };
-    }
-    const totalCommissions = filteredData.reduce((acc, item) => acc + item.commissions, 0);
-    const peakItem = filteredData.reduce((max, item) => item.commissions > max.commissions ? item : max, filteredData[0]);
-    return {
-        data: filteredData,
-        total: totalCommissions,
-        average: totalCommissions / filteredData.length,
-        peak: { label: format(new Date(peakItem.date), "dd/MM/yy"), value: peakItem.commissions },
-    };
-  }, [filteredData]);
+  const { total, average, peak } = aggregatedMetrics;
   
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
