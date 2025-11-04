@@ -245,7 +245,7 @@ export default function SettingsPage() {
                     <TabsTrigger value="ledger"><BookText className="mr-2 h-4 w-4"/>Libros y Registros Contables</TabsTrigger>
                     <TabsTrigger value="pnl"><BarChartIcon className="mr-2 h-4 w-4"/>Estados Financieros Fundamentales</TabsTrigger>
                 </TabsList>
-                <TabsContent value="ledger" className="mt-6 space-y-6">
+                <TabsContent value="ledger" className="mt-4 p-4 rounded-lg bg-muted/40 space-y-6">
                     <Card>
                         <CardHeader>
                             <CardTitle>Resumen de Movimientos Filtrados</CardTitle>
@@ -337,266 +337,263 @@ export default function SettingsPage() {
                             </div>
                         </CardContent>
                     </Card>
-                    <div className="bg-muted/30 p-4 rounded-lg">
-                        <Tabs defaultValue="daily-journal" className="w-full">
-                        <TabsList className="grid w-full grid-cols-4">
-                            <TabsTrigger value="daily-journal">Libro Diario</TabsTrigger>
-                            <TabsTrigger value="general-ledger">Libro Mayor</TabsTrigger>
-                            <TabsTrigger value="trial-balance">Balanza de Comprobación</TabsTrigger>
-                            <TabsTrigger value="auxiliaries">Auxiliares Contables</TabsTrigger>
-                        </TabsList>
-                        <TabsContent value="daily-journal" className="mt-6 space-y-6">
-                                <Card>
-                                    <CardHeader>
-                                        <CardTitle>Libro Diario</CardTitle>
-                                        <CardDescription>Registro cronológico de todas las operaciones financieras de la empresa.</CardDescription>
-                                    </CardHeader>
-                                    <CardContent className="space-y-4">
-                                        <Table>
-                                            <TableHeader>
-                                                <TableRow>
-                                                    <TableHead>Fecha</TableHead>
-                                                    <TableHead>Descripción</TableHead>
-                                                    <TableHead>Categoría</TableHead>
-                                                    <TableHead>Tipo</TableHead>
-                                                    <TableHead className="text-right">Monto</TableHead>
-                                                </TableRow>
-                                            </TableHeader>
-                                            <TableBody>
-                                                {filteredTransactions.map((trx) => (
-                                                    <TableRow key={trx.id}>
-                                                        <TableCell>{format(new Date(trx.date), "dd/MM/yyyy")}</TableCell>
-                                                        <TableCell className="font-medium">{trx.description}</TableCell>
-                                                        <TableCell>{trx.category}</TableCell>
-                                                        <TableCell>
-                                                            <Badge variant={trx.type === 'income' ? 'default' : trx.type === 'expense' ? 'destructive' : 'secondary'}>
-                                                                {trx.type === 'income' ? 'Ingreso' : trx.type.startsWith('transfer') ? 'Transferencia' : 'Egreso'}
-                                                            </Badge>
-                                                        </TableCell>
-                                                        <TableCell className={`text-right font-semibold ${trx.amount > 0 ? 'text-green-600' : 'text-red-600'}`}>
-                                                            {trx.amount.toLocaleString('en-US', { style: 'currency', currency: 'USD' })}
-                                                        </TableCell>
-                                                    </TableRow>
-                                                ))}
-                                            </TableBody>
-                                        </Table>
-                                    </CardContent>
-                                </Card>
-                        </TabsContent>
-                        <TabsContent value="general-ledger" className="mt-6">
-                                <Card>
-                                    <CardHeader>
-                                        <CardTitle>Libro Mayor</CardTitle>
-                                        <CardDescription>Concentración de movimientos por cuenta contable (categoría).</CardDescription>
-                                    </CardHeader>
-                                    <CardContent className="space-y-4">
-                                        <div className="flex items-center gap-2">
-                                            <Label htmlFor="ledger-account-filter">Cuenta Contable</Label>
-                                            <Select value={selectedLedgerAccountId} onValueChange={setSelectedLedgerAccountId}>
-                                                <SelectTrigger id="ledger-account-filter" className="w-[300px]"><SelectValue placeholder="Seleccione una cuenta..."/></SelectTrigger>
-                                                <SelectContent>
-                                                    <SelectItem value="all">Ver todas las transacciones</SelectItem>
-                                                    {allCategories.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
-                                                </SelectContent>
-                                            </Select>
-                                        </div>
-                                        <Table>
-                                            <TableHeader>
-                                                <TableRow>
-                                                    <TableHead>Fecha</TableHead>
-                                                    <TableHead>Descripción</TableHead>
-                                                    <TableHead className="text-right">Monto</TableHead>
-                                                </TableRow>
-                                            </TableHeader>
-                                            <TableBody>
-                                                {generalLedgerData.length > 0 ? generalLedgerData.map(trx => (
-                                                    <TableRow key={trx.id}>
-                                                        <TableCell>{format(new Date(trx.date), "dd/MM/yyyy")}</TableCell>
-                                                        <TableCell className="font-medium">{trx.description}</TableCell>
-                                                        <TableCell className={`text-right font-semibold ${trx.amount > 0 ? 'text-green-600' : 'text-red-600'}`}>
-                                                            {trx.amount.toLocaleString('en-US', { style: 'currency', currency: 'USD' })}
-                                                        </TableCell>
-                                                    </TableRow>
-                                                )) : (
-                                                    <TableRow><TableCell colSpan={3} className="text-center">Seleccione una cuenta para ver sus movimientos.</TableCell></TableRow>
-                                                )}
-                                            </TableBody>
-                                            <TableFooter>
-                                                <TableRow>
-                                                    <TableCell colSpan={2} className="text-right font-bold">Saldo Total de la Cuenta:</TableCell>
-                                                    <TableCell className="text-right font-bold">{generalLedgerData.reduce((sum, t) => sum + t.amount, 0).toLocaleString('en-US', { style: 'currency', currency: 'USD' })}</TableCell>
-                                                </TableRow>
-                                            </TableFooter>
-                                        </Table>
-                                    </CardContent>
-                                </Card>
-                        </TabsContent>
-                        <TabsContent value="trial-balance" className="mt-6">
+                    
+                    <Tabs defaultValue="daily-journal" className="w-full">
+                    <TabsList className="grid w-full grid-cols-4">
+                        <TabsTrigger value="daily-journal">Libro Diario</TabsTrigger>
+                        <TabsTrigger value="general-ledger">Libro Mayor</TabsTrigger>
+                        <TabsTrigger value="trial-balance">Balanza de Comprobación</TabsTrigger>
+                        <TabsTrigger value="auxiliaries">Auxiliares Contables</TabsTrigger>
+                    </TabsList>
+                    <TabsContent value="daily-journal" className="mt-6 space-y-6">
                             <Card>
-                                    <CardHeader>
-                                        <CardTitle>Balanza de Comprobación</CardTitle>
-                                        <CardDescription>Verificación de la suma de saldos deudores y acreedores.</CardDescription>
-                                    </CardHeader>
-                                    <CardContent>
-                                        <Table>
-                                            <TableHeader>
-                                                <TableRow>
-                                                    <TableHead>Cuenta Contable</TableHead>
-                                                    <TableHead className="text-right">Debe (Cargos)</TableHead>
-                                                    <TableHead className="text-right">Haber (Abonos)</TableHead>
+                                <CardHeader>
+                                    <CardTitle>Libro Diario</CardTitle>
+                                    <CardDescription>Registro cronológico de todas las operaciones financieras de la empresa.</CardDescription>
+                                </CardHeader>
+                                <CardContent className="space-y-4">
+                                    <Table>
+                                        <TableHeader>
+                                            <TableRow>
+                                                <TableHead>Fecha</TableHead>
+                                                <TableHead>Descripción</TableHead>
+                                                <TableHead>Categoría</TableHead>
+                                                <TableHead>Tipo</TableHead>
+                                                <TableHead className="text-right">Monto</TableHead>
+                                            </TableRow>
+                                        </TableHeader>
+                                        <TableBody>
+                                            {filteredTransactions.map((trx) => (
+                                                <TableRow key={trx.id}>
+                                                    <TableCell>{format(new Date(trx.date), "dd/MM/yyyy")}</TableCell>
+                                                    <TableCell className="font-medium">{trx.description}</TableCell>
+                                                    <TableCell>{trx.category}</TableCell>
+                                                    <TableCell>
+                                                        <Badge variant={trx.type === 'income' ? 'default' : trx.type === 'expense' ? 'destructive' : 'secondary'}>
+                                                            {trx.type === 'income' ? 'Ingreso' : trx.type.startsWith('transfer') ? 'Transferencia' : 'Egreso'}
+                                                        </Badge>
+                                                    </TableCell>
+                                                    <TableCell className={`text-right font-semibold ${trx.amount > 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                                        {trx.amount.toLocaleString('en-US', { style: 'currency', currency: 'USD' })}
+                                                    </TableCell>
                                                 </TableRow>
-                                            </TableHeader>
-                                            <TableBody>
-                                                {trialBalanceData.map(item => (
-                                                    <TableRow key={item.account}>
-                                                        <TableCell className="font-medium">{item.account}</TableCell>
-                                                        <TableCell className="text-right text-red-600">{item.debit > 0 ? item.debit.toLocaleString('en-US', { style: 'currency', currency: 'USD' }) : '-'}</TableCell>
-                                                        <TableCell className="text-right text-green-600">{item.credit > 0 ? item.credit.toLocaleString('en-US', { style: 'currency', currency: 'USD' }) : '-'}</TableCell>
-                                                    </TableRow>
-                                                ))}
-                                            </TableBody>
-                                            <TableFooter>
-                                                <TableRow className="font-bold bg-muted">
-                                                    <TableCell>Sumas Iguales</TableCell>
-                                                    <TableCell className="text-right">{totalTrialBalance.debit.toLocaleString('en-US', { style: 'currency', currency: 'USD' })}</TableCell>
-                                                    <TableCell className="text-right">{totalTrialBalance.credit.toLocaleString('en-US', { style: 'currency', currency: 'USD' })}</TableCell>
+                                            ))}
+                                        </TableBody>
+                                    </Table>
+                                </CardContent>
+                            </Card>
+                    </TabsContent>
+                    <TabsContent value="general-ledger" className="mt-6">
+                            <Card>
+                                <CardHeader>
+                                    <CardTitle>Libro Mayor</CardTitle>
+                                    <CardDescription>Concentración de movimientos por cuenta contable (categoría).</CardDescription>
+                                </CardHeader>
+                                <CardContent className="space-y-4">
+                                    <div className="flex items-center gap-2">
+                                        <Label htmlFor="ledger-account-filter">Cuenta Contable</Label>
+                                        <Select value={selectedLedgerAccountId} onValueChange={setSelectedLedgerAccountId}>
+                                            <SelectTrigger id="ledger-account-filter" className="w-[300px]"><SelectValue placeholder="Seleccione una cuenta..."/></SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="all">Ver todas las transacciones</SelectItem>
+                                                {allCategories.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+                                    <Table>
+                                        <TableHeader>
+                                            <TableRow>
+                                                <TableHead>Fecha</TableHead>
+                                                <TableHead>Descripción</TableHead>
+                                                <TableHead className="text-right">Monto</TableHead>
+                                            </TableRow>
+                                        </TableHeader>
+                                        <TableBody>
+                                            {generalLedgerData.length > 0 ? generalLedgerData.map(trx => (
+                                                <TableRow key={trx.id}>
+                                                    <TableCell>{format(new Date(trx.date), "dd/MM/yyyy")}</TableCell>
+                                                    <TableCell className="font-medium">{trx.description}</TableCell>
+                                                    <TableCell className={`text-right font-semibold ${trx.amount > 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                                        {trx.amount.toLocaleString('en-US', { style: 'currency', currency: 'USD' })}
+                                                    </TableCell>
                                                 </TableRow>
-                                            </TableFooter>
-                                        </Table>
-                                    </CardContent>
-                                </Card>
-                        </TabsContent>
-                        <TabsContent value="auxiliaries" className="mt-6">
-                                <Card>
-                                    <CardHeader>
-                                        <CardTitle>Auxiliares Contables</CardTitle>
-                                        <CardDescription>Detalle de movimientos a nivel de subcuentas (Bancos, Clientes, etc.).</CardDescription>
-                                    </CardHeader>
-                                    <CardContent className="space-y-4">
-                                        <div className="flex items-center gap-4">
-                                            <Select value={auxiliaryType} onValueChange={setAuxiliaryType}>
-                                                <SelectTrigger className="w-[200px]"><SelectValue/></SelectTrigger>
+                                            )) : (
+                                                <TableRow><TableCell colSpan={3} className="text-center">Seleccione una cuenta para ver sus movimientos.</TableCell></TableRow>
+                                            )}
+                                        </TableBody>
+                                        <TableFooter>
+                                            <TableRow>
+                                                <TableCell colSpan={2} className="text-right font-bold">Saldo Total de la Cuenta:</TableCell>
+                                                <TableCell className="text-right font-bold">{generalLedgerData.reduce((sum, t) => sum + t.amount, 0).toLocaleString('en-US', { style: 'currency', currency: 'USD' })}</TableCell>
+                                            </TableRow>
+                                        </TableFooter>
+                                    </Table>
+                                </CardContent>
+                            </Card>
+                    </TabsContent>
+                    <TabsContent value="trial-balance" className="mt-6">
+                        <Card>
+                                <CardHeader>
+                                    <CardTitle>Balanza de Comprobación</CardTitle>
+                                    <CardDescription>Verificación de la suma de saldos deudores y acreedores.</CardDescription>
+                                </CardHeader>
+                                <CardContent>
+                                    <Table>
+                                        <TableHeader>
+                                            <TableRow>
+                                                <TableHead>Cuenta Contable</TableHead>
+                                                <TableHead className="text-right">Debe (Cargos)</TableHead>
+                                                <TableHead className="text-right">Haber (Abonos)</TableHead>
+                                            </TableRow>
+                                        </TableHeader>
+                                        <TableBody>
+                                            {trialBalanceData.map(item => (
+                                                <TableRow key={item.account}>
+                                                    <TableCell className="font-medium">{item.account}</TableCell>
+                                                    <TableCell className="text-right text-red-600">{item.debit > 0 ? item.debit.toLocaleString('en-US', { style: 'currency', currency: 'USD' }) : '-'}</TableCell>
+                                                    <TableCell className="text-right text-green-600">{item.credit > 0 ? item.credit.toLocaleString('en-US', { style: 'currency', currency: 'USD' }) : '-'}</TableCell>
+                                                </TableRow>
+                                            ))}
+                                        </TableBody>
+                                        <TableFooter>
+                                            <TableRow className="font-bold bg-muted">
+                                                <TableCell>Sumas Iguales</TableCell>
+                                                <TableCell className="text-right">{totalTrialBalance.debit.toLocaleString('en-US', { style: 'currency', currency: 'USD' })}</TableCell>
+                                                <TableCell className="text-right">{totalTrialBalance.credit.toLocaleString('en-US', { style: 'currency', currency: 'USD' })}</TableCell>
+                                            </TableRow>
+                                        </TableFooter>
+                                    </Table>
+                                </CardContent>
+                            </Card>
+                    </TabsContent>
+                    <TabsContent value="auxiliaries" className="mt-6">
+                            <Card>
+                                <CardHeader>
+                                    <CardTitle>Auxiliares Contables</CardTitle>
+                                    <CardDescription>Detalle de movimientos a nivel de subcuentas (Bancos, Clientes, etc.).</CardDescription>
+                                </CardHeader>
+                                <CardContent className="space-y-4">
+                                    <div className="flex items-center gap-4">
+                                        <Select value={auxiliaryType} onValueChange={setAuxiliaryType}>
+                                            <SelectTrigger className="w-[200px]"><SelectValue/></SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="banks">Auxiliar de Bancos</SelectItem>
+                                                <SelectItem value="clients">Auxiliar de Clientes</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                        {auxiliaryType === 'banks' && (
+                                            <Select value={selectedAuxiliaryId} onValueChange={setSelectedAuxiliaryId}>
+                                                <SelectTrigger className="w-[300px]"><SelectValue placeholder="Seleccione una cuenta bancaria..."/></SelectTrigger>
                                                 <SelectContent>
-                                                    <SelectItem value="banks">Auxiliar de Bancos</SelectItem>
-                                                    <SelectItem value="clients">Auxiliar de Clientes</SelectItem>
+                                                    <SelectItem value="all">Todas las Cuentas</SelectItem>
+                                                    {mockAccounts.map(acc => <SelectItem key={acc.id} value={acc.id}>{acc.bankName} ({acc.companyName})</SelectItem>)}
                                                 </SelectContent>
                                             </Select>
-                                            {auxiliaryType === 'banks' && (
-                                                <Select value={selectedAuxiliaryId} onValueChange={setSelectedAuxiliaryId}>
-                                                    <SelectTrigger className="w-[300px]"><SelectValue placeholder="Seleccione una cuenta bancaria..."/></SelectTrigger>
-                                                    <SelectContent>
-                                                        <SelectItem value="all">Todas las Cuentas</SelectItem>
-                                                        {mockAccounts.map(acc => <SelectItem key={acc.id} value={acc.id}>{acc.bankName} ({acc.companyName})</SelectItem>)}
-                                                    </SelectContent>
-                                                </Select>
-                                            )}
-                                            {auxiliaryType === 'clients' && (
-                                                <Select value={selectedAuxiliaryId} onValueChange={setSelectedAuxiliaryId}>
-                                                    <SelectTrigger className="w-[300px]"><SelectValue placeholder="Seleccione un cliente..."/></SelectTrigger>
-                                                    <SelectContent>
-                                                        <SelectItem value="all">Todos los Clientes</SelectItem>
-                                                        {clients.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
-                                                    </SelectContent>
-                                                </Select>
-                                            )}
-                                        </div>
-                                        <Table>
-                                            <TableHeader>
-                                                <TableRow>
-                                                    <TableHead>Fecha</TableHead>
-                                                    <TableHead>Descripción</TableHead>
-                                                    <TableHead className="text-right">Monto</TableHead>
+                                        )}
+                                        {auxiliaryType === 'clients' && (
+                                            <Select value={selectedAuxiliaryId} onValueChange={setSelectedAuxiliaryId}>
+                                                <SelectTrigger className="w-[300px]"><SelectValue placeholder="Seleccione un cliente..."/></SelectTrigger>
+                                                <SelectContent>
+                                                    <SelectItem value="all">Todos los Clientes</SelectItem>
+                                                    {clients.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+                                                </SelectContent>
+                                            </Select>
+                                        )}
+                                    </div>
+                                    <Table>
+                                        <TableHeader>
+                                            <TableRow>
+                                                <TableHead>Fecha</TableHead>
+                                                <TableHead>Descripción</TableHead>
+                                                <TableHead className="text-right">Monto</TableHead>
+                                            </TableRow>
+                                        </TableHeader>
+                                        <TableBody>
+                                            {auxiliaryLedgerData.length > 0 ? auxiliaryLedgerData.map(trx => (
+                                                <TableRow key={trx.id}>
+                                                    <TableCell>{format(new Date(trx.date), "dd/MM/yyyy")}</TableCell>
+                                                    <TableCell className="font-medium">{trx.description}</TableCell>
+                                                    <TableCell className={`text-right font-semibold ${trx.amount > 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                                        {trx.amount.toLocaleString('en-US', { style: 'currency', currency: 'USD' })}
+                                                    </TableCell>
                                                 </TableRow>
-                                            </TableHeader>
-                                            <TableBody>
-                                                {auxiliaryLedgerData.length > 0 ? auxiliaryLedgerData.map(trx => (
-                                                    <TableRow key={trx.id}>
-                                                        <TableCell>{format(new Date(trx.date), "dd/MM/yyyy")}</TableCell>
-                                                        <TableCell className="font-medium">{trx.description}</TableCell>
-                                                        <TableCell className={`text-right font-semibold ${trx.amount > 0 ? 'text-green-600' : 'text-red-600'}`}>
-                                                            {trx.amount.toLocaleString('en-US', { style: 'currency', currency: 'USD' })}
-                                                        </TableCell>
-                                                    </TableRow>
-                                                )) : (
-                                                    <TableRow><TableCell colSpan={3} className="text-center">Seleccione un auxiliar para ver su detalle.</TableCell></TableRow>
-                                                )}
-                                            </TableBody>
-                                            <TableFooter>
-                                                <TableRow>
-                                                    <TableCell colSpan={2} className="text-right font-bold">Saldo Total del Auxiliar:</TableCell>
-                                                    <TableCell className="text-right font-bold">{auxiliaryLedgerData.reduce((sum, t) => sum + t.amount, 0).toLocaleString('en-US', { style: 'currency', currency: 'USD' })}</TableCell>
-                                                </TableRow>
-                                            </TableFooter>
-                                        </Table>
-                                    </CardContent>
-                                </Card>
-                        </TabsContent>
-                        </Tabs>
-                    </div>
+                                            )) : (
+                                                <TableRow><TableCell colSpan={3} className="text-center">Seleccione un auxiliar para ver su detalle.</TableCell></TableRow>
+                                            )}
+                                        </TableBody>
+                                        <TableFooter>
+                                            <TableRow>
+                                                <TableCell colSpan={2} className="text-right font-bold">Saldo Total del Auxiliar:</TableCell>
+                                                <TableCell className="text-right font-bold">{auxiliaryLedgerData.reduce((sum, t) => sum + t.amount, 0).toLocaleString('en-US', { style: 'currency', currency: 'USD' })}</TableCell>
+                                            </TableRow>
+                                        </TableFooter>
+                                    </Table>
+                                </CardContent>
+                            </Card>
+                    </TabsContent>
+                    </Tabs>
                 </TabsContent>
-                 <TabsContent value="pnl" className="mt-6">
-                    <div className="bg-muted/30 p-4 rounded-lg">
-                        <Tabs defaultValue="income-statement" className="w-full">
-                        <TabsList className="grid w-full grid-cols-4">
-                            <TabsTrigger value="balance-sheet">Balance General</TabsTrigger>
-                            <TabsTrigger value="income-statement">Estado de Resultados</TabsTrigger>
-                            <TabsTrigger value="cash-flow">Flujo de Efectivo</TabsTrigger>
-                            <TabsTrigger value="equity-changes">Cambios en el Capital</TabsTrigger>
-                        </TabsList>
-                        <TabsContent value="balance-sheet" className="mt-6">
-                                <Card>
-                                    <CardHeader>
-                                        <CardTitle>Balance General (Estado de Situación Financiera)</CardTitle>
-                                        <CardDescription>Presenta activos, pasivos y capital contable en una fecha específica. Esta sección está en desarrollo.</CardDescription>
-                                    </CardHeader>
-                                    <CardContent className="text-center text-muted-foreground py-16">
-                                        <BookText className="mx-auto h-12 w-12 mb-4" />
-                                        <h3 className="text-lg font-semibold">Próximamente</h3>
-                                        <p className="text-sm">Aquí podrá ver una foto de la situación financiera de su empresa.</p>
-                                    </CardContent>
-                                </Card>
-                        </TabsContent>
-                        <TabsContent value="income-statement" className="mt-6">
+                 <TabsContent value="pnl" className="mt-4 p-4 rounded-lg bg-muted/40">
+                    <Tabs defaultValue="income-statement" className="w-full">
+                    <TabsList className="grid w-full grid-cols-4">
+                        <TabsTrigger value="balance-sheet">Balance General</TabsTrigger>
+                        <TabsTrigger value="income-statement">Estado de Resultados</TabsTrigger>
+                        <TabsTrigger value="cash-flow">Flujo de Efectivo</TabsTrigger>
+                        <TabsTrigger value="equity-changes">Cambios en el Capital</TabsTrigger>
+                    </TabsList>
+                    <TabsContent value="balance-sheet" className="mt-6">
                             <Card>
-                                    <CardHeader>
-                                        <CardTitle>Estado de Resultados (Pérdidas y Ganancias)</CardTitle>
-                                        <CardDescription>Muestra ingresos, costos y gastos para determinar la utilidad o pérdida neta. Esta sección está en desarrollo.</CardDescription>
-                                    </CardHeader>
-                                    <CardContent className="text-center text-muted-foreground py-16">
-                                        <BarChartIcon className="mx-auto h-12 w-12 mb-4" />
-                                        <h3 className="text-lg font-semibold">Próximamente</h3>
-                                        <p className="text-sm">Aquí podrá analizar la rentabilidad detallada de su negocio.</p>
-                                    </CardContent>
-                                </Card>
-                        </TabsContent>
-                        <TabsContent value="cash-flow" className="mt-6">
-                                <Card>
-                                    <CardHeader>
-                                        <CardTitle>Estado de Flujo de Efectivo</CardTitle>
-                                        <CardDescription>Detalla entradas y salidas de efectivo por actividades. Esta sección está en desarrollo.</CardDescription>
-                                    </CardHeader>
-                                    <CardContent className="text-center text-muted-foreground py-16">
-                                        <ArrowRightLeft className="mx-auto h-12 w-12 mb-4" />
-                                        <h3 className="text-lg font-semibold">Próximamente</h3>
-                                        <p className="text-sm">Aquí podrá analizar cómo se mueve el efectivo en su empresa.</p>
-                                    </CardContent>
-                                </Card>
-                        </TabsContent>
-                            <TabsContent value="equity-changes" className="mt-6">
-                                <Card>
-                                    <CardHeader>
-                                        <CardTitle>Estado de Cambios en el Capital Contable</CardTitle>
-                                        <CardDescription>Refleja variaciones en el patrimonio de los socios. Esta sección está en desarrollo.</CardDescription>
-                                    </CardHeader>
-                                    <CardContent className="text-center text-muted-foreground py-16">
-                                        <UsersIcon className="mx-auto h-12 w-12 mb-4" />
-                                        <h3 className="text-lg font-semibold">Próximamente</h3>
-                                        <p className="text-sm">Aquí podrá ver los cambios en la inversión de los propietarios.</p>
-                                    </CardContent>
-                                </Card>
-                        </TabsContent>
-                        </Tabs>
-                    </div>
+                                <CardHeader>
+                                    <CardTitle>Balance General (Estado de Situación Financiera)</CardTitle>
+                                    <CardDescription>Presenta activos, pasivos y capital contable en una fecha específica. Esta sección está en desarrollo.</CardDescription>
+                                </CardHeader>
+                                <CardContent className="text-center text-muted-foreground py-16">
+                                    <BookText className="mx-auto h-12 w-12 mb-4" />
+                                    <h3 className="text-lg font-semibold">Próximamente</h3>
+                                    <p className="text-sm">Aquí podrá ver una foto de la situación financiera de su empresa.</p>
+                                </CardContent>
+                            </Card>
+                    </TabsContent>
+                    <TabsContent value="income-statement" className="mt-6">
+                        <Card>
+                                <CardHeader>
+                                    <CardTitle>Estado de Resultados (Pérdidas y Ganancias)</CardTitle>
+                                    <CardDescription>Muestra ingresos, costos y gastos para determinar la utilidad o pérdida neta. Esta sección está en desarrollo.</CardDescription>
+                                </CardHeader>
+                                <CardContent className="text-center text-muted-foreground py-16">
+                                    <BarChartIcon className="mx-auto h-12 w-12 mb-4" />
+                                    <h3 className="text-lg font-semibold">Próximamente</h3>
+                                    <p className="text-sm">Aquí podrá analizar la rentabilidad detallada de su negocio.</p>
+                                </CardContent>
+                            </Card>
+                    </TabsContent>
+                    <TabsContent value="cash-flow" className="mt-6">
+                            <Card>
+                                <CardHeader>
+                                    <CardTitle>Estado de Flujo de Efectivo</CardTitle>
+                                    <CardDescription>Detalla entradas y salidas de efectivo por actividades. Esta sección está en desarrollo.</CardDescription>
+                                </CardHeader>
+                                <CardContent className="text-center text-muted-foreground py-16">
+                                    <ArrowRightLeft className="mx-auto h-12 w-12 mb-4" />
+                                    <h3 className="text-lg font-semibold">Próximamente</h3>
+                                    <p className="text-sm">Aquí podrá analizar cómo se mueve el efectivo en su empresa.</p>
+                                </CardContent>
+                            </Card>
+                    </TabsContent>
+                        <TabsContent value="equity-changes" className="mt-6">
+                            <Card>
+                                <CardHeader>
+                                    <CardTitle>Estado de Cambios en el Capital Contable</CardTitle>
+                                    <CardDescription>Refleja variaciones en el patrimonio de los socios. Esta sección está en desarrollo.</CardDescription>
+                                </CardHeader>
+                                <CardContent className="text-center text-muted-foreground py-16">
+                                    <UsersIcon className="mx-auto h-12 w-12 mb-4" />
+                                    <h3 className="text-lg font-semibold">Próximamente</h3>
+                                    <p className="text-sm">Aquí podrá ver los cambios en la inversión de los propietarios.</p>
+                                </CardContent>
+                            </Card>
+                    </TabsContent>
+                    </Tabs>
                 </TabsContent>
             </Tabs>
         </main>
@@ -614,5 +611,3 @@ export default function SettingsPage() {
     </>
   );
 }
-
-    
