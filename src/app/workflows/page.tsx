@@ -131,10 +131,29 @@ export default function WorkflowConfigurationPage() {
 
   const confirmDeleteService = async () => {
     if (!serviceToDelete) return;
+    
+    const wasSelected = serviceToDelete.id === selectedWorkflowId;
+    const index = serviceWorkflows.findIndex(s => s.id === serviceToDelete.id);
+
     await deleteService(serviceToDelete.id);
+
+    if (wasSelected) {
+        // After deletion, the serviceWorkflows array in context will update.
+        // We need to decide what to select next.
+        const remainingServices = serviceWorkflows.filter(s => s.id !== serviceToDelete.id);
+        if (remainingServices.length > 0) {
+            // Try to select the service at the same index, or the last one if it was the last.
+            const nextIndex = Math.min(index, remainingServices.length - 1);
+            setSelectedWorkflowId(remainingServices[nextIndex]?.id || null);
+        } else {
+            // No services left.
+            setSelectedWorkflowId(null);
+        }
+    }
+
     setServiceToDelete(null);
     setIsDeleteConfirmOpen(false);
-  };
+};
 
   const handleStartEditStage = (stage: WorkflowStage) => {
     setEditingStageId(stage.id);
