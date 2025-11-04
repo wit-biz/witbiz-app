@@ -11,15 +11,16 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { PlusCircle, Loader2, Briefcase, Workflow, Edit, Save, Trash2, FileText, UploadCloud } from "lucide-react";
+import { PlusCircle, Loader2, Briefcase, Workflow, Edit, Save, Trash2, FileText, UploadCloud, Plus } from "lucide-react";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { useCRMData } from "@/contexts/CRMDataContext";
 import { useDialogs } from "@/contexts/DialogsContext";
 import Link from "next/link";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { type Document } from "@/lib/types";
+import { type Document, type ClientRequirement, type ServiceWorkflow } from "@/lib/types";
 import { PromptNameDialog } from "@/components/shared/PromptNameDialog";
+import { Input } from "@/components/ui/input";
 
 function ServiceDocuments({ serviceId }: { serviceId: string }) {
   const { getDocumentsByServiceId, deleteDocument } = useCRMData();
@@ -60,16 +61,16 @@ export default function ServicesPage() {
   const { setIsSmartUploadDialogOpen } = useDialogs();
 
   const [editingServiceId, setEditingServiceId] = useState<string | null>(null);
-  const [editableFields, setEditableFields] = useState<{ description: string; clientRequirements: string }>({ description: '', clientRequirements: '' });
+  const [editableFields, setEditableFields] = useState<{ description: string; clientRequirements: ClientRequirement[] }>({ description: '', clientRequirements: [] });
   const [isPromptNameOpen, setIsPromptNameOpen] = useState(false);
 
   const canEditWorkflow = currentUser?.permissions.crm_edit ?? true;
 
-  const handleStartEdit = (service: typeof serviceWorkflows[0]) => {
+  const handleStartEdit = (service: ServiceWorkflow) => {
     setEditingServiceId(service.id);
     setEditableFields({
       description: service.description || '',
-      clientRequirements: service.clientRequirements || '',
+      clientRequirements: service.clientRequirements ? JSON.parse(JSON.stringify(service.clientRequirements)) : [], // Deep copy
     });
   };
 
@@ -78,14 +79,37 @@ export default function ServicesPage() {
   };
 
   const handleSave = async (serviceId: string) => {
-    await updateService(serviceId, editableFields);
+    await updateService(serviceId, {
+      description: editableFields.description,
+      clientRequirements: editableFields.clientRequirements,
+    });
     setEditingServiceId(null);
   };
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+  const handleDescriptionChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setEditableFields(prev => ({ ...prev, [name]: value }));
   };
+
+  const handleRequirementChange = (index: number, value: string) => {
+    const newRequirements = [...editableFields.clientRequirements];
+    newRequirements[index].text = value;
+    setEditableFields(prev => ({ ...prev, clientRequirements: newRequirements }));
+  };
+
+  const handleAddRequirement = () => {
+    const newRequirement: ClientRequirement = { id: `req-${Date.now()}`, text: '' };
+    setEditableFields(prev => ({
+      ...prev,
+      clientRequirements: [...prev.clientRequirements, newRequirement]
+    }));
+  };
+
+  const handleRemoveRequirement = (index: number) => {
+    const newRequirements = editableFields.clientRequirements.filter((_, i) => i !== index);
+    setEditableFields(prev => ({ ...prev, clientRequirements: newRequirements }));
+  };
+
 
   if (isLoadingWorkflows) {
     return (
@@ -143,11 +167,28 @@ export default function ServicesPage() {
                                     <div className="space-y-4">
                                         <div>
                                             <Label htmlFor="description">Descripción del Servicio</Label>
-                                            <Textarea id="description" name="description" value={editableFields.description} onChange={handleInputChange} placeholder="Describa en qué consiste el servicio..." />
+                                            <Textarea id="description" name="description" value={editableFields.description} onChange={handleDescriptionChange} placeholder="Describa en qué consiste el servicio..." />
                                         </div>
                                         <div>
-                                            <Label htmlFor="clientRequirements">Requisitos del Cliente</Label>
-                                            <Textarea id="clientRequirements" name="clientRequirements" value={editableFields.clientRequirements} onChange={handleInputChange} placeholder="Liste los documentos o información que el cliente debe proporcionar..." />
+                                          <Label>Requisitos del Cliente</Label>
+                                          <div className="space-y-2">
+                                            {editableFields.clientRequirements.map((req, index) => (
+                                              <div key={req.id} className="flex items-center gap-2">
+                                                <Input
+                                                  value={req.text}
+                                                  onChange={(e) => handleRequirementChange(index, e.target.value)}
+                                                  placeholder={`Requisito ${index + 1}`}
+                                                />
+                                                <Button variant="ghost" size="icon" onClick={() => handleRemoveRequirement(index)}>
+                                                  <Trash2 className="h-4 w-4 text-destructive" />
+                                                </Button>
+                                              </div>
+                                            ))}
+                                            <Button variant="outline" size="sm" onClick={handleAddRequirement}>
+                                              <Plus className="h-4 w-4 mr-2" />
+                                              Añadir Requisito
+                                            </Button>
+                                          </div>
                                         </div>
                                     </div>
                                 ) : (
@@ -158,7 +199,13 @@ export default function ServicesPage() {
                                         </div>
                                         <div>
                                             <h4 className="font-semibold text-sm">Requisitos del Cliente</h4>
-                                            <p className="text-sm text-muted-foreground mt-1 whitespace-pre-wrap">{service.clientRequirements || 'No hay requisitos especificados.'}</p>
+                                            {service.clientRequirements && service.clientRequirements.length > 0 ? (
+                                                <ul className="list-disc list-inside space-y-1 mt-1 text-sm text-muted-foreground">
+                                                    {service.clientRequirements.map(req => <li key={req.id}>{req.text}</li>)}
+                                                </ul>
+                                            ) : (
+                                                <p className="text-sm text-muted-foreground mt-1">No hay requisitos especificados.</p>
+                                            )}
                                         </div>
                                     </>
                                 )}

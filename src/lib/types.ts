@@ -141,6 +141,11 @@ export interface Service {
     description: string;
 }
 
+export type ClientRequirement = {
+  id: string;
+  text: string;
+}
+
 export interface SubService {
     id: string;
     name: string;
@@ -151,7 +156,7 @@ export interface ServiceWorkflow {
     id: string;
     name: string;
     description?: string;
-    clientRequirements?: string;
+    clientRequirements?: ClientRequirement[];
     stages: WorkflowStage[]; // Legado o para flujos simples
     subServices: SubService[];
 }

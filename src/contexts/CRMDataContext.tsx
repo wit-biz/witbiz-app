@@ -16,6 +16,7 @@ import {
     type UserRole,
     type AppPermissions,
     type SubService,
+    type ClientRequirement,
 } from '@/lib/types';
 import { useUser, useFirestore, useMemoFirebase, useDoc, useAuth } from '@/firebase';
 import { collection, doc, writeBatch, setDoc, getDoc, addDoc, updateDoc, deleteDoc, serverTimestamp } from 'firebase/firestore';
@@ -57,7 +58,7 @@ interface CRMContextType {
   serviceWorkflows: ServiceWorkflow[];
   isLoadingWorkflows: boolean;
   addService: (name: string) => Promise<ServiceWorkflow | null>;
-  updateService: (serviceId: string, updates: Partial<ServiceWorkflow>) => Promise<boolean>;
+  updateService: (serviceId: string, updates: Partial<Omit<ServiceWorkflow, 'id' | 'name' | 'stages' | 'subServices'>>) => Promise<boolean>;
   deleteService: (serviceId: string) => Promise<boolean>;
   addSubServiceToService: (serviceId: string, name: string) => Promise<boolean>;
   updateSubServiceName: (serviceId: string, subServiceId: string, newName: string) => Promise<boolean>;
@@ -206,7 +207,7 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
             id: `service-${Date.now()}`,
             name: name,
             description: "",
-            clientRequirements: "",
+            clientRequirements: [],
             subServices: [],
             stages: [] // Legacy
         };
