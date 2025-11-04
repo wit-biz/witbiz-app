@@ -221,6 +221,12 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
         return true;
     }
 
+    const deleteService = async (serviceId: string): Promise<boolean> => {
+        setServiceWorkflows(prev => prev.filter(s => s.id !== serviceId));
+        showNotification('success', 'Servicio Eliminado', 'El servicio ha sido eliminado.');
+        return true;
+    }
+
     const addSubServiceToService = async (serviceId: string): Promise<boolean> => {
         const newSubService: SubService = {
             id: `sub-service-${Date.now()}`,
@@ -296,7 +302,7 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
         serviceWorkflows, isLoadingWorkflows,
         addService,
         updateService,
-        deleteService: (id) => placeholderPromise(false),
+        deleteService,
         addSubServiceToService,
         updateSubServiceName: (id, subId, name) => placeholderPromise(false),
         deleteSubServiceFromService: (id, subId) => placeholderPromise(false),
@@ -309,6 +315,7 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
         getObjectiveById,
         completeClientObjective: (id) => placeholderPromise({ nextObjective: null, updatedClient: null }),
         registerUser,
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }), [
         currentUser, isUserLoading, clients, isLoadingClients, 
         tasks, isLoadingTasks, documents, isLoadingDocuments, notes, isLoadingNotes,
