@@ -58,6 +58,8 @@ export type Transaction = {
   amount: number;
   companyId: string;
   accountId: string;
+  clientId?: string;
+  clientName?: string;
   attachmentUrl?: string; // URL al comprobante
 }
 

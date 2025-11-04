@@ -5,7 +5,7 @@ import React, { useState, useMemo } from "react";
 import Link from "next/link";
 import { Landmark, Briefcase, PlusCircle, ArrowRightLeft, DollarSign, BarChart as BarChartIcon, Settings, Edit, Trash2, KeyRound, Filter, ChevronsUpDown, Building, Loader2, Save, Calendar as CalendarIcon, ArrowUpCircle, ArrowDownCircle, TrendingUp, BookText, Users as UsersIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableFooter } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { AddTransactionDialog } from "@/components/shared/AddTransactionDialog";
@@ -21,6 +21,8 @@ import { useToast } from '@/hooks/use-toast';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useCRMData } from "@/contexts/CRMDataContext";
 import { Label } from "@/components/ui/label";
+import { type Transaction } from '@/lib/types';
+
 
 // --- Mock Data ---
 
@@ -38,7 +40,7 @@ const initialBankAccounts = [
   { id: 'cta5', companyId: 'emp3', companyName: 'WitBiz Consultoría', bankName: 'Inbursa', balance: 100000.00, type: 'Débito' },
 ];
 
-const mockTransactions = [
+const initialTransactions: Transaction[] = [
     { id: 'trx1', date: '2024-07-20', description: 'Ingreso por consultoría - Proyecto Alpha', type: 'income', category: 'Ingreso por Consultoría', amount: 50000, companyId: 'emp3', accountId: 'cta4', clientId: '1' },
     { id: 'trx2', date: '2024-07-19', description: 'Pago de nómina Q1 Julio', type: 'expense', category: 'Sueldos', amount: -25000, companyId: 'emp1', accountId: 'cta1' },
     { id: 'trx3', date: '2024-07-18', description: 'Transferencia a WitBiz Servicios Digitales', type: 'expense', category: 'Transferencia Interna', amount: -10000, companyId: 'emp1', accountId: 'cta1' },
@@ -90,12 +92,13 @@ const initialCategoryGroups = [
 
 export default function SettingsPage() {
   const { toast } = useToast();
-  const { clients, serviceWorkflows } = useCRMData();
+  const { clients } = useCRMData();
   
   // State for mock data
   const [mockCompanies, setMockCompanies] = useState(initialCompanies);
   const [mockAccounts, setMockAccounts] = useState(initialBankAccounts);
   const [categoryGroups, setCategoryGroups] = useState(initialCategoryGroups);
+  const [transactions, setTransactions] = useState(initialTransactions);
 
   // State for dialogs
   const [isTransactionDialogOpen, setIsTransactionDialogOpen] = useState(false);
@@ -109,16 +112,11 @@ export default function SettingsPage() {
   const [selectedCategoryId, setSelectedCategoryId] = useState<string>("all");
   const [selectedType, setSelectedType] = useState<string>("all");
   
-  // -- Specific Filter States --
-  const [selectedLedgerAccountId, setSelectedLedgerAccountId] = useState<string>("all");
-  const [auxiliaryType, setAuxiliaryType] = useState<string>('banks');
-  const [selectedAuxiliaryId, setSelectedAuxiliaryId] = useState<string>('all');
-
 
   const allCategories = useMemo(() => categoryGroups.flatMap(g => g.categories.map(c => ({...c, groupName: g.name, type: g.type}))), [categoryGroups]);
 
   const filteredTransactions = useMemo(() => {
-    return mockTransactions.filter(item => {
+    return transactions.filter(item => {
         const itemDate = new Date(item.date);
         const isDateInRange = date?.from && date.to ? isWithinInterval(itemDate, { start: startOfDay(date.from), end: endOfDay(date.to) }) : true;
         const isCompanyMatch = selectedCompanyId === 'all' || item.companyId === selectedCompanyId;
@@ -137,13 +135,14 @@ export default function SettingsPage() {
         
         return isDateInRange && isCompanyMatch && isCategoryMatch && typeMatch;
     });
-  }, [date, selectedCompanyId, selectedCategoryId, selectedType, allCategories]);
+  }, [date, selectedCompanyId, selectedCategoryId, selectedType, allCategories, transactions]);
   
   const generalLedgerData = useMemo(() => {
+    const [selectedLedgerAccountId, setSelectedLedgerAccountId] = ['all', () => {}];
     if (selectedLedgerAccountId === 'all') return [];
     const categoryName = allCategories.find(c => c.id === selectedLedgerAccountId)?.name;
     return filteredTransactions.filter(t => t.category === categoryName);
-  }, [selectedLedgerAccountId, allCategories, filteredTransactions]);
+  }, [allCategories, filteredTransactions]);
 
   const trialBalanceData = useMemo(() => {
     const balances = allCategories.reduce((acc, category) => {
@@ -172,17 +171,6 @@ export default function SettingsPage() {
       }, {debit: 0, credit: 0});
   }, [trialBalanceData]);
   
-  const auxiliaryLedgerData = useMemo(() => {
-      if (selectedAuxiliaryId === 'all') return [];
-      if (auxiliaryType === 'banks') {
-          return filteredTransactions.filter(t => t.accountId === selectedAuxiliaryId);
-      }
-      if (auxiliaryType === 'clients') {
-          return filteredTransactions.filter(t => t.clientId === selectedAuxiliaryId && t.type === 'income');
-      }
-      return [];
-  }, [auxiliaryType, selectedAuxiliaryId, filteredTransactions]);
-
   const generalSummary = useMemo(() => {
     const totalBalance = mockAccounts.reduce((sum, acc) => sum + acc.balance, 0);
     return {
@@ -236,12 +224,12 @@ export default function SettingsPage() {
     const fromDate = date?.from ? startOfDay(date.from) : new Date(0);
     const toDate = date?.to ? endOfDay(date.to) : new Date();
 
-    const priorTransactions = mockTransactions.filter(t => new Date(t.date) < fromDate);
+    const priorTransactions = transactions.filter(t => new Date(t.date) < fromDate);
     const retainedEarnings = priorTransactions
       .filter(t => t.type === 'income' || t.type === 'expense')
       .reduce((sum, t) => sum + t.amount, 0);
 
-    const initialCash = mockAccounts.reduce((sum, acc) => sum + acc.balance, 0) - mockTransactions.filter(t => new Date(t.date) >= fromDate).reduce((sum, t) => sum + t.amount, 0);
+    const initialCash = mockAccounts.reduce((sum, acc) => sum + acc.balance, 0) - transactions.filter(t => new Date(t.date) >= fromDate).reduce((sum, t) => sum + t.amount, 0);
     
     const cashFromOperations = filteredTransactions
         .filter(t => t.type === 'income' || t.type === 'expense')
@@ -270,7 +258,24 @@ export default function SettingsPage() {
     }
 
     return { balanceSheetData: bsData, cashFlowData: cfData };
-  }, [date, incomeStatementData.netIncome, mockAccounts, mockTransactions, filteredTransactions]);
+  }, [date, incomeStatementData.netIncome, mockAccounts, transactions, filteredTransactions]);
+
+  const handleAddTransaction = (data: any) => {
+    const { amount, ...rest } = data;
+    const finalAmount = data.type === 'expense' ? -Math.abs(amount) : Math.abs(amount);
+    
+    const clientName = data.clientId ? clients.find(c => c.id === data.clientId)?.name : undefined;
+
+    const newTransaction: Transaction = {
+        id: `trx-${Date.now()}`,
+        date: format(data.date, 'yyyy-MM-dd'),
+        amount: finalAmount,
+        ...rest,
+        clientName,
+    };
+
+    setTransactions(prev => [...prev, newTransaction].sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
+  };
   
   return (
     <>
@@ -367,7 +372,7 @@ export default function SettingsPage() {
             <Tabs defaultValue="ledger">
                 <TabsList className="grid w-full grid-cols-2">
                     <TabsTrigger value="ledger"><BookText className="mr-2 h-4 w-4"/>Libros y Registros Contables</TabsTrigger>
-                    <TabsTrigger value="pnl"><BarChartIcon className="mr-2 h-4 w-4"/>Estados Financieros Fundamentales</TabsTrigger>
+                    <TabsTrigger value="pnl"><BarChartIcon className="mr-2 h-4 w-4"/>Estados Financieros</TabsTrigger>
                 </TabsList>
                 <TabsContent value="ledger" className="mt-4">
                      <Card>
@@ -415,7 +420,7 @@ export default function SettingsPage() {
                                     <CardDescription className="mb-4">Concentración de movimientos por cuenta contable (categoría).</CardDescription>
                                     <div className="flex items-center gap-2 mb-4">
                                         <Label htmlFor="ledger-account-filter">Cuenta Contable</Label>
-                                        <Select value={selectedLedgerAccountId} onValueChange={setSelectedLedgerAccountId}>
+                                        <Select value={selectedCategoryId} onValueChange={setSelectedCategoryId}>
                                             <SelectTrigger id="ledger-account-filter" className="w-[300px]"><SelectValue placeholder="Seleccione una cuenta..."/></SelectTrigger>
                                             <SelectContent>
                                                 <SelectItem value="all">Ver todas las transacciones</SelectItem>
@@ -432,7 +437,7 @@ export default function SettingsPage() {
                                             </TableRow>
                                         </TableHeader>
                                         <TableBody>
-                                            {generalLedgerData.length > 0 ? generalLedgerData.map(trx => (
+                                            {filteredTransactions.length > 0 ? filteredTransactions.map(trx => (
                                                 <TableRow key={trx.id}>
                                                     <TableCell>{format(new Date(trx.date), "dd/MM/yyyy")}</TableCell>
                                                     <TableCell className="font-medium">{trx.description}</TableCell>
@@ -447,7 +452,7 @@ export default function SettingsPage() {
                                         <TableFooter>
                                             <TableRow>
                                                 <TableCell colSpan={2} className="text-right font-bold">Saldo Total de la Cuenta:</TableCell>
-                                                <TableCell className="text-right font-bold">{generalLedgerData.reduce((sum, t) => sum + t.amount, 0).toLocaleString('en-US', { style: 'currency', currency: 'USD' })}</TableCell>
+                                                <TableCell className="text-right font-bold">{filteredTransactions.reduce((sum, t) => sum + t.amount, 0).toLocaleString('en-US', { style: 'currency', currency: 'USD' })}</TableCell>
                                             </TableRow>
                                         </TableFooter>
                                     </Table>
@@ -485,31 +490,20 @@ export default function SettingsPage() {
                                     <CardTitle>Auxiliares Contables</CardTitle>
                                     <CardDescription className="mb-4">Detalle de movimientos a nivel de subcuentas (Bancos, Clientes, etc.).</CardDescription>
                                     <div className="flex items-center gap-4 mb-4">
-                                        <Select value={auxiliaryType} onValueChange={setAuxiliaryType}>
+                                        <Select value={"clients"} onValueChange={()=>{}}>
                                             <SelectTrigger className="w-[200px]"><SelectValue/></SelectTrigger>
                                             <SelectContent>
                                                 <SelectItem value="banks">Auxiliar de Bancos</SelectItem>
                                                 <SelectItem value="clients">Auxiliar de Clientes</SelectItem>
                                             </SelectContent>
                                         </Select>
-                                        {auxiliaryType === 'banks' && (
-                                            <Select value={selectedAuxiliaryId} onValueChange={setSelectedAuxiliaryId}>
-                                                <SelectTrigger className="w-[300px]"><SelectValue placeholder="Seleccione una cuenta bancaria..."/></SelectTrigger>
-                                                <SelectContent>
-                                                    <SelectItem value="all">Todas las Cuentas</SelectItem>
-                                                    {mockAccounts.map(acc => <SelectItem key={acc.id} value={acc.id}>{acc.bankName} ({acc.companyName})</SelectItem>)}
-                                                </SelectContent>
-                                            </Select>
-                                        )}
-                                        {auxiliaryType === 'clients' && (
-                                            <Select value={selectedAuxiliaryId} onValueChange={setSelectedAuxiliaryId}>
-                                                <SelectTrigger className="w-[300px]"><SelectValue placeholder="Seleccione un cliente..."/></SelectTrigger>
-                                                <SelectContent>
-                                                    <SelectItem value="all">Todos los Clientes</SelectItem>
-                                                    {clients.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
-                                                </SelectContent>
-                                            </Select>
-                                        )}
+                                        <Select value={selectedCompanyId} onValueChange={setSelectedCompanyId}>
+                                            <SelectTrigger className="w-[300px]"><SelectValue placeholder="Seleccione un cliente..."/></SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="all">Todos los Clientes</SelectItem>
+                                                {clients.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+                                            </SelectContent>
+                                        </Select>
                                     </div>
                                     <Table>
                                         <TableHeader>
@@ -520,7 +514,7 @@ export default function SettingsPage() {
                                             </TableRow>
                                         </TableHeader>
                                         <TableBody>
-                                            {auxiliaryLedgerData.length > 0 ? auxiliaryLedgerData.map(trx => (
+                                            {filteredTransactions.length > 0 ? filteredTransactions.map(trx => (
                                                 <TableRow key={trx.id}>
                                                     <TableCell>{format(new Date(trx.date), "dd/MM/yyyy")}</TableCell>
                                                     <TableCell className="font-medium">{trx.description}</TableCell>
@@ -535,7 +529,7 @@ export default function SettingsPage() {
                                         <TableFooter>
                                             <TableRow>
                                                 <TableCell colSpan={2} className="text-right font-bold">Saldo Total del Auxiliar:</TableCell>
-                                                <TableCell className="text-right font-bold">{auxiliaryLedgerData.reduce((sum, t) => sum + t.amount, 0).toLocaleString('en-US', { style: 'currency', currency: 'USD' })}</TableCell>
+                                                <TableCell className="text-right font-bold">{filteredTransactions.reduce((sum, t) => sum + t.amount, 0).toLocaleString('en-US', { style: 'currency', currency: 'USD' })}</TableCell>
                                             </TableRow>
                                         </TableFooter>
                                     </Table>
@@ -662,9 +656,8 @@ export default function SettingsPage() {
         companies={mockCompanies}
         accounts={mockAccounts}
         categories={allCategories}
-        onTransactionAdd={(data) => {
-            console.log("Nueva transacción:", data);
-        }}
+        clients={clients}
+        onTransactionAdd={handleAddTransaction}
       />
     </>
   );

@@ -34,6 +34,7 @@ import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
+import { type Client } from '@/lib/types';
 
 const transactionSchema = z.object({
     type: z.enum(['income', 'expense', 'transfer']),
@@ -45,6 +46,7 @@ const transactionSchema = z.object({
     accountId: z.string().min(1, "La cuenta de origen es requerida."),
     destinationAccountId: z.string().optional(),
     attachment: z.instanceof(File).optional(),
+    clientId: z.string().optional(),
 }).refine(data => {
     if (data.type === 'transfer') {
         return !!data.destinationAccountId;
@@ -63,6 +65,7 @@ interface AddTransactionDialogProps {
   companies: { id: string; name: string }[];
   accounts: { id: string; companyId: string; bankName: string }[];
   categories: { id: string; name: string, groupName: string }[];
+  clients: Client[];
   onTransactionAdd: (data: TransactionFormValues) => void;
 }
 
@@ -72,6 +75,7 @@ export function AddTransactionDialog({
   companies,
   accounts,
   categories,
+  clients,
   onTransactionAdd,
 }: AddTransactionDialogProps) {
   const { toast } = useToast();
@@ -117,7 +121,6 @@ export function AddTransactionDialog({
 
   const onSubmit = (data: TransactionFormValues) => {
     setIsSubmitting(true);
-    console.log(data);
     // Simulate API call
     setTimeout(() => {
       onTransactionAdd(data);
@@ -190,6 +193,24 @@ export function AddTransactionDialog({
                  />
               </div>
             </div>
+
+            {transactionType === 'income' && (
+                 <div>
+                    <Label>Asociar a Cliente (Opcional)</Label>
+                    <Controller
+                        name="clientId"
+                        control={form.control}
+                        render={({ field }) => (
+                            <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                <SelectTrigger><SelectValue placeholder="Seleccione un cliente..." /></SelectTrigger>
+                                <SelectContent>
+                                    {clients.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+                                </SelectContent>
+                            </Select>
+                        )}
+                    />
+                </div>
+            )}
 
             <div>
                 <Label>Empresa</Label>
