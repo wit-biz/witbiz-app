@@ -249,7 +249,7 @@ export default function SettingsPage() {
                     <Card>
                         <CardHeader>
                             <CardTitle>Resumen de Movimientos Filtrados</CardTitle>
-                            <CardDescription>Totales calculados basados en los filtros actuales del Libro Diario.</CardDescription>
+                            <CardDescription>Totales calculados basados en los filtros actuales.</CardDescription>
                         </CardHeader>
                         <CardContent>
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -291,6 +291,53 @@ export default function SettingsPage() {
                             </Button>
                         </CardFooter>
                     </Card>
+
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Filtros Globales</CardTitle>
+                            <CardDescription>Estos filtros se aplican a todos los libros y registros contables.</CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            <div className="flex flex-col md:flex-row gap-2">
+                                <Popover>
+                                <PopoverTrigger asChild>
+                                    <Button id="date" variant={"outline"} className={cn("w-full md:w-auto justify-start text-left font-normal", !date && "text-muted-foreground")}>
+                                    <CalendarIcon className="mr-2 h-4 w-4" />
+                                    {date?.from ? (date.to ? (<>{format(date.from, "LLL dd, y")} - {format(date.to, "LLL dd, y")}</>) : (format(date.from, "LLL dd, y"))) : (<span>Calendario</span>)}
+                                    </Button>
+                                </PopoverTrigger>
+                                <PopoverContent className="w-auto p-0" align="start">
+                                    <Calendar initialFocus mode="range" defaultMonth={date?.from} selected={date} onSelect={setDate} numberOfMonths={2} locale={es} />
+                                </PopoverContent>
+                                </Popover>
+                                <Select value={selectedCompanyId} onValueChange={setSelectedCompanyId}>
+                                <SelectTrigger className="w-full md:w-[200px]"><SelectValue placeholder="Filtrar por empresa..." /></SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="all">Todas las Empresas</SelectItem>
+                                    {mockCompanies.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+                                </SelectContent>
+                                </Select>
+                                <Select value={selectedCategoryId} onValueChange={setSelectedCategoryId}>
+                                <SelectTrigger className="w-full md:w-[200px]"><SelectValue placeholder="Filtrar por categoría..." /></SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="all">Todas las Categorías</SelectItem>
+                                    {allCategories.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+                                </SelectContent>
+                                </Select>
+                                <Select value={selectedType} onValueChange={setSelectedType}>
+                                <SelectTrigger className="w-full md:w-[180px]"><SelectValue placeholder="Filtrar por tipo..." /></SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="all">Todos los Tipos</SelectItem>
+                                    <SelectItem value="income">Ingreso</SelectItem>
+                                    <SelectItem value="expense">Egreso</SelectItem>
+                                    <SelectItem value="transfer">Transferencia</SelectItem>
+                                </SelectContent>
+                                </Select>
+                                <Button variant="ghost" onClick={() => { setDate(undefined); setSelectedCompanyId("all"); setSelectedCategoryId("all"); setSelectedType("all");}}>Limpiar</Button>
+                            </div>
+                        </CardContent>
+                    </Card>
+
                     <Tabs defaultValue="daily-journal" className="w-full">
                        <TabsList className="grid w-full grid-cols-4">
                            <TabsTrigger value="daily-journal">Libro Diario</TabsTrigger>
@@ -301,47 +348,10 @@ export default function SettingsPage() {
                        <TabsContent value="daily-journal" className="mt-6 space-y-6">
                             <Card>
                                 <CardHeader>
-                                    <CardTitle>Registro Cronológico de Operaciones</CardTitle>
-                                    <CardDescription>Listado completo de todas las transacciones financieras de la empresa.</CardDescription>
+                                    <CardTitle>Libro Diario</CardTitle>
+                                    <CardDescription>Registro cronológico de todas las operaciones financieras de la empresa.</CardDescription>
                                 </CardHeader>
                                 <CardContent className="space-y-4">
-                                    <div className="flex flex-col md:flex-row gap-2 border p-4 rounded-lg">
-                                        <Popover>
-                                        <PopoverTrigger asChild>
-                                            <Button id="date" variant={"outline"} className={cn("w-full md:w-auto justify-start text-left font-normal", !date && "text-muted-foreground")}>
-                                            <CalendarIcon className="mr-2 h-4 w-4" />
-                                            {date?.from ? (date.to ? (<>{format(date.from, "LLL dd, y")} - {format(date.to, "LLL dd, y")}</>) : (format(date.from, "LLL dd, y"))) : (<span>Calendario</span>)}
-                                            </Button>
-                                        </PopoverTrigger>
-                                        <PopoverContent className="w-auto p-0" align="start">
-                                            <Calendar initialFocus mode="range" defaultMonth={date?.from} selected={date} onSelect={setDate} numberOfMonths={2} locale={es} />
-                                        </PopoverContent>
-                                        </Popover>
-                                        <Select value={selectedCompanyId} onValueChange={setSelectedCompanyId}>
-                                        <SelectTrigger className="w-full md:w-[200px]"><SelectValue placeholder="Filtrar por empresa..." /></SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem value="all">Todas las Empresas</SelectItem>
-                                            {mockCompanies.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
-                                        </SelectContent>
-                                        </Select>
-                                        <Select value={selectedCategoryId} onValueChange={setSelectedCategoryId}>
-                                        <SelectTrigger className="w-full md:w-[200px]"><SelectValue placeholder="Filtrar por categoría..." /></SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem value="all">Todas las Categorías</SelectItem>
-                                            {allCategories.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
-                                        </SelectContent>
-                                        </Select>
-                                        <Select value={selectedType} onValueChange={setSelectedType}>
-                                        <SelectTrigger className="w-full md:w-[180px]"><SelectValue placeholder="Filtrar por tipo..." /></SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem value="all">Todos los Tipos</SelectItem>
-                                            <SelectItem value="income">Ingreso</SelectItem>
-                                            <SelectItem value="expense">Egreso</SelectItem>
-                                            <SelectItem value="transfer">Transferencia</SelectItem>
-                                        </SelectContent>
-                                        </Select>
-                                        <Button variant="ghost" onClick={() => { setDate(undefined); setSelectedCompanyId("all"); setSelectedCategoryId("all"); setSelectedType("all");}}>Limpiar</Button>
-                                    </div>
                                     <Table>
                                         <TableHeader>
                                             <TableRow>
