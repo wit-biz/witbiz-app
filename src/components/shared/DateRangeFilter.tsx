@@ -24,6 +24,7 @@ import {
 import { Separator } from "../ui/separator"
 import { Label } from "../ui/label"
 import { Switch } from "../ui/switch"
+import { Tooltip, TooltipProvider, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip"
 
 interface DateRangeFilterProps {
   date: DateRange | undefined;
@@ -37,6 +38,7 @@ interface DateRangeFilterProps {
   onClearFilters: () => void;
   isComparative: boolean;
   setIsComparative: (isComparative: boolean) => void;
+  canBeComparative: boolean;
 }
 
 export function DateRangeFilter({
@@ -50,7 +52,8 @@ export function DateRangeFilter({
   services,
   onClearFilters,
   isComparative,
-  setIsComparative
+  setIsComparative,
+  canBeComparative
 }: DateRangeFilterProps) {
   const presets = [
     { label: "Hoy", range: { from: new Date(), to: new Date() } },
@@ -132,10 +135,26 @@ export function DateRangeFilter({
           {services.map(s => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}
         </SelectContent>
       </Select>
-      <div className="flex items-center space-x-2">
-        <Switch id="comparative-view" checked={isComparative} onCheckedChange={setIsComparative} />
-        <Label htmlFor="comparative-view">Vista Comparativa</Label>
-      </div>
+      <TooltipProvider>
+        <Tooltip>
+            <TooltipTrigger asChild>
+                <div className="flex items-center space-x-2">
+                    <Switch 
+                      id="comparative-view" 
+                      checked={isComparative && canBeComparative} 
+                      onCheckedChange={setIsComparative}
+                      disabled={!canBeComparative}
+                    />
+                    <Label htmlFor="comparative-view">Vista Comparativa</Label>
+                </div>
+            </TooltipTrigger>
+            {!canBeComparative && (
+                <TooltipContent>
+                    <p>Seleccione "Todos" en Clientes y/o Servicios para habilitar la comparación.</p>
+                </TooltipContent>
+            )}
+        </Tooltip>
+      </TooltipProvider>
       <Button variant="ghost" onClick={onClearFilters} size="icon">
           <FilterX className="h-4 w-4 text-muted-foreground" />
           <span className="sr-only">Limpiar filtros</span>
@@ -143,3 +162,5 @@ export function DateRangeFilter({
     </div>
   );
 }
+
+    
