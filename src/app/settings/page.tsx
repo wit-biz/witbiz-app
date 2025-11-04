@@ -3,7 +3,7 @@
 
 import React, { useState, useMemo } from "react";
 import Link from "next/link";
-import { Landmark, Briefcase, PlusCircle, ArrowRightLeft, DollarSign, BarChart as BarChartIcon, Settings, Edit, Trash2, KeyRound, Filter, ChevronsUpDown, Building, Loader2, Save, Calendar as CalendarIcon, ArrowUpCircle, ArrowDownCircle, TrendingUp, BookText, Users as UsersIcon } from "lucide-react";
+import { Landmark, Briefcase, PlusCircle, ArrowRightLeft, DollarSign, BarChart as BarChartIcon, Settings, Edit, Trash2, KeyRound, Filter, ChevronsUpDown, Building, Loader2, Save, Calendar as CalendarIcon, ArrowUpCircle, ArrowDownCircle, TrendingUp, BookText, Users as UsersIcon, FilterX } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableFooter } from "@/components/ui/table";
@@ -22,6 +22,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useCRMData } from "@/contexts/CRMDataContext";
 import { Label } from "@/components/ui/label";
 import { type Transaction } from '@/lib/types';
+import { Tooltip, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 
 // --- Mock Data ---
@@ -278,7 +279,7 @@ export default function SettingsPage() {
   };
   
   return (
-    <>
+    <TooltipProvider>
       <div className="flex flex-col min-h-screen">
         <Header
           title="Contabilidad"
@@ -329,10 +330,10 @@ export default function SettingsPage() {
                     <CardDescription>Estos filtros se aplican a todos los libros y estados financieros.</CardDescription>
                 </CardHeader>
                 <CardContent>
-                    <div className="flex flex-col md:flex-row gap-2">
+                    <div className="flex flex-wrap items-center gap-2">
                         <Popover>
                         <PopoverTrigger asChild>
-                            <Button id="date" variant={"outline"} className={cn("w-full md:w-auto justify-start text-left font-normal", !date && "text-muted-foreground")}>
+                            <Button id="date" variant={"outline"} className={cn("w-full sm:w-auto justify-start text-left font-normal", !date && "text-muted-foreground")}>
                             <CalendarIcon className="mr-2 h-4 w-4" />
                             {date?.from ? (date.to ? (<>{format(date.from, "LLL dd, y")} - {format(date.to, "LLL dd, y")}</>) : (format(date.from, "LLL dd, y"))) : (<span>Calendario</span>)}
                             </Button>
@@ -342,21 +343,21 @@ export default function SettingsPage() {
                         </PopoverContent>
                         </Popover>
                         <Select value={selectedCompanyId} onValueChange={setSelectedCompanyId}>
-                        <SelectTrigger className="w-full md:w-[200px]"><SelectValue placeholder="Filtrar por empresa..." /></SelectTrigger>
+                        <SelectTrigger className="w-full sm:w-[200px]"><SelectValue placeholder="Filtrar por empresa..." /></SelectTrigger>
                         <SelectContent>
                             <SelectItem value="all">Todas las Empresas</SelectItem>
                             {mockCompanies.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
                         </SelectContent>
                         </Select>
                         <Select value={selectedCategoryId} onValueChange={setSelectedCategoryId}>
-                        <SelectTrigger className="w-full md:w-[200px]"><SelectValue placeholder="Filtrar por categoría..." /></SelectTrigger>
+                        <SelectTrigger className="w-full sm:w-[200px]"><SelectValue placeholder="Filtrar por categoría..." /></SelectTrigger>
                         <SelectContent>
                             <SelectItem value="all">Todas las Categorías</SelectItem>
                             {allCategories.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
                         </SelectContent>
                         </Select>
                         <Select value={selectedType} onValueChange={setSelectedType}>
-                        <SelectTrigger className="w-full md:w-[180px]"><SelectValue placeholder="Filtrar por tipo..." /></SelectTrigger>
+                        <SelectTrigger className="w-full sm:w-[180px]"><SelectValue placeholder="Filtrar por tipo..." /></SelectTrigger>
                         <SelectContent>
                             <SelectItem value="all">Todos los Tipos</SelectItem>
                             <SelectItem value="income">Ingreso</SelectItem>
@@ -364,7 +365,16 @@ export default function SettingsPage() {
                             <SelectItem value="transfer">Transferencia</SelectItem>
                         </SelectContent>
                         </Select>
-                        <Button variant="ghost" onClick={() => { setDate(undefined); setSelectedCompanyId("all"); setSelectedCategoryId("all"); setSelectedType("all");}}>Limpiar</Button>
+                         <Tooltip>
+                            <TooltipTrigger asChild>
+                                <Button variant="ghost" size="icon" onClick={() => { setDate(undefined); setSelectedCompanyId("all"); setSelectedCategoryId("all"); setSelectedType("all");}}>
+                                    <FilterX className="h-4 w-4" />
+                                </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                                <p>Limpiar filtros</p>
+                            </TooltipContent>
+                        </Tooltip>
                     </div>
                 </CardContent>
             </Card>
@@ -659,6 +669,6 @@ export default function SettingsPage() {
         clients={clients}
         onTransactionAdd={handleAddTransaction}
       />
-    </>
+    </TooltipProvider>
   );
 }
