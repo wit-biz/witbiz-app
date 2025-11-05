@@ -48,76 +48,85 @@ const StageCard = ({
     clientsByStage
 }: { 
     stage: AnyStage, 
-    level?: number, 
+    level?: 1 | 2 | 3, 
     clientsInStage: Client[], 
     onClientClick: (client: Client) => void,
     clientsByStage: Map<string, Client[]>
 }) => {
-  const [isOpen, setIsOpen] = useState(true);
 
-  const renderSubStages = (subStages: (SubStage | SubSubStage)[], subLevel: number) => {
+  const renderSubStages = (subStages: (SubStage | SubSubStage)[], subLevel: 2 | 3) => {
     if (!subStages || subStages.length === 0) return null;
+    
     return (
-      <div className={cn("ml-4 pl-4 border-l", subLevel > 2 && "ml-2 pl-2")}>
-        {subStages.map(subStage => (
-          <StageCard
-            key={subStage.id}
-            stage={subStage}
-            level={subLevel}
-            clientsInStage={clientsByStage.get(subStage.id) || []}
-            onClientClick={onClientClick}
-            clientsByStage={clientsByStage}
-          />
-        ))}
-      </div>
+        <Accordion type="multiple" defaultValue={subStages.map(s => s.id)} className="space-y-3">
+            {subStages.map(subStage => (
+                <StageCard
+                    key={subStage.id}
+                    stage={subStage}
+                    level={subLevel}
+                    clientsInStage={clientsByStage.get(subStage.id) || []}
+                    onClientClick={onClientClick}
+                    clientsByStage={clientsByStage}
+                />
+            ))}
+        </Accordion>
     );
   };
+  
+  const hasSubStages = ('subStages' in stage && stage.subStages && stage.subStages.length > 0) || ('subSubStages' in stage && stage.subSubStages && stage.subSubStages.length > 0);
 
-  const hasSubStages = 'subStages' in stage && stage.subStages && stage.subStages.length > 0;
-  const hasSubSubStages = 'subSubStages' in stage && stage.subSubStages && stage.subSubStages.length > 0;
-  const canToggle = hasSubStages || hasSubSubStages;
+  const levelStyles = {
+    1: { card: "bg-card", title: "text-base", contentPadding: "px-4 pb-4" },
+    2: { card: "bg-muted/50", title: "text-sm", contentPadding: "pl-4 pr-2 pb-2" },
+    3: { card: "bg-muted/30 border border-dashed", title: "text-sm", contentPadding: "pl-4 pr-2 pb-2" }
+  };
 
   return (
-    <div className="space-y-2 py-2">
-      <Card id={`stage-card-${stage.id}`} className="flex flex-col bg-card">
-        <CardHeader onClick={() => canToggle && setIsOpen(!isOpen)} className={cn(canToggle && "cursor-pointer")}>
-          <div className="flex items-center gap-2">
-            {canToggle ? (
-                isOpen ? <ChevronDown className="h-4 w-4 shrink-0"/> : <ChevronRight className="h-4 w-4 shrink-0"/>
-            ) : <div className="w-4"/>}
-            <CardTitle className="text-base flex-grow">{stage.title}</CardTitle>
-            <span className="text-sm font-normal bg-muted text-muted-foreground rounded-full px-2 py-0.5">
-              {clientsInStage.length}
-            </span>
-          </div>
-          {stage.actions && stage.actions.length > 0 && (
-            <div className="text-sm text-muted-foreground pt-2 pl-6 space-y-1">
-                {stage.actions.map(action => (
-                    <div key={action.id} className="flex items-center gap-2 text-xs text-muted-foreground">
-                        <ListTodo className="h-4 w-4 shrink-0" />
-                        <span className="truncate" title={action.title}>{action.title}</span>
+    <AccordionItem value={stage.id} className="border-none">
+       <Card id={`stage-card-${stage.id}`} className={cn("flex flex-col", levelStyles[level].card)}>
+            <AccordionTrigger className="p-0 hover:no-underline w-full">
+                <CardHeader className="flex-grow w-full p-3">
+                    <div className="flex items-center gap-2">
+                        <CardTitle className={cn("flex-grow text-left", levelStyles[level].title)}>{stage.title}</CardTitle>
+                        <span className="text-sm font-normal bg-muted text-muted-foreground rounded-full px-2 py-0.5 ml-auto">
+                            {clientsInStage.length}
+                        </span>
+                        {/* The chevron is part of the trigger */}
                     </div>
-                ))}
-            </div>
-          )}
-        </CardHeader>
-        <CardContent className="flex-grow space-y-2 overflow-y-auto px-4 pb-4">
-          {clientsInStage.length > 0 ? (
-            clientsInStage.map(client => (
-              <StageClientCard key={client.id} client={client} onClientClick={onClientClick} />
-            ))
-          ) : (
-            <div className="text-center text-muted-foreground py-6 text-sm flex flex-col items-center">
-              <Users className="h-8 w-8 mb-2" />
-              <p>No hay clientes en esta etapa.</p>
-            </div>
-          )}
-        </CardContent>
+                </CardHeader>
+            </AccordionTrigger>
+            <AccordionContent asChild>
+                <CardContent className={cn("space-y-2 overflow-y-auto", levelStyles[level].contentPadding)}>
+                   {stage.actions && stage.actions.length > 0 && (
+                        <div className="text-sm text-muted-foreground pt-0 pl-2 space-y-2 border-l-2 ml-1">
+                             <h4 className="font-semibold text-xs text-foreground/80 pl-3">Acciones</h4>
+                             <ul className="space-y-1 pl-3">
+                                {stage.actions.map(action => (
+                                    <li key={action.id} className="flex items-center gap-2 text-xs">
+                                        <ListTodo className="h-3 w-3 shrink-0" />
+                                        <span className="truncate" title={action.title}>{action.title}</span>
+                                    </li>
+                                ))}
+                             </ul>
+                        </div>
+                   )}
+                   {clientsInStage.length > 0 ? (
+                        clientsInStage.map(client => (
+                            <StageClientCard key={client.id} client={client} onClientClick={onClientClick} />
+                        ))
+                    ) : (
+                        <div className="text-center text-muted-foreground py-6 text-sm flex flex-col items-center">
+                            <Users className="h-8 w-8 mb-2" />
+                            <p>No hay clientes en esta etapa.</p>
+                        </div>
+                    )}
+                    {/* Render nested stages inside the content area */}
+                    {'subStages' in stage && renderSubStages(stage.subStages, 2)}
+                    {'subSubStages' in stage && renderSubStages(stage.subSubStages, 3)}
+                </CardContent>
+            </AccordionContent>
       </Card>
-      
-      {isOpen && 'subStages' in stage && renderSubStages(stage.subStages, level + 1)}
-      {isOpen && 'subSubStages' in stage && renderSubStages(stage.subSubStages, level + 1)}
-    </div>
+    </AccordionItem>
   );
 };
 
@@ -150,13 +159,17 @@ export default function CrmPage() {
     serviceWorkflows.forEach(service => {
         (service.stages || []).forEach(stage1 => {
             stages.push(stage1);
-            (stage1.subStages || []).forEach(stage2 => {
-                stages.push(stage2);
-                (stage2.subSubStages || []).forEach(stage3 => {
-                    stages.push(stage3);
-                })
-            })
-        })
+            if (stage1.subStages) {
+                stage1.subStages.forEach(stage2 => {
+                    stages.push(stage2);
+                    if (stage2.subSubStages) {
+                        stage2.subSubStages.forEach(stage3 => {
+                            stages.push(stage3);
+                        });
+                    }
+                });
+            }
+        });
     });
     return stages;
   }, [serviceWorkflows]);
@@ -201,22 +214,23 @@ export default function CrmPage() {
         {serviceWorkflows && serviceWorkflows.map(service => (
             <Card key={service.id} className="w-full">
                 <CardHeader>
-                    <CardTitle className="flex items-center gap-2 text-xl">
+                    <CardTitle className="text-xl">
                         {service.name}
                     </CardTitle>
                     <CardDescription>Pipeline de clientes para este servicio.</CardDescription>
                 </CardHeader>
                 <CardContent className="pt-0">
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                        {(service.stages || []).sort((a,b) => a.order - b.order).map((stage, index) => (
-                            <StageCard
-                                key={stage.id}
+                        {(service.stages || []).sort((a,b) => a.order - b.order).map((stage) => (
+                           <Accordion type="single" collapsible defaultValue={stage.id} className="w-full" key={stage.id}>
+                             <StageCard
                                 stage={stage}
                                 level={1}
                                 clientsInStage={clientsByStage.get(stage.id) || []}
                                 onClientClick={handleClientClick}
                                 clientsByStage={clientsByStage}
                             />
+                           </Accordion>
                         ))}
                     </div>
                 </CardContent>
