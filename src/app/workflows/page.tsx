@@ -23,6 +23,7 @@ import { useGlobalNotification } from "@/contexts/NotificationContext";
 import { PromptNameDialog } from "@/components/shared/PromptNameDialog";
 import { Slider } from "@/components/ui/slider";
 import { type Task } from '@/lib/types';
+import { AddTaskDialog } from "@/components/shared/AddTaskDialog";
 
 
 const StageNumberIcon = ({ index }: { index: number }) => {
@@ -36,6 +37,7 @@ const StageNumberIcon = ({ index }: { index: number }) => {
 export default function WorkflowConfigurationPage() {
   const { 
     currentUser,
+    clients,
     serviceWorkflows,
     isLoadingWorkflows,
     addService,
@@ -57,6 +59,8 @@ export default function WorkflowConfigurationPage() {
     onSave: (name: string) => void;
     inputPlaceholder?: string;
   } | null>(null);
+
+  const [addTaskDialogState, setAddTaskDialogState] = useState<{isOpen: boolean, stageId: string, subServiceId?: string}>({isOpen: false, stageId: ''});
 
   const canEditWorkflow = currentUser?.permissions.crm_edit ?? true;
   
@@ -91,7 +95,6 @@ export default function WorkflowConfigurationPage() {
   
   useEffect(() => {
     if (selectedWorkflow) {
-        // Create a deep copy for editing to avoid mutating the original state directly
         setEditableWorkflow(JSON.parse(JSON.stringify(selectedWorkflow)));
     } else {
         setEditableWorkflow(null);
@@ -116,6 +119,50 @@ export default function WorkflowConfigurationPage() {
     if (!selectedWorkflow || !editableWorkflow) return false;
     return JSON.stringify(selectedWorkflow) !== JSON.stringify(editableWorkflow);
   }, [selectedWorkflow, editableWorkflow]);
+
+
+  // --- Task/Action Dialog ---
+  const handleOpenAddTaskDialog = (stageId: string, subServiceId?: string) => {
+    setAddTaskDialogState({ isOpen: true, stageId, subServiceId });
+  };
+  
+  const handleAddAction = (data: { title: string, description?: string, dueDays: number }) => {
+    if (!editableWorkflow) return;
+    
+    const newAction: WorkflowAction = {
+      id: `action-${Date.now()}`,
+      title: data.title,
+      description: data.description || '',
+      dueDays: data.dueDays,
+      order: 1, // Simplified order
+      subActions: []
+    };
+
+    if (addTaskDialogState.subServiceId) {
+      // It's a stage within a sub-service
+      const { subServiceId, stageId } = addTaskDialogState;
+      setEditableWorkflow(prev => prev ? {
+        ...prev,
+        subServices: prev.subServices.map(ss => 
+          ss.id === subServiceId ? {
+            ...ss,
+            stages: ss.stages.map(s => 
+              s.id === stageId ? { ...s, actions: [...s.actions, newAction] } : s
+            )
+          } : ss
+        )
+      } : null);
+    } else {
+      // It's a direct stage
+      const { stageId } = addTaskDialogState;
+      setEditableWorkflow(prev => prev ? {
+        ...prev,
+        stages: prev.stages?.map(s =>
+          s.id === stageId ? { ...s, actions: [...(s.actions || []), newAction] } : s
+        ) || []
+      } : null);
+    }
+  };
 
 
   // --- Handlers for direct stages ---
@@ -282,7 +329,7 @@ export default function WorkflowConfigurationPage() {
                               <Slider
                                 value={[action.dueDays || 0]}
                                 onValueChange={(value) => handlers.updateAction(stage.id, action.id, { dueDays: value[0] })}
-                                max={7}
+                                max={30}
                                 step={1}
                                 className="w-full"
                               />
@@ -306,7 +353,7 @@ export default function WorkflowConfigurationPage() {
               </div>
             )}
             {canEditWorkflow && (
-              <Button variant="outline" size="sm" onClick={() => showNotification('info', 'Función no disponible', 'La creación de tareas desde aquí ha sido deshabilitada.')}>
+              <Button variant="outline" size="sm" onClick={() => handlers.openTaskDialog(stage.id)}>
                 <Plus className="h-4 w-4 mr-2"/>Añadir Tarea
               </Button>
             )}
@@ -348,7 +395,7 @@ export default function WorkflowConfigurationPage() {
             renderStages(subService.stages, {
                 deleteStage: (stageId) => handleDeleteStageFromSubService(subService.id, stageId),
                 updateStage: (stageId, updates) => handleUpdateStageInSubService(subService.id, stageId, updates),
-                openTaskDialog: (stageId) => showNotification('info', 'Función no disponible', 'La creación de tareas desde aquí ha sido deshabilitada.'),
+                openTaskDialog: (stageId) => handleOpenAddTaskDialog(stageId, subService.id),
                 deleteAction: (stageId, actionId) => handleDeleteActionFromSubServiceStage(subService.id, stageId, actionId),
                 updateAction: (stageId, actionId, updates) => handleUpdateActionInSubServiceStage(subService.id, stageId, actionId, updates),
             })
@@ -450,7 +497,7 @@ export default function WorkflowConfigurationPage() {
                        renderStages(editableWorkflow.stages, {
                            deleteStage: handleDeleteDirectStage,
                            updateStage: handleUpdateDirectStage,
-                           openTaskDialog: (stageId) => showNotification('info', 'Función no disponible', 'La creación de tareas desde aquí ha sido deshabilitada.'),
+                           openTaskDialog: (stageId) => handleOpenAddTaskDialog(stageId),
                            deleteAction: handleDeleteActionFromDirectStage,
                            updateAction: handleUpdateActionInDirectStage,
                        })
@@ -495,6 +542,16 @@ export default function WorkflowConfigurationPage() {
                 inputPlaceholder={promptNameConfig.inputPlaceholder}
             />
         )}
+
+        <AddTaskDialog
+            isOpen={addTaskDialogState.isOpen}
+            onOpenChange={(isOpen) => setAddTaskDialogState({ isOpen, stageId: '' })}
+            clients={clients}
+            onTaskAdd={handleAddAction}
+            isWorkflowMode={true}
+            stageId={addTaskDialogState.stageId}
+        />
+
       </div>
     </TooltipProvider>
   );

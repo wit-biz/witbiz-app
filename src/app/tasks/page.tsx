@@ -19,6 +19,7 @@ import { TaskDetailDialog } from "@/components/shared/TaskDetailDialog";
 import { useCRMData } from "@/contexts/CRMDataContext";
 import { useTasksContext } from "@/contexts/TasksContext";
 import { Task } from "@/lib/types";
+import { AddTaskDialog } from "@/components/shared/AddTaskDialog";
 
 
 const MemoizedTaskItemDisplay = React.memo(function TaskItemDisplay({ task, icon: Icon, iconColor = "text-gray-500", showDate = true, isClient, onClickHandler }: { task: Task; icon?: React.ElementType; iconColor?: string, showDate?: boolean, isClient: boolean, onClickHandler: (task: Task) => void }) {
@@ -67,7 +68,7 @@ MemoizedTaskItemDisplay.displayName = 'TaskItemDisplay';
 export default function TasksPage() {
   const { toast } = useToast();
 
-  const { tasks: allTasks, isLoadingTasks, currentUser, addTask, updateTask, deleteTask } = useCRMData();
+  const { clients, tasks: allTasks, isLoadingTasks, currentUser, addTask, updateTask, deleteTask } = useCRMData();
   const { setHasTasksForToday } = useTasksContext();
 
   const [isClient, setIsClient] = useState(false);
@@ -78,6 +79,7 @@ export default function TasksPage() {
   
   const [selectedTaskDetail, setSelectedTaskDetail] = useState<Task | null>(null);
   const [isDetailDialogOpen, setIsDetailDialogOpen] = useState(false);
+  const [isAddTaskDialogOpen, setIsAddTaskDialogOpen] = useState(false);
   
   useEffect(() => { 
     setIsClient(true);
@@ -176,6 +178,10 @@ export default function TasksPage() {
 
   const canCreateTask = currentUser?.permissions.tasks_create ?? true; 
 
+  const handleAddTask = async (data: Omit<Task, 'id' | 'status'>) => {
+    await addTask(data);
+  };
+
   return (
     <TooltipProvider>
       <div className="flex flex-col min-h-screen">
@@ -183,6 +189,12 @@ export default function TasksPage() {
           title="Mis Tareas"
           description="Organiza y sigue tus actividades y compromisos diarios y semanales."
         >
+          {canCreateTask && (
+            <Button onClick={() => setIsAddTaskDialogOpen(true)}>
+                <PlusCircle className="mr-2 h-4 w-4" />
+                Crear Tarea
+            </Button>
+          )}
         </Header>
         <main className="flex-1 p-4 md:p-8">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -260,6 +272,13 @@ export default function TasksPage() {
             onDeleteTask={deleteTask}
           />
         )}
+        <AddTaskDialog
+            isOpen={isAddTaskDialogOpen}
+            onOpenChange={setIsAddTaskDialogOpen}
+            clients={clients}
+            onTaskAdd={handleAddTask}
+            isWorkflowMode={false}
+        />
       </div>
     </TooltipProvider>
   );
