@@ -22,8 +22,8 @@ service cloud.firestore {
     match /users/{userId} {
       allow get: if isSignedIn() && isOwner(userId);
       allow list: if false; // Listing users is not permitted.
-      allow create: if isSignedIn() && isOwner(userId) && request.resource.data.id == userId;
-      allow update: if isSignedIn() && isExistingOwner(userId) && request.resource.data.id == resource.data.id; //Enforce immutability of user ID
+      allow create: if isSignedIn() && isOwner(userId);
+      allow update: if isSignedIn() && isExistingOwner(userId);
       allow delete: if isSignedIn() && isExistingOwner(userId);
     }
 
@@ -59,11 +59,7 @@ service cloud.firestore {
      * @principle Restricts access to a user's own data tree.
      */
     match /users/{userId}/leads/{leadId} {
-      allow get: if isSignedIn() && isOwner(userId);
-      allow list: if isSignedIn() && isOwner(userId);
-      allow create: if isSignedIn() && isOwner(userId);
-      allow update: if isSignedIn() && isExistingOwner(userId);
-      allow delete: if isSignedIn() && isExistingOwner(userId);
+      allow read, write: if isSignedIn() && isOwner(userId);
     }
 
     /**
@@ -76,28 +72,14 @@ service cloud.firestore {
     match /users/{userId}/contacts/{contactId} {
       allow read, write: if isSignedIn() && isOwner(userId);
     }
-
-    /**
-     * @description Rules for the /users/{userId}/tasks/{taskId} subcollection.  Users can only access tasks assigned to them.
-     * @path /users/{userId}/tasks/{taskId}
-     * @allow (create) - User 'lbz7nN49aERC4AwnsGSruB6spQJ3' can create a task at /users/lbz7nN49aERC4AwnsGSruB6spQJ3/tasks/task1
-     * @deny (create) - User 'otherUserId' cannot create a task at /users/lbz7nN49aERC4AwnsGSruB6spQJ3/tasks/task1
-     * @principle Restricts access to a user's own data tree.
-     */
-    match /users/{userId}/tasks/{taskId} {
-      allow get: if isSignedIn() && isOwner(userId);
-      allow list: if isSignedIn() && isOwner(userId);
-      allow create: if isSignedIn() && isOwner(userId);
-      allow update: if isSignedIn() && isExistingOwner(userId);
-      allow delete: if isSignedIn() && isExistingOwner(userId);
-    }
     
     /**
      * @description Rules for the /users/{userId}/serviceWorkflows/{workflowId} subcollection. Users can only access their own workflows.
      * @path /users/{userId}/serviceWorkflows/{workflowId}
      */
     match /users/{userId}/serviceWorkflows/{workflowId} {
-      allow read, write: if isSignedIn() && isOwner(userId);
+      allow list, get: if isSignedIn() && isOwner(userId);
+      allow create, update, delete: if isSignedIn() && isOwner(userId);
     }
 
     // --- Helper functions ---
