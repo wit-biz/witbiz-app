@@ -55,7 +55,13 @@ export default function CrmPage() {
 
   const allStages = useMemo(() => {
     if (!serviceWorkflows) return [];
-    return serviceWorkflows.flatMap(s => s.subServices?.flatMap(ss => ss.stages) || s.stages || []);
+    
+    // Correctly combine stages from main service and all sub-services
+    return serviceWorkflows.flatMap(service => {
+        const mainStages = service.stages || [];
+        const subServiceStages = service.subServices?.flatMap(ss => ss.stages) || [];
+        return [...mainStages, ...subServiceStages];
+    });
   }, [serviceWorkflows]);
 
   const handleClientClick = (client: Client) => {
@@ -95,56 +101,63 @@ export default function CrmPage() {
         </Button>
       </Header>
       <main className="flex-1 p-4 md:p-8 space-y-6">
-        {serviceWorkflows && serviceWorkflows.map(service => (
-             <Card key={service.id} className="w-full">
-                <CardHeader>
-                    <CardTitle className="flex items-center gap-2 text-xl">
-                        <Workflow className="h-5 w-5 text-primary" />
-                        {service.name}
-                    </CardTitle>
-                    <CardDescription>Pipeline de clientes para este servicio.</CardDescription>
-                </CardHeader>
-                <CardContent className="pt-0 space-y-4">
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                        {(service.subServices?.flatMap(ss => ss.stages) || service.stages || []).sort((a,b) => a.order - b.order).map((stage, index) => {
-                        const clientsInStage = clientsByStage.get(stage.id) || [];
-                        return (
-                            <Card key={stage.id} id={`stage-card-${stage.id}`} className="flex flex-col">
-                            <CardHeader>
-                                <CardTitle className="flex items-center gap-2">
-                                <StageNumberIcon index={index} />
-                                <span className="flex-grow text-base">{stage.title}</span>
-                                <span className="text-sm font-normal bg-muted text-muted-foreground rounded-full px-2 py-0.5">
-                                    {clientsInStage.length}
-                                </span>
-                                </CardTitle>
-                            </CardHeader>
-                            <CardContent className="flex-grow space-y-2 overflow-y-auto">
-                                {clientsInStage.length > 0 ? (
-                                clientsInStage.map(client => (
-                                    <div 
-                                        key={client.id}
-                                        onClick={() => handleClientClick(client)}
-                                        className="p-2 border rounded-md cursor-pointer hover:bg-secondary/50 transition-all bg-background"
-                                    >
-                                        <p className="font-semibold text-sm truncate">{client.name}</p>
-                                        <p className="text-xs text-muted-foreground truncate">{client.category}</p>
+        {serviceWorkflows && serviceWorkflows.map(service => {
+             const stagesForService = [
+                ...(service.stages || []),
+                ...(service.subServices?.flatMap(ss => ss.stages) || [])
+             ].sort((a,b) => a.order - b.order);
+
+             return (
+                <Card key={service.id} className="w-full">
+                    <CardHeader>
+                        <CardTitle className="flex items-center gap-2 text-xl">
+                            <Workflow className="h-5 w-5 text-primary" />
+                            {service.name}
+                        </CardTitle>
+                        <CardDescription>Pipeline de clientes para este servicio.</CardDescription>
+                    </CardHeader>
+                    <CardContent className="pt-0 space-y-4">
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                            {stagesForService.map((stage, index) => {
+                            const clientsInStage = clientsByStage.get(stage.id) || [];
+                            return (
+                                <Card key={stage.id} id={`stage-card-${stage.id}`} className="flex flex-col">
+                                <CardHeader>
+                                    <CardTitle className="flex items-center gap-2">
+                                    <StageNumberIcon index={index} />
+                                    <span className="flex-grow text-base">{stage.title}</span>
+                                    <span className="text-sm font-normal bg-muted text-muted-foreground rounded-full px-2 py-0.5">
+                                        {clientsInStage.length}
+                                    </span>
+                                    </CardTitle>
+                                </CardHeader>
+                                <CardContent className="flex-grow space-y-2 overflow-y-auto">
+                                    {clientsInStage.length > 0 ? (
+                                    clientsInStage.map(client => (
+                                        <div 
+                                            key={client.id}
+                                            onClick={() => handleClientClick(client)}
+                                            className="p-2 border rounded-md cursor-pointer hover:bg-secondary/50 transition-all bg-background"
+                                        >
+                                            <p className="font-semibold text-sm truncate">{client.name}</p>
+                                            <p className="text-xs text-muted-foreground truncate">{client.category}</p>
+                                        </div>
+                                    ))
+                                    ) : (
+                                    <div className="text-center text-muted-foreground py-6 text-sm flex flex-col items-center">
+                                        <Users className="h-8 w-8 mb-2" />
+                                        <p>No hay clientes en esta etapa.</p>
                                     </div>
-                                ))
-                                ) : (
-                                <div className="text-center text-muted-foreground py-6 text-sm flex flex-col items-center">
-                                    <Users className="h-8 w-8 mb-2" />
-                                    <p>No hay clientes en esta etapa.</p>
-                                </div>
-                                )}
-                            </CardContent>
-                            </Card>
-                        )
-                        })}
-                    </div>
-                </CardContent>
-            </Card>
-        ))}
+                                    )}
+                                </CardContent>
+                                </Card>
+                            )
+                            })}
+                        </div>
+                    </CardContent>
+                </Card>
+             );
+        })}
       </main>
       
       <ClientStageDetailDialog
