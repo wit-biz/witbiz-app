@@ -25,14 +25,6 @@ service cloud.firestore {
       allow update: if isSignedIn() && isExistingOwner(userId) && request.resource.data.id == resource.data.id; //Enforce immutability of user ID
       allow delete: if isSignedIn() && isExistingOwner(userId);
     }
-
-    /**
-     * @description Rules for the /users/{userId}/clients/{clientId} subcollection. Users can only access clients they own.
-     * @path /users/{userId}/clients/{clientId}
-     */
-    match /users/{userId}/clients/{clientId} {
-      allow read, write: if isSignedIn() && isOwner(userId);
-    }
     
     /**
      * @description Rules for the /users/{userId}/tasks/{taskId} subcollection. Users can only access tasks they own.
@@ -73,11 +65,7 @@ service cloud.firestore {
      * @principle Restricts access to a user's own data tree.
      */
     match /users/{userId}/contacts/{contactId} {
-      allow get: if isSignedIn() && isOwner(userId);
-      allow list: if isSignedIn() && isOwner(userId);
-      allow create: if isSignedIn() && isOwner(userId);
-      allow update: if isSignedIn() && isExistingOwner(userId);
-      allow delete: if isSignedIn() && isExistingOwner(userId);
+      allow read, write: if isSignedIn() && isOwner(userId);
     }
 
     /**
