@@ -82,6 +82,7 @@ export default function WorkflowConfigurationPage() {
   };
 
   useEffect(() => {
+    if (!serviceWorkflows) return;
     const serviceIdFromUrl = searchParams.get('serviceId');
     if (serviceIdFromUrl && serviceWorkflows.some(s => s.id === serviceIdFromUrl)) {
       setSelectedWorkflowId(serviceIdFromUrl);
@@ -504,7 +505,7 @@ export default function WorkflowConfigurationPage() {
                   <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 justify-between">
                       <div className="flex-grow w-full sm:w-auto">
                           <Label htmlFor="service-selector">Servicio Activo</Label>
-                          <Select value={selectedWorkflowId || ""} onValueChange={(id) => setSelectedWorkflowId(id)} disabled={!serviceWorkflows || !serviceWorkflows.length || hasChanges}>
+                          <Select value={selectedWorkflowId || ""} onValueChange={(id) => setSelectedWorkflowId(id)} disabled={!serviceWorkflows || serviceWorkflows.length === 0 || hasChanges}>
                               <SelectTrigger id="service-selector" className="mt-1">
                                   <SelectValue placeholder="Seleccione un servicio para configurar..." />
                               </SelectTrigger>
@@ -595,5 +596,3 @@ export default function WorkflowConfigurationPage() {
     </TooltipProvider>
   );
 }
-
-    
