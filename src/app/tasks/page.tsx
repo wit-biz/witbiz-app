@@ -7,7 +7,7 @@ import { Header } from "@/components/header";
 import { Button } from "@/components/ui/button"; 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import { PlusCircle, AlertTriangle, CalendarClock, Loader2, Briefcase, Clock, CalendarDays, Info, CheckCircle2, ListTodo } from "lucide-react";
+import { PlusCircle, AlertTriangle, CalendarClock, Loader2, Briefcase, Clock, CalendarDays, Info, CheckCircle2, ListTodo, History } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Calendar } from "@/components/ui/calendar";
 import { format } from "date-fns";
@@ -107,9 +107,9 @@ export default function TasksPage() {
     setCalendarMonth(today); 
   }, []);
   
-  const { overdueTasks, todayTasks, upcomingWeekTasks } = useMemo(() => {
+  const { overdueTasks, todayTasks, upcomingWeekTasks, postponedTasks } = useMemo(() => {
     if (!currentClientDate || !Array.isArray(allTasks) || !currentUser) {
-      return { overdueTasks: [], todayTasks: [], upcomingWeekTasks: [] };
+      return { overdueTasks: [], todayTasks: [], upcomingWeekTasks: [], postponedTasks: [] };
     }
     const today = new Date(currentClientDate);
     today.setHours(0, 0, 0, 0);
@@ -118,9 +118,14 @@ export default function TasksPage() {
     endOfWeek.setDate(today.getDate() + 7);
     endOfWeek.setHours(23, 59, 59, 999);
   
-    const userPendingTasks = allTasks.filter(task => task && task.status !== 'Completada' && task.assignedToId === currentUser.uid);
+    const userTasks = allTasks.filter(task => task && task.assignedToId === currentUser.uid);
   
-    const overdue = userPendingTasks
+    const postponed = userTasks.filter(task => task.status === 'Pospuesta')
+        .sort((a,b) => (parseDateString(a.reactivationDate || a.dueDate)?.getTime() || 0) - (parseDateString(b.reactivationDate || b.dueDate)?.getTime() || 0));
+
+    const pendingTasks = userTasks.filter(task => task.status === 'Pendiente');
+
+    const overdue = pendingTasks
       .filter(task => {
         const taskDueDate = parseDateString(task.dueDate);
         return taskDueDate && taskDueDate < today;
@@ -132,14 +137,14 @@ export default function TasksPage() {
         return dateA.getTime() - dateB.getTime() || (a.dueTime || "23:59").localeCompare(b.dueTime || "23:59");
       });
   
-    const forToday = userPendingTasks
+    const forToday = pendingTasks
       .filter(task => {
         const taskDueDate = parseDateString(task.dueDate);
         return taskDueDate && taskDueDate.getTime() === today.getTime();
       })
       .sort((a, b) => (a.dueTime || "23:59").localeCompare(b.dueTime || "23:59"));
   
-    const upcomingThisWeek = userPendingTasks
+    const upcomingThisWeek = pendingTasks
       .filter(task => {
         const taskDueDate = parseDateString(task.dueDate);
         if (!taskDueDate) return false;
@@ -154,7 +159,7 @@ export default function TasksPage() {
         return dateA.getTime() - dateB.getTime() || (a.dueTime || "23:59").localeCompare(b.dueTime || "23:59");
       });
   
-    return { overdueTasks: overdue, todayTasks: forToday, upcomingWeekTasks: upcomingThisWeek };
+    return { overdueTasks: overdue, todayTasks: forToday, upcomingWeekTasks: upcomingThisWeek, postponedTasks: postponed };
   }, [allTasks, currentClientDate, currentUser]);
     
   
@@ -168,10 +173,12 @@ export default function TasksPage() {
       overdue_highlight: Date[];
       today_task_highlight: Date[];
       upcoming_highlight: Date[];
+      postponed_highlight: Date[];
     } = {
       overdue_highlight: [],
       today_task_highlight: [],
       upcoming_highlight: [],
+      postponed_highlight: [],
     };
 
     allTasks.forEach((task) => {
@@ -179,7 +186,14 @@ export default function TasksPage() {
 
       const date = parseDateString(task.dueDate);
       if (date) {
-        if (date < today) {
+        if(task.status === 'Pospuesta'){
+            modifiers.postponed_highlight.push(date);
+            if(task.reactivationDate) {
+                const reactivationDate = parseDateString(task.reactivationDate);
+                if(reactivationDate) modifiers.postponed_highlight.push(reactivationDate);
+            }
+        }
+        else if (date < today) {
           modifiers.overdue_highlight.push(date);
         } else if (date.getTime() === today.getTime()) {
           modifiers.today_task_highlight.push(date);
@@ -192,7 +206,12 @@ export default function TasksPage() {
     return modifiers;
   }, [allTasks, currentClientDate]);
   
-  const dayModifiersClassNames = { overdue_highlight: 'calendar-day--overdue-bg', today_task_highlight: 'calendar-day--today-task-bg', upcoming_highlight: 'calendar-day--upcoming-bg' };
+  const dayModifiersClassNames = { 
+      overdue_highlight: 'calendar-day--overdue-bg', 
+      today_task_highlight: 'calendar-day--today-task-bg', 
+      upcoming_highlight: 'calendar-day--upcoming-bg',
+      postponed_highlight: 'calendar-day--postponed-bg'
+  };
   
   const tasksForSelectedDate = useMemo(() => {
     if (!selectedDate || !Array.isArray(allTasks) || !currentUser) return [];
@@ -201,8 +220,10 @@ export default function TasksPage() {
     return allTasks.filter(task => {
         if (!task) return false;
         if (task.assignedToId !== currentUser.uid) return false;
+        if (task.status === 'Completada') return false;
+
         const taskDueDate = parseDateString(task.dueDate);
-        return taskDueDate && taskDueDate.getTime() === selectedDayStart.getTime() && task.status !== 'Completada';
+        return taskDueDate && taskDueDate.getTime() === selectedDayStart.getTime();
     }).sort((a,b) => (a.dueTime || "23:59").localeCompare(b.dueTime || "23:59"));
   }, [selectedDate, allTasks, currentUser]);
   
@@ -211,6 +232,7 @@ export default function TasksPage() {
   const taskSections = [
     { id: "overdue-tasks", title: "Tareas Atrasadas", tasks: overdueTasks, icon: AlertTriangle, color: "text-destructive", emptyMsg: "¡Ninguna tarea atrasada! Buen trabajo." },
     { id: "today-tasks", title: "Tareas Para Hoy", tasks: todayTasks, icon: CheckCircle2, color: "text-green-500", emptyMsg: "No hay tareas programadas para hoy." },
+    { id: "postponed-tasks", title: "Tareas Pospuestas", tasks: postponedTasks, icon: History, color: "text-amber-500", emptyMsg: "No tienes tareas pospuestas." },
     { id: "upcoming-tasks", title: "Próximas Tareas", tasks: upcomingWeekTasks, icon: ListTodo, color: "text-blue-500", emptyMsg: "No hay más tareas para esta semana." }
   ];
 
@@ -247,7 +269,7 @@ export default function TasksPage() {
                   <CardTitle className="flex items-center gap-2"> 
                     <CalendarDays className="h-6 w-6 text-accent" /> Calendario 
                   </CardTitle> 
-                  <CardDescription> Selecciona una fecha para ver las tareas. Fechas resaltadas: <span className="inline-block w-3 h-3 rounded-full mx-1 align-middle bg-indicator-overdue" ></span> Atrasadas, <span className="inline-block w-3 h-3 rounded-full mx-1 align-middle bg-indicator-today" ></span> Hoy, <span className="inline-block w-3 h-3 rounded-full mx-1 align-middle bg-indicator-upcoming" ></span> Futuras. </CardDescription> 
+                  <CardDescription> Selecciona una fecha para ver las tareas. Fechas resaltadas: <span className="inline-block w-3 h-3 rounded-full mx-1 align-middle bg-indicator-overdue" ></span> Atrasadas, <span className="inline-block w-3 h-3 rounded-full mx-1 align-middle bg-indicator-today" ></span> Hoy, <span className="inline-block w-3 h-3 rounded-full mx-1 align-middle bg-indicator-upcoming" ></span> Futuras, <span className="inline-block w-3 h-3 rounded-full mx-1 align-middle bg-indicator-postponed" ></span> Pospuestas. </CardDescription> 
                 </CardHeader> 
                 <CardContent className="flex justify-center">
                   {!isClient ? (
@@ -270,7 +292,7 @@ export default function TasksPage() {
                   )}
                 </CardContent> 
               </Card>
-              {selectedDate && ( <Card> <CardHeader> <CardTitle>Tareas para el {isClient ? format(selectedDate, 'PPP', { locale: es }) : '...'}</CardTitle> </CardHeader> <CardContent className="space-y-3"> {tasksForSelectedDate.length > 0 ? ( tasksForSelectedDate.map(task => <MemoizedTaskItemDisplay key={task.id} task={task} showDate={false} icon={Clock} iconColor="text-blue-500" isClient={isClient} onClickHandler={handleTaskClick} />) ) : ( <div className="text-sm text-muted-foreground p-4 text-center flex flex-col items-center"> <Info className="h-8 w-8 text-muted-foreground mb-2"/> No hay tareas pendientes para esta fecha. </div> )} </CardContent> </Card> )}
+              {selectedDate && ( <Card> <CardHeader> <CardTitle>Tareas para el {isClient ? format(selectedDate, 'PPP', { locale: es }) : '...'}</CardTitle> </CardHeader> <CardContent className="space-y-3"> {tasksForSelectedDate.length > 0 ? ( tasksForSelectedDate.map(task => <MemoizedTaskItemDisplay key={task.id} task={task} showDate={false} icon={Clock} iconColor={task.status === 'Pospuesta' ? 'text-amber-500' : 'text-blue-500'} isClient={isClient} onClickHandler={handleTaskClick} />) ) : ( <div className="text-sm text-muted-foreground p-4 text-center flex flex-col items-center"> <Info className="h-8 w-8 text-muted-foreground mb-2"/> No hay tareas para esta fecha. </div> )} </CardContent> </Card> )}
             </div>
             <div className="lg:col-span-2 space-y-1">
               <Accordion type="single" collapsible className="w-full space-y-4" value={openAccordionItem} onValueChange={handleAccordionChange} >
@@ -280,7 +302,7 @@ export default function TasksPage() {
                       <AccordionTrigger className="w-full hover:no-underline p-0 [&_svg]:ml-auto [&_svg]:mr-2"> 
                         <CardHeader className="flex-1 p-4"> 
                           <CardTitle className="flex items-center gap-2 text-lg"> 
-                            <section.icon className={`h-6 w-6 ${section.color}`} /> {section.title} <Badge variant={section.tasks.length > 0 && section.id === "overdue-tasks" ? "destructive" : "secondary"} className="ml-auto mr-2" > {section.tasks.length} </Badge> 
+                            <section.icon className={`h-6 w-6 ${section.color}`} /> {section.title} <Badge variant={(section.id === "overdue-tasks" && section.tasks.length > 0) ? "destructive" : "secondary"} className={cn("ml-auto mr-2", section.id === "postponed-tasks" && "bg-amber-100 text-amber-800 dark:bg-amber-900/50 dark:text-amber-300")} > {section.tasks.length} </Badge> 
                           </CardTitle> 
                         </CardHeader> 
                       </AccordionTrigger> 

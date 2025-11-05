@@ -47,8 +47,10 @@
     --indicator-overdue-bg: hsl(var(--destructive));
     --indicator-today-bg: 86 100% 72%;
     --indicator-upcoming-bg: 210 70% 55%;
+    --indicator-postponed-bg: 45 95% 60%;
     --indicator-today-bg-raw: 86 100% 72%;
     --indicator-upcoming-bg-raw: 210 70% 55%;
+    --indicator-postponed-bg-raw: 45 95% 60%;
     
     /* Promoter Calendar Colors */
     --promoter-paid-bg-raw: 221.2 83.2% 53.3%; /* Blue */
@@ -100,8 +102,10 @@
     --indicator-overdue-bg: hsl(var(--destructive));
     --indicator-today-bg: 86 100% 72%;
     --indicator-upcoming-bg: 210 60% 50%;
+    --indicator-postponed-bg: 45 95% 65%;
     --indicator-today-bg-raw: 86 100% 72%;
     --indicator-upcoming-bg-raw: 210 60% 50%;
+    --indicator-postponed-bg-raw: 45 95% 65%;
     
     /* Promoter Calendar Colors - Dark Mode */
     --promoter-paid-bg-raw: 221.2 83.2% 63.3%;
@@ -172,6 +176,9 @@
   .calendar-day--upcoming-bg .rdp-button:not([disabled]) {
     background-color: hsla(var(--indicator-upcoming-bg-raw), 0.3); 
   }
+  .calendar-day--postponed-bg .rdp-button:not([disabled]) {
+    background-color: hsla(var(--indicator-postponed-bg-raw), 0.3);
+  }
 
   /* Ensure today's date from react-day-picker is distinct if it also has tasks */
   .calendar-day--today-task-bg.rdp-day_today .rdp-button:not([disabled]) {
@@ -193,6 +200,7 @@
   .calendar-day--overdue-bg .rdp-button:not([disabled]):not([aria-selected="true"]):hover,
   .calendar-day--today-task-bg .rdp-button:not([disabled]):not([aria-selected="true"]):hover,
   .calendar-day--upcoming-bg .rdp-button:not([disabled]):not([aria-selected="true"]):hover,
+  .calendar-day--postponed-bg .rdp-button:not([disabled]):not([aria-selected="true"]):hover,
   .rdp-button:not([disabled]):not([aria-selected="true"]):hover {
     background-color: hsl(var(--primary)) !important; 
     color: hsl(var(--primary-foreground)) !important; 
@@ -205,6 +213,8 @@
   .bg-indicator-overdue { background-color: hsl(var(--indicator-overdue-bg)); }
   .bg-indicator-today { background-color: hsl(var(--indicator-today-bg)); }
   .bg-indicator-upcoming { background-color: hsl(var(--indicator-upcoming-bg)); }
+  .bg-indicator-postponed { background-color: hsl(var(--indicator-postponed-bg)); }
+
 
   /* Animation for the UserNav task indicator dot */
   @keyframes pulse-indicator-animation {
@@ -361,5 +371,6 @@
     
 
     
+
 
 

@@ -30,7 +30,7 @@ export type Task = {
   title: string;
   dueDate: string; // ISO String YYYY-MM-DD
   dueTime?: string; // HH:MM
-  status: 'Pendiente' | 'Completada';
+  status: 'Pendiente' | 'Completada' | 'Pospuesta';
   clientId: string;
   clientName: string;
   assignedToId?: string;
@@ -41,6 +41,8 @@ export type Task = {
   createdAt?: any;
   requiredDocumentForCompletion?: boolean;
   requiredDocuments?: { id: string; description: string }[];
+  postponedReason?: string;
+  reactivationDate?: string; // ISO String YYYY-MM-DD
 };
 
 export type Document = {

@@ -16,7 +16,7 @@ import {
   DialogClose,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Edit, Trash, CheckCircle, Loader2, PlusCircle, UploadCloud, Calendar as CalendarIcon, Save } from 'lucide-react';
+import { Edit, Trash, CheckCircle, Loader2, PlusCircle, UploadCloud, Calendar as CalendarIcon, Save, History, Redo } from 'lucide-react';
 import { Task, Client } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
@@ -24,7 +24,6 @@ import { es } from 'date-fns/locale';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { parseDateString, formatTimeString, cn } from '@/lib/utils';
 import { useCRMData } from '@/contexts/CRMDataContext';
-import { AddTaskDialog } from './AddTaskDialog';
 import { useDialogs } from '@/contexts/DialogsContext';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Input } from '../ui/input';
@@ -41,6 +40,11 @@ const taskEditSchema = z.object({
   assignedToId: z.string().optional(),
   dueDate: z.date({ required_error: "La fecha de vencimiento es requerida." }),
   dueTime: z.string().optional(),
+});
+
+const postponeSchema = z.object({
+    reactivationDate: z.date({ required_error: "La fecha de reactivación es requerida." }),
+    postponedReason: z.string().min(5, "Debe proveer una razón para posponer."),
 });
 
 
@@ -64,10 +68,15 @@ export function TaskDetailDialog({
   const { setIsSmartUploadDialogOpen } = useDialogs();
   
   const [isEditing, setIsEditing] = useState(false);
+  const [isPostponing, setIsPostponing] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   
   const form = useForm<z.infer<typeof taskEditSchema>>({
     resolver: zodResolver(taskEditSchema),
+  });
+  
+  const postponeForm = useForm<z.infer<typeof postponeSchema>>({
+    resolver: zodResolver(postponeSchema),
   });
 
   useEffect(() => {
@@ -80,15 +89,21 @@ export function TaskDetailDialog({
             dueDate: parseDateString(task.dueDate) || new Date(),
             dueTime: task.dueTime,
         });
+        postponeForm.reset({
+            reactivationDate: task.reactivationDate ? parseDateString(task.reactivationDate) || new Date() : new Date(),
+            postponedReason: task.postponedReason || '',
+        });
     }
     if (!isOpen) {
       setIsEditing(false);
+      setIsPostponing(false);
     }
-  }, [task, isOpen, form]);
+  }, [task, isOpen, form, postponeForm]);
 
   if (!task) return null;
   
   const dueDate = parseDateString(task.dueDate);
+  const reactivationDate = task.reactivationDate ? parseDateString(task.reactivationDate) : null;
   
   const handleMarkAsComplete = async () => {
     if (!onUpdateTask) return;
@@ -107,6 +122,24 @@ export function TaskDetailDialog({
     setIsSubmitting(false);
   };
   
+  const handleReactivate = async () => {
+    if (!onUpdateTask) return;
+    setIsSubmitting(true);
+    const success = await onUpdateTask(task.id, { 
+        status: 'Pendiente', 
+        dueDate: task.reactivationDate || task.dueDate, // Use reactivation date as new due date
+        reactivationDate: undefined,
+        postponedReason: undefined,
+    });
+    if (success) {
+      toast({ title: 'Tarea Reactivada', description: 'La tarea ha vuelto al estado pendiente.' });
+      onOpenChange(false);
+    } else {
+      toast({ variant: 'destructive', title: 'Error', description: 'No se pudo reactivar la tarea.' });
+    }
+    setIsSubmitting(false);
+  };
+
   const handleCompleteWithDocument = () => {
     setIsSmartUploadDialogOpen(true);
   };
@@ -159,18 +192,37 @@ export function TaskDetailDialog({
     setIsSubmitting(false);
   };
 
+  const handlePostponeSubmit = async (data: z.infer<typeof postponeSchema>) => {
+    if (!onUpdateTask || !task) return;
+    setIsSubmitting(true);
+    const updates: Partial<Task> = {
+      status: 'Pospuesta',
+      postponedReason: data.postponedReason,
+      reactivationDate: format(data.reactivationDate, 'yyyy-MM-dd'),
+    };
+    const success = await onUpdateTask(task.id, updates);
+    if (success) {
+      toast({ title: 'Tarea Pospuesta', description: 'La tarea ha sido marcada como pospuesta.' });
+      setIsPostponing(false);
+      onOpenChange(false);
+    } else {
+      toast({ variant: 'destructive', title: 'Error', description: 'No se pudo posponer la tarea.' });
+    }
+    setIsSubmitting(false);
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent>
         <TooltipProvider>
             <DialogHeader>
-                {isEditing ? (
-                    <DialogTitle>Editando Tarea</DialogTitle>
+                {isEditing || isPostponing ? (
+                    <DialogTitle>{isEditing ? 'Editando Tarea' : 'Posponer Tarea'}</DialogTitle>
                 ) : (
                     <>
                         <DialogTitle>{task.title}</DialogTitle>
                         <DialogDescription>
-                            Vence: {dueDate ? format(dueDate, 'PPP', { locale: es }) : 'N/A'} {task.dueTime && `a las ${formatTimeString(task.dueTime)}`} | Estado: {task.status}
+                            Vence: {dueDate ? format(dueDate, 'PPP', { locale: es }) : 'N/A'} {task.dueTime && `a las ${formatTimeString(task.dueTime)}`} | Estado: <span className={cn(task.status === 'Pospuesta' && 'text-amber-600 font-semibold')}>{task.status}</span>
                         </DialogDescription>
                     </>
                 )}
@@ -179,7 +231,7 @@ export function TaskDetailDialog({
             {isEditing ? (
                  <Form {...form}>
                     <form id="edit-task-form" onSubmit={form.handleSubmit(handleEditSubmit)} className="py-4 space-y-4">
-                        <FormField
+                       <FormField
                             control={form.control}
                             name="title"
                             render={({ field }) => (
@@ -273,6 +325,45 @@ export function TaskDetailDialog({
                         />
                     </form>
                  </Form>
+            ) : isPostponing ? (
+                 <Form {...postponeForm}>
+                    <form id="postpone-task-form" onSubmit={postponeForm.handleSubmit(handlePostponeSubmit)} className="py-4 space-y-4">
+                        <FormField
+                            control={postponeForm.control}
+                            name="reactivationDate"
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Nueva Fecha de Reactivación</FormLabel>
+                                     <Popover>
+                                        <PopoverTrigger asChild>
+                                            <FormControl>
+                                                <Button variant="outline" className={cn('w-full justify-start text-left font-normal', !field.value && 'text-muted-foreground')}>
+                                                    <CalendarIcon className="mr-2 h-4 w-4" />
+                                                    {field.value ? format(field.value, 'PPP', { locale: es }) : <span>Seleccione fecha</span>}
+                                                </Button>
+                                            </FormControl>
+                                        </PopoverTrigger>
+                                        <PopoverContent className="w-auto p-0"><Calendar mode="single" selected={field.value} onSelect={field.onChange} initialFocus fromDate={new Date()} /></PopoverContent>
+                                    </Popover>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+                        <FormField
+                            control={postponeForm.control}
+                            name="postponedReason"
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Razón</FormLabel>
+                                    <FormControl>
+                                        <Textarea placeholder="Ej. Esperando confirmación del cliente..." {...field} />
+                                    </FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+                    </form>
+                 </Form>
             ) : (
                 <div className="py-4 space-y-4">
                     <div className="flex items-center gap-2">
@@ -293,6 +384,13 @@ export function TaskDetailDialog({
                         <p className="font-semibold">Detalles:</p>
                         <p className="text-muted-foreground">{task.description || 'Sin detalles.'}</p>
                     </div>
+                    {task.status === 'Pospuesta' && (
+                        <div className="p-3 bg-amber-100 dark:bg-amber-900/30 rounded-md border border-amber-300 dark:border-amber-800">
+                             <p className="font-semibold text-amber-800 dark:text-amber-300">Tarea Pospuesta</p>
+                             {reactivationDate && <p className="text-sm text-amber-700 dark:text-amber-400">Reactivar el: {format(reactivationDate, 'PPP', { locale: es })}</p>}
+                             <p className="text-sm text-amber-700 dark:text-amber-400 mt-1">Razón: {task.postponedReason || 'No especificada'}</p>
+                        </div>
+                    )}
                     {task.requiredDocumentForCompletion && (
                         <div className="text-sm text-amber-600 dark:text-amber-500 pt-2">
                             <p className="font-semibold">Documento(s) Requerido(s) para Completar:</p>
@@ -319,12 +417,20 @@ export function TaskDetailDialog({
                             Guardar Cambios
                         </Button>
                     </>
+                ) : isPostponing ? (
+                    <>
+                        <Button variant="outline" onClick={() => setIsPostponing(false)} disabled={isSubmitting}>Cancelar</Button>
+                        <Button type="submit" form="postpone-task-form" disabled={isSubmitting}>
+                            {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
+                            Guardar Pospuesto
+                        </Button>
+                    </>
                 ) : (
                     <>
                         <div className="flex gap-2">
                             <Tooltip>
                                 <TooltipTrigger asChild>
-                                    <Button variant="outline" size="icon" onClick={() => setIsEditing(true)} disabled={isSubmitting || task.status === 'Completada'}>
+                                    <Button variant="outline" size="icon" onClick={() => setIsEditing(true)} disabled={isSubmitting || task.status !== 'Pendiente'}>
                                         <Edit className="h-4 w-4" />
                                     </Button>
                                 </TooltipTrigger>
@@ -345,35 +451,50 @@ export function TaskDetailDialog({
                             </Tooltip>
                         </div>
                         <div className="flex gap-2">
-                            {task.requiredDocumentForCompletion ? (
-                                <Tooltip>
+                             {task.status === 'Pospuesta' ? (
+                                 <Tooltip>
                                     <TooltipTrigger asChild>
-                                        <Button
-                                            onClick={handleCompleteWithDocument}
-                                            disabled={isSubmitting || task.status === 'Completada'}
-                                            className="bg-blue-600 hover:bg-blue-700 text-white"
-                                        >
-                                            <UploadCloud className="mr-2 h-4 w-4" />
-                                            Completar con Documento
+                                        <Button onClick={handleReactivate} className="bg-blue-600 hover:bg-blue-700 text-white">
+                                            {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Redo className="mr-2 h-4 w-4"/>}
+                                            Reactivar Tarea
                                         </Button>
                                     </TooltipTrigger>
-                                    <TooltipContent><p>Subir documento para completar la tarea</p></TooltipContent>
-                                </Tooltip>
-                            ) : (
-                                <Tooltip>
-                                    <TooltipTrigger asChild>
-                                        <Button
-                                            onClick={handleMarkAsComplete}
-                                            disabled={isSubmitting || task.status === 'Completada' || !onUpdateTask}
-                                            className="bg-green-600 hover:bg-green-700 text-white"
-                                        >
-                                            {isSubmitting && onUpdateTask ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <CheckCircle className="mr-2 h-4 w-4" />}
-                                            Marcar como Completada
-                                        </Button>
-                                    </TooltipTrigger>
-                                    <TooltipContent><p>Marcar como Completada</p></TooltipContent>
-                                </Tooltip>
-                            )}
+                                    <TooltipContent><p>Volver a poner esta tarea como pendiente.</p></TooltipContent>
+                                 </Tooltip>
+                             ) : (
+                                <>
+                                    <Tooltip>
+                                        <TooltipTrigger asChild>
+                                            <Button variant="outline" onClick={() => setIsPostponing(true)} disabled={isSubmitting || task.status === 'Completada'}>
+                                                <History className="mr-2 h-4 w-4"/>
+                                                Posponer
+                                            </Button>
+                                        </TooltipTrigger>
+                                        <TooltipContent><p>Posponer esta tarea para una fecha posterior.</p></TooltipContent>
+                                    </Tooltip>
+                                    {task.requiredDocumentForCompletion ? (
+                                        <Tooltip>
+                                            <TooltipTrigger asChild>
+                                                <Button onClick={handleCompleteWithDocument} disabled={isSubmitting || task.status === 'Completada'} className="bg-blue-600 hover:bg-blue-700 text-white">
+                                                    <UploadCloud className="mr-2 h-4 w-4" />
+                                                    Completar con Documento
+                                                </Button>
+                                            </TooltipTrigger>
+                                            <TooltipContent><p>Subir documento para completar la tarea</p></TooltipContent>
+                                        </Tooltip>
+                                    ) : (
+                                        <Tooltip>
+                                            <TooltipTrigger asChild>
+                                                <Button onClick={handleMarkAsComplete} disabled={isSubmitting || task.status === 'Completada' || !onUpdateTask} className="bg-green-600 hover:bg-green-700 text-white">
+                                                    {isSubmitting && onUpdateTask ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <CheckCircle className="mr-2 h-4 w-4" />}
+                                                    Marcar como Completada
+                                                </Button>
+                                            </TooltipTrigger>
+                                            <TooltipContent><p>Marcar como Completada</p></TooltipContent>
+                                        </Tooltip>
+                                    )}
+                                </>
+                             )}
                         </div>
                     </>
                 )}
