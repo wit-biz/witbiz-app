@@ -17,7 +17,8 @@ import {
   Users,
   Workflow,
   Settings,
-  FolderCog
+  FolderCog,
+  ListTodo,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { Client, WorkflowStage, ServiceWorkflow } from '@/lib/types';
@@ -43,6 +44,14 @@ const StageCard = ({ stage, index, clientsInStage, onClientClick }: { stage: Wor
             {clientsInStage.length}
           </span>
         </CardTitle>
+         {stage.actions && stage.actions.length > 0 && (
+          <CardDescription className="pt-2">
+              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                  <ListTodo className="h-4 w-4 shrink-0" />
+                  <span>{stage.actions.length} tarea(s) en esta etapa</span>
+              </div>
+          </CardDescription>
+        )}
       </CardHeader>
       <CardContent className="flex-grow space-y-2 overflow-y-auto">
         {clientsInStage.length > 0 ? (
