@@ -12,7 +12,7 @@ export type Client = {
   contactEmail?: string;
   contactPhone?: string;
   website?: string;
-  subscribedServiceIds?: string[];
+  subscribedServiceIds: string[];
   currentWorkflowStageId?: string;
   createdAt?: any;
 };

@@ -17,7 +17,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Loader2, Save } from 'lucide-react';
+import { Loader2, Save, Check, ChevronsUpDown } from 'lucide-react';
 import { useCRMData } from '@/contexts/CRMDataContext';
 import { useToast } from '@/hooks/use-toast';
 import type { Client } from '@/lib/types';
@@ -30,7 +30,10 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Checkbox } from '@/components/ui/checkbox';
 import { promoters } from '@/lib/data';
+import { cn } from '@/lib/utils';
 
 
 const clientSchema = z.object({
@@ -41,6 +44,7 @@ const clientSchema = z.object({
   contactPhone: z.string().optional(),
   website: z.string().url({ message: "Por favor, introduzca una URL válida." }).optional().or(z.literal('')),
   promoterId: z.string().optional(),
+  subscribedServiceIds: z.array(z.string()).min(1, { message: "Debe seleccionar al menos un servicio." }),
 });
 
 
@@ -51,7 +55,7 @@ type AddEditClientDialogProps = {
 };
 
 export function AddEditClientDialog({ client, isOpen, onClose }: AddEditClientDialogProps) {
-  const { addClient, updateClient } = useCRMData();
+  const { addClient, updateClient, serviceWorkflows } = useCRMData();
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = React.useState(false);
 
@@ -67,6 +71,7 @@ export function AddEditClientDialog({ client, isOpen, onClose }: AddEditClientDi
       contactPhone: client?.contactPhone || '',
       website: client?.website || '',
       promoterId: '',
+      subscribedServiceIds: client?.subscribedServiceIds || [],
     },
   });
   
@@ -80,6 +85,7 @@ export function AddEditClientDialog({ client, isOpen, onClose }: AddEditClientDi
             contactPhone: client?.contactPhone || '',
             website: client?.website || '',
             promoterId: '',
+            subscribedServiceIds: client?.subscribedServiceIds || [],
         });
     }
   }, [isOpen, client, form]);
@@ -129,6 +135,62 @@ export function AddEditClientDialog({ client, isOpen, onClose }: AddEditClientDi
                                 <FormControl>
                                     <Input placeholder="Nombre del cliente" {...field} disabled={isSubmitting}/>
                                 </FormControl>
+                                <FormMessage />
+                            </FormItem>
+                        )}
+                    />
+                    <FormField
+                        control={form.control}
+                        name="subscribedServiceIds"
+                        render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>Servicios Contratados <span className="text-destructive">*</span></FormLabel>
+                                <Popover>
+                                    <PopoverTrigger asChild>
+                                        <FormControl>
+                                            <Button
+                                                variant="outline"
+                                                role="combobox"
+                                                className={cn("w-full justify-between", !field.value?.length && "text-muted-foreground")}
+                                            >
+                                                <span className="truncate">
+                                                {field.value?.length > 0
+                                                    ? serviceWorkflows.filter(s => field.value.includes(s.id)).map(s => s.name).join(', ')
+                                                    : "Seleccione servicios..."}
+                                                </span>
+                                                <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                            </Button>
+                                        </FormControl>
+                                    </PopoverTrigger>
+                                    <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
+                                       <div className="p-2 space-y-1">
+                                        {serviceWorkflows.map((service) => (
+                                            <div
+                                                key={service.id}
+                                                className="flex items-center gap-2 p-2 rounded-md hover:bg-accent cursor-pointer"
+                                                onClick={() => {
+                                                    const currentIds = field.value || [];
+                                                    const newIds = currentIds.includes(service.id)
+                                                        ? currentIds.filter(id => id !== service.id)
+                                                        : [...currentIds, service.id];
+                                                    field.onChange(newIds);
+                                                }}
+                                            >
+                                                <Checkbox
+                                                    checked={field.value?.includes(service.id)}
+                                                    onCheckedChange={(checked) => {
+                                                        const currentIds = field.value || [];
+                                                        return checked
+                                                            ? field.onChange([...currentIds, service.id])
+                                                            : field.onChange(currentIds.filter(id => id !== service.id));
+                                                    }}
+                                                />
+                                                <span className="text-sm">{service.name}</span>
+                                            </div>
+                                        ))}
+                                       </div>
+                                    </PopoverContent>
+                                </Popover>
                                 <FormMessage />
                             </FormItem>
                         )}

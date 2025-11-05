@@ -158,12 +158,32 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
     // --- Data Handlers ---
 
     const addClient = async (newClientData: Omit<Client, 'id'>): Promise<Client | null> => {
-        if (!clientsCollection) return null;
-        const newClientDocRef = await addDocumentNonBlocking(clientsCollection, {
+        if (!clientsCollection || !serviceWorkflows) return null;
+        
+        // Find the first stage of the first subscribed service to set the initial state
+        const firstServiceId = newClientData.subscribedServiceIds[0];
+        const service = serviceWorkflows.find(s => s.id === firstServiceId);
+        const initialStage = service?.stages?.[0] || service?.subServices?.[0]?.stages?.[0];
+
+        const payload: Omit<Client, 'id'> = {
             ...newClientData,
+            currentWorkflowStageId: initialStage?.id,
             createdAt: serverTimestamp(),
-        });
-        return { ...newClientData, id: newClientDocRef.id };
+        };
+        
+        const newClientDocRef = await addDocumentNonBlocking(clientsCollection, payload);
+        
+        // Auto-generate tasks for the initial stage
+        if (initialStage?.actions && newClientDocRef) {
+            for (const action of initialStage.actions) {
+                await addTask({
+                    ...action,
+                    clientId: newClientDocRef.id,
+                });
+            }
+        }
+        
+        return { ...payload, id: newClientDocRef.id };
     };
     const updateClient = async (clientId: string, updates: Partial<Client>): Promise<boolean> => {
         if (!clientsCollection) return false;
