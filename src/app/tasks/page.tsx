@@ -7,10 +7,10 @@ import { Header } from "@/components/header";
 import { Button } from "@/components/ui/button"; 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import { PlusCircle, AlertTriangle, CalendarClock, Loader2, Briefcase, Clock, CalendarDays, Info, CheckCircle2, ListTodo, History } from "lucide-react";
+import { PlusCircle, AlertTriangle, CalendarClock, Loader2, Briefcase, Clock, CalendarDays, Info, CheckCircle2, ListTodo, History, BellRing } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Calendar } from "@/components/ui/calendar";
-import { format } from "date-fns";
+import { format, differenceInDays } from "date-fns";
 import { es } from "date-fns/locale";
 import type { DayModifiers } from "react-day-picker";
 import { cn, parseDateString, formatDateString, formatTimeString } from "@/lib/utils"; 
@@ -24,7 +24,7 @@ import { AddTaskDialog } from "@/components/shared/AddTaskDialog";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 
-const MemoizedTaskItemDisplay = React.memo(function TaskItemDisplay({ task, icon: Icon, iconColor = "text-gray-500", showDate = true, isClient, onClickHandler }: { task: Task; icon?: React.ElementType; iconColor?: string, showDate?: boolean, isClient: boolean, onClickHandler: (task: Task) => void }) {
+const MemoizedTaskItemDisplay = React.memo(function TaskItemDisplay({ task, icon: Icon, iconColor = "text-gray-500", showDate = true, isClient, onClickHandler, showReminder = false }: { task: Task; icon?: React.ElementType; iconColor?: string, showDate?: boolean, isClient: boolean, onClickHandler: (task: Task) => void, showReminder?: boolean }) {
   const taskDueDate = parseDateString(task.dueDate);
   return ( 
     <div 
@@ -35,7 +35,19 @@ const MemoizedTaskItemDisplay = React.memo(function TaskItemDisplay({ task, icon
       onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') onClickHandler(task); }} 
       aria-label={`Ver detalles de la tarea: ${task.title}`} 
     > 
-      {Icon && <Icon className={`h-5 w-5 mt-1 flex-shrink-0 ${iconColor}`} />} 
+      <div className="flex flex-col items-center gap-1">
+        {Icon && <Icon className={`h-5 w-5 mt-1 flex-shrink-0 ${iconColor}`} />}
+        {showReminder && (
+          <Tooltip>
+            <TooltipTrigger>
+              <BellRing className="h-4 w-4 text-amber-500" />
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>Se envió un recordatorio al responsable.</p>
+            </TooltipContent>
+          </Tooltip>
+        )}
+      </div>
       <div className="flex-grow min-w-0"> 
         <p className="font-semibold text-card-foreground truncate">{task.title}</p> 
         <div className="flex items-center gap-2 text-xs text-muted-foreground mt-1">
@@ -107,9 +119,9 @@ export default function TasksPage() {
     setCalendarMonth(today); 
   }, []);
   
-  const { overdueTasks, todayTasks, upcomingWeekTasks, postponedTasks } = useMemo(() => {
+  const { overdueTasks, postponedTasks, todayTasks, upcomingWeekTasks, postponedTasks10, postponedTasks20, postponedTasks30 } = useMemo(() => {
     if (!currentClientDate || !Array.isArray(allTasks) || !currentUser) {
-      return { overdueTasks: [], todayTasks: [], upcomingWeekTasks: [], postponedTasks: [] };
+      return { overdueTasks: [], postponedTasks: [], todayTasks: [], upcomingWeekTasks: [], postponedTasks10: [], postponedTasks20: [], postponedTasks30: [] };
     }
     const today = new Date(currentClientDate);
     today.setHours(0, 0, 0, 0);
@@ -120,8 +132,34 @@ export default function TasksPage() {
   
     const userTasks = allTasks.filter(task => task && task.assignedToId === currentUser.uid);
   
-    const postponed = userTasks.filter(task => task.status === 'Pospuesta')
+    const allPostponed = userTasks.filter(task => task.status === 'Pospuesta')
         .sort((a,b) => (parseDateString(a.reactivationDate || a.dueDate)?.getTime() || 0) - (parseDateString(b.reactivationDate || b.dueDate)?.getTime() || 0));
+
+    const postponed = allPostponed.filter(t => {
+      const originalDueDate = parseDateString(t.dueDate);
+      if (!originalDueDate) return false;
+      const daysDiff = differenceInDays(today, originalDueDate);
+      return daysDiff < 10;
+    });
+    const postponed10 = allPostponed.filter(t => {
+      const originalDueDate = parseDateString(t.dueDate);
+      if (!originalDueDate) return false;
+      const daysDiff = differenceInDays(today, originalDueDate);
+      return daysDiff >= 10 && daysDiff < 20;
+    });
+    const postponed20 = allPostponed.filter(t => {
+      const originalDueDate = parseDateString(t.dueDate);
+      if (!originalDueDate) return false;
+      const daysDiff = differenceInDays(today, originalDueDate);
+      return daysDiff >= 20 && daysDiff < 30;
+    });
+     const postponed30 = allPostponed.filter(t => {
+      const originalDueDate = parseDateString(t.dueDate);
+      if (!originalDueDate) return false;
+      const daysDiff = differenceInDays(today, originalDueDate);
+      return daysDiff >= 30;
+    });
+
 
     const pendingTasks = userTasks.filter(task => task.status === 'Pendiente');
 
@@ -159,7 +197,7 @@ export default function TasksPage() {
         return dateA.getTime() - dateB.getTime() || (a.dueTime || "23:59").localeCompare(b.dueTime || "23:59");
       });
   
-    return { overdueTasks: overdue, todayTasks: forToday, upcomingWeekTasks: upcomingThisWeek, postponedTasks: postponed };
+    return { overdueTasks: overdue, postponedTasks: postponed, todayTasks: forToday, upcomingWeekTasks: upcomingThisWeek, postponedTasks10: postponed10, postponedTasks20: postponed20, postponedTasks30: postponed30 };
   }, [allTasks, currentClientDate, currentUser]);
     
   
@@ -231,9 +269,15 @@ export default function TasksPage() {
   
   const taskSections = [
     { id: "overdue-tasks", title: "Tareas Atrasadas", tasks: overdueTasks, icon: AlertTriangle, color: "text-destructive", emptyMsg: "¡Ninguna tarea atrasada! Buen trabajo." },
-    { id: "postponed-tasks", title: "Tareas Pospuestas", tasks: postponedTasks, icon: History, color: "text-amber-500", emptyMsg: "No tienes tareas pospuestas." },
+    { id: "postponed-tasks", title: "Tareas Pospuestas", tasks: postponedTasks, icon: History, color: "text-amber-500", emptyMsg: "No tienes tareas pospuestas recientemente." },
     { id: "today-tasks", title: "Tareas Para Hoy", tasks: todayTasks, icon: CheckCircle2, color: "text-green-500", emptyMsg: "No hay tareas programadas para hoy." },
     { id: "upcoming-tasks", title: "Próximas Tareas", tasks: upcomingWeekTasks, icon: ListTodo, color: "text-blue-500", emptyMsg: "No hay más tareas para esta semana." }
+  ];
+
+  const postponedSections = [
+    { id: "postponed-tasks-10", title: "Pospuestas: Nivel 1 (10+ días)", tasks: postponedTasks10, color: "border-amber-300 bg-amber-50 dark:bg-amber-950/50", showReminder: true },
+    { id: "postponed-tasks-20", title: "Pospuestas: Nivel 2 (20+ días)", tasks: postponedTasks20, color: "border-orange-300 bg-orange-50 dark:bg-orange-950/50", showReminder: true },
+    { id: "postponed-tasks-30", title: "Pospuestas: Nivel 3 (30+ días)", tasks: postponedTasks30, color: "border-red-300 bg-red-50 dark:bg-red-950/50", showReminder: true },
   ];
 
   const handleAccordionChange = (value: string) => {
@@ -311,6 +355,31 @@ export default function TasksPage() {
                           {isLoadingTasks ? (
                              <div className="flex items-center justify-center p-12"><Loader2 className="h-8 w-8 animate-spin text-primary"/></div>
                           ) : section.tasks.length > 0 ? ( section.tasks.map(task => <MemoizedTaskItemDisplay key={task.id} task={task} icon={section.icon} iconColor={section.color} showDate={section.id !== 'today-tasks'} isClient={isClient} onClickHandler={handleTaskClick} />) ) : ( <div className="text-sm text-muted-foreground p-4 text-center flex flex-col items-center"> <Info className="h-8 w-8 text-muted-foreground mb-2"/> {section.emptyMsg} </div> )} 
+                          {section.id === 'postponed-tasks' && (
+                            <Accordion type="multiple" className="w-full space-y-2 mt-4">
+                              {postponedSections.map(pSection => (
+                                pSection.tasks.length > 0 && (
+                                <AccordionItem value={pSection.id} key={pSection.id} className="border-none">
+                                  <Card className={pSection.color}>
+                                     <AccordionTrigger className="w-full hover:no-underline p-0 text-sm font-semibold [&_svg]:ml-auto [&_svg]:mr-2">
+                                       <CardHeader className="flex-1 p-3">
+                                          <CardTitle className="flex items-center gap-2 text-sm">
+                                            {pSection.title}
+                                            <Badge variant="secondary" className="ml-auto mr-2">{pSection.tasks.length}</Badge>
+                                          </CardTitle>
+                                       </CardHeader>
+                                     </AccordionTrigger>
+                                     <AccordionContent>
+                                        <CardContent className="space-y-3 pt-0 p-3">
+                                            {pSection.tasks.map(task => <MemoizedTaskItemDisplay key={task.id} task={task} icon={History} iconColor="text-amber-500" showDate isClient={isClient} onClickHandler={handleTaskClick} showReminder={pSection.showReminder} />)}
+                                        </CardContent>
+                                     </AccordionContent>
+                                  </Card>
+                                </AccordionItem>
+                                )
+                              ))}
+                            </Accordion>
+                          )}
                         </CardContent> 
                       </AccordionContent> 
                     </Card> 

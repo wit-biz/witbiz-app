@@ -130,6 +130,7 @@ export function TaskDetailDialog({
         dueDate: task.reactivationDate || task.dueDate, // Use reactivation date as new due date
         reactivationDate: undefined,
         postponedReason: undefined,
+        postponedAt: undefined,
     });
     if (success) {
       toast({ title: 'Tarea Reactivada', description: 'La tarea ha vuelto al estado pendiente.' });
@@ -198,6 +199,7 @@ export function TaskDetailDialog({
     const updates: Partial<Task> = {
       status: 'Pospuesta',
       postponedReason: data.postponedReason,
+      postponedAt: format(new Date(), 'yyyy-MM-dd'),
       reactivationDate: format(data.reactivationDate, 'yyyy-MM-dd'),
     };
     const success = await onUpdateTask(task.id, updates);
@@ -436,7 +438,7 @@ export function TaskDetailDialog({
                                 </TooltipTrigger>
                                 <TooltipContent><p>Editar Tarea</p></TooltipContent>
                             </Tooltip>
-                            <Tooltip>
+                             <Tooltip>
                                 <TooltipTrigger asChild>
                                     <Button variant="outline" size="icon" onClick={() => setIsPostponing(true)} disabled={isSubmitting || task.status === 'Completada'}>
                                         <History className="h-4 w-4" />
@@ -488,3 +490,4 @@ export function TaskDetailDialog({
     </Dialog>
   );
 }
+

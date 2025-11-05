@@ -42,6 +42,7 @@ export type Task = {
   requiredDocumentForCompletion?: boolean;
   requiredDocuments?: { id: string; description: string }[];
   postponedReason?: string;
+  postponedAt?: string; // ISO String YYYY-MM-DD
   reactivationDate?: string; // ISO String YYYY-MM-DD
 };
 
