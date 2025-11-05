@@ -45,12 +45,12 @@ const StageCard = ({ stage, index, clientsInStage, onClientClick }: { stage: Wor
           </span>
         </CardTitle>
          {stage.actions && stage.actions.length > 0 && (
-          <CardDescription className="pt-2">
+            <div className="text-sm text-muted-foreground pt-2">
               <div className="flex items-center gap-2 text-xs text-muted-foreground">
                   <ListTodo className="h-4 w-4 shrink-0" />
                   <span>{stage.actions.length} tarea(s) en esta etapa</span>
               </div>
-          </CardDescription>
+            </div>
         )}
       </CardHeader>
       <CardContent className="flex-grow space-y-2 overflow-y-auto">
