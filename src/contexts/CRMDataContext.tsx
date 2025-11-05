@@ -204,11 +204,15 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
         const client = clients.find(c => c.id === newTaskData.clientId);
         if (!client) return null;
 
-        let finalDueDate = newTaskData.dueDate;
+        let finalDueDate: string;
         if (newTaskData.dueDays !== undefined) {
             const today = new Date();
             const dueDate = addDays(today, newTaskData.dueDays);
             finalDueDate = format(dueDate, 'yyyy-MM-dd');
+        } else if (newTaskData.dueDate instanceof Date) {
+            finalDueDate = format(newTaskData.dueDate, 'yyyy-MM-dd');
+        } else {
+            finalDueDate = newTaskData.dueDate; // Assume it's already a string in the correct format
         }
 
         const assignedUserId = newTaskData.assignedToId || currentUser.uid;
