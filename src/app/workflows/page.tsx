@@ -358,7 +358,7 @@ export default function WorkflowConfigurationPage() {
 
   const handleAddSubStage = (path: string) => {
       const parts = path.split('.');
-      const parentIsStage = parts.length === 1; // e.g., "stages.0" -> path is just "0" for the stage
+      const parentIsStage = parts.length === 2; // e.g., "stages.0"
 
       if (parentIsStage) {
           const newSubStage: SubStage = {
