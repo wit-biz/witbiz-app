@@ -253,15 +253,23 @@ export default function TasksPage() {
   
   const tasksForSelectedDate = useMemo(() => {
     if (!selectedDate || !Array.isArray(allTasks) || !currentUser) return [];
+    
     const selectedDayStart = new Date(selectedDate);
-    selectedDayStart.setHours(0,0,0,0);
+    selectedDayStart.setHours(0, 0, 0, 0);
+    const selectedDayTime = selectedDayStart.getTime();
+
     return allTasks.filter(task => {
-        if (!task) return false;
-        if (task.assignedToId !== currentUser.uid) return false;
-        if (task.status === 'Completada') return false;
+        if (!task || task.status === 'Completada' || task.assignedToId !== currentUser.uid) {
+            return false;
+        }
 
         const taskDueDate = parseDateString(task.dueDate);
-        return taskDueDate && taskDueDate.getTime() === selectedDayStart.getTime();
+        if (!taskDueDate) return false;
+        
+        // Normalize task due date to the start of the day in UTC for comparison
+        const taskDayStart = new Date(Date.UTC(taskDueDate.getUTCFullYear(), taskDueDate.getUTCMonth(), taskDueDate.getUTCDate()));
+
+        return taskDayStart.getTime() === selectedDayTime;
     }).sort((a,b) => (a.dueTime || "23:59").localeCompare(b.dueTime || "23:59"));
   }, [selectedDate, allTasks, currentUser]);
   
