@@ -182,7 +182,7 @@ const StageCard = ({
                         </div>
                     )}
                     {'subSubStages' in stage && (
-                         <div className="pl-8 border-l-2 ml-2 space-y-4">
+                         <div className="pl-6 border-l-2 ml-2 space-y-4">
                             <Label className="text-sm font-medium">Sub-Sub-Etapas</Label>
                             {stage.subSubStages && stage.subSubStages.map((sub, i) => (
                                 <StageCard

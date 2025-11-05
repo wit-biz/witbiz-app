@@ -127,7 +127,7 @@ const StageCard = ({
                         </div>
                     )}
                     {'subSubStages' in stage && stage.subSubStages && stage.subSubStages.length > 0 && (
-                        <div className="mt-4 pt-4 border-t pl-8">
+                        <div className="mt-4 pt-4 border-t pl-6">
                              {renderSubStages(stage.subSubStages, 3)}
                         </div>
                     )}
@@ -168,16 +168,12 @@ export default function CrmPage() {
         if (!service.stages) return;
         (service.stages || []).forEach(stage1 => {
             stages.push(stage1);
-            if (stage1.subStages) {
-                stage1.subStages.forEach(stage2 => {
-                    stages.push(stage2);
-                    if (stage2.subSubStages) {
-                        stage2.subSubStages.forEach(stage3 => {
-                            stages.push(stage3);
-                        });
-                    }
+            (stage1.subStages || []).forEach(stage2 => {
+                stages.push(stage2);
+                (stage2.subSubStages || []).forEach(stage3 => {
+                    stages.push(stage3);
                 });
-            }
+            });
         });
     });
     return stages;

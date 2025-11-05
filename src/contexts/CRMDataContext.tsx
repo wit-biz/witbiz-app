@@ -335,14 +335,17 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
     const getActionById = useCallback((actionId: string): WorkflowAction | null => {
         if (!serviceWorkflows) return null;
         for (const service of serviceWorkflows) {
+            if (!service.stages) continue;
             for (const stage of service.stages) {
                 let action = stage.actions.find(o => o.id === actionId);
                 if (action) return action;
 
+                if (!stage.subStages) continue;
                 for (const subStage of (stage.subStages || [])) {
                     action = subStage.actions.find(o => o.id === actionId);
                     if (action) return action;
                     
+                    if (!subStage.subSubStages) continue;
                     for (const subSubStage of (subStage.subSubStages || [])) {
                          action = subSubStage.actions.find(o => o.id === actionId);
                          if (action) return action;
