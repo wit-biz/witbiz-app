@@ -2,7 +2,16 @@
 
 import type { Client, Task, Document, Note, WorkflowStage, NavItem, Promoter, ServiceWorkflow } from './types';
 
-export const serviceWorkflows: ServiceWorkflow[] = [];
+export const serviceWorkflows: ServiceWorkflow[] = [
+  {
+    id: 'service-terminales-1',
+    name: 'Terminales',
+    description: 'Servicio de gestión de terminales de pago.',
+    clientRequirements: [],
+    stages: [],
+    subServices: []
+  }
+];
 
 export const promoters: Promoter[] = [
     { id: 'p1', name: 'Mariana Fernandez', referredClients: 5, totalCommissions: 1250.50, status: 'Activo' },
