@@ -91,6 +91,19 @@ service cloud.firestore {
       allow delete: if isSignedIn() && isExistingOwner(userId);
     }
 
+    /**
+     * @description Rules for the /users/{userId}/serviceWorkflows collection. Users can access their own workflows.
+     * @path /users/{userId}/serviceWorkflows/{workflowId}
+     */
+    match /users/{userId}/serviceWorkflows/{workflowId} {
+      allow get: if isSignedIn() && isOwner(userId);
+      allow create, update, delete: if isSignedIn() && isOwner(userId);
+    }
+    
+    match /users/{userId}/serviceWorkflows {
+        allow list: if isSignedIn() && isOwner(userId);
+    }
+
     // --- Helper functions ---
     function isSignedIn() {
       return request.auth != null;
