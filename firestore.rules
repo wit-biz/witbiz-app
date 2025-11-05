@@ -27,6 +27,30 @@ service cloud.firestore {
     }
 
     /**
+     * @description Rules for the /users/{userId}/clients/{clientId} subcollection. Users can only access clients they own.
+     * @path /users/{userId}/clients/{clientId}
+     */
+    match /users/{userId}/clients/{clientId} {
+      allow read, write: if isSignedIn() && isOwner(userId);
+    }
+    
+    /**
+     * @description Rules for the /users/{userId}/tasks/{taskId} subcollection. Users can only access tasks they own.
+     * @path /users/{userId}/tasks/{taskId}
+     */
+    match /users/{userId}/tasks/{taskId} {
+      allow read, write: if isSignedIn() && isOwner(userId);
+    }
+    
+    /**
+     * @description Rules for the /users/{userId}/documents/{documentId} subcollection. Users can only access documents they own.
+     * @path /users/{userId}/documents/{documentId}
+     */
+    match /users/{userId}/documents/{documentId} {
+      allow read, write: if isSignedIn() && isOwner(userId);
+    }
+
+    /**
      * @description Rules for the /users/{userId}/leads/{leadId} subcollection.  Users can only access leads they own.
      * @path /users/{userId}/leads/{leadId}
      * @allow (create) - User 'lbz7nN49aERC4AwnsGSruB6spQJ3' can create a lead at /users/lbz7nN49aERC4AwnsGSruB6spQJ3/leads/lead1
