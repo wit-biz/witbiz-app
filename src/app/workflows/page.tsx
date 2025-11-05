@@ -346,6 +346,7 @@ export default function WorkflowConfigurationPage() {
 
   return (
     <TooltipProvider>
+      <div className="flex flex-col min-h-screen">
       <Header 
         title="Configuración de Flujos de Trabajo" 
         description="Gestione las etapas y acciones de sus servicios."
@@ -400,15 +401,15 @@ export default function WorkflowConfigurationPage() {
                 ) : (
                   <div className="text-center text-muted-foreground py-10 border border-dashed rounded-lg">
                     <p>Este servicio no tiene etapas.</p>
-                    {isEditing && (
-                        <Button variant="outline" className="mt-4" onClick={() => handleAddStageToSubService(workflowToDisplay.subServices[0]?.id)}>
+                    {isEditing && workflowToDisplay.subServices[0] && (
+                        <Button variant="outline" className="mt-4" onClick={() => handleAddStageToSubService(workflowToDisplay.subServices[0].id)}>
                             <Plus className="h-4 w-4 mr-2"/>Añadir Primera Etapa
                         </Button>
                     )}
                   </div>
                 )}
 
-                {isEditing && (
+                {isEditing && workflowToDisplay.subServices[0] && (
                   <div className="mt-4 pt-4 border-t">
                     <Button variant="outline" onClick={() => handleAddStageToSubService(workflowToDisplay.subServices[0].id)}>
                       <Plus className="h-4 w-4 mr-2"/>Añadir Nueva Etapa
@@ -467,6 +468,9 @@ export default function WorkflowConfigurationPage() {
                 onSave={promptNameConfig.onSave}
             />
         )}
+      </div>
     </TooltipProvider>
   );
 }
+
+    
