@@ -20,6 +20,8 @@ import { es } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import { type Client } from '@/lib/types';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+
 
 // Esquema base
 const baseSchema = z.object({
@@ -100,130 +102,141 @@ export function AddTaskDialog({
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
-        <form onSubmit={form.handleSubmit(onSubmit)}>
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <PlusCircle className="h-5 w-5 text-accent"/>
-              {isWorkflowMode ? "Añadir Plantilla de Tarea" : "Crear Nueva Tarea"}
-            </DialogTitle>
-            <DialogDescription>
-              {isWorkflowMode ? "Defina los detalles para esta tarea automática." : "Complete la información para crear una nueva tarea."}
-            </DialogDescription>
-          </DialogHeader>
+        <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)}>
+            <DialogHeader>
+                <DialogTitle className="flex items-center gap-2">
+                <PlusCircle className="h-5 w-5 text-accent"/>
+                {isWorkflowMode ? "Añadir Plantilla de Tarea" : "Crear Nueva Tarea"}
+                </DialogTitle>
+                <DialogDescription>
+                {isWorkflowMode ? "Defina los detalles para esta tarea automática." : "Complete la información para crear una nueva tarea."}
+                </DialogDescription>
+            </DialogHeader>
 
-          <div className="py-4 space-y-4">
-            {/* Título de la Tarea */}
-            <Controller
-                name="title"
-                control={form.control}
-                render={({ field }) => (
-                    <div>
-                        <Label htmlFor="title">Título de la Tarea <span className="text-destructive">*</span></Label>
-                        <Input id="title" {...field} />
-                        {form.formState.errors.title && <p className="text-sm text-red-500 mt-1">{form.formState.errors.title.message}</p>}
-                    </div>
-                )}
-            />
-
-            {!isWorkflowMode && (
-              <>
-                {/* Cliente */}
-                <Controller
-                  name="clientId"
-                  control={form.control}
-                  render={({ field }) => (
-                    <div>
-                      <Label>Asignar a Cliente <span className="text-destructive">*</span></Label>
-                      <Select onValueChange={field.onChange} defaultValue={field.value}>
-                        <SelectTrigger><SelectValue placeholder="Seleccione un cliente..." /></SelectTrigger>
-                        <SelectContent>
-                          {clients.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
-                        </SelectContent>
-                      </Select>
-                      {form.formState.errors.clientId && <p className="text-sm text-red-500 mt-1">{form.formState.errors.clientId.message}</p>}
-                    </div>
-                  )}
-                />
-                
-                {/* Fecha y Hora */}
-                <div className="grid grid-cols-2 gap-4">
-                    <Controller
-                        name="dueDate"
-                        control={form.control}
-                        render={({ field }) => (
-                            <div>
-                                <Label>Fecha de Vencimiento</Label>
-                                <Popover>
-                                    <PopoverTrigger asChild>
-                                        <Button variant="outline" className={cn('w-full justify-start text-left font-normal', !field.value && 'text-muted-foreground')}>
-                                            <CalendarIcon className="mr-2 h-4 w-4" />
-                                            {field.value ? format(field.value, 'PPP', { locale: es }) : <span>Seleccione fecha</span>}
-                                        </Button>
-                                    </PopoverTrigger>
-                                    <PopoverContent className="w-auto p-0"><Calendar mode="single" selected={field.value} onSelect={field.onChange} initialFocus /></PopoverContent>
-                                </Popover>
-                            </div>
-                        )}
-                    />
-                    <Controller
-                        name="dueTime"
-                        control={form.control}
-                        render={({ field }) => (
-                            <div>
-                                <Label>Hora (Opcional)</Label>
-                                <Input type="time" {...field} />
-                            </div>
-                        )}
-                    />
-                </div>
-              </>
-            )}
-            
-            {isWorkflowMode && (
-                <Controller
-                    name="dueDays"
+            <div className="py-4 space-y-4">
+                <FormField
                     control={form.control}
+                    name="title"
                     render={({ field }) => (
-                        <div>
-                            <Label htmlFor="dueDays">Días para Vencer</Label>
-                             <div className="flex items-center gap-4">
-                                <Slider
-                                    id="dueDays"
-                                    min={0}
-                                    max={30}
-                                    step={1}
-                                    value={[field.value || 0]}
-                                    onValueChange={(value) => field.onChange(value[0])}
-                                />
-                                <span className="text-sm font-medium w-8 text-center">{field.value}</span>
-                            </div>
-                        </div>
+                        <FormItem>
+                            <FormLabel>Título de la Tarea <span className="text-destructive">*</span></FormLabel>
+                            <FormControl>
+                                <Input {...field} />
+                            </FormControl>
+                            <FormMessage />
+                        </FormItem>
                     )}
                 />
-            )}
 
-            {/* Descripción */}
-            <Controller
-                name="description"
-                control={form.control}
-                render={({ field }) => (
-                    <div>
-                        <Label htmlFor="description">Descripción (Opcional)</Label>
-                        <Textarea id="description" {...field} />
+                {isWorkflowMode ? (
+                    <FormField
+                        control={form.control}
+                        name="dueDays"
+                        render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>Días para Vencer</FormLabel>
+                                <div className="flex items-center gap-4 pt-2">
+                                    <Slider
+                                        min={0}
+                                        max={30}
+                                        step={1}
+                                        value={[field.value || 0]}
+                                        onValueChange={(value) => field.onChange(value[0])}
+                                    />
+                                    <span className="text-sm font-medium w-8 text-center">{field.value}</span>
+                                </div>
+                                <FormMessage />
+                            </FormItem>
+                        )}
+                    />
+                ) : (
+                <>
+                    <FormField
+                        control={form.control}
+                        name="clientId"
+                        render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>Asignar a Cliente <span className="text-destructive">*</span></FormLabel>
+                                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                    <FormControl>
+                                        <SelectTrigger><SelectValue placeholder="Seleccione un cliente..." /></SelectTrigger>
+                                    </FormControl>
+                                    <SelectContent>
+                                    {clients.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+                                    </SelectContent>
+                                </Select>
+                                <FormMessage />
+                            </FormItem>
+                        )}
+                    />
+                    
+                    <div className="grid grid-cols-2 gap-4">
+                        <FormField
+                            control={form.control}
+                            name="dueDate"
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Fecha de Vencimiento</FormLabel>
+                                    <Popover>
+                                        <PopoverTrigger asChild>
+                                            <FormControl>
+                                                <Button variant="outline" className={cn('w-full justify-start text-left font-normal', !field.value && 'text-muted-foreground')}>
+                                                    <CalendarIcon className="mr-2 h-4 w-4" />
+                                                    {field.value ? format(field.value, 'PPP', { locale: es }) : <span>Seleccione fecha</span>}
+                                                </Button>
+                                            </FormControl>
+                                        </PopoverTrigger>
+                                        <PopoverContent className="w-auto p-0"><Calendar mode="single" selected={field.value} onSelect={field.onChange} initialFocus /></PopoverContent>
+                                    </Popover>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+                        <FormField
+                            control={form.control}
+                            name="dueTime"
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Hora (Opcional)</FormLabel>
+                                    <FormControl>
+                                        <Input type="time" {...field} />
+                                    </FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
                     </div>
+                </>
                 )}
-            />
-          </div>
 
-          <DialogFooter>
-            <DialogClose asChild><Button type="button" variant="outline">Cancelar</Button></DialogClose>
-            <Button type="submit" disabled={isSubmitting}>
-              {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
-              {isWorkflowMode ? "Guardar Plantilla" : "Guardar Tarea"}
-            </Button>
-          </DialogFooter>
-        </form>
+                <FormField
+                    control={form.control}
+                    name="description"
+                    render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>Descripción (Opcional)</FormLabel>
+                            <FormControl>
+                                <Textarea {...field} />
+                            </FormControl>
+                            <FormMessage />
+                        </FormItem>
+                    )}
+                />
+            </div>
+
+            <DialogFooter>
+                <DialogClose asChild><Button type="button" variant="outline">Cancelar</Button></DialogClose>
+                <Button type="submit" disabled={isSubmitting}>
+                {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
+                {isWorkflowMode ? "Guardar Plantilla" : "Guardar Tarea"}
+                </Button>
+            </DialogFooter>
+            </form>
+        </Form>
       </DialogContent>
     </Dialog>
   );
 }
+
+    
