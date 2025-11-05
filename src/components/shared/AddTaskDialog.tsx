@@ -91,7 +91,7 @@ export function AddTaskDialog({
     setTimeout(() => {
       onTaskAdd(data);
       toast({
-        title: isWorkflowMode ? "Plantilla de Tarea Creada" : "Tarea Creada",
+        title: "Tarea Creada",
         description: `Se ha guardado "${data.title}" correctamente.`,
       });
       setIsSubmitting(false);
@@ -107,7 +107,7 @@ export function AddTaskDialog({
             <DialogHeader>
                 <DialogTitle className="flex items-center gap-2">
                 <PlusCircle className="h-5 w-5 text-accent"/>
-                {isWorkflowMode ? "Añadir Plantilla de Tarea" : "Crear Nueva Tarea"}
+                Crear Nueva Tarea
                 </DialogTitle>
                 <DialogDescription>
                 {isWorkflowMode ? "Defina los detalles para esta tarea automática." : "Complete la información para crear una nueva tarea."}
@@ -229,7 +229,7 @@ export function AddTaskDialog({
                 <DialogClose asChild><Button type="button" variant="outline">Cancelar</Button></DialogClose>
                 <Button type="submit" disabled={isSubmitting}>
                 {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
-                {isWorkflowMode ? "Guardar Plantilla" : "Guardar Tarea"}
+                {isWorkflowMode ? "Guardar Tarea" : "Guardar Tarea"}
                 </Button>
             </DialogFooter>
             </form>
@@ -238,5 +238,3 @@ export function AddTaskDialog({
     </Dialog>
   );
 }
-
-    
