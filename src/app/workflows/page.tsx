@@ -330,7 +330,7 @@ export default function WorkflowConfigurationPage() {
                           )
                         })}
                       </div>
-                      <Button type="button" size="sm" variant="outline" onClick={() => addActionToStage(serviceId, subServiceId, stage.id)}><Plus className="h-4 w-4 mr-2"/>Añadir Acción</Button>
+                      <Button type="button" size="sm" variant="outline" onClick={() => addActionToStage(serviceId, subServiceId, stage.id)}><Plus className="h-4 w-4 mr-2"/>Añadir Tarea</Button>
                     </div>
                 ) : (
                   <div>

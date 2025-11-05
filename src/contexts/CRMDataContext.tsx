@@ -174,6 +174,7 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
         if (!client) return null;
         const newTask: Task = { ...newTaskData, id: `task-${Date.now()}`, status: 'Pendiente', clientName: client.name };
         setTasks(prev => [...prev, newTask].sort((a, b) => (a.dueTime || "23:59").localeCompare(b.dueTime || "23:59")));
+        showNotification('success', 'Tarea Creada', `La tarea "${newTask.title}" ha sido creada.`);
         return newTask;
     };
     const updateTask = async (taskId: string, updates: Partial<Task>): Promise<boolean> => {
