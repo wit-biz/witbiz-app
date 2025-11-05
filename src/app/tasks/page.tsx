@@ -93,7 +93,7 @@ export default function TasksPage() {
   const [currentClientDate, setCurrentClientDate] = useState<Date | null>(null);
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
   const [calendarMonth, setCalendarMonth] = useState<Date>();
-  const [openAccordionItem, setOpenAccordionItem] = useState<string>("overdue-tasks");
+  const [openAccordionItem, setOpenAccordionItem] = useState<string>("today-tasks");
   
   const [selectedTaskDetail, setSelectedTaskDetail] = useState<Task | null>(null);
   const [isDetailDialogOpen, setIsDetailDialogOpen] = useState(false);
@@ -158,40 +158,39 @@ export default function TasksPage() {
   }, [allTasks, currentClientDate]);
     
   
-  const dayModifiers = useMemo(() => {
-    const today = new Date();
+ const dayModifiers = useMemo(() => {
+    if (!currentClientDate || !Array.isArray(allTasks)) return {};
+
+    const today = new Date(currentClientDate);
     today.setHours(0, 0, 0, 0);
 
-    if (!Array.isArray(allTasks)) return {};
-  
-    const pendingTasksWithValidDates = allTasks.filter(
-      (task) =>
-        task && task.status !== 'Completada' && parseDateString(task.dueDate)
-    );
-  
-    const overdueDays: Date[] = [];
-    const todayTaskDays: Date[] = [];
-    const upcomingTaskDays: Date[] = [];
-  
-    pendingTasksWithValidDates.forEach((task) => {
+    const modifiers: {
+      overdue_highlight: Date[];
+      today_task_highlight: Date[];
+      upcoming_highlight: Date[];
+    } = {
+      overdue_highlight: [],
+      today_task_highlight: [],
+      upcoming_highlight: [],
+    };
+
+    allTasks.forEach((task) => {
+      if (!task || task.status === 'Completada') return;
+
       const date = parseDateString(task.dueDate);
       if (date) {
         if (date < today) {
-          overdueDays.push(date);
+          modifiers.overdue_highlight.push(date);
         } else if (date.getTime() === today.getTime()) {
-          todayTaskDays.push(date);
+          modifiers.today_task_highlight.push(date);
         } else {
-          upcomingTaskDays.push(date);
+          modifiers.upcoming_highlight.push(date);
         }
       }
     });
-  
-    return {
-      overdue_highlight: overdueDays,
-      today_task_highlight: todayTaskDays,
-      upcoming_highlight: upcomingTaskDays,
-    } as DayModifiers;
-  }, [allTasks]);
+
+    return modifiers;
+  }, [allTasks, currentClientDate]);
   
   const dayModifiersClassNames = { overdue_highlight: 'calendar-day--overdue-bg', today_task_highlight: 'calendar-day--today-task-bg', upcoming_highlight: 'calendar-day--upcoming-bg' };
   
@@ -263,14 +262,7 @@ export default function TasksPage() {
                       onMonthChange={setCalendarMonth} 
                       locale={es} 
                       className="rounded-md border" 
-                      disabled={!currentClientDate ? (date) => true : (date) => {
-                          if (!currentClientDate) return true;
-                          const oneYearAgo = new Date(currentClientDate);
-                          oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
-                          const twoYearsFromNow = new Date(currentClientDate);
-                          twoYearsFromNow.setFullYear(twoYearsFromNow.getFullYear() + 2);
-                          return date < oneYearAgo || date > twoYearsFromNow;
-                        }} 
+                      disabled={!currentClientDate} 
                       modifiers={dayModifiers} 
                       modifiersClassNames={dayModifiersClassNames} 
                     />
