@@ -148,11 +148,11 @@ export default function CrmPage() {
     if (!serviceWorkflows) return [];
     const stages: AnyStage[] = [];
     serviceWorkflows.forEach(service => {
-        service.stages.forEach(stage1 => {
+        (service.stages || []).forEach(stage1 => {
             stages.push(stage1);
-            stage1.subStages.forEach(stage2 => {
+            (stage1.subStages || []).forEach(stage2 => {
                 stages.push(stage2);
-                stage2.subSubStages.forEach(stage3 => {
+                (stage2.subSubStages || []).forEach(stage3 => {
                     stages.push(stage3);
                 })
             })

@@ -291,12 +291,12 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
       const all: AnyStage[] = [];
       
       serviceWorkflows.forEach(service => {
-        service.stages.forEach(stage => {
-          all.push(stage);
-          stage.subStages.forEach(subStage => {
-            all.push(subStage);
-            subStage.subSubStages.forEach(subSubStage => {
-              all.push(subSubStage);
+        (service.stages || []).forEach(stage1 => {
+          all.push(stage1);
+          (stage1.subStages || []).forEach(stage2 => {
+            all.push(stage2);
+            (stage2.subSubStages || []).forEach(stage3 => {
+                all.push(stage3);
             });
           });
         });
@@ -339,11 +339,11 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
                 let action = stage.actions.find(o => o.id === actionId);
                 if (action) return action;
 
-                for (const subStage of stage.subStages) {
+                for (const subStage of (stage.subStages || [])) {
                     action = subStage.actions.find(o => o.id === actionId);
                     if (action) return action;
                     
-                    for (const subSubStage of subStage.subSubStages) {
+                    for (const subSubStage of (subStage.subSubStages || [])) {
                          action = subSubStage.actions.find(o => o.id === actionId);
                          if (action) return action;
                     }
