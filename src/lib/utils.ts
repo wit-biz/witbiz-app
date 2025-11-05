@@ -1,3 +1,4 @@
+
 import { clsx, type ClassValue } from "clsx"
 import { twMerge } from "tailwind-merge"
 
@@ -50,6 +51,7 @@ export function parseDateString(dateString: string | Date): Date | null {
     let parts = dateString.split('-');
     if (parts.length === 3 && parts[0].length === 4) {
         const [year, month, day] = parts.map(Number);
+        // Using UTC to prevent timezone shifts.
         const date = new Date(Date.UTC(year, month - 1, day));
         if (!isNaN(date.getTime())) return date;
     }
@@ -58,6 +60,7 @@ export function parseDateString(dateString: string | Date): Date | null {
     parts = dateString.split('/');
     if (parts.length === 3) {
         const [day, month, year] = parts.map(Number);
+         // Using UTC to prevent timezone shifts.
         const date = new Date(Date.UTC(year, month - 1, day));
         if (!isNaN(date.getTime())) return date;
     }
