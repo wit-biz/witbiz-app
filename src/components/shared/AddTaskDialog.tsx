@@ -122,9 +122,9 @@ export function AddTaskDialog({
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-md max-h-[90vh] flex flex-col">
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col h-full">
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
                 <PlusCircle className="h-5 w-5 text-accent"/>
@@ -135,7 +135,7 @@ export function AddTaskDialog({
               </DialogDescription>
             </DialogHeader>
 
-            <div className="py-4 space-y-4">
+            <div className="py-4 space-y-4 flex-grow overflow-y-auto pr-2 pl-1">
               <FormField
                   control={form.control}
                   name="title"
@@ -307,7 +307,7 @@ export function AddTaskDialog({
 
             </div>
 
-            <DialogFooter>
+            <DialogFooter className="mt-auto pt-4 border-t">
                 <DialogClose asChild><Button type="button" variant="outline">Cancelar</Button></DialogClose>
                 <Button type="submit" disabled={isSubmitting}>
                 {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
