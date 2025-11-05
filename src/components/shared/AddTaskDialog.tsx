@@ -110,7 +110,7 @@ export function AddTaskDialog({
                 Crear Nueva Tarea
                 </DialogTitle>
                 <DialogDescription>
-                {isWorkflowMode ? "Defina los detalles para esta tarea automática." : "Complete la información para crear una nueva tarea."}
+                  {isWorkflowMode ? "Defina los detalles para esta tarea automática." : "Complete la información para crear una nueva tarea."}
                 </DialogDescription>
             </DialogHeader>
 
@@ -128,29 +128,8 @@ export function AddTaskDialog({
                         </FormItem>
                     )}
                 />
-
-                {isWorkflowMode ? (
-                    <FormField
-                        control={form.control}
-                        name="dueDays"
-                        render={({ field }) => (
-                            <FormItem>
-                                <FormLabel>Días para Vencer</FormLabel>
-                                <div className="flex items-center gap-4 pt-2">
-                                    <Slider
-                                        min={0}
-                                        max={30}
-                                        step={1}
-                                        value={[field.value || 0]}
-                                        onValueChange={(value) => field.onChange(value[0])}
-                                    />
-                                    <span className="text-sm font-medium w-8 text-center">{field.value}</span>
-                                </div>
-                                <FormMessage />
-                            </FormItem>
-                        )}
-                    />
-                ) : (
+                
+                {!isWorkflowMode ? (
                 <>
                     <FormField
                         control={form.control}
@@ -208,6 +187,27 @@ export function AddTaskDialog({
                         />
                     </div>
                 </>
+                ) : (
+                    <FormField
+                        control={form.control}
+                        name="dueDays"
+                        render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>Días para Vencer</FormLabel>
+                                <div className="flex items-center gap-4 pt-2">
+                                    <Slider
+                                        min={0}
+                                        max={30}
+                                        step={1}
+                                        value={[field.value || 0]}
+                                        onValueChange={(value) => field.onChange(value[0])}
+                                    />
+                                    <span className="text-sm font-medium w-8 text-center">{field.value}</span>
+                                </div>
+                                <FormMessage />
+                            </FormItem>
+                        )}
+                    />
                 )}
 
                 <FormField
@@ -229,7 +229,7 @@ export function AddTaskDialog({
                 <DialogClose asChild><Button type="button" variant="outline">Cancelar</Button></DialogClose>
                 <Button type="submit" disabled={isSubmitting}>
                 {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
-                {isWorkflowMode ? "Guardar Tarea" : "Guardar Tarea"}
+                Guardar Tarea
                 </Button>
             </DialogFooter>
             </form>
