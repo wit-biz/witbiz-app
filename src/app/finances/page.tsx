@@ -58,7 +58,7 @@ export default function FinancesPage() {
   const [isComparativeView, setIsComparativeView] = useState(false);
 
   const chartServices = serviceWorkflows.map(s => ({ id: s.id, name: s.name }));
-  const chartClients = clients.map(c => ({ id: c.id, name: c.name }));
+  const chartClients = (clients || []).map(c => ({ id: c.id, name: c.name }));
 
   const filteredLogs = useMemo(() => {
      return logData.filter(item => {
@@ -73,7 +73,7 @@ export default function FinancesPage() {
 
 
   const handleDownload = (section: string) => {
-      const clientName = clients.find(c => c.id === selectedClientId)?.name || "Todos";
+      const clientName = clients?.find(c => c.id === selectedClientId)?.name || "Todos";
       const serviceName = serviceWorkflows.find(s => s.id === selectedServiceId)?.name || "Todos";
 
       let description = `Iniciando descarga de "${section}". Filtros aplicados: Cliente - ${clientName}, Servicio - ${serviceName}.`;
