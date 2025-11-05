@@ -119,6 +119,87 @@ export function AddTaskDialog({
   
   const dueDateAsDate = parseDateString(formData.dueDate);
 
+  // Workflow Mode Layout (matches image)
+  if (isWorkflowMode) {
+    return (
+        <Dialog open={isOpen} onOpenChange={onOpenChange}>
+            <DialogContent className="sm:max-w-md">
+                <form onSubmit={handleSubmit}>
+                    <DialogHeader>
+                        <DialogTitle className="flex items-center gap-2">
+                            <PlusCircle className="h-5 w-5 text-accent" />
+                            Añadir Plantilla de Tarea
+                        </DialogTitle>
+                        <DialogDescription>
+                            Defina los detalles para esta tarea automática.
+                        </DialogDescription>
+                    </DialogHeader>
+                    
+                    <div className="grid gap-4 py-4 max-h-[60vh] overflow-y-auto px-1">
+                        <div>
+                            <Label htmlFor="title">Título de la Tarea <span className="text-destructive">*</span></Label>
+                            <Input
+                                id="title"
+                                name="title"
+                                value={formData.title}
+                                onChange={handleDataChange}
+                                required
+                                disabled={isSubmitting}
+                                placeholder="Ej. Llamada de seguimiento"
+                            />
+                        </div>
+                        
+                        <div>
+                            <Label htmlFor="dueDays">Días para Vencer</Label>
+                            <div className="flex items-center gap-4 pt-2">
+                                <Slider
+                                    id="dueDays"
+                                    value={[formData.dueDays || 0]}
+                                    onValueChange={handleDueDaysChange}
+                                    max={30}
+                                    step={1}
+                                    className="w-full"
+                                />
+                                <span className="text-sm font-medium w-12 text-center border rounded-md p-2">
+                                    {formData.dueDays || 0}
+                                </span>
+                            </div>
+                        </div>
+
+                        <div>
+                            <Label htmlFor="description">Descripción (Opcional)</Label>
+                            <Textarea
+                                id="description"
+                                name="description"
+                                value={formData.description}
+                                onChange={handleDataChange}
+                                disabled={isSubmitting}
+                                placeholder="Añada más detalles sobre la tarea..."
+                            />
+                        </div>
+                    </div>
+                    <DialogFooter>
+                        <DialogClose asChild>
+                            <Button type="button" variant="outline" disabled={isSubmitting}>
+                                Cancelar
+                            </Button>
+                        </DialogClose>
+                        <Button type="submit" disabled={isSubmitting}>
+                            {isSubmitting ? (
+                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            ) : (
+                                <Save className="mr-2 h-4 w-4" />
+                            )}
+                            Guardar Plantilla
+                        </Button>
+                    </DialogFooter>
+                </form>
+            </DialogContent>
+        </Dialog>
+    )
+  }
+
+  // Default (Task Page) Layout
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
@@ -126,10 +207,10 @@ export function AddTaskDialog({
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <PlusCircle className="h-5 w-5 text-accent" />
-              {isWorkflowMode ? 'Añadir Plantilla de Tarea' : 'Añadir Nueva Tarea'}
+              Añadir Nueva Tarea
             </DialogTitle>
             <DialogDescription>
-              {isWorkflowMode ? 'Defina los detalles para esta tarea automática.' : 'Complete los detalles de la nueva tarea.'}
+              Complete los detalles de la nueva tarea.
             </DialogDescription>
           </DialogHeader>
           
@@ -147,91 +228,70 @@ export function AddTaskDialog({
               />
             </div>
             
-            {!isWorkflowMode ? (
-              <>
-                 <div>
-                  <Label htmlFor="clientId">Asignar a Cliente <span className="text-destructive">*</span></Label>
-                  <Select
-                    name="clientId"
-                    value={formData.clientId}
-                    onValueChange={handleSelectChange}
-                    required
-                    disabled={isSubmitting || !!preselectedClient}
-                  >
-                    <SelectTrigger id="clientId">
-                      <SelectValue placeholder="Seleccione un cliente..." />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {clients.map((client) => (
-                        <SelectItem key={client.id} value={client.id}>
-                          {client.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="dueDate">Fecha de Vencimiento <span className="text-destructive">*</span></Label>
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <Button
-                          variant="outline"
-                          className={cn(
-                            'w-full justify-start text-left font-normal',
-                            !formData.dueDate && 'text-muted-foreground'
-                          )}
-                          disabled={isSubmitting}
-                        >
-                          <CalendarIcon className="mr-2 h-4 w-4" />
-                          {dueDateAsDate ? (
-                            format(dueDateAsDate, 'PPP', { locale: es })
-                          ) : (
-                            <span>Seleccione fecha</span>
-                          )}
-                        </Button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0">
-                        <Calendar
-                          mode="single"
-                          selected={dueDateAsDate || undefined}
-                          onSelect={handleDateChange}
-                          initialFocus
-                        />
-                      </PopoverContent>
-                    </Popover>
-                  </div>
-                  <div>
-                    <Label htmlFor="dueTime">Hora (Opcional)</Label>
-                    <Input
-                      id="dueTime"
-                      name="dueTime"
-                      type="time"
-                      value={formData.dueTime}
-                      onChange={handleDataChange}
+            <div>
+              <Label htmlFor="clientId">Asignar a Cliente <span className="text-destructive">*</span></Label>
+              <Select
+                name="clientId"
+                value={formData.clientId}
+                onValueChange={handleSelectChange}
+                required
+                disabled={isSubmitting || !!preselectedClient}
+              >
+                <SelectTrigger id="clientId">
+                  <SelectValue placeholder="Seleccione un cliente..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {clients.map((client) => (
+                    <SelectItem key={client.id} value={client.id}>
+                      {client.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="dueDate">Fecha de Vencimiento <span className="text-destructive">*</span></Label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className={cn(
+                        'w-full justify-start text-left font-normal',
+                        !formData.dueDate && 'text-muted-foreground'
+                      )}
                       disabled={isSubmitting}
+                    >
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {dueDateAsDate ? (
+                        format(dueDateAsDate, 'PPP', { locale: es })
+                      ) : (
+                        <span>Seleccione fecha</span>
+                      )}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0">
+                    <Calendar
+                      mode="single"
+                      selected={dueDateAsDate || undefined}
+                      onSelect={handleDateChange}
+                      initialFocus
                     />
-                  </div>
-                </div>
-              </>
-            ) : (
-               <div>
-                  <Label htmlFor="dueDays">Días para Vencer</Label>
-                  <div className="flex items-center gap-4 pt-2">
-                    <Slider
-                      id="dueDays"
-                      value={[formData.dueDays || 0]}
-                      onValueChange={handleDueDaysChange}
-                      max={30}
-                      step={1}
-                      className="w-full"
-                    />
-                    <span className="text-sm font-medium w-12 text-center border rounded-md p-2">
-                      {formData.dueDays || 0}
-                    </span>
-                  </div>
-                </div>
-            )}
+                  </PopoverContent>
+                </Popover>
+              </div>
+              <div>
+                <Label htmlFor="dueTime">Hora (Opcional)</Label>
+                <Input
+                  id="dueTime"
+                  name="dueTime"
+                  type="time"
+                  value={formData.dueTime}
+                  onChange={handleDataChange}
+                  disabled={isSubmitting}
+                />
+              </div>
+            </div>
              <div>
                 <Label htmlFor="description">Descripción (Opcional)</Label>
                 <Textarea
@@ -256,7 +316,7 @@ export function AddTaskDialog({
               ) : (
                 <Save className="mr-2 h-4 w-4" />
               )}
-              {isWorkflowMode ? 'Guardar Plantilla' : 'Guardar Tarea'}
+              Guardar Tarea
             </Button>
           </DialogFooter>
         </form>
