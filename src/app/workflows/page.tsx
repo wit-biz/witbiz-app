@@ -7,7 +7,7 @@ import { useSearchParams } from "next/navigation";
 import { Header } from "@/components/header";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { useCRMData, type WorkflowStage, type ServiceWorkflow, type WorkflowAction, type SubService } from "@/contexts/CRMDataContext"; 
-import { Edit, Save, Trash2, Plus, X, Loader2, UploadCloud, ChevronsRight, FileText, ListTodo, Workflow as WorkflowIcon, ArrowLeft, PlusCircle, Layers, FolderCog, Redo } from "lucide-react";
+import { Edit, Save, Trash2, Plus, X, Loader2, UploadCloud, ChevronsRight, FileText, ListTodo, Workflow as WorkflowIcon, ArrowLeft, PlusCircle, Layers, FolderCog, Redo, AlertTriangle } from "lucide-react";
 import { Card, CardHeader, CardTitle, CardContent, CardDescription, CardFooter } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
@@ -40,7 +40,6 @@ export default function WorkflowConfigurationPage() {
     serviceWorkflows,
     isLoadingWorkflows,
     addService,
-    deleteService, 
     setServiceWorkflows,
   } = useCRMData();
   const router = useRouter();
@@ -50,7 +49,6 @@ export default function WorkflowConfigurationPage() {
 
   const [selectedWorkflowId, setSelectedWorkflowId] = useState<string | null>(null);
   
-  const [isEditing, setIsEditing] = useState(false);
   const [editableWorkflow, setEditableWorkflow] = useState<ServiceWorkflow | null>(null);
 
   const [isAddTaskDialogOpen, setIsAddTaskDialogOpen] = useState(false);
@@ -75,7 +73,7 @@ export default function WorkflowConfigurationPage() {
   const handleAddNewService = () => {
     setPromptNameConfig({
       title: "Añadir Nuevo Servicio",
-      description: "Introduzca un nombre para el nuevo servicio. Podrá configurar sus sub-servicios y etapas más tarde.",
+      description: "Introduzca un nombre para el nuevo servicio. Podrá configurar sus flujos más tarde.",
       label: "Nombre del Servicio",
       onSave: async (name) => {
         const newService = await addService(name);
@@ -101,27 +99,34 @@ export default function WorkflowConfigurationPage() {
     return serviceWorkflows.find(wf => wf.id === selectedWorkflowId) || null;
   }, [selectedWorkflowId, serviceWorkflows]);
   
-  const handleStartEditing = () => {
-    if (!selectedWorkflow) return;
-    const deepCopy = JSON.parse(JSON.stringify(selectedWorkflow));
-    setEditableWorkflow(deepCopy);
-    setIsEditing(true);
-  };
+  useEffect(() => {
+    if (selectedWorkflow) {
+        // Create a deep copy for editing to avoid mutating the original state directly
+        setEditableWorkflow(JSON.parse(JSON.stringify(selectedWorkflow)));
+    } else {
+        setEditableWorkflow(null);
+    }
+  }, [selectedWorkflow]);
 
-  const handleCancelEditing = () => {
-    setIsEditing(false);
-    setEditableWorkflow(null);
-  };
+
+  const handleDiscardChanges = () => {
+      if(selectedWorkflow) {
+        setEditableWorkflow(JSON.parse(JSON.stringify(selectedWorkflow)));
+        showNotification('info', 'Cambios Descartados', 'Se han revertido las modificaciones.');
+      }
+  }
 
   const handleSaveChanges = () => {
     if (!editableWorkflow) return;
     setServiceWorkflows(prev => prev.map(wf => wf.id === editableWorkflow.id ? editableWorkflow : wf));
-    setIsEditing(false);
-    setEditableWorkflow(null);
     showNotification('success', 'Flujo Guardado', 'Los cambios en el flujo de trabajo han sido guardados.');
   };
   
-  const workflowToDisplay = isEditing ? editableWorkflow : selectedWorkflow;
+  const hasChanges = useMemo(() => {
+    if (!selectedWorkflow || !editableWorkflow) return false;
+    return JSON.stringify(selectedWorkflow) !== JSON.stringify(editableWorkflow);
+  }, [selectedWorkflow, editableWorkflow]);
+
 
   // --- Handlers for direct stages ---
   const handleAddDirectStage = () => {
@@ -170,7 +175,7 @@ export default function WorkflowConfigurationPage() {
     if (!editableWorkflow) return;
     setPromptNameConfig({
         title: "Añadir Sub-Servicio",
-        description: `Añadir un nuevo sub-servicio a "${workflowToDisplay?.name}".`,
+        description: `Añadir un nuevo sub-servicio a "${editableWorkflow?.name}".`,
         label: "Nombre del Sub-Servicio",
         onSave: (name) => {
             const newSubService: SubService = { id: `sub-${Date.now()}`, name, stages: [] };
@@ -260,7 +265,7 @@ export default function WorkflowConfigurationPage() {
               <div className="flex items-center text-left gap-3 w-full">
                 <StageNumberIcon index={stageIndex} />
                 <div className="flex-grow">
-                  {isEditing ? (
+                  {canEditWorkflow ? (
                     <Input 
                       value={stage.title}
                       onClick={e => e.stopPropagation()}
@@ -273,7 +278,7 @@ export default function WorkflowConfigurationPage() {
                 </div>
               </div>
             </AccordionTrigger>
-            {isEditing && (
+            {canEditWorkflow && (
               <div className="pl-2">
                 <Button variant="ghost" size="icon" className="h-8 w-8 ml-1" onClick={() => handlers.deleteStage(stage.id)}>
                   <Trash2 className="h-4 w-4 text-destructive"/>
@@ -286,7 +291,7 @@ export default function WorkflowConfigurationPage() {
               <div className="space-y-4">
                 {stage.actions.map((action) => (
                   <div key={action.id} className="flex flex-col sm:flex-row items-center gap-2 group">
-                    {isEditing ? (
+                    {canEditWorkflow ? (
                       <>
                         <div className="flex-grow w-full">
                           <Label className="text-xs text-muted-foreground">Título de la Tarea</Label>
@@ -321,21 +326,13 @@ export default function WorkflowConfigurationPage() {
                     ) : (
                       <div className="flex justify-between items-center w-full bg-secondary/30 p-2 rounded-md">
                         <p className="text-sm">{action.title} <span className="text-muted-foreground text-xs">({action.dueDays} días)</span></p>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Button variant="default" size="icon" className="h-7 w-7" onClick={() => handleOpenTaskDialog(action.title, action.dueDays)}>
-                              <ListTodo className="h-4 w-4" />
-                            </Button>
-                          </TooltipTrigger>
-                          <TooltipContent><p>Crear tarea desde esta acción</p></TooltipContent>
-                        </Tooltip>
                       </div>
                     )}
                   </div>
                 ))}
               </div>
             )}
-            {isEditing && (
+            {canEditWorkflow && (
               <Button variant="outline" size="sm" onClick={() => handlers.addAction(stage.id)}>
                 <Plus className="h-4 w-4 mr-2"/>Añadir Tarea
               </Button>
@@ -353,7 +350,7 @@ export default function WorkflowConfigurationPage() {
           <CardHeader className="flex-1 text-left flex flex-row items-center justify-between">
             <div className="flex items-center gap-3">
               <FolderCog className="h-5 w-5 text-accent"/>
-              {isEditing ? (
+              {canEditWorkflow ? (
                   <Input 
                     value={subService.name}
                     onClick={e => e.stopPropagation()}
@@ -362,7 +359,7 @@ export default function WorkflowConfigurationPage() {
                   />
               ) : <CardTitle className="text-md">{subService.name}</CardTitle>}
             </div>
-             {isEditing && (
+             {canEditWorkflow && (
                 <Button variant="ghost" size="icon" className="h-8 w-8" onClick={(e) => { e.stopPropagation(); handleDeleteSubService(subService.id); }}>
                     <Trash2 className="h-4 w-4 text-destructive"/>
                 </Button>
@@ -381,14 +378,14 @@ export default function WorkflowConfigurationPage() {
           ) : (
              <div className="text-center text-muted-foreground py-6 border border-dashed rounded-md">
                 <p className="text-sm">No hay etapas en este sub-servicio.</p>
-                {isEditing && (
+                {canEditWorkflow && (
                   <Button variant="outline" size="sm" className="mt-2" onClick={() => handleAddStageToSubService(subService.id)}>
                     <Plus className="mr-2 h-4 w-4" />Añadir Etapa
                   </Button>
                 )}
             </div>
           )}
-          {isEditing && subService.stages.length > 0 && (
+          {canEditWorkflow && subService.stages.length > 0 && (
              <Button variant="outline" size="sm" className="mt-4" onClick={() => handleAddStageToSubService(subService.id)}>
                 <Plus className="mr-2 h-4 w-4" />Añadir Etapa
               </Button>
@@ -430,18 +427,16 @@ export default function WorkflowConfigurationPage() {
                       Volver al CRM
                   </Link>
               </Button>
-              {isEditing ? (
+              {hasChanges ? (
                   <>
                       <Button onClick={handleSaveChanges}><Save className="mr-2 h-4 w-4"/>Guardar Cambios</Button>
-                      <Button variant="ghost" onClick={handleCancelEditing}><Redo className="mr-2 h-4 w-4"/>Cancelar</Button>
+                      <Button variant="ghost" onClick={handleDiscardChanges}>Descartar Cambios</Button>
                   </>
               ) : (
-                  canEditWorkflow && (
-                      <Button onClick={handleStartEditing} disabled={!selectedWorkflow}>
-                          <Edit className="mr-2 h-4 w-4" />
-                          Configurar Flujo
-                      </Button>
-                  )
+                <Button disabled>
+                    <Save className="mr-2 h-4 w-4"/>
+                    Guardar Cambios
+                </Button>
               )}
             </div>
         </Header>
@@ -452,7 +447,7 @@ export default function WorkflowConfigurationPage() {
                   <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 justify-between">
                       <div className="flex-grow w-full sm:w-auto">
                           <Label htmlFor="service-selector">Servicio Activo</Label>
-                          <Select value={selectedWorkflowId || ""} onValueChange={(id) => setSelectedWorkflowId(id)} disabled={!serviceWorkflows || !serviceWorkflows.length || isEditing}>
+                          <Select value={selectedWorkflowId || ""} onValueChange={(id) => setSelectedWorkflowId(id)} disabled={!serviceWorkflows || !serviceWorkflows.length || hasChanges}>
                               <SelectTrigger id="service-selector" className="mt-1">
                                   <SelectValue placeholder="Seleccione un servicio para configurar..." />
                               </SelectTrigger>
@@ -462,23 +457,26 @@ export default function WorkflowConfigurationPage() {
                                   ))}
                               </SelectContent>
                           </Select>
+                          {hasChanges && (
+                            <p className="text-xs text-destructive mt-2 flex items-center gap-1"><AlertTriangle className="h-3 w-3"/>Tiene cambios sin guardar. Guarde o descarte para cambiar de servicio.</p>
+                          )}
                       </div>
-                      {canEditWorkflow && !isEditing && (
+                      {canEditWorkflow && (
                          <Button variant="outline" size="sm" onClick={handleAddNewService}><PlusCircle className="mr-2 h-4 w-4"/>Añadir Servicio</Button>
                       )}
                   </div>
               </CardHeader>
 
-              {workflowToDisplay ? (
+              {editableWorkflow ? (
                 <CardContent className="border-t pt-6 space-y-6">
                   {/* Direct Stages Section */}
                   <div className="space-y-4">
                     <h3 className="text-lg font-semibold flex items-center gap-2"><Layers className="h-5 w-5 text-primary"/>Etapas Principales</h3>
-                    {isEditing && (
+                    {canEditWorkflow && (
                       <Button size="sm" variant="outline" onClick={handleAddDirectStage}><Plus className="mr-2 h-4 w-4"/>Añadir Etapa Principal</Button>
                     )}
-                    {workflowToDisplay.stages && workflowToDisplay.stages.length > 0 ? (
-                       renderStages(workflowToDisplay.stages, {
+                    {editableWorkflow.stages && editableWorkflow.stages.length > 0 ? (
+                       renderStages(editableWorkflow.stages, {
                            deleteStage: handleDeleteDirectStage,
                            updateStage: handleUpdateDirectStage,
                            addAction: handleAddActionToDirectStage,
@@ -486,21 +484,21 @@ export default function WorkflowConfigurationPage() {
                            updateAction: handleUpdateActionInDirectStage,
                        })
                     ) : (
-                      <p className="text-sm text-muted-foreground">{isEditing ? 'Añada una etapa para empezar.' : 'No hay etapas principales definidas.'}</p>
+                      <p className="text-sm text-muted-foreground">{canEditWorkflow ? 'Añada una etapa para empezar.' : 'No hay etapas principales definidas.'}</p>
                     )}
                   </div>
                   
                   {/* Sub-Services Section */}
                   <div className="space-y-4">
                      <h3 className="text-lg font-semibold flex items-center gap-2"><FolderCog className="h-5 w-5 text-primary"/>Sub-Servicios</h3>
-                     {isEditing && (
+                     {canEditWorkflow && (
                         <Button size="sm" variant="outline" onClick={handleAddSubService}><Plus className="mr-2 h-4 w-4"/> Añadir Sub-Servicio</Button>
                      )}
-                     <Accordion type="multiple" className="w-full space-y-4" defaultValue={workflowToDisplay.subServices?.map(s => s.id)}>
-                        {workflowToDisplay.subServices && workflowToDisplay.subServices.length > 0 ? (
-                          workflowToDisplay.subServices.map(subService => renderSubService(subService))
+                     <Accordion type="multiple" className="w-full space-y-4" defaultValue={editableWorkflow.subServices?.map(s => s.id)}>
+                        {editableWorkflow.subServices && editableWorkflow.subServices.length > 0 ? (
+                          editableWorkflow.subServices.map(subService => renderSubService(subService))
                         ) : (
-                          <p className="text-sm text-muted-foreground">{isEditing ? 'Añada un sub-servicio para crear flujos anidados.' : 'No hay sub-servicios definidos.'}</p>
+                          <p className="text-sm text-muted-foreground">{canEditWorkflow ? 'Añada un sub-servicio para crear flujos anidados.' : 'No hay sub-servicios definidos.'}</p>
                         )}
                       </Accordion>
                   </div>
@@ -545,4 +543,3 @@ export default function WorkflowConfigurationPage() {
   );
 }
 
-    
