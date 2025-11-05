@@ -214,43 +214,24 @@ export default function WorkflowConfigurationPage() {
     updateStageInSubService(serviceId, subServiceId, editingStageId, editableStageData as WorkflowStage);
     handleCancelEditStage();
   };
-
-  const handleStageDataChange = useCallback((e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    if (!editableStageData) return;
-    const { name, value } = e.target;
-    setEditableStageData({ ...editableStageData, [name]: value });
-  }, [editableStageData]);
-
-  const handleActionChange = (actionId: string, field: 'description' | 'requiredDocumentForCompletion', value: string) => {
-    if (!editableStageData || !editableStageData.actions) return;
-    
-    let finalValue = value;
-    if (field === 'requiredDocumentForCompletion' && value === 'ninguno') {
-        finalValue = '';
-    }
-    
-    const newActions = editableStageData.actions.map((act) => {
-      if (act.id === actionId) {
-        return { ...act, [field]: finalValue };
-      }
-      return act;
-    });
   
-    setEditableStageData({ ...editableStageData, actions: newActions });
+  const handleStageTitleChange = (serviceId: string, subServiceId: string | null, stageId: string, newTitle: string) => {
+    updateStageInSubService(serviceId, subServiceId, stageId, { title: newTitle });
+  }
+
+  const handleActionDescriptionChange = (stage: WorkflowStage, actionId: string, newDescription: string) => {
+    const updatedActions = stage.actions.map(act => act.id === actionId ? { ...act, description: newDescription } : act);
+    if(selectedWorkflow) {
+        const subService = selectedWorkflow.subServices.find(ss => ss.stages.some(s => s.id === stage.id));
+        updateStageInSubService(selectedWorkflow.id, subService?.id ?? null, stage.id, { actions: updatedActions });
+    }
   };
 
-  const handleAddNewActionToStage = () => {
-    if (!editableStageData) return;
-    const newAction: WorkflowAction = {
-      id: `action-${Date.now()}`,
-      description: "Nueva Tarea",
-      order: (editableStageData.actions?.length || 0) + 1,
-      subActions: []
-    };
-    setEditableStageData(prev => ({
-        ...prev,
-        actions: [...(prev?.actions || []), newAction]
-    }));
+  const handleAddNewActionToStage = (stageId: string) => {
+    if (selectedWorkflow) {
+      const subService = selectedWorkflow.subServices.find(ss => ss.stages.some(s => s.id === stageId));
+      addActionToStage(selectedWorkflow.id, subService?.id ?? null, stageId);
+    }
   };
   
   const renderStages = (stages: WorkflowStage[], serviceId: string, subServiceId: string | null) => {
@@ -258,119 +239,60 @@ export default function WorkflowConfigurationPage() {
     return (
       <Accordion type="multiple" className="w-full space-y-4" defaultValue={(stages || []).map(s => s.id)}>
         {(stages || []).map((stage, stageIndex) => {
-          const isEditingThisStage = editingStageId === stage.id;
           return (
             <AccordionItem value={stage.id} key={stage.id} className="border rounded-lg bg-card overflow-hidden">
               <div className="flex items-center p-4 pr-2">
                 <AccordionTrigger className="p-0 hover:no-underline flex-grow">
                     <div className="flex items-center text-left gap-3">
                         <StageNumberIcon index={stageIndex} />
-                        <h3 className="font-semibold text-base">{stage.title}</h3>
+                        <Input 
+                            value={stage.title}
+                            onChange={(e) => handleStageTitleChange(serviceId, subServiceId, stage.id, e.target.value)}
+                            className="font-semibold text-base border-none focus-visible:ring-0 focus-visible:ring-offset-0 p-0 h-auto"
+                            disabled={!canEditWorkflow}
+                        />
                     </div>
                 </AccordionTrigger>
                 {canEditWorkflow && (
                   <div className="pl-2">
-                    {isEditingThisStage ? (
-                        <div className="flex gap-2">
-                          <Button variant="default" size="sm" onClick={() => handleSaveStage(serviceId, subServiceId)}><Save className="h-4 w-4 mr-2"/>Guardar</Button>
-                          <Button variant="ghost" size="sm" onClick={handleCancelEditStage}><X className="h-4 w-4 mr-2"/>Cancelar</Button>
-                        </div>
-                    ) : (
-                        <Button variant="outline" size="sm" onClick={() => handleStartEditStage(stage)} disabled={!!editingServiceId}><Edit className="h-4 w-4 mr-2"/>Editar</Button>
-                    )}
                     <Button variant="ghost" size="icon" className="h-8 w-8 ml-1" onClick={() => deleteStageFromSubService(serviceId, subServiceId, stage.id)}><Trash2 className="h-4 w-4 text-destructive"/></Button>
                   </div>
                 )}
               </div>
-              <AccordionContent className="border-t p-4">
-                {isEditingThisStage && editableStageData ? (
-                  <div className="space-y-4">
-                    <div><Label>Título de la Etapa</Label><Input name="title" value={editableStageData.title || ''} onChange={handleStageDataChange} /></div>
-                    <div className="space-y-3">
-                      {(editableStageData.actions || []).map((action, actIndex) => {
-                          const customDocValue = action.requiredDocumentForCompletion || '';
-                          const isCustomDoc = customDocValue && !["Contrato", "Factura", "Propuesta", "Informe", ""].includes(customDocValue);
-                          const selectValue = isCustomDoc ? 'Otro' : customDocValue || 'ninguno';
-
-                          return (
-                              <div key={action.id} className="flex flex-col gap-2 p-3 border rounded-md bg-secondary/30">
-                                <div className="flex items-center gap-2">
-                                  <div className="w-6 flex-shrink-0 text-lg font-bold text-accent/80">{actIndex + 1}.</div>
-                                  <Input value={action.description} onChange={(e) => handleActionChange(action.id, 'description', e.target.value)} placeholder="Descripción de la Tarea..." className="font-semibold flex-grow"/>
-                                  <Button type="button" size="icon" variant="ghost" onClick={() => deleteActionFromStage(serviceId, subServiceId, stage.id, action.id)} className="self-center"><Trash2 className="h-4 w-4 text-destructive" /></Button>
-                                </div>
-                                <div className="pl-8 pt-2 border-t border-border/50">
-                                  <Label htmlFor={`doc-req-${action.id}`} className="text-xs">Documento Requerido (Opcional)</Label>
-                                    <div className="flex items-center gap-2 mt-1">
-                                        <div className="flex-grow">
-                                            <Select
-                                                value={selectValue}
-                                                onValueChange={(value) => handleActionChange(action.id, 'requiredDocumentForCompletion', value)}
-                                            >
-                                                <SelectTrigger id={`doc-req-${action.id}`} className="h-8 text-sm"><SelectValue placeholder="Ninguno" /></SelectTrigger>
-                                                <SelectContent>
-                                                    <SelectItem value="ninguno">Ninguno</SelectItem>
-                                                    <SelectItem value="Contrato">Contrato</SelectItem>
-                                                    <SelectItem value="Factura">Factura</SelectItem>
-                                                    <SelectItem value="Propuesta">Propuesta</SelectItem>
-                                                    <SelectItem value="Informe">Informe</SelectItem>
-                                                    <SelectItem value="Otro">Otro (especificar)</SelectItem>
-                                                </SelectContent>
-                                            </Select>
-                                        </div>
-                                        <Tooltip>
-                                          <TooltipTrigger asChild>
-                                              <Button type="button" variant="outline" size="icon" className="h-8 w-8 shrink-0" onClick={() => setIsSmartUploadDialogOpen(true)}>
-                                                <UploadCloud className="h-4 w-4" />
-                                              </Button>
-                                          </TooltipTrigger>
-                                          <TooltipContent><p>Subir documento</p></TooltipContent>
-                                      </Tooltip>
-                                    </div>
-                                    {selectValue === 'Otro' && (
-                                        <div className="pl-0 mt-2">
-                                          <Input
-                                              type="text"
-                                              placeholder="Escriba el nombre del documento"
-                                              value={isCustomDoc ? customDocValue : ''}
-                                              onChange={(e) => handleActionChange(action.id, 'requiredDocumentForCompletion', e.target.value)}
-                                              className="h-8 text-sm" autoFocus
-                                          />
-                                        </div>
-                                    )}
-                                  <p className="text-[10px] text-muted-foreground mt-1">Si se define, la acción se completará automáticamente al subir el documento.</p>
-                                </div>
-                              </div>
-                          )
-                        })}
-                      </div>
-                      <Button type="button" size="sm" variant="outline" onClick={handleAddNewActionToStage}>
-                        <Plus className="h-4 w-4 mr-2"/>Añadir Tarea
-                      </Button>
-                    </div>
-                ) : (
-                  <div>
-                    {stage.actions && stage.actions.length > 0 ? (
+              <AccordionContent className="border-t p-4 space-y-3">
+                  {stage.actions && stage.actions.length > 0 && (
                       <div className="space-y-2">
-                        {stage.actions.map((action, actionIndex) => (
-                          <div key={action.id} className="flex items-center justify-between gap-2 group">
-                            <div className="flex items-baseline gap-2 flex-grow"><div className="w-5 flex-shrink-0 text-right font-semibold">{actionIndex + 1}.</div><p className="font-semibold flex-grow">{action.description}</p></div>
-                             {canEditWorkflow && (
-                                <Tooltip>
-                                    <TooltipTrigger asChild>
-                                      <Button variant="default" size="icon" className="h-7 w-7 bg-primary/80 text-primary-foreground hover:bg-primary" onClick={() => handleOpenTaskDialog(action.description)}>
-                                          <ListTodo className="h-4 w-4" />
-                                      </Button>
-                                    </TooltipTrigger>
-                                    <TooltipContent><p>Crear tarea desde esta acción</p></TooltipContent>
-                                </Tooltip>
-                             )}
-                          </div>
-                        ))}
+                          {stage.actions.map((action) => (
+                              <div key={action.id} className="flex items-center gap-2 group">
+                                  <Input 
+                                      value={action.description}
+                                      onChange={(e) => handleActionDescriptionChange(stage, action.id, e.target.value)}
+                                      placeholder="Descripción de la tarea..."
+                                      className="h-8"
+                                      disabled={!canEditWorkflow}
+                                  />
+                                   <Tooltip>
+                                      <TooltipTrigger asChild>
+                                        <Button variant="default" size="icon" className="h-8 w-8 shrink-0 bg-primary/80 text-primary-foreground hover:bg-primary" onClick={() => handleOpenTaskDialog(action.description)}>
+                                            <ListTodo className="h-4 w-4" />
+                                        </Button>
+                                      </TooltipTrigger>
+                                      <TooltipContent><p>Crear tarea desde esta acción</p></TooltipContent>
+                                  </Tooltip>
+                                  {canEditWorkflow && (
+                                     <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" onClick={() => deleteActionFromStage(serviceId, subServiceId, stage.id, action.id)}>
+                                        <Trash2 className="h-4 w-4 text-destructive"/>
+                                    </Button>
+                                  )}
+                              </div>
+                          ))}
                       </div>
-                    ) : (<p className="text-sm text-muted-foreground pl-2">No hay acciones definidas.</p>)}
-                  </div>
-                )}
+                  )}
+                  {canEditWorkflow && (
+                       <Button variant="outline" size="sm" onClick={() => handleAddNewActionToStage(stage.id)}>
+                          <Plus className="h-4 w-4 mr-2"/>Añadir Tarea
+                      </Button>
+                  )}
               </AccordionContent>
              </AccordionItem>
            );

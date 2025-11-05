@@ -59,7 +59,7 @@ interface CRMContextType {
   setServiceWorkflows: React.Dispatch<React.SetStateAction<ServiceWorkflow[]>>;
   isLoadingWorkflows: boolean;
   addService: (name: string) => Promise<ServiceWorkflow | null>;
-  updateService: (serviceId: string, updates: Partial<Omit<ServiceWorkflow, 'id' | 'name' | 'stages' | 'subServices'>>) => Promise<boolean>;
+  updateService: (serviceId: string, updates: Partial<Omit<ServiceWorkflow, 'id' | 'stages' | 'subServices'>>) => Promise<boolean>;
   deleteService: (serviceId: string) => Promise<boolean>;
   addSubServiceToService: (serviceId: string, name: string) => Promise<boolean>;
   updateSubServiceName: (serviceId: string, subServiceId: string, newName: string) => Promise<boolean>;
@@ -217,7 +217,7 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
         return newService;
     };
 
-    const updateService = async (serviceId: string, updates: Partial<ServiceWorkflow>): Promise<boolean> => {
+    const updateService = async (serviceId: string, updates: Partial<Omit<ServiceWorkflow, 'id' | 'name' | 'stages' | 'subServices'>>): Promise<boolean> => {
         setServiceWorkflows(prev => prev.map(s => s.id === serviceId ? { ...s, ...updates } : s));
         showNotification('success', 'Servicio Guardado', 'Los cambios se han guardado correctamente.');
         return true;
@@ -321,7 +321,8 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
             }
             return service;
         }));
-        showNotification('success', 'Etapa Actualizada', 'Los cambios en la etapa se han guardado.');
+        // Do not show notification on every keystroke, only on explicit save actions.
+        // showNotification('success', 'Etapa Actualizada', 'Los cambios en la etapa se han guardado.');
         return true;
     };
 
@@ -348,7 +349,7 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
     const addActionToStage = async (serviceId: string, subServiceId: string | null, stageId: string): Promise<boolean> => {
         const newAction: WorkflowAction = {
             id: `action-${Date.now()}`,
-            description: "Nueva Acción",
+            description: "", // Start with an empty description
             order: 100, // Append
             subActions: []
         };
