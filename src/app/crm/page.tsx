@@ -16,7 +16,8 @@ import {
   Loader2,
   Users,
   Workflow,
-  Settings
+  Settings,
+  FolderCog
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { Client, WorkflowStage, ServiceWorkflow } from '@/lib/types';
@@ -30,6 +31,42 @@ const StageNumberIcon = ({ index }: { index: number }) => {
     </div>
   );
 };
+
+const StageCard = ({ stage, index, clientsInStage, onClientClick }: { stage: WorkflowStage, index: number, clientsInStage: Client[], onClientClick: (client: Client) => void }) => {
+  return (
+    <Card id={`stage-card-${stage.id}`} className="flex flex-col">
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <StageNumberIcon index={index} />
+          <span className="flex-grow text-base">{stage.title}</span>
+          <span className="text-sm font-normal bg-muted text-muted-foreground rounded-full px-2 py-0.5">
+            {clientsInStage.length}
+          </span>
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="flex-grow space-y-2 overflow-y-auto">
+        {clientsInStage.length > 0 ? (
+          clientsInStage.map(client => (
+            <div
+              key={client.id}
+              onClick={() => onClientClick(client)}
+              className="p-2 border rounded-md cursor-pointer hover:bg-secondary/50 transition-all bg-background"
+            >
+              <p className="font-semibold text-sm truncate">{client.name}</p>
+              <p className="text-xs text-muted-foreground truncate">{client.category}</p>
+            </div>
+          ))
+        ) : (
+          <div className="text-center text-muted-foreground py-6 text-sm flex flex-col items-center">
+            <Users className="h-8 w-8 mb-2" />
+            <p>No hay clientes en esta etapa.</p>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+};
+
 
 export default function CrmPage() {
   const { clients, isLoadingClients, serviceWorkflows, isLoadingWorkflows } = useCRMData();
@@ -55,13 +92,10 @@ export default function CrmPage() {
 
   const allStages = useMemo(() => {
     if (!serviceWorkflows) return [];
-    
-    // Correctly combine stages from main service and all sub-services
-    return serviceWorkflows.flatMap(service => {
-        const mainStages = service.stages || [];
-        const subServiceStages = service.subServices?.flatMap(ss => ss.stages) || [];
-        return [...mainStages, ...subServiceStages];
-    });
+    return serviceWorkflows.flatMap(service => [
+        ...(service.stages || []),
+        ...(service.subServices?.flatMap(ss => ss.stages) || [])
+    ]);
   }, [serviceWorkflows]);
 
   const handleClientClick = (client: Client) => {
@@ -101,63 +135,55 @@ export default function CrmPage() {
         </Button>
       </Header>
       <main className="flex-1 p-4 md:p-8 space-y-6">
-        {serviceWorkflows && serviceWorkflows.map(service => {
-             const stagesForService = [
-                ...(service.stages || []),
-                ...(service.subServices?.flatMap(ss => ss.stages) || [])
-             ].sort((a,b) => a.order - b.order);
-
-             return (
-                <Card key={service.id} className="w-full">
-                    <CardHeader>
-                        <CardTitle className="flex items-center gap-2 text-xl">
-                            <Workflow className="h-5 w-5 text-primary" />
-                            {service.name}
-                        </CardTitle>
-                        <CardDescription>Pipeline de clientes para este servicio.</CardDescription>
-                    </CardHeader>
-                    <CardContent className="pt-0 space-y-4">
+        {serviceWorkflows && serviceWorkflows.map(service => (
+            <Card key={service.id} className="w-full">
+                <CardHeader>
+                    <CardTitle className="flex items-center gap-2 text-xl">
+                        <Workflow className="h-5 w-5 text-primary" />
+                        {service.name}
+                    </CardTitle>
+                    <CardDescription>Pipeline de clientes para este servicio.</CardDescription>
+                </CardHeader>
+                <CardContent className="pt-0 space-y-6">
+                    {/* Render Direct Stages */}
+                    {(service.stages && service.stages.length > 0) && (
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                            {stagesForService.map((stage, index) => {
-                            const clientsInStage = clientsByStage.get(stage.id) || [];
-                            return (
-                                <Card key={stage.id} id={`stage-card-${stage.id}`} className="flex flex-col">
-                                <CardHeader>
-                                    <CardTitle className="flex items-center gap-2">
-                                    <StageNumberIcon index={index} />
-                                    <span className="flex-grow text-base">{stage.title}</span>
-                                    <span className="text-sm font-normal bg-muted text-muted-foreground rounded-full px-2 py-0.5">
-                                        {clientsInStage.length}
-                                    </span>
-                                    </CardTitle>
-                                </CardHeader>
-                                <CardContent className="flex-grow space-y-2 overflow-y-auto">
-                                    {clientsInStage.length > 0 ? (
-                                    clientsInStage.map(client => (
-                                        <div 
-                                            key={client.id}
-                                            onClick={() => handleClientClick(client)}
-                                            className="p-2 border rounded-md cursor-pointer hover:bg-secondary/50 transition-all bg-background"
-                                        >
-                                            <p className="font-semibold text-sm truncate">{client.name}</p>
-                                            <p className="text-xs text-muted-foreground truncate">{client.category}</p>
-                                        </div>
-                                    ))
-                                    ) : (
-                                    <div className="text-center text-muted-foreground py-6 text-sm flex flex-col items-center">
-                                        <Users className="h-8 w-8 mb-2" />
-                                        <p>No hay clientes en esta etapa.</p>
-                                    </div>
-                                    )}
-                                </CardContent>
-                                </Card>
-                            )
-                            })}
+                            {service.stages.sort((a,b) => a.order - b.order).map((stage, index) => (
+                                <StageCard
+                                    key={stage.id}
+                                    stage={stage}
+                                    index={index}
+                                    clientsInStage={clientsByStage.get(stage.id) || []}
+                                    onClientClick={handleClientClick}
+                                />
+                            ))}
                         </div>
-                    </CardContent>
-                </Card>
-             );
-        })}
+                    )}
+                    
+                    {/* Render Sub-Services */}
+                    {service.subServices && service.subServices.map(subService => (
+                        <div key={subService.id} className="space-y-4 pt-4 border-t">
+                            <h3 className="text-lg font-semibold flex items-center gap-2">
+                                <FolderCog className="h-5 w-5 text-accent"/>
+                                {subService.name}
+                            </h3>
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                                {subService.stages.sort((a,b) => a.order - b.order).map((stage, index) => (
+                                    <StageCard
+                                        key={stage.id}
+                                        stage={stage}
+                                        index={index}
+                                        clientsInStage={clientsByStage.get(stage.id) || []}
+                                        onClientClick={handleClientClick}
+                                    />
+                                ))}
+                            </div>
+                        </div>
+                    ))}
+
+                </CardContent>
+            </Card>
+        ))}
       </main>
       
       <ClientStageDetailDialog
