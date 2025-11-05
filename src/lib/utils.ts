@@ -35,7 +35,15 @@ export function parseDateString(dateString: string | Date): Date | null {
     if (!dateString) return null;
 
     if (dateString instanceof Date) {
-        return dateString;
+        // If it's already a Date object, just return it.
+        // Create a new Date object to avoid potential mutation issues.
+        return new Date(dateString);
+    }
+
+    // Ensure it's a string before calling split
+    if (typeof dateString !== 'string') {
+        // If for any reason it's not a string or Date, return null
+        return null;
     }
 
     // Try ISO format YYYY-MM-DD first
