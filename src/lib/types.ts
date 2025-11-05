@@ -35,6 +35,7 @@ export type Task = {
   description?: string;
   type?: 'Tarea' | 'Cita' | 'Operación Divisas';
   createdAt?: any;
+  dueDays?: number;
 };
 
 export type Document = {
@@ -158,6 +159,7 @@ export interface ServiceWorkflow {
     name: string;
     description?: string;
     clientRequirements?: ClientRequirement[];
+    stages?: WorkflowStage[];
     subServices: SubService[];
 }
 

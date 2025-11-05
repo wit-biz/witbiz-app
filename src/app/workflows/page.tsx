@@ -6,7 +6,7 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Header } from "@/components/header";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import { useCRMData, type WorkflowStage, type ServiceWorkflow, type WorkflowAction, type SubObjective, type SubService, type Task } from "@/contexts/CRMDataContext"; 
+import { useCRMData, type WorkflowStage, type ServiceWorkflow, type WorkflowAction, type SubService } from "@/contexts/CRMDataContext"; 
 import { Edit, Save, Trash2, Plus, X, Loader2, UploadCloud, ChevronsRight, FileText, ListTodo, Workflow as WorkflowIcon, ArrowLeft, PlusCircle, Layers, FolderCog, Redo } from "lucide-react";
 import { Card, CardHeader, CardTitle, CardContent, CardDescription, CardFooter } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
@@ -23,6 +23,7 @@ import { useGlobalNotification } from "@/contexts/NotificationContext";
 import { AddTaskDialog } from "@/components/shared/AddTaskDialog";
 import { PromptNameDialog } from "@/components/shared/PromptNameDialog";
 import { Slider } from "@/components/ui/slider";
+import { type Task } from '@/lib/types';
 
 
 const StageNumberIcon = ({ index }: { index: number }) => {
@@ -39,18 +40,8 @@ export default function WorkflowConfigurationPage() {
     serviceWorkflows,
     isLoadingWorkflows,
     addService,
-    updateService, 
     deleteService, 
     setServiceWorkflows,
-    addSubServiceToWorkflow,
-    deleteSubService,
-    updateSubService,
-    addActionToStage,
-    deleteActionFromStage,
-    updateActionInStage,
-    addStageToSubService,
-    updateStageInSubService,
-    deleteStageFromSubService,
   } = useCRMData();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -61,7 +52,6 @@ export default function WorkflowConfigurationPage() {
   
   const [isEditing, setIsEditing] = useState(false);
   const [editableWorkflow, setEditableWorkflow] = useState<ServiceWorkflow | null>(null);
-  const [originalWorkflow, setOriginalWorkflow] = useState<ServiceWorkflow | null>(null);
 
   const [isAddTaskDialogOpen, setIsAddTaskDialogOpen] = useState(false);
   const [initialTaskDataForDialog, setInitialTaskDataForDialog] = useState<Partial<Omit<Task, 'id'>>>({});
@@ -114,7 +104,6 @@ export default function WorkflowConfigurationPage() {
   const handleStartEditing = () => {
     if (!selectedWorkflow) return;
     const deepCopy = JSON.parse(JSON.stringify(selectedWorkflow));
-    setOriginalWorkflow(deepCopy);
     setEditableWorkflow(deepCopy);
     setIsEditing(true);
   };
@@ -122,7 +111,6 @@ export default function WorkflowConfigurationPage() {
   const handleCancelEditing = () => {
     setIsEditing(false);
     setEditableWorkflow(null);
-    setOriginalWorkflow(null);
   };
 
   const handleSaveChanges = () => {
@@ -130,58 +118,140 @@ export default function WorkflowConfigurationPage() {
     setServiceWorkflows(prev => prev.map(wf => wf.id === editableWorkflow.id ? editableWorkflow : wf));
     setIsEditing(false);
     setEditableWorkflow(null);
-    setOriginalWorkflow(null);
     showNotification('success', 'Flujo Guardado', 'Los cambios en el flujo de trabajo han sido guardados.');
   };
   
   const workflowToDisplay = isEditing ? editableWorkflow : selectedWorkflow;
 
+  // --- Handlers for direct stages ---
+  const handleAddDirectStage = () => {
+    if (!editableWorkflow) return;
+    const newStage: WorkflowStage = { id: `stage-${Date.now()}`, title: "Nueva Etapa Principal", order: (editableWorkflow.stages?.length || 0) + 1, actions: [] };
+    setEditableWorkflow(prev => prev ? { ...prev, stages: [...(prev.stages || []), newStage] } : null);
+  };
+
+  const handleDeleteDirectStage = (stageId: string) => {
+    if (!editableWorkflow) return;
+    setEditableWorkflow(prev => prev ? { ...prev, stages: prev.stages?.filter(s => s.id !== stageId) || [] } : null);
+  };
+
+  const handleUpdateDirectStage = (stageId: string, updates: Partial<WorkflowStage>) => {
+     if (!editableWorkflow) return;
+     setEditableWorkflow(prev => prev ? { ...prev, stages: prev.stages?.map(s => s.id === stageId ? {...s, ...updates} : s) || [] } : null);
+  };
+
+  const handleAddActionToDirectStage = (stageId: string) => {
+    if (!editableWorkflow) return;
+    const newAction: WorkflowAction = { id: `action-${Date.now()}`, title: "Nueva Tarea...", dueDays: 1, order: 1, subActions: [] };
+    setEditableWorkflow(prev => prev ? {
+        ...prev,
+        stages: prev.stages?.map(s => s.id === stageId ? { ...s, actions: [...s.actions, newAction] } : s) || []
+    } : null);
+  };
+
+  const handleDeleteActionFromDirectStage = (stageId: string, actionId: string) => {
+    if (!editableWorkflow) return;
+    setEditableWorkflow(prev => prev ? {
+        ...prev,
+        stages: prev.stages?.map(s => s.id === stageId ? { ...s, actions: s.actions.filter(a => a.id !== actionId) } : s) || []
+    } : null);
+  };
+  
+  const handleUpdateActionInDirectStage = (stageId: string, actionId: string, updates: Partial<WorkflowAction>) => {
+    if (!editableWorkflow) return;
+    setEditableWorkflow(prev => prev ? {
+        ...prev,
+        stages: prev.stages?.map(s => s.id === stageId ? { ...s, actions: s.actions.map(a => a.id === actionId ? { ...a, ...updates } : a) } : s) || []
+    } : null);
+  };
+
+  // --- Handlers for sub-service stages ---
+  const handleAddSubService = () => {
+    if (!editableWorkflow) return;
+    setPromptNameConfig({
+        title: "Añadir Sub-Servicio",
+        description: `Añadir un nuevo sub-servicio a "${workflowToDisplay?.name}".`,
+        label: "Nombre del Sub-Servicio",
+        onSave: (name) => {
+            const newSubService: SubService = { id: `sub-${Date.now()}`, name, stages: [] };
+            setEditableWorkflow(prev => prev ? { ...prev, subServices: [...prev.subServices, newSubService] } : null);
+        }
+    });
+    setIsPromptNameOpen(true);
+  };
+
+  const handleDeleteSubService = (subServiceId: string) => {
+    if (!editableWorkflow) return;
+    setEditableWorkflow(prev => prev ? { ...prev, subServices: prev.subServices.filter(ss => ss.id !== subServiceId) } : null);
+  };
+  
+  const handleUpdateSubService = (subServiceId: string, updates: Partial<SubService>) => {
+     if (!editableWorkflow) return;
+     setEditableWorkflow(prev => prev ? { ...prev, subServices: prev.subServices.map(ss => ss.id === subServiceId ? {...ss, ...updates} : ss) } : null);
+  };
+
+  const handleAddStageToSubService = (subServiceId: string) => {
+    if (!editableWorkflow) return;
+    const newStage: WorkflowStage = { id: `stage-${Date.now()}`, title: "Nueva Etapa", order: 1, actions: [] };
+    setEditableWorkflow(prev => prev ? {
+        ...prev,
+        subServices: prev.subServices.map(ss => ss.id === subServiceId ? { ...ss, stages: [...ss.stages, newStage] } : ss)
+    } : null);
+  };
+
+  const handleDeleteStageFromSubService = (subServiceId: string, stageId: string) => {
+    if (!editableWorkflow) return;
+    setEditableWorkflow(prev => prev ? {
+        ...prev,
+        subServices: prev.subServices.map(ss => ss.id === subServiceId ? { ...ss, stages: ss.stages.filter(s => s.id !== stageId) } : ss)
+    } : null);
+  };
+
+  const handleUpdateStageInSubService = (subServiceId: string, stageId: string, updates: Partial<WorkflowStage>) => {
+    if (!editableWorkflow) return;
+    setEditableWorkflow(prev => prev ? {
+        ...prev,
+        subServices: prev.subServices.map(ss => ss.id === subServiceId ? { ...ss, stages: ss.stages.map(s => s.id === stageId ? { ...s, ...updates } : s) } : ss)
+    } : null);
+  };
+  
+  const handleAddActionToSubServiceStage = (subServiceId: string, stageId: string) => {
+    if (!editableWorkflow) return;
+    const newAction: WorkflowAction = { id: `action-${Date.now()}`, title: "Nueva Tarea...", dueDays: 1, order: 1, subActions: [] };
+    setEditableWorkflow(prev => prev ? {
+        ...prev,
+        subServices: prev.subServices.map(ss => ss.id === subServiceId ? { ...ss, stages: ss.stages.map(s => s.id === stageId ? { ...s, actions: [...s.actions, newAction] } : s) } : ss)
+    } : null);
+  };
+
+  const handleDeleteActionFromSubServiceStage = (subServiceId: string, stageId: string, actionId: string) => {
+    if (!editableWorkflow) return;
+     setEditableWorkflow(prev => prev ? {
+        ...prev,
+        subServices: prev.subServices.map(ss => ss.id === subServiceId ? { ...ss, stages: ss.stages.map(s => s.id === stageId ? { ...s, actions: s.actions.filter(a => a.id !== actionId) } : s) } : ss)
+    } : null);
+  };
+
+  const handleUpdateActionInSubServiceStage = (subServiceId: string, stageId: string, actionId: string, updates: Partial<WorkflowAction>) => {
+    if (!editableWorkflow) return;
+    setEditableWorkflow(prev => prev ? {
+        ...prev,
+        subServices: prev.subServices.map(ss => ss.id === subServiceId ? { ...ss, stages: ss.stages.map(s => s.id === stageId ? { ...s, actions: s.actions.map(a => a.id === actionId ? { ...a, ...updates } : a) } : s) } : ss)
+    } : null);
+  };
+
   // --- Render Functions ---
   
-  const renderSubService = (subService: SubService) => (
-    <AccordionItem value={subService.id} key={subService.id} asChild>
-      <Card className="bg-muted/30">
-        <AccordionTrigger className="w-full p-0 [&_svg]:ml-auto [&_svg]:mr-4 hover:no-underline">
-          <CardHeader className="flex-1 text-left flex flex-row items-center justify-between">
-            <div className="flex items-center gap-3">
-              <FolderCog className="h-5 w-5 text-accent"/>
-              <CardTitle className="text-md">
-                {isEditing ? (
-                  <Input 
-                    value={subService.name}
-                    onClick={e => e.stopPropagation()}
-                    onChange={e => updateSubService(editableWorkflow!.id, subService.id, { name: e.target.value }, setEditableWorkflow)}
-                    className="h-8"
-                  />
-                ) : subService.name}
-              </CardTitle>
-            </div>
-          </CardHeader>
-        </AccordionTrigger>
-        <AccordionContent className="p-4 pt-0">
-          {subService.stages && subService.stages.length > 0 ? (
-            renderStages(subService.stages, subService.id)
-          ) : (
-             <div className="text-center text-muted-foreground py-6 border border-dashed rounded-md">
-                <p className="text-sm">No hay etapas en este sub-servicio.</p>
-                {isEditing && (
-                  <Button variant="outline" size="sm" className="mt-2" onClick={() => addStageToSubService(editableWorkflow!.id, subService.id, setEditableWorkflow)}>
-                    <Plus className="mr-2 h-4 w-4" />Añadir Etapa
-                  </Button>
-                )}
-            </div>
-          )}
-          {isEditing && subService.stages.length > 0 && (
-             <Button variant="outline" size="sm" className="mt-4" onClick={() => addStageToSubService(editableWorkflow!.id, subService.id, setEditableWorkflow)}>
-                <Plus className="mr-2 h-4 w-4" />Añadir Etapa
-              </Button>
-          )}
-        </AccordionContent>
-      </Card>
-    </AccordionItem>
-  );
-
-  const renderStages = (stages: WorkflowStage[], subServiceId: string) => (
+  const renderStages = (
+    stages: WorkflowStage[], 
+    handlers: {
+        deleteStage: (stageId: string) => void;
+        updateStage: (stageId: string, updates: Partial<WorkflowStage>) => void;
+        addAction: (stageId: string) => void;
+        deleteAction: (stageId: string, actionId: string) => void;
+        updateAction: (stageId: string, actionId: string, updates: Partial<WorkflowAction>) => void;
+    }
+  ) => (
     <Accordion type="multiple" className="w-full space-y-4" defaultValue={stages.map(s => s.id)}>
       {stages.map((stage, stageIndex) => (
         <AccordionItem value={stage.id} key={stage.id} className="border rounded-lg bg-card overflow-hidden">
@@ -194,7 +264,7 @@ export default function WorkflowConfigurationPage() {
                     <Input 
                       value={stage.title}
                       onClick={e => e.stopPropagation()}
-                      onChange={(e) => updateStageInSubService(editableWorkflow!.id, subServiceId, stage.id, { title: e.target.value }, setEditableWorkflow)}
+                      onChange={(e) => handlers.updateStage(stage.id, { title: e.target.value })}
                       className="font-semibold text-base"
                     />
                   ) : (
@@ -205,7 +275,7 @@ export default function WorkflowConfigurationPage() {
             </AccordionTrigger>
             {isEditing && (
               <div className="pl-2">
-                <Button variant="ghost" size="icon" className="h-8 w-8 ml-1" onClick={() => deleteStageFromSubService(editableWorkflow!.id, subServiceId, stage.id, setEditableWorkflow)}>
+                <Button variant="ghost" size="icon" className="h-8 w-8 ml-1" onClick={() => handlers.deleteStage(stage.id)}>
                   <Trash2 className="h-4 w-4 text-destructive"/>
                 </Button>
               </div>
@@ -222,7 +292,7 @@ export default function WorkflowConfigurationPage() {
                           <Label className="text-xs text-muted-foreground">Título de la Tarea</Label>
                           <Input 
                             value={action.title}
-                            onChange={(e) => updateActionInStage(editableWorkflow!.id, subServiceId, stage.id, action.id, { title: e.target.value }, setEditableWorkflow)}
+                            onChange={(e) => handlers.updateAction(stage.id, action.id, { title: e.target.value })}
                             placeholder="Descripción de la tarea..."
                             className="h-8"
                           />
@@ -233,7 +303,7 @@ export default function WorkflowConfigurationPage() {
                             <div className="flex items-center gap-2">
                               <Slider
                                 value={[action.dueDays || 0]}
-                                onValueChange={(value) => updateActionInStage(editableWorkflow!.id, subServiceId, stage.id, action.id, { dueDays: value[0] }, setEditableWorkflow)}
+                                onValueChange={(value) => handlers.updateAction(stage.id, action.id, { dueDays: value[0] })}
                                 max={7}
                                 step={1}
                                 className="w-full"
@@ -242,7 +312,7 @@ export default function WorkflowConfigurationPage() {
                             </div>
                           </div>
                           <div className="flex items-end h-8">
-                            <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" onClick={() => deleteActionFromStage(editableWorkflow!.id, subServiceId, stage.id, action.id, setEditableWorkflow)}>
+                            <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" onClick={() => handlers.deleteAction(stage.id, action.id)}>
                               <Trash2 className="h-4 w-4 text-destructive"/>
                             </Button>
                           </div>
@@ -266,7 +336,7 @@ export default function WorkflowConfigurationPage() {
               </div>
             )}
             {isEditing && (
-              <Button variant="outline" size="sm" onClick={() => addActionToStage(editableWorkflow!.id, subServiceId, stage.id, setEditableWorkflow)}>
+              <Button variant="outline" size="sm" onClick={() => handlers.addAction(stage.id)}>
                 <Plus className="h-4 w-4 mr-2"/>Añadir Tarea
               </Button>
             )}
@@ -274,6 +344,58 @@ export default function WorkflowConfigurationPage() {
         </AccordionItem>
       ))}
     </Accordion>
+  );
+
+  const renderSubService = (subService: SubService) => (
+    <AccordionItem value={subService.id} key={subService.id} asChild>
+      <Card className="bg-muted/30">
+        <AccordionTrigger className="w-full p-0 [&_svg]:ml-auto [&_svg]:mr-4 hover:no-underline">
+          <CardHeader className="flex-1 text-left flex flex-row items-center justify-between">
+            <div className="flex items-center gap-3">
+              <FolderCog className="h-5 w-5 text-accent"/>
+              {isEditing ? (
+                  <Input 
+                    value={subService.name}
+                    onClick={e => e.stopPropagation()}
+                    onChange={e => handleUpdateSubService(subService.id, { name: e.target.value })}
+                    className="h-8 text-md font-semibold p-1"
+                  />
+              ) : <CardTitle className="text-md">{subService.name}</CardTitle>}
+            </div>
+             {isEditing && (
+                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={(e) => { e.stopPropagation(); handleDeleteSubService(subService.id); }}>
+                    <Trash2 className="h-4 w-4 text-destructive"/>
+                </Button>
+             )}
+          </CardHeader>
+        </AccordionTrigger>
+        <AccordionContent className="p-4 pt-0">
+          {subService.stages && subService.stages.length > 0 ? (
+            renderStages(subService.stages, {
+                deleteStage: (stageId) => handleDeleteStageFromSubService(subService.id, stageId),
+                updateStage: (stageId, updates) => handleUpdateStageInSubService(subService.id, stageId, updates),
+                addAction: (stageId) => handleAddActionToSubServiceStage(subService.id, stageId),
+                deleteAction: (stageId, actionId) => handleDeleteActionFromSubServiceStage(subService.id, stageId, actionId),
+                updateAction: (stageId, actionId, updates) => handleUpdateActionInSubServiceStage(subService.id, stageId, actionId, updates),
+            })
+          ) : (
+             <div className="text-center text-muted-foreground py-6 border border-dashed rounded-md">
+                <p className="text-sm">No hay etapas en este sub-servicio.</p>
+                {isEditing && (
+                  <Button variant="outline" size="sm" className="mt-2" onClick={() => handleAddStageToSubService(subService.id)}>
+                    <Plus className="mr-2 h-4 w-4" />Añadir Etapa
+                  </Button>
+                )}
+            </div>
+          )}
+          {isEditing && subService.stages.length > 0 && (
+             <Button variant="outline" size="sm" className="mt-4" onClick={() => handleAddStageToSubService(subService.id)}>
+                <Plus className="mr-2 h-4 w-4" />Añadir Etapa
+              </Button>
+          )}
+        </AccordionContent>
+      </Card>
+    </AccordionItem>
   );
 
   // --- Loading / Empty States ---
@@ -348,33 +470,40 @@ export default function WorkflowConfigurationPage() {
               </CardHeader>
 
               {workflowToDisplay ? (
-                <CardContent className="border-t pt-6 space-y-4">
-                  {isEditing && (
-                    <div className="p-4 border rounded-lg">
-                      <h3 className="font-semibold mb-2">Gestión de Sub-Servicios</h3>
-                      <Button size="sm" onClick={() => {
-                        setPromptNameConfig({
-                          title: "Añadir Sub-Servicio",
-                          description: `Añadir un nuevo sub-servicio a "${workflowToDisplay.name}".`,
-                          label: "Nombre del Sub-Servicio",
-                          onSave: (name) => addSubServiceToWorkflow(workflowToDisplay.id, name, setEditableWorkflow),
-                        });
-                        setIsPromptNameOpen(true);
-                      }}>
-                        <Plus className="mr-2 h-4 w-4"/> Añadir Sub-Servicio
-                      </Button>
-                    </div>
-                  )}
-
-                  <Accordion type="multiple" className="w-full space-y-4" defaultValue={workflowToDisplay.subServices.map(s => s.id)}>
-                    {workflowToDisplay.subServices && workflowToDisplay.subServices.length > 0 ? (
-                      workflowToDisplay.subServices.map(subService => renderSubService(subService))
-                    ) : (
-                      <div className="text-center text-muted-foreground py-10 border border-dashed rounded-lg">
-                          <p>Este servicio no tiene sub-servicios definidos.</p>
-                      </div>
+                <CardContent className="border-t pt-6 space-y-6">
+                  {/* Direct Stages Section */}
+                  <div className="space-y-4">
+                    <h3 className="text-lg font-semibold flex items-center gap-2"><Layers className="h-5 w-5 text-primary"/>Etapas Principales</h3>
+                    {isEditing && (
+                      <Button size="sm" variant="outline" onClick={handleAddDirectStage}><Plus className="mr-2 h-4 w-4"/>Añadir Etapa Principal</Button>
                     )}
-                  </Accordion>
+                    {workflowToDisplay.stages && workflowToDisplay.stages.length > 0 ? (
+                       renderStages(workflowToDisplay.stages, {
+                           deleteStage: handleDeleteDirectStage,
+                           updateStage: handleUpdateDirectStage,
+                           addAction: handleAddActionToDirectStage,
+                           deleteAction: handleDeleteActionFromDirectStage,
+                           updateAction: handleUpdateActionInDirectStage,
+                       })
+                    ) : (
+                      <p className="text-sm text-muted-foreground">{isEditing ? 'Añada una etapa para empezar.' : 'No hay etapas principales definidas.'}</p>
+                    )}
+                  </div>
+                  
+                  {/* Sub-Services Section */}
+                  <div className="space-y-4">
+                     <h3 className="text-lg font-semibold flex items-center gap-2"><FolderCog className="h-5 w-5 text-primary"/>Sub-Servicios</h3>
+                     {isEditing && (
+                        <Button size="sm" variant="outline" onClick={handleAddSubService}><Plus className="mr-2 h-4 w-4"/> Añadir Sub-Servicio</Button>
+                     )}
+                     <Accordion type="multiple" className="w-full space-y-4" defaultValue={workflowToDisplay.subServices?.map(s => s.id)}>
+                        {workflowToDisplay.subServices && workflowToDisplay.subServices.length > 0 ? (
+                          workflowToDisplay.subServices.map(subService => renderSubService(subService))
+                        ) : (
+                          <p className="text-sm text-muted-foreground">{isEditing ? 'Añada un sub-servicio para crear flujos anidados.' : 'No hay sub-servicios definidos.'}</p>
+                        )}
+                      </Accordion>
+                  </div>
                 </CardContent>
               ) : (
                   <CardContent className="border-t">
@@ -408,7 +537,7 @@ export default function WorkflowConfigurationPage() {
                 description={promptNameConfig.description}
                 label={promptNameConfig.label}
                 onSave={promptNameConfig.onSave}
-                inputPlaceholder={promptNameConfig.inputPlaceholder}
+                inputPlaceholder={promptNameag.inputPlaceholder}
             />
         )}
       </div>
