@@ -7,7 +7,7 @@ import { useSearchParams } from "next/navigation";
 import { Header } from "@/components/header";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { useCRMData, type WorkflowStage, type ServiceWorkflow, type WorkflowAction, type SubObjective, type SubService, type Task } from "@/contexts/CRMDataContext"; 
-import { Edit, Save, Trash2, Plus, X, Loader2, UploadCloud, ChevronsRight, FileText, ListTodo, Workflow as WorkflowIcon, ArrowLeft } from "lucide-react";
+import { Edit, Save, Trash2, Plus, X, Loader2, UploadCloud, ChevronsRight, FileText, ListTodo, Workflow as WorkflowIcon, ArrowLeft, PlusCircle } from "lucide-react";
 import { Card, CardHeader, CardTitle, CardContent, CardDescription, CardFooter } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
@@ -48,8 +48,8 @@ export default function WorkflowConfigurationPage() {
     updateStageInSubService, 
     addStageToSubService, 
     deleteStageFromSubService, 
-    updateActionInStage, 
     addActionToStage, 
+    updateActionInStage, 
     deleteActionFromStage,
     addTask
   } = useCRMData();
@@ -391,7 +391,7 @@ export default function WorkflowConfigurationPage() {
                 </Link>
             </Button>
             <Button onClick={handleAddService}>
-                <Plus className="mr-2 h-4 w-4" />
+                <PlusCircle className="mr-2 h-4 w-4" />
                 Añadir Servicio
             </Button>
           </div>
@@ -562,4 +562,3 @@ export default function WorkflowConfigurationPage() {
   );
 }
 
-    
