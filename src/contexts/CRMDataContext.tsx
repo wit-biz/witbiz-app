@@ -200,7 +200,7 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
     };
     
     const addTask = async (newTaskData: Omit<Task, 'id' | 'status' | 'clientName'> & { dueDays?: number }): Promise<Task | null> => {
-        if (!tasksCollection) return null;
+        if (!tasksCollection || !currentUser) return null;
         const client = clients.find(c => c.id === newTaskData.clientId);
         if (!client) return null;
 
@@ -211,16 +211,17 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
             finalDueDate = format(dueDate, 'yyyy-MM-dd');
         }
 
-        const assignedUser = teamMembers.find(m => m.id === newTaskData.assignedToId);
+        const assignedUserId = newTaskData.assignedToId || currentUser.uid;
+        const assignedUser = teamMembers.find(m => m.id === assignedUserId);
 
         const newTaskPayload: Omit<Task, 'id'> = { 
             ...newTaskData, 
             dueDate: finalDueDate,
             status: 'Pendiente', 
             clientName: client.name,
-            assignedToId: assignedUser?.id,
-            assignedToName: assignedUser?.name,
-            assignedToPhotoURL: assignedUser?.photoURL,
+            assignedToId: assignedUser?.id || currentUser.uid,
+            assignedToName: assignedUser?.name || currentUser.displayName || 'Usuario Actual',
+            assignedToPhotoURL: assignedUser?.photoURL || currentUser.photoURL || undefined,
             createdAt: serverTimestamp()
         };
         const newDocRef = await addDocumentNonBlocking(tasksCollection, newTaskPayload);
