@@ -12,13 +12,15 @@ import {
   DialogClose,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Edit, Trash, CheckCircle, Loader2 } from 'lucide-react';
+import { Edit, Trash, CheckCircle, Loader2, PlusCircle } from 'lucide-react';
 import { Task } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { parseDateString, formatTimeString } from '@/lib/utils';
+import { useCRMData } from '@/contexts/CRMDataContext';
+import { AddTaskDialog } from './AddTaskDialog';
 
 
 interface TaskDetailDialogProps {
@@ -37,9 +39,12 @@ export function TaskDetailDialog({
   onDeleteTask,
 }: TaskDetailDialogProps) {
   const { toast } = useToast();
+  const { clients, addTask } = useCRMData();
   const [isEditing, setIsEditing] = useState(false);
   const [editableTask, setEditableTask] = useState<Partial<Task>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isAddTaskDialogOpen, setIsAddTaskDialogOpen] = useState(false);
+
 
   React.useEffect(() => {
     if (task) {
@@ -50,6 +55,10 @@ export function TaskDetailDialog({
   if (!task) return null;
   
   const dueDate = parseDateString(task.dueDate);
+  
+  const handleAddTask = async (data: Omit<Task, 'id' | 'status'>) => {
+    await addTask(data);
+  };
 
   const handleMarkAsComplete = async () => {
     if (!onUpdateTask) return;
@@ -86,6 +95,7 @@ export function TaskDetailDialog({
   };
 
   return (
+    <>
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent>
         <TooltipProvider>
@@ -107,16 +117,11 @@ export function TaskDetailDialog({
             <div className="flex gap-2">
                 <Tooltip>
                     <TooltipTrigger asChild>
-                        <Button
-                            variant="outline"
-                            size="icon"
-                            onClick={() => setIsEditing(!isEditing)}
-                            disabled={isSubmitting}
-                        >
-                            <Edit className="h-4 w-4" />
+                        <Button variant="outline" size="icon" onClick={() => setIsAddTaskDialogOpen(true)} disabled={isSubmitting}>
+                            <PlusCircle className="h-4 w-4" />
                         </Button>
                     </TooltipTrigger>
-                    <TooltipContent><p>Editar (Próximamente)</p></TooltipContent>
+                    <TooltipContent><p>Añadir nueva tarea para este cliente</p></TooltipContent>
                 </Tooltip>
                 <Tooltip>
                     <TooltipTrigger asChild>
@@ -149,5 +154,14 @@ export function TaskDetailDialog({
         </TooltipProvider>
       </DialogContent>
     </Dialog>
+     <AddTaskDialog
+        isOpen={isAddTaskDialogOpen}
+        onOpenChange={setIsAddTaskDialogOpen}
+        clients={clients}
+        onTaskAdd={handleAddTask}
+        isWorkflowMode={false}
+        preselectedClientId={task.clientId}
+    />
+    </>
   );
 }

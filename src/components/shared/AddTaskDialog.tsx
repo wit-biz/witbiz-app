@@ -56,6 +56,7 @@ interface AddTaskDialogProps {
   onTaskAdd: (data: any) => void;
   isWorkflowMode?: boolean;
   stageId?: string; // Para identificar la etapa en modo workflow
+  preselectedClientId?: string; // Nuevo para pre-seleccionar cliente
 }
 
 export function AddTaskDialog({
@@ -65,6 +66,7 @@ export function AddTaskDialog({
   onTaskAdd,
   isWorkflowMode = false,
   stageId,
+  preselectedClientId
 }: AddTaskDialogProps) {
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -73,17 +75,17 @@ export function AddTaskDialog({
     resolver: zodResolver(combinedSchema),
     defaultValues: isWorkflowMode ?
       { isWorkflowMode: true, title: '', description: '', dueDays: 0 } :
-      { isWorkflowMode: false, title: '', description: '', clientId: '', dueDate: new Date(), dueTime: '' },
+      { isWorkflowMode: false, title: '', description: '', clientId: preselectedClientId || '', dueDate: new Date(), dueTime: '' },
   });
 
   useEffect(() => {
     if (isOpen) {
       form.reset(isWorkflowMode ?
         { isWorkflowMode: true, title: '', description: '', dueDays: 0 } :
-        { isWorkflowMode: false, title: '', description: '', clientId: '', dueDate: new Date(), dueTime: '' }
+        { isWorkflowMode: false, title: '', description: '', clientId: preselectedClientId || '', dueDate: new Date(), dueTime: '' }
       );
     }
-  }, [isOpen, isWorkflowMode, form]);
+  }, [isOpen, isWorkflowMode, preselectedClientId, form]);
 
   const onSubmit = (data: AddTaskFormValues) => {
     setIsSubmitting(true);
@@ -138,7 +140,7 @@ export function AddTaskDialog({
                       render={({ field }) => (
                           <FormItem>
                               <FormLabel>Asignar a Cliente <span className="text-destructive">*</span></FormLabel>
-                              <Select onValueChange={field.onChange} defaultValue={field.value}>
+                              <Select onValueChange={field.onChange} value={field.value} disabled={!!preselectedClientId}>
                                   <FormControl>
                                       <SelectTrigger><SelectValue placeholder="Seleccione un cliente..." /></SelectTrigger>
                                   </FormControl>
@@ -239,5 +241,3 @@ export function AddTaskDialog({
     </Dialog>
   );
 }
-
-    
