@@ -124,7 +124,7 @@ export function AddTaskDialog({
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md max-h-[90vh] flex flex-col">
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col h-full">
+          <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col h-full overflow-hidden">
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
                 <PlusCircle className="h-5 w-5 text-accent"/>
@@ -135,7 +135,7 @@ export function AddTaskDialog({
               </DialogDescription>
             </DialogHeader>
 
-            <div className="py-4 space-y-4 flex-grow overflow-y-auto pr-2 pl-1">
+            <div className="py-4 space-y-4 flex-grow overflow-y-auto pr-3 -mr-2 pl-1">
               <FormField
                   control={form.control}
                   name="title"
