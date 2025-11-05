@@ -74,12 +74,11 @@ service cloud.firestore {
     }
     
     /**
-     * @description Rules for the /users/{userId}/serviceWorkflows/{workflowId} subcollection. Users can only access their own workflows.
+     * @description Rules for the /users/{userId}/serviceWorkflows collection and its documents. Users can access their own workflows.
      * @path /users/{userId}/serviceWorkflows/{workflowId}
      */
     match /users/{userId}/serviceWorkflows/{workflowId} {
-      allow list, get: if isSignedIn() && isOwner(userId);
-      allow create, update, delete: if isSignedIn() && isOwner(userId);
+      allow list, get, create, update, delete: if isSignedIn() && isOwner(userId);
     }
 
     // --- Helper functions ---
