@@ -206,7 +206,7 @@ export function AddTaskDialog({
                                           <FormControl>
                                               <Button variant="outline" className={cn('w-full justify-start text-left font-normal', !field.value && 'text-muted-foreground')}>
                                                   <CalendarIcon className="mr-2 h-4 w-4" />
-                                                  {field.value ? format(field.value, 'PPP', { locale: es }) : <span>Seleccione fecha</span>}
+                                                  {field.value ? format(field.value, 'dd/MM/yyyy') : <span>Seleccione fecha</span>}
                                               </Button>
                                           </FormControl>
                                       </PopoverTrigger>
