@@ -265,7 +265,7 @@ export default function SettingsPage() {
     const { amount, ...rest } = data;
     const finalAmount = data.type === 'expense' ? -Math.abs(amount) : Math.abs(amount);
     
-    const clientName = data.clientId ? clients.find(c => c.id === data.clientId)?.name : undefined;
+    const clientName = data.clientId && clients ? clients.find(c => c.id === data.clientId)?.name : undefined;
 
     const newTransaction: Transaction = {
         id: `trx-${Date.now()}`,
@@ -511,7 +511,7 @@ export default function SettingsPage() {
                                             <SelectTrigger className="w-[300px]"><SelectValue placeholder="Seleccione un cliente..."/></SelectTrigger>
                                             <SelectContent>
                                                 <SelectItem value="all">Todos los Clientes</SelectItem>
-                                                {clients.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+                                                {clients && clients.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
                                             </SelectContent>
                                         </Select>
                                     </div>
