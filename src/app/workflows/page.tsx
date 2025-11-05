@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import React, { useState, useMemo, useEffect, useCallback } from "react";
@@ -127,7 +128,7 @@ export default function WorkflowConfigurationPage() {
     setAddTaskDialogState({ isOpen: true, stageId, subServiceId });
   };
   
-  const handleAddAction = (data: { title: string, description?: string, dueDays: number, requiredDocumentForCompletion?: boolean, requiredDocumentDescription?: string }) => {
+  const handleAddAction = (data: { title: string, description?: string, dueDays: number, requiredDocumentForCompletion?: boolean, requiredDocuments?: { description: string }[] }) => {
     if (!editableWorkflow) return;
     
     const newAction: WorkflowAction = {
@@ -136,7 +137,7 @@ export default function WorkflowConfigurationPage() {
       description: data.description || '',
       dueDays: data.dueDays,
       requiredDocumentForCompletion: data.requiredDocumentForCompletion,
-      requiredDocumentDescription: data.requiredDocumentDescription,
+      requiredDocuments: data.requiredDocuments?.map(doc => ({ id: `doc-req-${Date.now()}-${Math.random()}`, description: doc.description })) || [],
       order: 1, // Simplified order
       subActions: []
     };
@@ -344,23 +345,40 @@ export default function WorkflowConfigurationPage() {
                             <Switch
                                 id={`req-doc-${action.id}`}
                                 checked={action.requiredDocumentForCompletion}
-                                onCheckedChange={(checked) => handlers.updateAction(stage.id, action.id, { requiredDocumentForCompletion: checked, requiredDocumentDescription: checked ? action.requiredDocumentDescription : '' })}
+                                onCheckedChange={(checked) => handlers.updateAction(stage.id, action.id, { requiredDocumentForCompletion: checked, requiredDocuments: checked ? (action.requiredDocuments || [{ id: `doc-req-${Date.now()}`, description: '' }]) : [] })}
                             />
                             <Label htmlFor={`req-doc-${action.id}`} className="text-sm">
-                                Requiere documento para completar
+                                Requiere documento(s) para completar
                             </Label>
                         </div>
                         {action.requiredDocumentForCompletion && (
-                             <div className="pl-6">
-                                <Label htmlFor={`req-desc-${action.id}`} className="text-xs text-muted-foreground">Descripción del Documento</Label>
-                                <Input
-                                    id={`req-desc-${action.id}`}
-                                    value={action.requiredDocumentDescription || ''}
-                                    onChange={(e) => handlers.updateAction(stage.id, action.id, { requiredDocumentDescription: e.target.value })}
-                                    placeholder="Ej. Identificación oficial"
-                                    className="mt-1"
-                                />
-                             </div>
+                            <div className="pl-6 space-y-2">
+                                {(action.requiredDocuments || []).map((doc, index) => (
+                                    <div key={doc.id} className="flex items-center gap-2">
+                                        <Input
+                                            value={doc.description}
+                                            onChange={(e) => {
+                                                const newDocs = [...(action.requiredDocuments || [])];
+                                                newDocs[index] = { ...newDocs[index], description: e.target.value };
+                                                handlers.updateAction(stage.id, action.id, { requiredDocuments: newDocs });
+                                            }}
+                                            placeholder={`Descripción del documento ${index + 1}`}
+                                        />
+                                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => {
+                                            const newDocs = (action.requiredDocuments || []).filter(d => d.id !== doc.id);
+                                            handlers.updateAction(stage.id, action.id, { requiredDocuments: newDocs, requiredDocumentForCompletion: newDocs.length > 0 });
+                                        }}>
+                                            <Trash2 className="h-4 w-4 text-destructive"/>
+                                        </Button>
+                                    </div>
+                                ))}
+                                <Button variant="outline" size="sm" onClick={() => {
+                                    const newDocs = [...(action.requiredDocuments || []), { id: `doc-req-${Date.now()}-${Math.random()}`, description: '' }];
+                                    handlers.updateAction(stage.id, action.id, { requiredDocuments: newDocs });
+                                }}>
+                                    <Plus className="mr-2 h-4 w-4" /> Añadir Requisito
+                                </Button>
+                            </div>
                         )}
                       </>
                     ) : (

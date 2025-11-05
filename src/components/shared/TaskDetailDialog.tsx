@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import React, { useState } from 'react';
@@ -120,9 +121,18 @@ export function TaskDetailDialog({
                 <strong>Detalles:</strong> {task.description || 'Sin detalles.'}
             </p>
              {task.requiredDocumentForCompletion && (
-                <p className="text-sm text-amber-600 dark:text-amber-500">
-                    <strong>Nota:</strong> Para completar esta tarea, se requiere el siguiente documento: <strong>{task.requiredDocumentDescription || 'No especificado'}</strong>.
-                </p>
+                <div className="text-sm text-amber-600 dark:text-amber-500 pt-2">
+                    <p className="font-semibold">Documento(s) Requerido(s) para Completar:</p>
+                    {task.requiredDocuments && task.requiredDocuments.length > 0 ? (
+                        <ul className="list-disc list-inside pl-4">
+                            {task.requiredDocuments.map(doc => (
+                                <li key={doc.id}>{doc.description}</li>
+                            ))}
+                        </ul>
+                    ) : (
+                        <p>No se especificaron documentos.</p>
+                    )}
+                </div>
             )}
             </div>
             <DialogFooter className="sm:justify-between">

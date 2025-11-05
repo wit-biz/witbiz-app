@@ -1,8 +1,9 @@
 
+
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { useForm, Controller } from 'react-hook-form';
+import { useForm, Controller, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from '@/components/ui/dialog';
@@ -14,7 +15,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
 import { Slider } from '@/components/ui/slider';
-import { Loader2, Save, Calendar as CalendarIcon, PlusCircle } from 'lucide-react';
+import { Loader2, Save, Calendar as CalendarIcon, PlusCircle, Trash2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
@@ -24,38 +25,38 @@ import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, For
 import { Switch } from '@/components/ui/switch';
 
 
-// Esquema base
+const requiredDocSchema = z.object({
+  description: z.string().min(1, "La descripción del documento no puede estar vacía."),
+});
+
 const baseSchema = z.object({
   title: z.string().min(3, "El título debe tener al menos 3 caracteres."),
   description: z.string().optional(),
   requiredDocumentForCompletion: z.boolean().default(false),
-  requiredDocumentDescription: z.string().optional(),
+  requiredDocuments: z.array(requiredDocSchema).optional(),
 });
 
-// Esquema para Tarea Real (con fecha)
 const taskSchema = baseSchema.extend({
   clientId: z.string().min(1, "Debe seleccionar un cliente."),
   dueDate: z.date({ required_error: "La fecha de vencimiento es requerida." }),
   dueTime: z.string().optional(),
 });
 
-// Esquema para Plantilla de Tarea (con días regresivos)
 const workflowActionSchema = baseSchema.extend({
   dueDays: z.number().min(0).max(30).default(0),
 });
 
-// Discriminated union para validar según el modo
 const combinedSchema = z.discriminatedUnion("isWorkflowMode", [
   z.object({ isWorkflowMode: z.literal(true) }).merge(workflowActionSchema),
   z.object({ isWorkflowMode: z.literal(false) }).merge(taskSchema),
 ]).refine(data => {
     if (data.requiredDocumentForCompletion) {
-        return !!data.requiredDocumentDescription && data.requiredDocumentDescription.trim().length > 0;
+        return Array.isArray(data.requiredDocuments) && data.requiredDocuments.length > 0 && data.requiredDocuments.every(doc => doc.description.trim().length > 0);
     }
     return true;
 }, {
-    message: "La descripción del documento es requerida.",
-    path: ["requiredDocumentDescription"],
+    message: "Debe especificar al menos un documento requerido.",
+    path: ["requiredDocuments"],
 });
 
 type AddTaskFormValues = z.infer<typeof combinedSchema>;
@@ -66,8 +67,8 @@ interface AddTaskDialogProps {
   clients: Client[];
   onTaskAdd: (data: any) => void;
   isWorkflowMode?: boolean;
-  stageId?: string; // Para identificar la etapa en modo workflow
-  preselectedClientId?: string; // Nuevo para pre-seleccionar cliente
+  stageId?: string; 
+  preselectedClientId?: string; 
 }
 
 export function AddTaskDialog({
@@ -85,15 +86,20 @@ export function AddTaskDialog({
   const form = useForm<AddTaskFormValues>({
     resolver: zodResolver(combinedSchema),
     defaultValues: isWorkflowMode ?
-      { isWorkflowMode: true, title: '', description: '', dueDays: 0, requiredDocumentForCompletion: false, requiredDocumentDescription: '' } :
-      { isWorkflowMode: false, title: '', description: '', clientId: preselectedClientId || '', dueDate: new Date(), dueTime: '', requiredDocumentForCompletion: false, requiredDocumentDescription: '' },
+      { isWorkflowMode: true, title: '', description: '', dueDays: 0, requiredDocumentForCompletion: false, requiredDocuments: [] } :
+      { isWorkflowMode: false, title: '', description: '', clientId: preselectedClientId || '', dueDate: new Date(), dueTime: '', requiredDocumentForCompletion: false, requiredDocuments: [] },
+  });
+  
+  const { fields, append, remove } = useFieldArray({
+    control: form.control,
+    name: "requiredDocuments",
   });
 
   useEffect(() => {
     if (isOpen) {
       form.reset(isWorkflowMode ?
-        { isWorkflowMode: true, title: '', description: '', dueDays: 0, requiredDocumentForCompletion: false, requiredDocumentDescription: '' } :
-        { isWorkflowMode: false, title: '', description: '', clientId: preselectedClientId || '', dueDate: new Date(), dueTime: '', requiredDocumentForCompletion: false, requiredDocumentDescription: '' }
+        { isWorkflowMode: true, title: '', description: '', dueDays: 0, requiredDocumentForCompletion: false, requiredDocuments: [] } :
+        { isWorkflowMode: false, title: '', description: '', clientId: preselectedClientId || '', dueDate: new Date(), dueTime: '', requiredDocumentForCompletion: false, requiredDocuments: [] }
       );
     }
   }, [isOpen, isWorkflowMode, preselectedClientId, form]);
@@ -246,9 +252,9 @@ export function AddTaskDialog({
                 render={({ field }) => (
                   <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
                     <div className="space-y-0.5">
-                      <FormLabel>Requiere Documento</FormLabel>
+                      <FormLabel>Requiere Documento(s)</FormLabel>
                       <FormDescription>
-                        Marcar si esta tarea necesita un archivo adjunto para completarse.
+                        Marcar si esta tarea necesita archivos adjuntos para completarse.
                       </FormDescription>
                     </div>
                     <FormControl>
@@ -262,22 +268,41 @@ export function AddTaskDialog({
               />
 
               {requiresDoc && (
-                <FormField
-                  control={form.control}
-                  name="requiredDocumentDescription"
-                  render={({ field }) => (
-                    <FormItem className="pl-4 border-l-2 ml-1">
-                      <FormLabel>Documento Requerido <span className="text-destructive">*</span></FormLabel>
-                      <FormControl>
-                        <Input placeholder="Ej. Identificación oficial, Comprobante" {...field} />
-                      </FormControl>
-                      <FormDescription>
-                        Especifique qué documento debe subir el usuario.
-                      </FormDescription>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                <div className="pl-4 border-l-2 ml-1 space-y-4">
+                  {fields.map((field, index) => (
+                      <FormField
+                          key={field.id}
+                          control={form.control}
+                          name={`requiredDocuments.${index}.description`}
+                          render={({ field }) => (
+                              <FormItem>
+                                  <FormLabel>Documento Requerido #{index + 1} <span className="text-destructive">*</span></FormLabel>
+                                  <div className="flex items-center gap-2">
+                                      <FormControl>
+                                          <Input placeholder="Ej. Identificación oficial" {...field} />
+                                      </FormControl>
+                                      <Button type="button" variant="ghost" size="icon" onClick={() => remove(index)}>
+                                          <Trash2 className="h-4 w-4 text-destructive" />
+                                      </Button>
+                                  </div>
+                                  <FormMessage />
+                              </FormItem>
+                          )}
+                      />
+                  ))}
+                   <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => append({ description: '' })}
+                    >
+                      <PlusCircle className="mr-2 h-4 w-4" />
+                      Añadir Otro Documento
+                    </Button>
+                    {form.formState.errors.requiredDocuments && (
+                        <p className="text-sm font-medium text-destructive">{form.formState.errors.requiredDocuments.message}</p>
+                    )}
+                </div>
               )}
 
             </div>

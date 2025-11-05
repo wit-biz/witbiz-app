@@ -37,7 +37,7 @@ export type Task = {
   createdAt?: any;
   dueDays?: number;
   requiredDocumentForCompletion?: boolean;
-  requiredDocumentDescription?: string;
+  requiredDocuments?: { id: string; description: string }[];
 };
 
 export type Document = {
@@ -89,7 +89,7 @@ export type WorkflowAction = {
   order: number;
   subActions: SubAction[];
   requiredDocumentForCompletion?: boolean;
-  requiredDocumentDescription?: string;
+  requiredDocuments?: { id: string; description: string }[];
 };
 
 export type SubAction = {
