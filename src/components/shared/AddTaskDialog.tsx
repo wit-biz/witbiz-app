@@ -14,7 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
 import { Slider } from '@/components/ui/slider';
-import { Loader2, Save, Calendar as CalendarIcon, PlusCircle, Briefcase } from 'lucide-react';
+import { Loader2, Save, Calendar as CalendarIcon, PlusCircle } from 'lucide-react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
@@ -239,3 +239,5 @@ export function AddTaskDialog({
     </Dialog>
   );
 }
+
+    
