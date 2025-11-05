@@ -438,6 +438,14 @@ export function TaskDetailDialog({
                             </Tooltip>
                             <Tooltip>
                                 <TooltipTrigger asChild>
+                                    <Button variant="ghost" size="icon" onClick={() => setIsPostponing(true)} disabled={isSubmitting || task.status === 'Completada'}>
+                                        <History className="h-4 w-4" />
+                                    </Button>
+                                </TooltipTrigger>
+                                <TooltipContent><p>Posponer</p></TooltipContent>
+                            </Tooltip>
+                             <Tooltip>
+                                <TooltipTrigger asChild>
                                     <Button
                                         variant="destructive"
                                         size="icon"
@@ -452,46 +460,22 @@ export function TaskDetailDialog({
                         </div>
                         <div className="flex gap-2">
                              {task.status === 'Pospuesta' ? (
-                                 <Tooltip>
-                                    <TooltipTrigger asChild>
-                                        <Button onClick={handleReactivate} className="bg-blue-600 hover:bg-blue-700 text-white">
-                                            {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Redo className="mr-2 h-4 w-4"/>}
-                                            Reactivar Tarea
-                                        </Button>
-                                    </TooltipTrigger>
-                                    <TooltipContent><p>Volver a poner esta tarea como pendiente.</p></TooltipContent>
-                                 </Tooltip>
+                                <Button onClick={handleReactivate} className="bg-blue-600 hover:bg-blue-700 text-white">
+                                    {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Redo className="mr-2 h-4 w-4"/>}
+                                    Reactivar Tarea
+                                </Button>
                              ) : (
                                 <>
-                                    <Tooltip>
-                                        <TooltipTrigger asChild>
-                                            <Button variant="outline" onClick={() => setIsPostponing(true)} disabled={isSubmitting || task.status === 'Completada'}>
-                                                <History className="mr-2 h-4 w-4"/>
-                                                Posponer
-                                            </Button>
-                                        </TooltipTrigger>
-                                        <TooltipContent><p>Posponer esta tarea para una fecha posterior.</p></TooltipContent>
-                                    </Tooltip>
                                     {task.requiredDocumentForCompletion ? (
-                                        <Tooltip>
-                                            <TooltipTrigger asChild>
-                                                <Button onClick={handleCompleteWithDocument} disabled={isSubmitting || task.status === 'Completada'} className="bg-blue-600 hover:bg-blue-700 text-white">
-                                                    <UploadCloud className="mr-2 h-4 w-4" />
-                                                    Completar con Documento
-                                                </Button>
-                                            </TooltipTrigger>
-                                            <TooltipContent><p>Subir documento para completar la tarea</p></TooltipContent>
-                                        </Tooltip>
+                                        <Button onClick={handleCompleteWithDocument} disabled={isSubmitting || task.status === 'Completada'} className="bg-blue-600 hover:bg-blue-700 text-white">
+                                            <UploadCloud className="mr-2 h-4 w-4" />
+                                            Completar con Documento
+                                        </Button>
                                     ) : (
-                                        <Tooltip>
-                                            <TooltipTrigger asChild>
-                                                <Button onClick={handleMarkAsComplete} disabled={isSubmitting || task.status === 'Completada' || !onUpdateTask} className="bg-green-600 hover:bg-green-700 text-white">
-                                                    {isSubmitting && onUpdateTask ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <CheckCircle className="mr-2 h-4 w-4" />}
-                                                    Marcar como Completada
-                                                </Button>
-                                            </TooltipTrigger>
-                                            <TooltipContent><p>Marcar como Completada</p></TooltipContent>
-                                        </Tooltip>
+                                        <Button onClick={handleMarkAsComplete} disabled={isSubmitting || task.status === 'Completada' || !onUpdateTask} className="bg-green-600 hover:bg-green-700 text-white">
+                                            {isSubmitting && onUpdateTask ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <CheckCircle className="mr-2 h-4 w-4" />}
+                                            Completada
+                                        </Button>
                                     )}
                                 </>
                              )}
