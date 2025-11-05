@@ -438,7 +438,7 @@ export function TaskDetailDialog({
                             </Tooltip>
                             <Tooltip>
                                 <TooltipTrigger asChild>
-                                    <Button variant="ghost" size="icon" onClick={() => setIsPostponing(true)} disabled={isSubmitting || task.status === 'Completada'}>
+                                    <Button variant="outline" size="icon" onClick={() => setIsPostponing(true)} disabled={isSubmitting || task.status === 'Completada'}>
                                         <History className="h-4 w-4" />
                                     </Button>
                                 </TooltipTrigger>
