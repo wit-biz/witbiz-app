@@ -139,7 +139,7 @@ export default function InicioPage() {
         if (task.status !== 'Pendiente' || task.assignedToId !== currentUser.uid) return false;
         try {
           const taskDueDate = new Date(task.dueDate);
-          taskDueDate.setHours(0,0,0,0);
+          taskDueDate.setUTCHours(0,0,0,0);
           return taskDueDate && taskDueDate.getTime() === today.getTime();
         } catch { return false; }
       })
@@ -169,12 +169,6 @@ export default function InicioPage() {
         <CardContent className="pt-0">
           {isLoadingWorkflows || !tasks ? (
               <div className="flex items-center justify-center p-12"><Loader2 className="h-8 w-8 animate-spin text-primary"/></div>
-          ) : tasks.length === 0 ? (
-            <div className="flex flex-col items-center justify-center text-center text-muted-foreground py-10">
-                <CheckSquare className="h-12 w-12 mb-4 text-green-500" />
-                <p className="text-lg font-semibold">¡Todo al día!</p>
-                <p className="text-sm mt-1">No tienes tareas pendientes programadas para hoy.</p>
-              </div>
           ) : todaysTasks.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
               {todaysTasks.map((task) => (
