@@ -13,71 +13,20 @@ service cloud.firestore {
     /**
      * @description Rules for the /users/{userId} collection.  Users can only create their own profile.
      * @path /users/{userId}
-     * @allow (create) - User 'lbz7nN49aERC4AwnsGSruB6spQJ3' can create their profile at /users/lbz7nN49aERC4AwnsGSruB6spQJ3
-     * @deny (create) - User 'otherUserId' cannot create a profile at /users/lbz7nN49aERC4AwnsGSruB6spQJ3
-     * @allow (get) - Allow user to read their profile
-     * @deny (get) - Deny if the document does not exist
-     * @principle Enforces document ownership for writes.
      */
     match /users/{userId} {
       allow get: if isSignedIn() && isOwner(userId);
       allow list: if false; // Listing users is not permitted.
-      allow create: if isSignedIn() && isOwner(userId);
-      allow update: if isSignedIn() && isExistingOwner(userId);
+      allow create: if isSignedIn() && isOwner(userId) && request.resource.data.id == userId;
+      allow update: if isSignedIn() && isExistingOwner(userId) && request.resource.data.id == resource.data.id; //Enforce immutability of user ID
       allow delete: if isSignedIn() && isExistingOwner(userId);
     }
-
-    /**
-     * @description Rules for the /users/{userId}/tasks/{taskId} subcollection. Users can only access tasks they own.
-     * @path /users/{userId}/tasks/{taskId}
-     */
-    match /users/{userId}/tasks/{taskId} {
-      allow read, write: if isSignedIn() && isOwner(userId);
-    }
     
     /**
-     * @description Rules for the /users/{userId}/documents/{documentId} subcollection. Users can only access documents they own.
-     * @path /users/{userId}/documents/{documentId}
+     * @description Generic rule for all user-owned subcollections.
+     * Grants read and write access to the user who owns the parent document.
      */
-    match /users/{userId}/documents/{documentId} {
-      allow read, write: if isSignedIn() && isOwner(userId);
-    }
-
-    /**
-     * @description Rules for the /users/{userId}/clients/{clientId} subcollection. Users can only access clients they own.
-     * @path /users/{userId}/clients/{clientId}
-     */
-    match /users/{userId}/clients/{clientId} {
-      allow read, write: if isSignedIn() && isOwner(userId);
-    }
-
-    /**
-     * @description Rules for the /users/{userId}/leads/{leadId} subcollection.  Users can only access leads they own.
-     * @path /users/{userId}/leads/{leadId}
-     * @allow (create) - User 'lbz7nN49aERC4AwnsGSruB6spQJ3' can create a lead at /users/lbz7nN49aERC4AwnsGSruB6spQJ3/leads/lead1
-     * @deny (create) - User 'otherUserId' cannot create a lead at /users/lbz7nN49aERC4AwnsGSruB6spQJ3/leads/lead1
-     * @principle Restricts access to a user's own data tree.
-     */
-    match /users/{userId}/leads/{leadId} {
-      allow read, write: if isSignedIn() && isOwner(userId);
-    }
-
-    /**
-     * @description Rules for the /users/{userId}/contacts/{contactId} subcollection.  Users can only access contacts they own.
-     * @path /users/{userId}/contacts/{contactId}
-     * @allow (create) - User 'lbz7nN49aERC4AwnsGSruB6spQJ3' can create a contact at /users/lbz7nN49aERC4AwnsGSruB6spQJ3/contacts/contact1
-     * @deny (create) - User 'otherUserId' cannot create a contact at /users/lbz7nN49aERC4AwnsGSruB6spQJ3/contacts/contact1
-     * @principle Restricts access to a user's own data tree.
-     */
-    match /users/{userId}/contacts/{contactId} {
-      allow read, write: if isSignedIn() && isOwner(userId);
-    }
-    
-    /**
-     * @description Rules for the /users/{userId}/serviceWorkflows collection and its documents. Users can access their own workflows.
-     * @path /users/{userId}/serviceWorkflows/{workflowId}
-     */
-    match /users/{userId}/serviceWorkflows/{workflowId} {
+    match /users/{userId}/{collection}/{docId} {
       allow read, write: if isSignedIn() && isOwner(userId);
     }
 
