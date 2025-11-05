@@ -63,6 +63,18 @@ interface CRMContextType {
   updateService: (serviceId: string, updates: Partial<Omit<ServiceWorkflow, 'id' | 'stages' | 'subServices'>>) => Promise<boolean>;
   deleteService: (serviceId: string) => Promise<boolean>;
   getActionById: (actionId: string) => WorkflowAction | null;
+  
+  // New workflow editing functions
+  addSubServiceToWorkflow: (workflowId: string, subServiceName: string, setState: React.Dispatch<React.SetStateAction<ServiceWorkflow | null>>) => void;
+  deleteSubService: (workflowId: string, subServiceId: string, setState: React.Dispatch<React.SetStateAction<ServiceWorkflow | null>>) => void;
+  updateSubService: (workflowId: string, subServiceId: string, updates: Partial<SubService>, setState: React.Dispatch<React.SetStateAction<ServiceWorkflow | null>>) => void;
+  addStageToSubService: (workflowId: string, subServiceId: string, setState: React.Dispatch<React.SetStateAction<ServiceWorkflow | null>>) => void;
+  deleteStageFromSubService: (workflowId: string, subServiceId: string, stageId: string, setState: React.Dispatch<React.SetStateAction<ServiceWorkflow | null>>) => void;
+  updateStageInSubService: (workflowId: string, subServiceId: string, stageId: string, updates: Partial<WorkflowStage>, setState: React.Dispatch<React.SetStateAction<ServiceWorkflow | null>>) => void;
+  addActionToStage: (workflowId: string, subServiceId: string, stageId: string, setState: React.Dispatch<React.SetStateAction<ServiceWorkflow | null>>) => void;
+  deleteActionFromStage: (workflowId: string, subServiceId: string, stageId: string, actionId: string, setState: React.Dispatch<React.SetStateAction<ServiceWorkflow | null>>) => void;
+  updateActionInStage: (workflowId: string, subServiceId: string, stageId: string, actionId: string, updates: Partial<WorkflowAction>, setState: React.Dispatch<React.SetStateAction<ServiceWorkflow | null>>) => void;
+
   registerUser: (name: string, email: string, pass: string) => Promise<any>;
 }
 
@@ -146,7 +158,8 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
         }
     };
     
-    // MOCK DATA HANDLERS
+    // --- Data Handlers ---
+
     const addClient = async (newClientData: Omit<Client, 'id'>): Promise<Client | null> => {
         const newClient: Client = { ...newClientData, id: `client-${Date.now()}` };
         setClients(prev => [...prev, newClient]);
@@ -210,6 +223,8 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
         return null;
     }, [serviceWorkflows]);
 
+    // --- Service / Workflow Handlers ---
+
     const addService = async (name: string): Promise<ServiceWorkflow | null> => {
         const newService: ServiceWorkflow = {
             id: `service-${Date.now()}`,
@@ -221,28 +236,92 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
               name: 'General',
               stages: [],
             }],
-            stages: [] // Legacy
         };
         setServiceWorkflows(prev => [newService, ...prev]);
         return newService;
     };
 
-    const updateService = async (serviceId: string, updates: Partial<Omit<ServiceWorkflow, 'id' | 'name' | 'stages' | 'subServices'>>): Promise<boolean> => {
+    const updateService = async (serviceId: string, updates: Partial<Omit<ServiceWorkflow, 'id' | 'stages' | 'subServices'>>): Promise<boolean> => {
         setServiceWorkflows(prev => prev.map(s => s.id === serviceId ? { ...s, ...updates } : s));
         showNotification('success', 'Servicio Guardado', 'Los cambios se han guardado correctamente.');
         return true;
     }
 
     const deleteService = async (serviceId: string): Promise<boolean> => {
-        // We need to use the functional form of setState to ensure we have the latest state
-        // when calculating the next selected ID in the component.
         setServiceWorkflows(prev => prev.filter(s => s.id !== serviceId));
         showNotification('success', 'Servicio Eliminado', 'El servicio ha sido eliminado.');
         return true;
     }
+    
+    // --- In-memory state updaters for workflow editor ---
 
+    const updateState = (setter: React.Dispatch<React.SetStateAction<ServiceWorkflow | null>>, workflowId: string, updateLogic: (wf: ServiceWorkflow) => ServiceWorkflow) => {
+        setter(prev => {
+            if (!prev || prev.id !== workflowId) return prev;
+            return updateLogic(prev);
+        });
+    };
 
-    // Placeholder functions to avoid breaking the UI
+    const addSubServiceToWorkflow = (workflowId: string, subServiceName: string, setState: React.Dispatch<React.SetStateAction<ServiceWorkflow | null>>) => {
+        const newSubService: SubService = { id: `sub-${Date.now()}`, name: subServiceName, stages: [] };
+        updateState(setState, workflowId, (wf) => ({ ...wf, subServices: [...wf.subServices, newSubService] }));
+    };
+
+    const deleteSubService = (workflowId: string, subServiceId: string, setState: React.Dispatch<React.SetStateAction<ServiceWorkflow | null>>) => {
+        updateState(setState, workflowId, (wf) => ({ ...wf, subServices: wf.subServices.filter(ss => ss.id !== subServiceId) }));
+    };
+    
+    const updateSubService = (workflowId: string, subServiceId: string, updates: Partial<SubService>, setState: React.Dispatch<React.SetStateAction<ServiceWorkflow | null>>) => {
+        updateState(setState, workflowId, (wf) => ({
+            ...wf,
+            subServices: wf.subServices.map(ss => ss.id === subServiceId ? { ...ss, ...updates } : ss)
+        }));
+    };
+
+    const addStageToSubService = (workflowId: string, subServiceId: string, setState: React.Dispatch<React.SetStateAction<ServiceWorkflow | null>>) => {
+        const newStage: WorkflowStage = { id: `stage-${Date.now()}`, title: "Nueva Etapa", order: 100, actions: [] };
+        updateState(setState, workflowId, (wf) => ({
+            ...wf,
+            subServices: wf.subServices.map(ss => ss.id === subServiceId ? { ...ss, stages: [...ss.stages, newStage] } : ss)
+        }));
+    };
+    
+    const deleteStageFromSubService = (workflowId: string, subServiceId: string, stageId: string, setState: React.Dispatch<React.SetStateAction<ServiceWorkflow | null>>) => {
+        updateState(setState, workflowId, (wf) => ({
+            ...wf,
+            subServices: wf.subServices.map(ss => ss.id === subServiceId ? { ...ss, stages: ss.stages.filter(s => s.id !== stageId) } : ss)
+        }));
+    };
+    
+    const updateStageInSubService = (workflowId: string, subServiceId: string, stageId: string, updates: Partial<WorkflowStage>, setState: React.Dispatch<React.SetStateAction<ServiceWorkflow | null>>) => {
+        updateState(setState, workflowId, (wf) => ({
+            ...wf,
+            subServices: wf.subServices.map(ss => ss.id === subServiceId ? { ...ss, stages: ss.stages.map(s => s.id === stageId ? { ...s, ...updates } : s) } : ss)
+        }));
+    };
+
+    const addActionToStage = (workflowId: string, subServiceId: string, stageId: string, setState: React.Dispatch<React.SetStateAction<ServiceWorkflow | null>>) => {
+        const newAction: WorkflowAction = { id: `action-${Date.now()}`, title: "Nueva Tarea...", dueDays: 1, order: 100, subActions: [] };
+        updateState(setState, workflowId, (wf) => ({
+            ...wf,
+            subServices: wf.subServices.map(ss => ss.id === subServiceId ? { ...ss, stages: ss.stages.map(s => s.id === stageId ? { ...s, actions: [...s.actions, newAction] } : s) } : ss)
+        }));
+    };
+    
+    const deleteActionFromStage = (workflowId: string, subServiceId: string, stageId: string, actionId: string, setState: React.Dispatch<React.SetStateAction<ServiceWorkflow | null>>) => {
+        updateState(setState, workflowId, (wf) => ({
+            ...wf,
+            subServices: wf.subServices.map(ss => ss.id === subServiceId ? { ...ss, stages: ss.stages.map(s => s.id === stageId ? { ...s, actions: s.actions.filter(a => a.id !== actionId) } : s) } : ss)
+        }));
+    };
+
+    const updateActionInStage = (workflowId: string, subServiceId: string, stageId: string, actionId: string, updates: Partial<WorkflowAction>, setState: React.Dispatch<React.SetStateAction<ServiceWorkflow | null>>) => {
+        updateState(setState, workflowId, (wf) => ({
+            ...wf,
+            subServices: wf.subServices.map(ss => ss.id === subServiceId ? { ...ss, stages: ss.stages.map(s => s.id === stageId ? { ...s, actions: s.actions.map(a => a.id === actionId ? { ...a, ...updates } : a) } : s) } : ss)
+        }));
+    };
+    
     const placeholderPromise = async <T,>(data: T | null = null): Promise<any> => {
         showNotification('info', 'Funcionalidad no implementada', 'Esta acción aún no está conectada.');
         return data;
@@ -274,10 +353,13 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
         deleteNote: (id) => placeholderPromise(false),
 
         serviceWorkflows, setServiceWorkflows, isLoadingWorkflows,
-        addService,
-        updateService,
-        deleteService,
+        addService, updateService, deleteService,
         getActionById,
+        
+        addSubServiceToWorkflow, deleteSubService, updateSubService,
+        addStageToSubService, deleteStageFromSubService, updateStageInSubService,
+        addActionToStage, deleteActionFromStage, updateActionInStage,
+
         registerUser,
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }), [

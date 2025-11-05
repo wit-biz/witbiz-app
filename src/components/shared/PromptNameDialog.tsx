@@ -23,6 +23,8 @@ interface PromptNameDialogProps {
   description: string;
   label: string;
   onSave: (name: string) => void;
+  inputPlaceholder?: string;
+  initialValue?: string;
 }
 
 export function PromptNameDialog({
@@ -32,19 +34,20 @@ export function PromptNameDialog({
   description,
   label,
   onSave,
+  inputPlaceholder,
+  initialValue = '',
 }: PromptNameDialogProps) {
-  const [name, setName] = useState('');
+  const [name, setName] = useState(initialValue);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
 
   useEffect(() => {
-    if (!isOpen) {
-      // Reset state when dialog closes
-      setName('');
+    if (isOpen) {
+      setName(initialValue);
       setError('');
       setIsSubmitting(false);
     }
-  }, [isOpen]);
+  }, [isOpen, initialValue]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -56,7 +59,6 @@ export function PromptNameDialog({
     setIsSubmitting(true);
 
     // Simulate async operation if needed, then call onSave
-    // For now, we'll just call it directly.
     onSave(name);
     setIsSubmitting(false);
     onOpenChange(false);
@@ -76,7 +78,7 @@ export function PromptNameDialog({
               id="prompt-name-input"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder="Escriba el nombre aquí..."
+              placeholder={inputPlaceholder || "Escriba el nombre aquí..."}
               autoFocus
               className={error ? 'border-destructive' : ''}
             />

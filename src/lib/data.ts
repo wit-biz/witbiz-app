@@ -1,14 +1,126 @@
 
 
-import type { Client, Task, Document, Note, WorkflowStage, NavItem, Promoter, ServiceWorkflow } from './types';
+import type { Client, Task, Document, Note, WorkflowStage, NavItem, Promoter, ServiceWorkflow, SubService } from './types';
 
 export const serviceWorkflows: ServiceWorkflow[] = [
   {
+    id: 'service-1',
+    name: 'Asesoría de Crédito Empresarial',
+    description: 'Servicio completo para la obtención y gestión de créditos para empresas.',
+    clientRequirements: [
+      { id: 'req-1', text: 'Acta Constitutiva' },
+      { id: 'req-2', text: 'Últimas 3 declaraciones de impuestos' },
+    ],
+    subServices: [
+      {
+        id: 'sub-1-1',
+        name: 'Análisis y Diagnóstico',
+        stages: [
+          {
+            id: 's1-st1', title: 'Recopilación de Documentos', order: 1,
+            actions: [
+              { id: 's1-st1-obj1', title: 'Verificar recepción de todos los documentos', dueDays: 1, order: 1, subActions: [] },
+              { id: 's1-st1-obj2', title: 'Digitalizar y clasificar documentación', dueDays: 2, order: 2, subActions: [] },
+            ]
+          },
+          {
+            id: 's1-st2', title: 'Análisis Financiero', order: 2,
+            actions: [
+              { id: 's1-st2-obj1', title: 'Realizar análisis de ratios financieros', dueDays: 3, order: 1, subActions: [] },
+            ]
+          },
+        ]
+      },
+      {
+        id: 'sub-1-2',
+        name: 'Gestión con Bancos',
+        stages: [
+          {
+            id: 's1-st3', title: 'Envío de Solicitudes', order: 3,
+            actions: [
+              { id: 's1-st3-obj1', title: 'Enviar solicitud a 3 bancos principales', dueDays: 1, order: 1, subActions: [] },
+            ]
+          },
+          {
+            id: 's1-st4', title: 'Negociación', order: 4,
+            actions: [
+              { id: 's1-st4-obj2', title: 'Negociar tasas con ejecutivo bancario', dueDays: 7, order: 2, subActions: [] },
+              { id: 's1-st4-obj3', title: 'Confirmar oferta de crédito con cliente', dueDays: 1, order: 3, subActions: [] },
+            ]
+          },
+        ]
+      }
+    ]
+  },
+  {
+    id: 'service-2',
+    name: 'Gestión Patrimonial',
+    description: 'Asesoramiento para la inversión y crecimiento de capital.',
+    clientRequirements: [],
+    subServices: [
+      {
+        id: 'sub-2-1',
+        name: 'Perfil de Riesgo',
+        stages: [
+          {
+            id: 's2-st1', title: 'Entrevista Inicial', order: 1,
+            actions: [
+              { id: 's2-st1-obj2', title: 'Aplicar cuestionario de perfil de inversionista', dueDays: 0, order: 2, subActions: [] },
+            ]
+          },
+          {
+            id: 's2-st2', title: 'Definición de Perfil', order: 2,
+            actions: [
+              { id: 's2-st2-obj1', title: 'Generar reporte de perfil de riesgo', dueDays: 2, order: 1, subActions: [] },
+            ]
+          },
+          {
+            id: 's2-st3', title: 'Estrategia de Inversión', order: 3,
+            actions: [
+              { id: 's2-st3-obj2', title: 'Presentar estrategia de inversión al cliente', dueDays: 3, order: 2, subActions: [] },
+            ]
+          },
+        ]
+      }
+    ]
+  },
+  {
+    id: 'service-3',
+    name: 'Operaciones de Divisas',
+    description: 'Servicios de cambio de divisas y cobertura cambiaria.',
+    clientRequirements: [],
+    subServices: [
+      {
+        id: 'sub-3-1',
+        name: 'General',
+        stages: [
+          {
+            id: 's3-st1', title: 'Alta de Cliente', order: 1,
+            actions: [
+              { id: 's3-st1-obj1', title: 'Validar identidad (KYC)', dueDays: 1, order: 1, subActions: [] },
+            ]
+          },
+          {
+            id: 's3-st2', title: 'Depósito Inicial', order: 2,
+            actions: [
+              { id: 's3-st2-obj2', title: 'Confirmar recepción de fondos', dueDays: 0, order: 2, subActions: [] },
+            ]
+          },
+          {
+            id: 's3-st3', title: 'Operación Activa', order: 3,
+            actions: [
+              { id: 's3-st3-obj3', title: 'Realizar primera operación de cambio', dueDays: 1, order: 3, subActions: [] },
+            ]
+          },
+        ]
+      }
+    ]
+  },
+  {
     id: 'service-terminales-1',
     name: 'Terminales',
-    description: 'Servicio de gestión de terminales de pago.',
+    description: '',
     clientRequirements: [],
-    stages: [],
     subServices: []
   }
 ];

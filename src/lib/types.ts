@@ -158,7 +158,6 @@ export interface ServiceWorkflow {
     name: string;
     description?: string;
     clientRequirements?: ClientRequirement[];
-    stages: WorkflowStage[]; // Legado o para flujos simples
     subServices: SubService[];
 }
 
