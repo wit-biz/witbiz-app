@@ -20,7 +20,7 @@ import {
 import { useUser, useFirestore, useMemoFirebase, useCollection, useDoc, useAuth, addDocumentNonBlocking, setDocumentNonBlocking, deleteDocumentNonBlocking } from '@/firebase';
 import { collection, doc, writeBatch, serverTimestamp, query } from 'firebase/firestore';
 import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
-import { teamMembers as mockTeamMembers, serviceWorkflows as mockWorkflows } from '@/lib/data';
+import { teamMembers as mockTeamMembers } from '@/lib/data';
 import { addDays, format } from 'date-fns';
 
 interface CRMContextType {
@@ -56,7 +56,7 @@ interface CRMContextType {
   deleteNote: (noteId: string, clientId?: string) => Promise<boolean>;
 
   serviceWorkflows: ServiceWorkflow[];
-  setServiceWorkflows: React.Dispatch<React.SetStateAction<ServiceWorkflow[]>>;
+  setServiceWorkflows: (workflows: ServiceWorkflow[]) => void;
   isLoadingWorkflows: boolean;
   addService: (name: string) => Promise<ServiceWorkflow | null>;
   updateService: (serviceId: string, updates: Partial<Omit<ServiceWorkflow, 'id' | 'stages' | 'subServices'>>) => Promise<boolean>;
@@ -75,12 +75,10 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
     const { user, isUserLoading } = useUser();
 
     // MOCK DATA STATES (for data not yet in firestore)
-    const [serviceWorkflows, setServiceWorkflows] = useState<ServiceWorkflow[]>(mockWorkflows);
     const [teamMembers, setTeamMembers] = useState<AppUser[]>(mockTeamMembers);
     const [notes, setNotes] = useState<Note[]>([]); // Will be fetched if needed
     
     // LOADING STATES
-    const [isLoadingWorkflows, setIsLoadingWorkflows] = useState(false);
     const [isLoadingNotes, setIsLoadingNotes] = useState(false);
     
     const [currentUser, setCurrentUser] = useState<AuthenticatedUser | null>(null);
@@ -94,6 +92,10 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
     
     const documentsCollection = useMemoFirebase(() => user ? collection(firestore, 'users', user.uid, 'documents') : null, [firestore, user]);
     const { data: documents = [], isLoading: isLoadingDocuments } = useCollection<Document>(documentsCollection);
+
+    const workflowsCollection = useMemoFirebase(() => user ? collection(firestore, 'users', user.uid, 'serviceWorkflows') : null, [firestore, user]);
+    const { data: serviceWorkflows = [], isLoading: isLoadingWorkflows } = useCollection<ServiceWorkflow>(workflowsCollection);
+
 
     useEffect(() => {
         if (user) {
@@ -250,29 +252,47 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
     // --- Service / Workflow Handlers ---
 
     const addService = async (name: string): Promise<ServiceWorkflow | null> => {
-        // This is still mock data as we don't have a services collection in firestore
-        const newService: ServiceWorkflow = {
-            id: `service-${Date.now()}`,
+        if (!workflowsCollection) return null;
+        const newServiceData: Omit<ServiceWorkflow, 'id'> = {
             name: name,
             description: "",
             clientRequirements: [],
             stages: [],
             subServices: [],
         };
-        setServiceWorkflows(prev => [newService, ...prev]);
-        return newService;
+        const newDocRef = await addDocumentNonBlocking(workflowsCollection, newServiceData);
+        return { ...newServiceData, id: newDocRef.id };
     };
 
     const updateService = async (serviceId: string, updates: Partial<Omit<ServiceWorkflow, 'id' | 'stages' | 'subServices'>>): Promise<boolean> => {
-        // This is still mock data
-        setServiceWorkflows(prev => prev.map(s => s.id === serviceId ? { ...s, ...updates } : s));
+        if (!workflowsCollection) return false;
+        const serviceDocRef = doc(workflowsCollection, serviceId);
+        setDocumentNonBlocking(serviceDocRef, updates, { merge: true });
         showNotification('success', 'Servicio Guardado', 'Los cambios se han guardado correctamente.');
         return true;
     }
+    
+    const setServiceWorkflowsAndPersist = (workflows: ServiceWorkflow[]) => {
+      if (!workflowsCollection) return;
+      const batch = writeBatch(firestore);
+      workflows.forEach(wf => {
+        const { id, ...data } = wf;
+        const docRef = doc(workflowsCollection, id);
+        batch.set(docRef, data);
+      });
+      batch.commit().then(() => {
+         // Data will be updated by the realtime listener, no need for local state update
+      }).catch(err => {
+        console.error("Error saving workflows", err);
+        showNotification('error', 'Error al Guardar', 'No se pudieron guardar los cambios en los flujos.');
+      });
+    };
+
 
     const deleteService = async (serviceId: string): Promise<boolean> => {
-         // This is still mock data
-        setServiceWorkflows(prev => prev.filter(s => s.id !== serviceId));
+        if (!workflowsCollection) return false;
+        const serviceDocRef = doc(workflowsCollection, serviceId);
+        deleteDocumentNonBlocking(serviceDocRef);
         showNotification('success', 'Servicio Eliminado', 'El servicio ha sido eliminado.');
         return true;
     }
@@ -308,7 +328,9 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
         updateNote: (id, text) => placeholderPromise(false),
         deleteNote: (id) => placeholderPromise(false),
 
-        serviceWorkflows, setServiceWorkflows, isLoadingWorkflows,
+        serviceWorkflows, 
+        setServiceWorkflows: setServiceWorkflowsAndPersist, 
+        isLoadingWorkflows,
         addService, updateService, deleteService,
         getActionById,
         
@@ -334,3 +356,5 @@ export function useCRMData() {
   }
   return context;
 }
+
+    

@@ -113,7 +113,8 @@ export default function WorkflowConfigurationPage() {
 
   const handleSaveChanges = () => {
     if (!editableWorkflow) return;
-    setServiceWorkflows(prev => prev.map(wf => wf.id === editableWorkflow.id ? editableWorkflow : wf));
+    const updatedWorkflows = serviceWorkflows.map(wf => wf.id === editableWorkflow.id ? editableWorkflow : wf);
+    setServiceWorkflows(updatedWorkflows);
     showNotification('success', 'Flujo Guardado', 'Los cambios en el flujo de trabajo han sido guardados.');
   };
   
@@ -594,3 +595,5 @@ export default function WorkflowConfigurationPage() {
     </TooltipProvider>
   );
 }
+
+    
