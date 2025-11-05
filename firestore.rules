@@ -25,7 +25,7 @@ service cloud.firestore {
       allow update: if isSignedIn() && isExistingOwner(userId) && request.resource.data.id == resource.data.id; //Enforce immutability of user ID
       allow delete: if isSignedIn() && isExistingOwner(userId);
     }
-    
+
     /**
      * @description Rules for the /users/{userId}/tasks/{taskId} subcollection. Users can only access tasks they own.
      * @path /users/{userId}/tasks/{taskId}
@@ -39,6 +39,14 @@ service cloud.firestore {
      * @path /users/{userId}/documents/{documentId}
      */
     match /users/{userId}/documents/{documentId} {
+      allow read, write: if isSignedIn() && isOwner(userId);
+    }
+
+    /**
+     * @description Rules for the /users/{userId}/clients/{clientId} subcollection. Users can only access clients they own.
+     * @path /users/{userId}/clients/{clientId}
+     */
+    match /users/{userId}/clients/{clientId} {
       allow read, write: if isSignedIn() && isOwner(userId);
     }
 
