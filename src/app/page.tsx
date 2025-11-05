@@ -64,7 +64,7 @@ const StageNumberIcon = ({ index, variant = 'default' }: { index: number, varian
 };
 
 export default function InicioPage() {
-  const { clients, isLoadingClients, tasks, serviceWorkflows, isLoadingWorkflows, getObjectiveById } = useCRMData();
+  const { clients, isLoadingClients, tasks, serviceWorkflows, isLoadingWorkflows, getObjectiveById, currentUser } = useCRMData();
   const { setHasTasksForToday } = useTasksContext();
 
   const [currentClientDateForDashboard, setCurrentClientDateForDashboard] = useState<Date | null>(null);
@@ -132,11 +132,11 @@ export default function InicioPage() {
   }, []);
 
   const todaysTasks = useMemo(() => {
-    if (!tasks || !currentClientDateForDashboard) return [];
+    if (!tasks || !currentClientDateForDashboard || !currentUser) return [];
     const today = currentClientDateForDashboard;
     return tasks
       .filter(task => {
-        if (task.status !== 'Pendiente') return false;
+        if (task.status !== 'Pendiente' || task.assignedToId !== currentUser.uid) return false;
         try {
           const taskDueDate = new Date(task.dueDate);
           taskDueDate.setHours(0,0,0,0);
@@ -144,7 +144,7 @@ export default function InicioPage() {
         } catch { return false; }
       })
       .sort((a, b) => (a.title).localeCompare(b.title));
-  }, [tasks, currentClientDateForDashboard]);
+  }, [tasks, currentClientDateForDashboard, currentUser]);
   
   const handleTaskClick = useCallback((task: Task) => { 
     setSelectedTaskDetail(task); 
@@ -162,7 +162,7 @@ export default function InicioPage() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Activity className="h-5 w-5 text-accent" />
-            Tareas Pendientes Para Hoy
+            Mis Tareas Pendientes Para Hoy
           </CardTitle>
           <CardDescription>Estas son las tareas que requieren su atención hoy.</CardDescription>
         </CardHeader>
@@ -208,7 +208,7 @@ export default function InicioPage() {
              <div className="flex flex-col items-center justify-center text-center text-muted-foreground py-10">
                 <CheckSquare className="h-12 w-12 mb-4 text-green-500" />
                 <p className="text-lg font-semibold">¡Todo al día!</p>
-                <p className="text-sm mt-1">No tienes tareas pendientes programadas para hoy.</p>
+                <p className="text-sm mt-1">No tienes tareas pendientes asignadas para hoy.</p>
               </div>
           )}
         </CardContent>

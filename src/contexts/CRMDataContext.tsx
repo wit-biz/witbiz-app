@@ -17,6 +17,7 @@ import {
     type AppPermissions,
     type SubService,
     type ClientRequirement,
+    type WorkflowStage,
 } from '@/lib/types';
 import { useUser, useFirestore, useMemoFirebase, useCollection, useDoc, useAuth, addDocumentNonBlocking, setDocumentNonBlocking, deleteDocumentNonBlocking } from '@/firebase';
 import { collection, doc, writeBatch, serverTimestamp, query } from 'firebase/firestore';
@@ -232,12 +233,73 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
         showNotification('success', 'Tarea Creada', `La tarea "${newTaskPayload.title}" ha sido creada.`);
         return { ...newTaskPayload, id: newDocRef.id };
     };
+    
     const updateTask = async (taskId: string, updates: Partial<Task>): Promise<boolean> => {
-        if (!tasksCollection) return false;
+        if (!tasksCollection || !clients.length) return false;
         const taskDocRef = doc(tasksCollection, taskId);
         setDocumentNonBlocking(taskDocRef, updates, { merge: true });
+
+        // Check for workflow progression if task is completed
+        if (updates.status === 'Completada') {
+            const completedTask = tasks.find(t => t.id === taskId);
+            if (completedTask) {
+                await checkAndAdvanceWorkflow(completedTask.clientId);
+            }
+        }
         return true;
     };
+
+    const checkAndAdvanceWorkflow = async (clientId: string) => {
+        const client = clients.find(c => c.id === clientId);
+        if (!client || !client.currentWorkflowStageId) return;
+
+        const clientTasks = tasks.filter(t => t.clientId === clientId);
+        const currentStageTasks = clientTasks.filter(t => {
+            // This is a simplification; a more robust solution would link tasks to stages.
+            // For now, we check all pending tasks for the client.
+            return t.status === 'Pendiente';
+        });
+        
+        const tasksForCurrentStage = clientTasks.filter(task => {
+            const currentStage = getAllStages().find(s => s.id === client.currentWorkflowStageId);
+            return currentStage?.actions.some(action => action.title === task.title && task.status === 'Pendiente');
+        });
+
+        const allTasksForStageCompleted = tasksForCurrentStage.length === 0;
+
+        if (allTasksForStageCompleted) {
+            const nextStage = findNextStage(client.currentWorkflowStageId);
+            if (nextStage) {
+                await updateClient(clientId, { currentWorkflowStageId: nextStage.id });
+                showNotification('info', 'Cliente Avanzó', `${client.name} ha avanzado a la etapa: ${nextStage.title}.`);
+
+                // Create tasks for the new stage
+                for (const action of nextStage.actions) {
+                    await addTask({ ...action, clientId: clientId });
+                }
+            } else {
+                 showNotification('success', 'Flujo Completado', `¡${client.name} ha completado el flujo de trabajo!`);
+            }
+        }
+    };
+    
+    const getAllStages = useCallback((): WorkflowStage[] => {
+        if (!serviceWorkflows) return [];
+        return serviceWorkflows.flatMap(service => [
+            ...(service.stages || []),
+            ...(service.subServices?.flatMap(ss => ss.stages) || [])
+        ]).sort((a, b) => a.order - b.order);
+    }, [serviceWorkflows]);
+
+    const findNextStage = (currentStageId: string): WorkflowStage | null => {
+        const allStages = getAllStages();
+        const currentIndex = allStages.findIndex(s => s.id === currentStageId);
+        if (currentIndex !== -1 && currentIndex < allStages.length - 1) {
+            return allStages[currentIndex + 1];
+        }
+        return null;
+    };
+
     const deleteTask = async (taskId: string): Promise<boolean> => {
         if (!tasksCollection) return false;
         const taskDocRef = doc(tasksCollection, taskId);
