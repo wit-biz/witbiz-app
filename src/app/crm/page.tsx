@@ -95,7 +95,7 @@ export default function CrmPage() {
         </Button>
       </Header>
       <main className="flex-1 p-4 md:p-8 space-y-6">
-        {serviceWorkflows.map(service => (
+        {serviceWorkflows && serviceWorkflows.map(service => (
              <Card key={service.id} className="w-full">
                 <CardHeader>
                     <CardTitle className="flex items-center gap-2 text-xl">
