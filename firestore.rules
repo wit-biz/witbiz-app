@@ -12,11 +12,6 @@ service cloud.firestore {
     /**
      * @description Rules for the /users/{userId} collection.  Users can only create their own profile.
      * @path /users/{userId}
-     * @allow (create) - User 'lbz7nN49aERC4AwnsGSruB6spQJ3' can create their profile at /users/lbz7nN49aERC4AwnsGSruB6spQJ3
-     * @deny (create) - User 'otherUserId' cannot create a profile at /users/lbz7nN49aERC4AwnsGSruB6spQJ3
-     * @allow (get) - Allow user to read their profile
-     * @deny (get) - Deny if the document does not exist
-     * @principle Enforces document ownership for writes.
      */
     match /users/{userId} {
       allow get: if isSignedIn() && isOwner(userId);
@@ -53,9 +48,6 @@ service cloud.firestore {
     /**
      * @description Rules for the /users/{userId}/leads/{leadId} subcollection.  Users can only access leads they own.
      * @path /users/{userId}/leads/{leadId}
-     * @allow (create) - User 'lbz7nN49aERC4AwnsGSruB6spQJ3' can create a lead at /users/lbz7nN49aERC4AwnsGSruB6spQJ3/leads/lead1
-     * @deny (create) - User 'otherUserId' cannot create a lead at /users/lbz7nN49aERC4AwnsGSruB6spQJ3/leads/lead1
-     * @principle Restricts access to a user's own data tree.
      */
     match /users/{userId}/leads/{leadId} {
       allow read, write: if isSignedIn() && isOwner(userId);
@@ -64,9 +56,6 @@ service cloud.firestore {
     /**
      * @description Rules for the /users/{userId}/contacts/{contactId} subcollection.  Users can only access contacts they own.
      * @path /users/{userId}/contacts/{contactId}
-     * @allow (create) - User 'lbz7nN49aERC4AwnsGSruB6spQJ3' can create a contact at /users/lbz7nN49aERC4AwnsGSruB6spQJ3/contacts/contact1
-     * @deny (create) - User 'otherUserId' cannot create a contact at /users/lbz7nN49aERC4AwnsGSruB6spQJ3/contacts/contact1
-     * @principle Restricts access to a user's own data tree.
      */
     match /users/{userId}/contacts/{contactId} {
       allow read, write: if isSignedIn() && isOwner(userId);
@@ -77,8 +66,7 @@ service cloud.firestore {
      * @path /users/{userId}/serviceWorkflows/{workflowId}
      */
     match /users/{userId}/serviceWorkflows/{workflowId} {
-      allow get: if isSignedIn() && isOwner(userId);
-      allow create, update, delete: if isSignedIn() && isOwner(userId);
+      allow get, create, update, delete: if isSignedIn() && isOwner(userId);
     }
     
     /**
