@@ -18,7 +18,6 @@ import { useToast } from "@/hooks/use-toast";
 import { TaskDetailDialog } from "@/components/shared/TaskDetailDialog";
 import { useCRMData } from "@/contexts/CRMDataContext";
 import { useTasksContext } from "@/contexts/TasksContext";
-import { AddTaskDialog } from "@/components/shared/AddTaskDialog";
 import { Task } from "@/lib/types";
 
 
@@ -79,7 +78,6 @@ export default function TasksPage() {
   
   const [selectedTaskDetail, setSelectedTaskDetail] = useState<Task | null>(null);
   const [isDetailDialogOpen, setIsDetailDialogOpen] = useState(false);
-  const [isAddTaskDialogOpen, setIsAddTaskDialogOpen] = useState(false);
   
   useEffect(() => { 
     setIsClient(true);
@@ -185,14 +183,6 @@ export default function TasksPage() {
           title="Mis Tareas"
           description="Organiza y sigue tus actividades y compromisos diarios y semanales."
         >
-          {
-            canCreateTask ? (
-              <Button onClick={() => setIsAddTaskDialogOpen(true)} className="w-full sm:w-auto" size="sm">
-                <PlusCircle className="mr-2 h-4 w-4" />
-                Añadir Nueva Tarea
-              </Button>
-            ) : null
-          }
         </Header>
         <main className="flex-1 p-4 md:p-8">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -260,7 +250,6 @@ export default function TasksPage() {
             </div>
           </div>
         </main>
-        <AddTaskDialog isOpen={isAddTaskDialogOpen} onOpenChange={setIsAddTaskDialogOpen} onTaskAdd={async (task) => !!(await addTask(task))} />
         {selectedTaskDetail && (
           <TaskDetailDialog
             key={selectedTaskDetail.id}

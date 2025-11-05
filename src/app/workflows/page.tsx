@@ -20,7 +20,6 @@ import { useDialogs } from "@/contexts/DialogsContext";
 import { useRouter } from "next/navigation";
 import { Tooltip, TooltipProvider, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useGlobalNotification } from "@/contexts/NotificationContext";
-import { AddTaskDialog } from "@/components/shared/AddTaskDialog";
 import { PromptNameDialog } from "@/components/shared/PromptNameDialog";
 import { Slider } from "@/components/ui/slider";
 import { type Task } from '@/lib/types';
@@ -50,10 +49,6 @@ export default function WorkflowConfigurationPage() {
   
   const [editableWorkflow, setEditableWorkflow] = useState<ServiceWorkflow | null>(null);
   
-  // State for Add Task Dialog
-  const [isAddTaskDialogOpen, setIsAddTaskDialogOpen] = useState(false);
-  const [taskDialogContext, setTaskDialogContext] = useState<{ subServiceId?: string, stageId: string } | null>(null);
-
   const [isPromptNameOpen, setIsPromptNameOpen] = useState(false);
   const [promptNameConfig, setPromptNameConfig] = useState<{
     title: string;
@@ -222,54 +217,6 @@ export default function WorkflowConfigurationPage() {
     } : null);
   };
 
-  // --- Task Dialog handling ---
-  const handleOpenTaskDialog = (stageId: string, subServiceId?: string) => {
-    setTaskDialogContext({ stageId, subServiceId });
-    setIsAddTaskDialogOpen(true);
-  };
-  
-  const handleAddActionFromDialog = (taskData: Partial<Task>): boolean => {
-    if (!editableWorkflow || !taskDialogContext) return false;
-
-    const newAction: WorkflowAction = {
-      id: `action-${Date.now()}`,
-      title: taskData.title || "Nueva Tarea",
-      dueDays: taskData.dueDays || 0,
-      order: 1, // You might want a better way to manage order
-      subActions: [], // Not handled in this dialog
-    };
-    
-    if (taskDialogContext.subServiceId) {
-      // It's a sub-service stage
-      setEditableWorkflow(prev => prev ? {
-          ...prev,
-          subServices: prev.subServices.map(ss => 
-            ss.id === taskDialogContext.subServiceId
-              ? { ...ss, stages: ss.stages.map(s => 
-                  s.id === taskDialogContext.stageId 
-                    ? { ...s, actions: [...s.actions, newAction] } 
-                    : s
-                ) 
-              }
-              : ss
-          )
-      } : null);
-    } else {
-      // It's a direct stage
-      setEditableWorkflow(prev => prev ? {
-          ...prev,
-          stages: prev.stages?.map(s => 
-            s.id === taskDialogContext.stageId
-              ? { ...s, actions: [...s.actions, newAction] }
-              : s
-          ) || []
-      } : null);
-    }
-    
-    showNotification('success', 'Plantilla de Tarea Añadida', `Se ha añadido "${newAction.title}" a la etapa.`);
-    return true;
-  };
-
 
   // --- Render Functions ---
   
@@ -359,7 +306,7 @@ export default function WorkflowConfigurationPage() {
               </div>
             )}
             {canEditWorkflow && (
-              <Button variant="outline" size="sm" onClick={() => handlers.openTaskDialog(stage.id)}>
+              <Button variant="outline" size="sm" onClick={() => showNotification('info', 'Función no disponible', 'La creación de tareas desde aquí ha sido deshabilitada.')}>
                 <Plus className="h-4 w-4 mr-2"/>Añadir Tarea
               </Button>
             )}
@@ -401,7 +348,7 @@ export default function WorkflowConfigurationPage() {
             renderStages(subService.stages, {
                 deleteStage: (stageId) => handleDeleteStageFromSubService(subService.id, stageId),
                 updateStage: (stageId, updates) => handleUpdateStageInSubService(subService.id, stageId, updates),
-                openTaskDialog: (stageId) => handleOpenTaskDialog(stageId, subService.id),
+                openTaskDialog: (stageId) => showNotification('info', 'Función no disponible', 'La creación de tareas desde aquí ha sido deshabilitada.'),
                 deleteAction: (stageId, actionId) => handleDeleteActionFromSubServiceStage(subService.id, stageId, actionId),
                 updateAction: (stageId, actionId, updates) => handleUpdateActionInSubServiceStage(subService.id, stageId, actionId, updates),
             })
@@ -503,7 +450,7 @@ export default function WorkflowConfigurationPage() {
                        renderStages(editableWorkflow.stages, {
                            deleteStage: handleDeleteDirectStage,
                            updateStage: handleUpdateDirectStage,
-                           openTaskDialog: (stageId) => handleOpenTaskDialog(stageId),
+                           openTaskDialog: (stageId) => showNotification('info', 'Función no disponible', 'La creación de tareas desde aquí ha sido deshabilitada.'),
                            deleteAction: handleDeleteActionFromDirectStage,
                            updateAction: handleUpdateActionInDirectStage,
                        })
@@ -536,13 +483,6 @@ export default function WorkflowConfigurationPage() {
               )}
           </Card>
         </main>
-
-        <AddTaskDialog
-            isWorkflowMode={true}
-            isOpen={isAddTaskDialogOpen}
-            onOpenChange={setIsAddTaskDialogOpen}
-            onTaskAdd={async (taskData) => handleAddActionFromDialog(taskData)}
-        />
 
         {promptNameConfig && (
             <PromptNameDialog
