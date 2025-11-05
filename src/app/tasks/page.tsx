@@ -93,7 +93,7 @@ export default function TasksPage() {
   const [currentClientDate, setCurrentClientDate] = useState<Date | null>(null);
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
   const [calendarMonth, setCalendarMonth] = useState<Date>();
-  const [openAccordionItem, setOpenAccordionItem] = useState<string>("overdue-tasks");
+  const [openAccordionItem, setOpenAccordionItem] = useState<string>("today-tasks");
   
   const [selectedTaskDetail, setSelectedTaskDetail] = useState<Task | null>(null);
   const [isDetailDialogOpen, setIsDetailDialogOpen] = useState(false);
@@ -112,8 +112,10 @@ export default function TasksPage() {
       return { overdueTasks: [], todayTasks: [], upcomingWeekTasks: [] };
     }
     const today = new Date(currentClientDate);
+    today.setHours(0, 0, 0, 0);
+
     const endOfWeek = new Date(today);
-    endOfWeek.setDate(today.getDate() + (7 - (today.getDay() === 0 ? 7 : today.getDay())));
+    endOfWeek.setDate(today.getDate() + 7);
     endOfWeek.setHours(23, 59, 59, 999);
   
     const pendingTasks = allTasks.filter(task => task && task.status !== 'Completada');
@@ -140,7 +142,10 @@ export default function TasksPage() {
     const upcomingThisWeek = pendingTasks
       .filter(task => {
         const taskDueDate = parseDateString(task.dueDate);
-        return taskDueDate && taskDueDate > today && taskDueDate <= endOfWeek;
+        if (!taskDueDate) return false;
+        const taskDayStart = new Date(taskDueDate);
+        taskDayStart.setHours(0, 0, 0, 0);
+        return taskDayStart > today && taskDayStart <= endOfWeek;
       })
       .sort((a, b) => {
         const dateA = parseDateString(a.dueDate);
@@ -154,7 +159,10 @@ export default function TasksPage() {
     
   
   const dayModifiers = useMemo(() => {
-    if (!currentClientDate || !Array.isArray(allTasks)) return {};
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    if (!Array.isArray(allTasks)) return {};
   
     const pendingTasksWithValidDates = allTasks.filter(
       (task) =>
@@ -168,9 +176,9 @@ export default function TasksPage() {
     pendingTasksWithValidDates.forEach((task) => {
       const date = parseDateString(task.dueDate);
       if (date) {
-        if (date < currentClientDate) {
+        if (date < today) {
           overdueDays.push(date);
-        } else if (date.getTime() === currentClientDate.getTime()) {
+        } else if (date.getTime() === today.getTime()) {
           todayTaskDays.push(date);
         } else {
           upcomingTaskDays.push(date);
@@ -183,7 +191,7 @@ export default function TasksPage() {
       today_task_highlight: todayTaskDays,
       upcoming_highlight: upcomingTaskDays,
     } as DayModifiers;
-  }, [allTasks, currentClientDate]);
+  }, [allTasks]);
   
   const dayModifiersClassNames = { overdue_highlight: 'calendar-day--overdue-bg', today_task_highlight: 'calendar-day--today-task-bg', upcoming_highlight: 'calendar-day--upcoming-bg' };
   
