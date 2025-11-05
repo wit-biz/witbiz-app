@@ -175,7 +175,7 @@ const StageCard = ({
                                 />
                             ))}
                              {canEditWorkflow && (
-                                <Button variant="outline" size="sm" onClick={() => onAddSubStage(path)}>
+                                <Button variant="secondary" size="sm" onClick={() => onAddSubStage(path)}>
                                     <Plus className="mr-2 h-4 w-4"/>Añadir Sub-Etapa
                                 </Button>
                             )}
@@ -460,7 +460,7 @@ export default function WorkflowConfigurationPage() {
                 <CardContent className="border-t pt-6 space-y-6">
                     <div className="space-y-4">
                         {canEditWorkflow && (
-                            <Button size="sm" variant="outline" onClick={handleAddStage}>
+                            <Button size="sm" onClick={handleAddStage}>
                                 <Plus className="mr-2 h-4 w-4"/>Añadir Etapa Principal
                             </Button>
                         )}
