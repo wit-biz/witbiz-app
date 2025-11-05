@@ -81,7 +81,8 @@ export type WorkflowStage = {
 
 export type WorkflowAction = {
   id: string;
-  description: string;
+  title: string;
+  dueDays: number;
   order: number;
   subActions: SubAction[];
   requiredDocumentForCompletion?: string;

@@ -28,9 +28,9 @@ import { es } from 'date-fns/locale';
 interface AddTaskDialogProps {
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
-  onTaskAdd: (taskData: Omit<Task, 'id' | 'clientName' | 'status'>) => Promise<boolean>;
+  onTaskAdd: (taskData: Omit<Task, 'id' | 'clientName' | 'status'> & { dueDays?: number }) => Promise<boolean>;
   preselectedClient?: { id: string; name: string };
-  initialTaskData?: Partial<Omit<Task, 'id'>>;
+  initialTaskData?: Partial<Omit<Task, 'id'> & { dueDays?: number }>;
 }
 
 export function AddTaskDialog({
@@ -51,6 +51,7 @@ export function AddTaskDialog({
       clientId: preselectedClient?.id || initialTaskData?.clientId || '',
       dueDate: initialTaskData?.dueDate || format(today, 'yyyy-MM-dd'),
       dueTime: initialTaskData?.dueTime || '',
+      dueDays: initialTaskData?.dueDays
     };
   }, [initialTaskData, preselectedClient]);
 
@@ -82,8 +83,8 @@ export function AddTaskDialog({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.title.trim() || !formData.clientId || !formData.dueDate) {
-      showNotification('error', 'Campos requeridos', 'Por favor, complete el título, el cliente y la fecha de vencimiento.');
+    if (!formData.title.trim() || !formData.clientId ) {
+      showNotification('error', 'Campos requeridos', 'Por favor, complete el título y el cliente.');
       return;
     }
 
@@ -94,6 +95,7 @@ export function AddTaskDialog({
       clientId: formData.clientId,
       dueDate: formData.dueDate,
       dueTime: formData.dueTime,
+      dueDays: formData.dueDays
     });
     setIsSubmitting(false);
 
@@ -103,6 +105,8 @@ export function AddTaskDialog({
   };
   
   const dueDateAsDate = parseDateString(formData.dueDate);
+
+  const isDynamicDate = formData.dueDays !== undefined;
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
@@ -162,10 +166,12 @@ export function AddTaskDialog({
                         'w-full justify-start text-left font-normal',
                         !formData.dueDate && 'text-muted-foreground'
                       )}
-                      disabled={isSubmitting}
+                      disabled={isSubmitting || isDynamicDate}
                     >
                       <CalendarIcon className="mr-2 h-4 w-4" />
-                      {dueDateAsDate ? (
+                      {isDynamicDate ? (
+                        <span>En {formData.dueDays} día(s)</span>
+                      ) : dueDateAsDate ? (
                         format(dueDateAsDate, 'PPP', { locale: es })
                       ) : (
                         <span>Seleccione fecha</span>

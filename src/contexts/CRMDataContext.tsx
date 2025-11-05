@@ -23,6 +23,7 @@ import { collection, doc, writeBatch, setDoc, getDoc, addDoc, updateDoc, deleteD
 import { setDocumentNonBlocking, addDocumentNonBlocking, updateDocumentNonBlocking, deleteDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
 import { clients as mockClients, tasks as mockTasks, documents as mockDocuments, notes as mockNotes, serviceWorkflows as mockWorkflows } from '@/lib/data';
+import { addDays, format } from 'date-fns';
 
 interface CRMContextType {
   currentUser: AuthenticatedUser | null;
@@ -36,7 +37,7 @@ interface CRMContextType {
   
   tasks: Task[];
   isLoadingTasks: boolean;
-  addTask: (newTaskData: Omit<Task, 'id' | 'status' | 'clientName'>) => Promise<Task | null>;
+  addTask: (newTaskData: Omit<Task, 'id' | 'status' | 'clientName'> & { dueDays?: number }) => Promise<Task | null>;
   updateTask: (taskId: string, updates: Partial<Task>) => Promise<boolean>;
   deleteTask: (taskId: string) => Promise<boolean>;
   getTasksByClientId: (clientId: string) => Task[];
@@ -169,10 +170,24 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
         return true;
     };
     
-    const addTask = async (newTaskData: Omit<Task, 'id' | 'status' | 'clientName'>): Promise<Task | null> => {
+    const addTask = async (newTaskData: Omit<Task, 'id' | 'status' | 'clientName'> & { dueDays?: number }): Promise<Task | null> => {
         const client = clients.find(c => c.id === newTaskData.clientId);
         if (!client) return null;
-        const newTask: Task = { ...newTaskData, id: `task-${Date.now()}`, status: 'Pendiente', clientName: client.name };
+
+        let finalDueDate = newTaskData.dueDate;
+        if (newTaskData.dueDays !== undefined) {
+            const today = new Date();
+            const dueDate = addDays(today, newTaskData.dueDays);
+            finalDueDate = format(dueDate, 'yyyy-MM-dd');
+        }
+
+        const newTask: Task = { 
+            ...newTaskData, 
+            dueDate: finalDueDate,
+            id: `task-${Date.now()}`, 
+            status: 'Pendiente', 
+            clientName: client.name 
+        };
         setTasks(prev => [...prev, newTask].sort((a, b) => (a.dueTime || "23:59").localeCompare(b.dueTime || "23:59")));
         showNotification('success', 'Tarea Creada', `La tarea "${newTask.title}" ha sido creada.`);
         return newTask;
@@ -321,8 +336,6 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
             }
             return service;
         }));
-        // Do not show notification on every keystroke, only on explicit save actions.
-        // showNotification('success', 'Etapa Actualizada', 'Los cambios en la etapa se han guardado.');
         return true;
     };
 
@@ -349,7 +362,8 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
     const addActionToStage = async (serviceId: string, subServiceId: string | null, stageId: string): Promise<boolean> => {
         const newAction: WorkflowAction = {
             id: `action-${Date.now()}`,
-            description: "", // Start with an empty description
+            title: "", // Start with an empty title
+            dueDays: 1, // Default due days
             order: 100, // Append
             subActions: []
         };

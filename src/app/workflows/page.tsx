@@ -22,6 +22,7 @@ import { Tooltip, TooltipProvider, TooltipContent, TooltipTrigger } from "@/comp
 import { useGlobalNotification } from "@/contexts/NotificationContext";
 import { AddTaskDialog } from "@/components/shared/AddTaskDialog";
 import { PromptNameDialog } from "@/components/shared/PromptNameDialog";
+import { Slider } from "@/components/ui/slider";
 
 
 const StageNumberIcon = ({ index }: { index: number }) => {
@@ -86,8 +87,8 @@ export default function WorkflowConfigurationPage() {
 
   const canEditWorkflow = currentUser?.permissions.crm_edit ?? true;
 
-  const handleOpenTaskDialog = (title: string) => {
-    setInitialTaskDataForDialog({ title: title });
+  const handleOpenTaskDialog = (title: string, dueDays = 0) => {
+    setInitialTaskDataForDialog({ title: title, dueDays: dueDays });
     setIsAddTaskDialogOpen(true);
   };
   
@@ -199,31 +200,14 @@ export default function WorkflowConfigurationPage() {
     }, 0);
 };
 
-  const handleStartEditStage = (stage: WorkflowStage) => {
-    setEditingStageId(stage.id);
-    setEditableStageData(JSON.parse(JSON.stringify(stage)));
-  };
-
-  const handleCancelEditStage = () => {
-    setEditingStageId(null);
-    setEditableStageData(null);
-  };
-
-  const handleSaveStage = (serviceId: string, subServiceId: string | null) => {
-    if (!editableStageData || !serviceId || !editingStageId) return;
-    updateStageInSubService(serviceId, subServiceId, editingStageId, editableStageData as WorkflowStage);
-    handleCancelEditStage();
-  };
-  
   const handleStageTitleChange = (serviceId: string, subServiceId: string | null, stageId: string, newTitle: string) => {
     updateStageInSubService(serviceId, subServiceId, stageId, { title: newTitle });
   }
 
-  const handleActionDescriptionChange = (stage: WorkflowStage, actionId: string, newDescription: string) => {
-    const updatedActions = stage.actions.map(act => act.id === actionId ? { ...act, description: newDescription } : act);
+  const handleActionChange = (stage: WorkflowStage, actionId: string, updates: Partial<WorkflowAction>) => {
     if(selectedWorkflow) {
         const subService = selectedWorkflow.subServices.find(ss => ss.stages.some(s => s.id === stage.id));
-        updateStageInSubService(selectedWorkflow.id, subService?.id ?? null, stage.id, { actions: updatedActions });
+        updateActionInStage(selectedWorkflow.id, subService?.id ?? null, stage.id, actionId, updates);
     }
   };
 
@@ -259,31 +243,52 @@ export default function WorkflowConfigurationPage() {
                   </div>
                 )}
               </div>
-              <AccordionContent className="border-t p-4 space-y-3">
+              <AccordionContent className="border-t p-4 space-y-4">
                   {stage.actions && stage.actions.length > 0 && (
-                      <div className="space-y-2">
+                      <div className="space-y-4">
                           {stage.actions.map((action) => (
-                              <div key={action.id} className="flex items-center gap-2 group">
-                                  <Input 
-                                      value={action.description}
-                                      onChange={(e) => handleActionDescriptionChange(stage, action.id, e.target.value)}
-                                      placeholder="Descripción de la tarea..."
-                                      className="h-8"
-                                      disabled={!canEditWorkflow}
-                                  />
-                                   <Tooltip>
-                                      <TooltipTrigger asChild>
-                                        <Button variant="default" size="icon" className="h-8 w-8 shrink-0 bg-primary/80 text-primary-foreground hover:bg-primary" onClick={() => handleOpenTaskDialog(action.description)}>
-                                            <ListTodo className="h-4 w-4" />
-                                        </Button>
-                                      </TooltipTrigger>
-                                      <TooltipContent><p>Crear tarea desde esta acción</p></TooltipContent>
-                                  </Tooltip>
-                                  {canEditWorkflow && (
-                                     <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" onClick={() => deleteActionFromStage(serviceId, subServiceId, stage.id, action.id)}>
-                                        <Trash2 className="h-4 w-4 text-destructive"/>
-                                    </Button>
-                                  )}
+                              <div key={action.id} className="flex flex-col sm:flex-row items-center gap-2 group">
+                                  <div className="flex-grow w-full">
+                                    <Label className="text-xs text-muted-foreground">Título de la Tarea</Label>
+                                    <Input 
+                                        value={action.title}
+                                        onChange={(e) => handleActionChange(stage, action.id, { title: e.target.value })}
+                                        placeholder="Descripción de la tarea..."
+                                        className="h-8"
+                                        disabled={!canEditWorkflow}
+                                    />
+                                  </div>
+                                  <div className="flex items-center gap-2 w-full sm:w-auto">
+                                    <div className="w-full sm:w-48">
+                                      <Label className="text-xs text-muted-foreground">Días para Vencer</Label>
+                                      <div className="flex items-center gap-2">
+                                        <Slider
+                                            value={[action.dueDays || 0]}
+                                            onValueChange={(value) => handleActionChange(stage, action.id, { dueDays: value[0] })}
+                                            max={7}
+                                            step={1}
+                                            className="w-full"
+                                            disabled={!canEditWorkflow}
+                                        />
+                                        <span className="text-sm font-medium w-6 text-center">{action.dueDays || 0}</span>
+                                      </div>
+                                    </div>
+                                    <div className="flex items-end h-8">
+                                        <Tooltip>
+                                            <TooltipTrigger asChild>
+                                                <Button variant="default" size="icon" className="h-8 w-8 shrink-0 bg-primary/80 text-primary-foreground hover:bg-primary" onClick={() => handleOpenTaskDialog(action.title, action.dueDays)}>
+                                                    <ListTodo className="h-4 w-4" />
+                                                </Button>
+                                            </TooltipTrigger>
+                                            <TooltipContent><p>Crear tarea desde esta acción</p></TooltipContent>
+                                        </Tooltip>
+                                        {canEditWorkflow && (
+                                            <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" onClick={() => deleteActionFromStage(serviceId, subServiceId, stage.id, action.id)}>
+                                                <Trash2 className="h-4 w-4 text-destructive"/>
+                                            </Button>
+                                        )}
+                                    </div>
+                                  </div>
                               </div>
                           ))}
                       </div>
@@ -385,7 +390,6 @@ export default function WorkflowConfigurationPage() {
             <CardContent className="border-t pt-4">
             {selectedWorkflow ? (
               <div className="space-y-4">
-                {/* COMPLEX VIEW: More than one sub-service */}
                 {selectedWorkflow.subServices && selectedWorkflow.subServices.length > 1 ? (
                   <Accordion type="multiple" className="w-full space-y-4" defaultValue={(selectedWorkflow.subServices || []).sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true })).map(sub => sub.id)}>
                     {(selectedWorkflow.subServices || []).sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true })).map((subService) => (
@@ -438,7 +442,6 @@ export default function WorkflowConfigurationPage() {
                   </div>
                 )}
                 
-                {/* Global actions for the service */}
                 {canEditWorkflow && selectedWorkflow.subServices && (
                   <div className="mt-6 pt-6 border-t">
                     <Button variant="outline" onClick={() => handleAddSubService(selectedWorkflow.id)} disabled={!canEditWorkflow}><Plus className="h-4 w-4 mr-2"/>Añadir Sub-Servicio</Button>
