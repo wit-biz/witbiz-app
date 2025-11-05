@@ -134,7 +134,7 @@ export default function WorkflowConfigurationPage() {
     if (!editableWorkflow) return;
     setEditableWorkflow(prev => prev ? { ...prev, stages: prev.stages?.filter(s => s.id !== stageId) || [] } : null);
   };
-
+  
   const handleUpdateDirectStage = (stageId: string, updates: Partial<WorkflowStage>) => {
      if (!editableWorkflow) return;
      setEditableWorkflow(prev => prev ? { ...prev, stages: prev.stages?.map(s => s.id === stageId ? {...s, ...updates} : s) || [] } : null);
@@ -537,10 +537,12 @@ export default function WorkflowConfigurationPage() {
                 description={promptNameConfig.description}
                 label={promptNameConfig.label}
                 onSave={promptNameConfig.onSave}
-                inputPlaceholder={promptNameag.inputPlaceholder}
+                inputPlaceholder={promptNameConfig.inputPlaceholder}
             />
         )}
       </div>
     </TooltipProvider>
   );
 }
+
+    
