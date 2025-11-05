@@ -221,7 +221,7 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
             clientName: client.name,
             assignedToId: assignedUser?.id || currentUser.uid,
             assignedToName: assignedUser?.name || currentUser.displayName || 'Usuario Actual',
-            assignedToPhotoURL: assignedUser?.photoURL || currentUser.photoURL || undefined,
+            assignedToPhotoURL: assignedUser?.photoURL || currentUser.photoURL || '',
             createdAt: serverTimestamp()
         };
         const newDocRef = await addDocumentNonBlocking(tasksCollection, newTaskPayload);
