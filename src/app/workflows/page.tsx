@@ -24,6 +24,7 @@ import { PromptNameDialog } from "@/components/shared/PromptNameDialog";
 import { Slider } from "@/components/ui/slider";
 import { type Task } from '@/lib/types';
 import { AddTaskDialog } from "@/components/shared/AddTaskDialog";
+import { Switch } from "@/components/ui/switch";
 
 
 const StageNumberIcon = ({ index }: { index: number }) => {
@@ -126,7 +127,7 @@ export default function WorkflowConfigurationPage() {
     setAddTaskDialogState({ isOpen: true, stageId, subServiceId });
   };
   
-  const handleAddAction = (data: { title: string, description?: string, dueDays: number }) => {
+  const handleAddAction = (data: { title: string, description?: string, dueDays: number, requiredDocumentForCompletion?: boolean }) => {
     if (!editableWorkflow) return;
     
     const newAction: WorkflowAction = {
@@ -134,6 +135,7 @@ export default function WorkflowConfigurationPage() {
       title: data.title,
       description: data.description || '',
       dueDays: data.dueDays,
+      requiredDocumentForCompletion: data.requiredDocumentForCompletion,
       order: 1, // Simplified order
       subActions: []
     };
@@ -310,22 +312,23 @@ export default function WorkflowConfigurationPage() {
             {stage.actions && stage.actions.length > 0 && (
               <div className="space-y-4">
                 {stage.actions.map((action) => (
-                  <div key={action.id} className="flex flex-col sm:flex-row items-center gap-2 group">
+                  <div key={action.id} className="flex flex-col gap-4 p-3 rounded-md border bg-muted/50">
                     {canEditWorkflow ? (
                       <>
-                        <div className="flex-grow w-full">
-                          <Label className="text-xs text-muted-foreground">Título de la Tarea</Label>
-                          <Input 
-                            value={action.title}
-                            onChange={(e) => handlers.updateAction(stage.id, action.id, { title: e.target.value })}
-                            placeholder="Descripción de la tarea..."
-                            className="h-8"
-                          />
+                        <div className="flex items-center justify-between">
+                            <Label className="text-xs text-muted-foreground">Título de la Tarea</Label>
+                            <Button variant="ghost" size="icon" className="h-6 w-6 shrink-0" onClick={() => handlers.deleteAction(stage.id, action.id)}>
+                              <Trash2 className="h-4 w-4 text-destructive"/>
+                            </Button>
                         </div>
-                        <div className="flex items-center gap-2 w-full sm:w-auto">
-                          <div className="w-full sm:w-48">
+                        <Input 
+                          value={action.title}
+                          onChange={(e) => handlers.updateAction(stage.id, action.id, { title: e.target.value })}
+                          placeholder="Descripción de la tarea..."
+                        />
+                         <div className="w-full">
                             <Label className="text-xs text-muted-foreground">Días para Vencer</Label>
-                            <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-2 pt-1">
                               <Slider
                                 value={[action.dueDays || 0]}
                                 onValueChange={(value) => handlers.updateAction(stage.id, action.id, { dueDays: value[0] })}
@@ -335,12 +338,16 @@ export default function WorkflowConfigurationPage() {
                               />
                               <span className="text-sm font-medium w-6 text-center">{action.dueDays || 0}</span>
                             </div>
-                          </div>
-                          <div className="flex items-end h-8">
-                            <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" onClick={() => handlers.deleteAction(stage.id, action.id)}>
-                              <Trash2 className="h-4 w-4 text-destructive"/>
-                            </Button>
-                          </div>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                            <Switch
+                                id={`req-doc-${action.id}`}
+                                checked={action.requiredDocumentForCompletion}
+                                onCheckedChange={(checked) => handlers.updateAction(stage.id, action.id, { requiredDocumentForCompletion: checked })}
+                            />
+                            <Label htmlFor={`req-doc-${action.id}`} className="text-sm">
+                                Requiere documento para completar
+                            </Label>
                         </div>
                       </>
                     ) : (

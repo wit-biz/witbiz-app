@@ -36,6 +36,7 @@ export type Task = {
   type?: 'Tarea' | 'Cita' | 'Operación Divisas';
   createdAt?: any;
   dueDays?: number;
+  requiredDocumentForCompletion?: boolean;
 };
 
 export type Document = {
@@ -86,7 +87,7 @@ export type WorkflowAction = {
   dueDays: number;
   order: number;
   subActions: SubAction[];
-  requiredDocumentForCompletion?: string;
+  requiredDocumentForCompletion?: boolean;
 };
 
 export type SubAction = {

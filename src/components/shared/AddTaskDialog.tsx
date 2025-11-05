@@ -21,6 +21,7 @@ import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import { type Client } from '@/lib/types';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Switch } from '@/components/ui/switch';
 
 
 // Esquema base
@@ -34,11 +35,13 @@ const taskSchema = baseSchema.extend({
   clientId: z.string().min(1, "Debe seleccionar un cliente."),
   dueDate: z.date({ required_error: "La fecha de vencimiento es requerida." }),
   dueTime: z.string().optional(),
+  requiredDocumentForCompletion: z.boolean().default(false),
 });
 
 // Esquema para Plantilla de Tarea (con días regresivos)
 const workflowActionSchema = baseSchema.extend({
   dueDays: z.number().min(0).max(30).default(0),
+  requiredDocumentForCompletion: z.boolean().default(false),
 });
 
 // Discriminated union para validar según el modo
@@ -74,15 +77,15 @@ export function AddTaskDialog({
   const form = useForm<AddTaskFormValues>({
     resolver: zodResolver(combinedSchema),
     defaultValues: isWorkflowMode ?
-      { isWorkflowMode: true, title: '', description: '', dueDays: 0 } :
-      { isWorkflowMode: false, title: '', description: '', clientId: preselectedClientId || '', dueDate: new Date(), dueTime: '' },
+      { isWorkflowMode: true, title: '', description: '', dueDays: 0, requiredDocumentForCompletion: false } :
+      { isWorkflowMode: false, title: '', description: '', clientId: preselectedClientId || '', dueDate: new Date(), dueTime: '', requiredDocumentForCompletion: false },
   });
 
   useEffect(() => {
     if (isOpen) {
       form.reset(isWorkflowMode ?
-        { isWorkflowMode: true, title: '', description: '', dueDays: 0 } :
-        { isWorkflowMode: false, title: '', description: '', clientId: preselectedClientId || '', dueDate: new Date(), dueTime: '' }
+        { isWorkflowMode: true, title: '', description: '', dueDays: 0, requiredDocumentForCompletion: false } :
+        { isWorkflowMode: false, title: '', description: '', clientId: preselectedClientId || '', dueDate: new Date(), dueTime: '', requiredDocumentForCompletion: false }
       );
     }
   }, [isOpen, isWorkflowMode, preselectedClientId, form]);
@@ -225,6 +228,27 @@ export function AddTaskDialog({
                           <FormMessage />
                       </FormItem>
                   )}
+              />
+
+              <FormField
+                control={form.control}
+                name="requiredDocumentForCompletion"
+                render={({ field }) => (
+                  <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
+                    <div className="space-y-0.5">
+                      <FormLabel>Requiere Documento</FormLabel>
+                      <FormDescription>
+                        Marcar si esta tarea necesita un archivo adjunto para completarse.
+                      </FormDescription>
+                    </div>
+                    <FormControl>
+                      <Switch
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                      />
+                    </FormControl>
+                  </FormItem>
+                )}
               />
             </div>
 

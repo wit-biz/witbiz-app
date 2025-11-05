@@ -12,7 +12,7 @@ import {
   DialogClose,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Edit, Trash, CheckCircle, Loader2, PlusCircle } from 'lucide-react';
+import { Edit, Trash, CheckCircle, Loader2, PlusCircle, UploadCloud } from 'lucide-react';
 import { Task } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
@@ -21,6 +21,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { parseDateString, formatTimeString } from '@/lib/utils';
 import { useCRMData } from '@/contexts/CRMDataContext';
 import { AddTaskDialog } from './AddTaskDialog';
+import { useDialogs } from '@/contexts/DialogsContext';
 
 
 interface TaskDetailDialogProps {
@@ -39,7 +40,9 @@ export function TaskDetailDialog({
   onDeleteTask,
 }: TaskDetailDialogProps) {
   const { toast } = useToast();
-  const { clients, addTask } = useCRMData();
+  const { clients, addTask, addDocument } = useCRMData();
+  const { setIsSmartUploadDialogOpen } = useDialogs();
+  
   const [isEditing, setIsEditing] = useState(false);
   const [editableTask, setEditableTask] = useState<Partial<Task>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -76,7 +79,11 @@ export function TaskDetailDialog({
     }
     setIsSubmitting(false);
   };
-
+  
+  const handleCompleteWithDocument = () => {
+    setIsSmartUploadDialogOpen(true);
+  };
+  
   const handleDelete = async () => {
     if (!onDeleteTask) return;
     setIsSubmitting(true);
@@ -112,6 +119,11 @@ export function TaskDetailDialog({
             <p>
                 <strong>Detalles:</strong> {task.description || 'Sin detalles.'}
             </p>
+             {task.requiredDocumentForCompletion && (
+                <p className="text-sm text-amber-600 dark:text-amber-500">
+                    <strong>Nota:</strong> Esta tarea requiere un documento para ser completada.
+                </p>
+            )}
             </div>
             <DialogFooter className="sm:justify-between">
             <div className="flex gap-2">
@@ -137,19 +149,37 @@ export function TaskDetailDialog({
                     <TooltipContent><p>Eliminar</p></TooltipContent>
                 </Tooltip>
             </div>
-            <Tooltip>
-                <TooltipTrigger asChild>
-                    <Button
-                        onClick={handleMarkAsComplete}
-                        disabled={isSubmitting || task.status === 'Completada' || !onUpdateTask}
-                        className="bg-green-600 hover:bg-green-700 text-white"
-                    >
-                         {isSubmitting && onUpdateTask ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <CheckCircle className="mr-2 h-4 w-4" />}
-                         Marcar como Completada
-                    </Button>
-                </TooltipTrigger>
-                <TooltipContent><p>Marcar como Completada</p></TooltipContent>
-            </Tooltip>
+            <div className="flex gap-2">
+                {task.requiredDocumentForCompletion ? (
+                    <Tooltip>
+                        <TooltipTrigger asChild>
+                             <Button
+                                onClick={handleCompleteWithDocument}
+                                disabled={isSubmitting || task.status === 'Completada'}
+                                className="bg-blue-600 hover:bg-blue-700 text-white"
+                            >
+                                <UploadCloud className="mr-2 h-4 w-4" />
+                                Completar con Documento
+                            </Button>
+                        </TooltipTrigger>
+                        <TooltipContent><p>Subir documento para completar la tarea</p></TooltipContent>
+                    </Tooltip>
+                ) : (
+                    <Tooltip>
+                        <TooltipTrigger asChild>
+                            <Button
+                                onClick={handleMarkAsComplete}
+                                disabled={isSubmitting || task.status === 'Completada' || !onUpdateTask}
+                                className="bg-green-600 hover:bg-green-700 text-white"
+                            >
+                                {isSubmitting && onUpdateTask ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <CheckCircle className="mr-2 h-4 w-4" />}
+                                Marcar como Completada
+                            </Button>
+                        </TooltipTrigger>
+                        <TooltipContent><p>Marcar como Completada</p></TooltipContent>
+                    </Tooltip>
+                )}
+            </div>
             </DialogFooter>
         </TooltipProvider>
       </DialogContent>
