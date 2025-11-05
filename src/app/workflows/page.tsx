@@ -127,7 +127,7 @@ export default function WorkflowConfigurationPage() {
     setAddTaskDialogState({ isOpen: true, stageId, subServiceId });
   };
   
-  const handleAddAction = (data: { title: string, description?: string, dueDays: number, requiredDocumentForCompletion?: boolean }) => {
+  const handleAddAction = (data: { title: string, description?: string, dueDays: number, requiredDocumentForCompletion?: boolean, requiredDocumentDescription?: string }) => {
     if (!editableWorkflow) return;
     
     const newAction: WorkflowAction = {
@@ -136,6 +136,7 @@ export default function WorkflowConfigurationPage() {
       description: data.description || '',
       dueDays: data.dueDays,
       requiredDocumentForCompletion: data.requiredDocumentForCompletion,
+      requiredDocumentDescription: data.requiredDocumentDescription,
       order: 1, // Simplified order
       subActions: []
     };
@@ -343,12 +344,24 @@ export default function WorkflowConfigurationPage() {
                             <Switch
                                 id={`req-doc-${action.id}`}
                                 checked={action.requiredDocumentForCompletion}
-                                onCheckedChange={(checked) => handlers.updateAction(stage.id, action.id, { requiredDocumentForCompletion: checked })}
+                                onCheckedChange={(checked) => handlers.updateAction(stage.id, action.id, { requiredDocumentForCompletion: checked, requiredDocumentDescription: checked ? action.requiredDocumentDescription : '' })}
                             />
                             <Label htmlFor={`req-doc-${action.id}`} className="text-sm">
                                 Requiere documento para completar
                             </Label>
                         </div>
+                        {action.requiredDocumentForCompletion && (
+                             <div className="pl-6">
+                                <Label htmlFor={`req-desc-${action.id}`} className="text-xs text-muted-foreground">Descripción del Documento</Label>
+                                <Input
+                                    id={`req-desc-${action.id}`}
+                                    value={action.requiredDocumentDescription || ''}
+                                    onChange={(e) => handlers.updateAction(stage.id, action.id, { requiredDocumentDescription: e.target.value })}
+                                    placeholder="Ej. Identificación oficial"
+                                    className="mt-1"
+                                />
+                             </div>
+                        )}
                       </>
                     ) : (
                       <div className="flex justify-between items-center w-full bg-secondary/30 p-2 rounded-md">

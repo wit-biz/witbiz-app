@@ -28,6 +28,8 @@ import { Switch } from '@/components/ui/switch';
 const baseSchema = z.object({
   title: z.string().min(3, "El título debe tener al menos 3 caracteres."),
   description: z.string().optional(),
+  requiredDocumentForCompletion: z.boolean().default(false),
+  requiredDocumentDescription: z.string().optional(),
 });
 
 // Esquema para Tarea Real (con fecha)
@@ -35,20 +37,26 @@ const taskSchema = baseSchema.extend({
   clientId: z.string().min(1, "Debe seleccionar un cliente."),
   dueDate: z.date({ required_error: "La fecha de vencimiento es requerida." }),
   dueTime: z.string().optional(),
-  requiredDocumentForCompletion: z.boolean().default(false),
 });
 
 // Esquema para Plantilla de Tarea (con días regresivos)
 const workflowActionSchema = baseSchema.extend({
   dueDays: z.number().min(0).max(30).default(0),
-  requiredDocumentForCompletion: z.boolean().default(false),
 });
 
 // Discriminated union para validar según el modo
 const combinedSchema = z.discriminatedUnion("isWorkflowMode", [
   z.object({ isWorkflowMode: z.literal(true) }).merge(workflowActionSchema),
   z.object({ isWorkflowMode: z.literal(false) }).merge(taskSchema),
-]);
+]).refine(data => {
+    if (data.requiredDocumentForCompletion) {
+        return !!data.requiredDocumentDescription && data.requiredDocumentDescription.trim().length > 0;
+    }
+    return true;
+}, {
+    message: "La descripción del documento es requerida.",
+    path: ["requiredDocumentDescription"],
+});
 
 type AddTaskFormValues = z.infer<typeof combinedSchema>;
 
@@ -77,18 +85,20 @@ export function AddTaskDialog({
   const form = useForm<AddTaskFormValues>({
     resolver: zodResolver(combinedSchema),
     defaultValues: isWorkflowMode ?
-      { isWorkflowMode: true, title: '', description: '', dueDays: 0, requiredDocumentForCompletion: false } :
-      { isWorkflowMode: false, title: '', description: '', clientId: preselectedClientId || '', dueDate: new Date(), dueTime: '', requiredDocumentForCompletion: false },
+      { isWorkflowMode: true, title: '', description: '', dueDays: 0, requiredDocumentForCompletion: false, requiredDocumentDescription: '' } :
+      { isWorkflowMode: false, title: '', description: '', clientId: preselectedClientId || '', dueDate: new Date(), dueTime: '', requiredDocumentForCompletion: false, requiredDocumentDescription: '' },
   });
 
   useEffect(() => {
     if (isOpen) {
       form.reset(isWorkflowMode ?
-        { isWorkflowMode: true, title: '', description: '', dueDays: 0, requiredDocumentForCompletion: false } :
-        { isWorkflowMode: false, title: '', description: '', clientId: preselectedClientId || '', dueDate: new Date(), dueTime: '', requiredDocumentForCompletion: false }
+        { isWorkflowMode: true, title: '', description: '', dueDays: 0, requiredDocumentForCompletion: false, requiredDocumentDescription: '' } :
+        { isWorkflowMode: false, title: '', description: '', clientId: preselectedClientId || '', dueDate: new Date(), dueTime: '', requiredDocumentForCompletion: false, requiredDocumentDescription: '' }
       );
     }
   }, [isOpen, isWorkflowMode, preselectedClientId, form]);
+  
+  const requiresDoc = form.watch('requiredDocumentForCompletion');
 
   const onSubmit = (data: AddTaskFormValues) => {
     setIsSubmitting(true);
@@ -250,6 +260,26 @@ export function AddTaskDialog({
                   </FormItem>
                 )}
               />
+
+              {requiresDoc && (
+                <FormField
+                  control={form.control}
+                  name="requiredDocumentDescription"
+                  render={({ field }) => (
+                    <FormItem className="pl-4 border-l-2 ml-1">
+                      <FormLabel>Documento Requerido <span className="text-destructive">*</span></FormLabel>
+                      <FormControl>
+                        <Input placeholder="Ej. Identificación oficial, Comprobante" {...field} />
+                      </FormControl>
+                      <FormDescription>
+                        Especifique qué documento debe subir el usuario.
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              )}
+
             </div>
 
             <DialogFooter>
@@ -265,5 +295,3 @@ export function AddTaskDialog({
     </Dialog>
   );
 }
-
-    

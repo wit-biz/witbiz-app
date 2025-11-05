@@ -121,7 +121,7 @@ export function TaskDetailDialog({
             </p>
              {task.requiredDocumentForCompletion && (
                 <p className="text-sm text-amber-600 dark:text-amber-500">
-                    <strong>Nota:</strong> Esta tarea requiere un documento para ser completada.
+                    <strong>Nota:</strong> Para completar esta tarea, se requiere el siguiente documento: <strong>{task.requiredDocumentDescription || 'No especificado'}</strong>.
                 </p>
             )}
             </div>
