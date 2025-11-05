@@ -20,7 +20,7 @@ import { es } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import { type Client } from '@/lib/types';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Switch } from '@/components/ui/switch';
 
 
@@ -265,3 +265,5 @@ export function AddTaskDialog({
     </Dialog>
   );
 }
+
+    
