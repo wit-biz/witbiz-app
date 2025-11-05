@@ -161,7 +161,7 @@ const StageCard = ({
                     {'subStages' in stage && (
                         <div className="pl-4 border-l-2 ml-2 space-y-4">
                              <Label className="text-sm font-medium">Sub-Etapas</Label>
-                            {stage.subStages.map((sub, i) => (
+                            {stage.subStages && stage.subStages.map((sub, i) => (
                                 <StageCard
                                     key={sub.id}
                                     stage={sub}
@@ -182,9 +182,9 @@ const StageCard = ({
                         </div>
                     )}
                     {'subSubStages' in stage && (
-                         <div className="pl-6 border-l-2 ml-2 space-y-4">
+                         <div className="pl-8 border-l-2 ml-2 space-y-4">
                             <Label className="text-sm font-medium">Sub-Sub-Etapas</Label>
-                            {stage.subSubStages.map((sub, i) => (
+                            {stage.subSubStages && stage.subSubStages.map((sub, i) => (
                                 <StageCard
                                     key={sub.id}
                                     stage={sub}
@@ -349,7 +349,7 @@ export default function WorkflowConfigurationPage() {
        const newStage: WorkflowStage = { 
            id: `stage-${Date.now()}`, 
            title: "Nueva Etapa Principal", 
-           order: (editableWorkflow?.stages.length || 0) + 1, 
+           order: (editableWorkflow?.stages?.length || 0) + 1, 
            actions: [],
            subStages: [],
         };
@@ -464,7 +464,7 @@ export default function WorkflowConfigurationPage() {
                                 <Plus className="mr-2 h-4 w-4"/>Añadir Etapa Principal
                             </Button>
                         )}
-                        <Accordion type="multiple" className="w-full space-y-4" defaultValue={editableWorkflow.stages.map(s => s.id)}>
+                        <Accordion type="multiple" className="w-full space-y-4" defaultValue={editableWorkflow.stages?.map(s => s.id) || []}>
                             {editableWorkflow.stages && editableWorkflow.stages.length > 0 ? (
                                 editableWorkflow.stages.map((stage, i) => (
                                     <StageCard

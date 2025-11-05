@@ -76,9 +76,9 @@ const StageCard = ({
   const hasSubStages = ('subStages' in stage && stage.subStages && stage.subStages.length > 0) || ('subSubStages' in stage && stage.subSubStages && stage.subSubStages.length > 0);
 
   const levelStyles = {
-    1: { card: "bg-card", title: "text-base", contentPadding: "px-4 pb-4" },
-    2: { card: "bg-muted/50", title: "text-sm", contentPadding: "pl-4 pr-2 pb-2" },
-    3: { card: "bg-muted/30 border border-dashed", title: "text-sm", contentPadding: "pl-4 pr-2 pb-2" }
+    1: { card: "bg-card", title: "text-base", contentPadding: "p-4" },
+    2: { card: "bg-muted/50", title: "text-sm", contentPadding: "p-4" },
+    3: { card: "bg-muted/30 border border-dashed", title: "text-sm", contentPadding: "p-4" }
   };
 
   return (
@@ -122,12 +122,12 @@ const StageCard = ({
                     )}
                     {/* Render nested stages inside the content area */}
                     {'subStages' in stage && stage.subStages && stage.subStages.length > 0 && (
-                        <div className="mt-4 pt-4 border-t">
+                        <div className="mt-4 pt-4 border-t pl-4">
                             {renderSubStages(stage.subStages, 2)}
                         </div>
                     )}
                     {'subSubStages' in stage && stage.subSubStages && stage.subSubStages.length > 0 && (
-                        <div className="mt-4 pt-4 border-t pl-4">
+                        <div className="mt-4 pt-4 border-t pl-8">
                              {renderSubStages(stage.subSubStages, 3)}
                         </div>
                     )}
@@ -165,6 +165,7 @@ export default function CrmPage() {
     if (!serviceWorkflows) return [];
     const stages: AnyStage[] = [];
     serviceWorkflows.forEach(service => {
+        if (!service.stages) return;
         (service.stages || []).forEach(stage1 => {
             stages.push(stage1);
             if (stage1.subStages) {
