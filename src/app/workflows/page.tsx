@@ -49,9 +49,9 @@ const StageCard = ({
     const [addTaskDialogState, setAddTaskDialogState] = useState<{isOpen: boolean, path: string | null}>({isOpen: false, path: null});
 
     const levelStyles = {
-        1: { card: "bg-card", trigger: "text-lg", icon: Layers },
-        2: { card: "bg-muted/40", trigger: "text-md", icon: FolderCog },
-        3: { card: "bg-muted/20", trigger: "text-base", icon: ListTodo }
+        1: { card: "bg-card", trigger: "text-lg", icon: Layers, subStageContainer: "", subStageButton: "secondary", subSubStageButton: "outline" },
+        2: { card: "bg-muted/40", trigger: "text-md", icon: FolderCog, subStageContainer: "pl-4", subStageButton: "outline", subSubStageButton: "ghost" },
+        3: { card: "bg-muted/20", trigger: "text-base", icon: ListTodo, subStageContainer: "pl-8", subStageButton: "ghost", subSubStageButton: "ghost" }
     }
     const Icon = levelStyles[level].icon;
 
@@ -120,21 +120,7 @@ const StageCard = ({
                                         )}
                                     </div>
                                      {canEditWorkflow && (
-                                        <>
-                                        <div className="w-full">
-                                            <Label className="text-xs text-muted-foreground">Días para Vencer</Label>
-                                            <div className="flex items-center gap-2 pt-1">
-                                                <Slider
-                                                    value={[action.dueDays || 0]}
-                                                    onValueChange={(value) => handleUpdateAction(action.id, { dueDays: value[0] })}
-                                                    max={30}
-                                                    step={1}
-                                                    className="w-full"
-                                                />
-                                                <span className="text-sm font-medium w-6 text-center">{action.dueDays || 0}</span>
-                                            </div>
-                                        </div>
-                                         <div className="flex items-center space-x-2">
+                                        <div className="flex items-center space-x-2">
                                             <Switch
                                                 id={`req-doc-${action.id}`}
                                                 checked={action.requiredDocumentForCompletion}
@@ -144,7 +130,6 @@ const StageCard = ({
                                                 Requiere documento(s) para completar
                                             </Label>
                                         </div>
-                                        </>
                                      )}
                                 </div>
                             ))}
@@ -159,7 +144,7 @@ const StageCard = ({
                    
                     {/* SUB-ETAPAS / SUB-SUB-ETAPAS */}
                     {'subStages' in stage && (
-                        <div className="pl-4 border-l-2 ml-2 space-y-4">
+                        <div className={cn("border-l-2 ml-2 space-y-4", levelStyles[level].subStageContainer)}>
                              <Label className="text-sm font-medium">Sub-Etapas</Label>
                             {stage.subStages && stage.subStages.map((sub, i) => (
                                 <StageCard
@@ -175,14 +160,14 @@ const StageCard = ({
                                 />
                             ))}
                              {canEditWorkflow && (
-                                <Button variant="secondary" size="sm" onClick={() => onAddSubStage(path)}>
+                                <Button variant={levelStyles[level].subStageButton as any} size="sm" onClick={() => onAddSubStage(path)}>
                                     <Plus className="mr-2 h-4 w-4"/>Añadir Sub-Etapa
                                 </Button>
                             )}
                         </div>
                     )}
                     {'subSubStages' in stage && (
-                         <div className="pl-6 border-l-2 ml-2 space-y-4">
+                         <div className={cn("border-l-2 ml-2 space-y-4", levelStyles[level].subSubStageContainer)}>
                             <Label className="text-sm font-medium">Sub-Sub-Etapas</Label>
                             {stage.subSubStages && stage.subSubStages.map((sub, i) => (
                                 <StageCard
@@ -198,9 +183,11 @@ const StageCard = ({
                                 />
                             ))}
                              {canEditWorkflow && (
-                                <Button variant="outline" size="sm" onClick={() => onAddSubStage(path)}>
-                                    <Plus className="mr-2 h-4 w-4"/>Añadir Sub-Sub-Etapa
-                                </Button>
+                                <div className="pl-6">
+                                    <Button variant={levelStyles[level].subSubStageButton as any} size="sm" onClick={() => onAddSubStage(path)}>
+                                        <Plus className="mr-2 h-4 w-4"/>Añadir Sub-Sub-Etapa
+                                    </Button>
+                                </div>
                             )}
                         </div>
                     )}
@@ -319,7 +306,11 @@ export default function WorkflowConfigurationPage() {
 
           switch(operation) {
               case 'update':
-                  current[finalKey] = { ...current[finalKey], ...value };
+                  if (typeof current[finalKey] === 'object' && current[finalKey] !== null && !Array.isArray(current[finalKey])) {
+                    current[finalKey] = { ...current[finalKey], ...value };
+                  } else {
+                     current[finalKey] = value;
+                  }
                   break;
               case 'add':
                   if (!Array.isArray(current[finalKey])) current[finalKey] = [];
@@ -338,12 +329,49 @@ export default function WorkflowConfigurationPage() {
   };
   
   const handleUpdate = (path: string, updates: Partial<AnyStage>) => {
-      updateNestedState(path, updates, 'update');
+      const pathParts = path.split('.');
+      const index = parseInt(pathParts.pop()!, 10);
+      const parentPath = pathParts.join('.');
+      
+      setEditableWorkflow(prev => {
+          if (!prev) return null;
+          const newWorkflow = JSON.parse(JSON.stringify(prev));
+          let parent = newWorkflow;
+          if (parentPath) {
+              parentPath.split('.').forEach(part => {
+                  parent = parent[part];
+              });
+          }
+          parent[index] = { ...parent[index], ...updates };
+          return newWorkflow;
+      });
   };
 
   const handleDelete = (path: string) => {
-      updateNestedState(path, null, 'delete');
-  };
+    const pathParts = path.split('.');
+    const indexToDelete = parseInt(pathParts.pop()!, 10);
+    const arrayPath = pathParts.join('.');
+
+    setEditableWorkflow(prev => {
+        if (!prev) return null;
+        let newWorkflow = JSON.parse(JSON.stringify(prev));
+
+        // Navigate to the array that needs modification
+        let parentArray = newWorkflow;
+        if(arrayPath) {
+            arrayPath.split('.').forEach(part => {
+                parentArray = parentArray[part];
+            });
+        }
+        
+        // Remove the item from the array
+        if(Array.isArray(parentArray)) {
+            parentArray.splice(indexToDelete, 1);
+        }
+
+        return newWorkflow;
+    });
+};
 
   const handleAddStage = () => {
        const newStage: WorkflowStage = { 
@@ -451,7 +479,7 @@ export default function WorkflowConfigurationPage() {
                           )}
                       </div>
                       {canEditWorkflow && (
-                         <Button variant="outline" size="sm" onClick={handleAddNewService}><PlusCircle className="mr-2 h-4 w-4"/>Añadir Servicio</Button>
+                         <Button variant="default" size="sm" onClick={handleAddNewService}><PlusCircle className="mr-2 h-4 w-4"/>Añadir Servicio</Button>
                       )}
                   </div>
               </CardHeader>
@@ -460,7 +488,7 @@ export default function WorkflowConfigurationPage() {
                 <CardContent className="border-t pt-6 space-y-6">
                     <div className="space-y-4">
                         {canEditWorkflow && (
-                            <Button size="sm" onClick={handleAddStage}>
+                            <Button size="sm" variant="default" onClick={handleAddStage}>
                                 <Plus className="mr-2 h-4 w-4"/>Añadir Etapa Principal
                             </Button>
                         )}
@@ -473,7 +501,7 @@ export default function WorkflowConfigurationPage() {
                                         level={1}
                                         index={i}
                                         path={`stages.${i}`}
-                                        onUpdate={handleUpdate}
+                                        onUpdate={(path, updates) => handleUpdate(path, updates)}
                                         onDelete={handleDelete}
                                         onAddSubStage={handleAddSubStage}
                                         onAddTask={handleAddTask}

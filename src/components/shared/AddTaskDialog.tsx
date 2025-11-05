@@ -44,9 +44,7 @@ const taskSchema = baseSchema.extend({
   dueTime: z.string().optional(),
 });
 
-const workflowActionSchema = baseSchema.extend({
-  dueDays: z.number().min(0).max(30).default(0),
-});
+const workflowActionSchema = baseSchema.extend({});
 
 const combinedSchema = z.discriminatedUnion("isWorkflowMode", [
   z.object({ isWorkflowMode: z.literal(true) }).merge(workflowActionSchema),
@@ -89,7 +87,7 @@ export function AddTaskDialog({
   const form = useForm<AddTaskFormValues>({
     resolver: zodResolver(combinedSchema),
     defaultValues: isWorkflowMode ?
-      { isWorkflowMode: true, title: '', description: '', dueDays: 0, requiredDocumentForCompletion: false, requiredDocuments: [], assignedToId: currentUser?.uid } :
+      { isWorkflowMode: true, title: '', description: '', requiredDocumentForCompletion: false, requiredDocuments: [], assignedToId: currentUser?.uid } :
       { isWorkflowMode: false, title: '', description: '', clientId: preselectedClientId || '', dueDate: new Date(), dueTime: '', requiredDocumentForCompletion: false, requiredDocuments: [], assignedToId: currentUser?.uid },
   });
   
@@ -101,7 +99,7 @@ export function AddTaskDialog({
   useEffect(() => {
     if (isOpen) {
       form.reset(isWorkflowMode ?
-        { isWorkflowMode: true, title: '', description: '', dueDays: 0, requiredDocumentForCompletion: false, requiredDocuments: [], assignedToId: currentUser?.uid } :
+        { isWorkflowMode: true, title: '', description: '', requiredDocumentForCompletion: false, requiredDocuments: [], assignedToId: currentUser?.uid } :
         { isWorkflowMode: false, title: '', description: '', clientId: preselectedClientId || '', dueDate: new Date(), dueTime: '', requiredDocumentForCompletion: false, requiredDocuments: [], assignedToId: currentUser?.uid }
       );
     }
@@ -153,7 +151,7 @@ export function AddTaskDialog({
                   )}
               />
 
-              {!isWorkflowMode ? (
+              {!isWorkflowMode && (
                 // --- VISTA PARA PÁGINA DE TAREAS ---
                 <>
                   <FormField
@@ -231,28 +229,6 @@ export function AddTaskDialog({
                       />
                   </div>
                 </>
-              ) : (
-                // --- VISTA PARA WORKFLOWS (PLANTILLA) ---
-                <FormField
-                    control={form.control}
-                    name="dueDays"
-                    render={({ field }) => (
-                        <FormItem>
-                            <FormLabel>Días para Vencer</FormLabel>
-                            <div className="flex items-center gap-4 pt-2">
-                                <Slider
-                                    min={0}
-                                    max={30}
-                                    step={1}
-                                    value={[field.value ?? 0]}
-                                    onValueChange={(value) => field.onChange(value[0])}
-                                />
-                                <span className="text-sm font-medium w-8 text-center">{field.value}</span>
-                            </div>
-                            <FormMessage />
-                        </FormItem>
-                    )}
-                />
               )}
 
               <FormField

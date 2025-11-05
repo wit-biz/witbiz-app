@@ -42,7 +42,7 @@ interface CRMContextType {
   
   tasks: Task[];
   isLoadingTasks: boolean;
-  addTask: (newTaskData: Omit<Task, 'id' | 'status' | 'clientName'> & { dueDays?: number }) => Promise<Task | null>;
+  addTask: (newTaskData: Omit<Task, 'id' | 'status' | 'clientName'>) => Promise<Task | null>;
   updateTask: (taskId: string, updates: Partial<Task>) => Promise<boolean>;
   deleteTask: (taskId: string) => Promise<boolean>;
   getTasksByClientId: (clientId: string) => Task[];
@@ -204,16 +204,16 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
         return true;
     };
     
-    const addTask = async (newTaskData: Omit<Task, 'id' | 'status' | 'clientName'> & { dueDays?: number }): Promise<Task | null> => {
+    const addTask = async (newTaskData: Omit<Task, 'id' | 'status' | 'clientName'>): Promise<Task | null> => {
         if (!tasksCollection || !currentUser) return null;
         const client = clients.find(c => c.id === newTaskData.clientId);
         if (!client) return null;
 
         let finalDueDate: string;
-        if (newTaskData.dueDays !== undefined) {
-            const today = new Date();
-            const dueDate = addDays(today, newTaskData.dueDays);
-            finalDueDate = format(dueDate, 'yyyy-MM-dd');
+        // If the task comes from a workflow advancement, set it to the next day.
+        // We can detect this by checking if it doesn't have a specific dueDate from the dialog.
+        if (newTaskData.dueDate === undefined) {
+             finalDueDate = format(addDays(new Date(), 1), 'yyyy-MM-dd');
         } else if (newTaskData.dueDate instanceof Date) {
             finalDueDate = format(newTaskData.dueDate, 'yyyy-MM-dd');
         } else {
@@ -257,25 +257,29 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
         const client = clients.find(c => c.id === clientId);
         if (!client || !client.currentWorkflowStageId) return;
 
+        // Give Firestore a moment to update the task status via the listener
+        await new Promise(resolve => setTimeout(resolve, 500));
+
         const clientTasks = tasks.filter(t => t.clientId === clientId);
         
         const allStages = getAllStages();
         const currentStage = allStages.find(s => s.id === client.currentWorkflowStageId);
         if (!currentStage) return;
 
-        const tasksForCurrentStage = clientTasks.filter(task => {
-            return currentStage.actions.some(action => action.title === task.title && task.status === 'Pendiente');
+        // Find tasks related to the current stage's actions that are still pending
+        const pendingTasksForCurrentStage = clientTasks.filter(task => {
+            const isTaskForThisStage = currentStage.actions.some(action => action.title === task.title);
+            return isTaskForThisStage && task.status === 'Pendiente';
         });
 
-        const allTasksForStageCompleted = tasksForCurrentStage.length === 0;
-
-        if (allTasksForStageCompleted) {
+        // If there are no more pending tasks for the current stage, advance
+        if (pendingTasksForCurrentStage.length === 0) {
             const nextStage = findNextStage(client.currentWorkflowStageId);
             if (nextStage) {
                 await updateClient(clientId, { currentWorkflowStageId: nextStage.id });
                 showNotification('info', 'Cliente Avanzó', `${client.name} ha avanzado a la etapa: ${nextStage.title}.`);
 
-                // Create tasks for the new stage
+                // Create tasks for the new stage for the next day
                 for (const action of nextStage.actions) {
                     await addTask({ ...action, clientId: clientId });
                 }
