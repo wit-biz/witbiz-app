@@ -23,11 +23,59 @@ service cloud.firestore {
     }
     
     /**
-     * @description Generic rule for all user-owned subcollections.
-     * Grants read and write access to the user who owns the parent document.
+     * @description Rules for the /users/{userId}/tasks/{taskId} subcollection. Users can only access tasks they own.
+     * @path /users/{userId}/tasks/{taskId}
      */
-    match /users/{userId}/{collection}/{docId} {
+    match /users/{userId}/tasks/{taskId} {
       allow read, write: if isSignedIn() && isOwner(userId);
+    }
+    
+    /**
+     * @description Rules for the /users/{userId}/documents/{documentId} subcollection. Users can only access documents they own.
+     * @path /users/{userId}/documents/{documentId}
+     */
+    match /users/{userId}/documents/{documentId} {
+      allow read, write: if isSignedIn() && isOwner(userId);
+    }
+
+    /**
+     * @description Rules for the /users/{userId}/clients/{clientId} subcollection. Users can only access clients they own.
+     * @path /users/{userId}/clients/{clientId}
+     */
+    match /users/{userId}/clients/{clientId} {
+      allow read, write: if isSignedIn() && isOwner(userId);
+    }
+
+    /**
+     * @description Rules for the /users/{userId}/leads/{leadId} subcollection.  Users can only access leads they own.
+     * @path /users/{userId}/leads/{leadId}
+     */
+    match /users/{userId}/leads/{leadId} {
+      allow read, write: if isSignedIn() && isOwner(userId);
+    }
+
+    /**
+     * @description Rules for the /users/{userId}/contacts/{contactId} subcollection.  Users can only access contacts they own.
+     * @path /users/{userId}/contacts/{contactId}
+     */
+    match /users/{userId}/contacts/{contactId} {
+      allow read, write: if isSignedIn() && isOwner(userId);
+    }
+    
+    /**
+     * @description Rules for individual documents in the /users/{userId}/serviceWorkflows collection.
+     * @path /users/{userId}/serviceWorkflows/{workflowId}
+     */
+    match /users/{userId}/serviceWorkflows/{workflowId} {
+      allow read, write: if isSignedIn() && isOwner(userId);
+    }
+    
+    /**
+     * @description Rules for listing the /users/{userId}/serviceWorkflows collection.
+     * @path /users/{userId}/serviceWorkflows
+     */
+    match /users/{userId}/serviceWorkflows {
+        allow list: if isSignedIn() && isOwner(userId);
     }
 
     // --- Helper functions ---
