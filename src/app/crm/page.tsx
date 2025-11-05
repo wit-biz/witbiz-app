@@ -44,12 +44,12 @@ const StageCard = ({ stage, index, clientsInStage, onClientClick }: { stage: Wor
             {clientsInStage.length}
           </span>
         </CardTitle>
-         {stage.actions && stage.actions.length > 0 && (
+        {stage.actions && stage.actions.length > 0 && (
             <div className="text-sm text-muted-foreground pt-2 space-y-1">
                 {stage.actions.map(action => (
                     <div key={action.id} className="flex items-center gap-2 text-xs text-muted-foreground">
                         <ListTodo className="h-4 w-4 shrink-0" />
-                        <span>{action.title}</span>
+                        <span className="truncate" title={action.title}>{action.title}</span>
                     </div>
                 ))}
             </div>
