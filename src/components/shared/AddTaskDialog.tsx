@@ -134,63 +134,22 @@ export function AddTaskDialog({
           </DialogHeader>
           
           <div className="grid gap-4 py-4 max-h-[60vh] overflow-y-auto px-1">
-            {isWorkflowMode ? (
+            <div>
+              <Label htmlFor="title">Título de la Tarea <span className="text-destructive">*</span></Label>
+              <Input
+                id="title"
+                name="title"
+                value={formData.title}
+                onChange={handleDataChange}
+                required
+                disabled={isSubmitting}
+                placeholder="Ej. Llamada de seguimiento"
+              />
+            </div>
+            
+            {!isWorkflowMode ? (
               <>
-                <div>
-                  <Label htmlFor="title">Título de la Tarea <span className="text-destructive">*</span></Label>
-                  <Input
-                    id="title"
-                    name="title"
-                    value={formData.title}
-                    onChange={handleDataChange}
-                    required
-                    disabled={isSubmitting}
-                    placeholder="Ej. Llamada de seguimiento"
-                  />
-                </div>
                  <div>
-                    <Label htmlFor="dueDays">Días para Vencer</Label>
-                    <div className="flex items-center gap-4 pt-2">
-                      <Slider
-                        id="dueDays"
-                        value={[formData.dueDays || 0]}
-                        onValueChange={handleDueDaysChange}
-                        max={30}
-                        step={1}
-                        className="w-full"
-                      />
-                      <span className="text-sm font-medium w-12 text-center border rounded-md p-2">
-                        {formData.dueDays || 0}
-                      </span>
-                    </div>
-                  </div>
-                <div>
-                  <Label htmlFor="description">Descripción (Opcional)</Label>
-                  <Textarea
-                    id="description"
-                    name="description"
-                    value={formData.description}
-                    onChange={handleDataChange}
-                    disabled={isSubmitting}
-                    placeholder="Añada más detalles sobre la tarea..."
-                  />
-                </div>
-              </>
-            ) : (
-              <>
-                <div>
-                  <Label htmlFor="title">Título de la Tarea <span className="text-destructive">*</span></Label>
-                  <Input
-                    id="title"
-                    name="title"
-                    value={formData.title}
-                    onChange={handleDataChange}
-                    required
-                    disabled={isSubmitting}
-                    placeholder="Ej. Llamada de seguimiento"
-                  />
-                </div>
-                <div>
                   <Label htmlFor="clientId">Asignar a Cliente <span className="text-destructive">*</span></Label>
                   <Select
                     name="clientId"
@@ -254,19 +213,36 @@ export function AddTaskDialog({
                     />
                   </div>
                 </div>
-                 <div>
-                    <Label htmlFor="description">Descripción (Opcional)</Label>
-                    <Textarea
-                        id="description"
-                        name="description"
-                        value={formData.description}
-                        onChange={handleDataChange}
-                        disabled={isSubmitting}
-                        placeholder="Añada más detalles sobre la tarea..."
-                    />
-                </div>
               </>
+            ) : (
+               <div>
+                  <Label htmlFor="dueDays">Días para Vencer</Label>
+                  <div className="flex items-center gap-4 pt-2">
+                    <Slider
+                      id="dueDays"
+                      value={[formData.dueDays || 0]}
+                      onValueChange={handleDueDaysChange}
+                      max={30}
+                      step={1}
+                      className="w-full"
+                    />
+                    <span className="text-sm font-medium w-12 text-center border rounded-md p-2">
+                      {formData.dueDays || 0}
+                    </span>
+                  </div>
+                </div>
             )}
+             <div>
+                <Label htmlFor="description">Descripción (Opcional)</Label>
+                <Textarea
+                    id="description"
+                    name="description"
+                    value={formData.description}
+                    onChange={handleDataChange}
+                    disabled={isSubmitting}
+                    placeholder="Añada más detalles sobre la tarea..."
+                />
+            </div>
           </div>
           <DialogFooter>
             <DialogClose asChild>
