@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import React, { useState, useMemo } from "react";
@@ -19,7 +20,7 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { InviteMemberDialog } from "@/components/shared/InviteMemberDialog";
-import { type AppPermissions } from "@/lib/types";
+import { type AppPermissions, type AppUser } from "@/lib/types";
 import {
   Accordion,
   AccordionContent,
@@ -27,7 +28,7 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import { useCRMData } from "@/contexts/CRMDataContext";
-
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 
 const allPermissions: { key: keyof AppPermissions; label: string }[] = [
     { key: "dashboard", label: "Ver Dashboard" },
@@ -44,13 +45,6 @@ const allPermissions: { key: keyof AppPermissions; label: string }[] = [
     { key: "finances_view", label: "Ver Finanzas" },
     { key: "admin_view", label: "Ver Administración/Finanzas" },
     { key: "team_invite", label: "Invitar Miembros" },
-];
-
-
-const teamMembers = [
-    { id: 'user-1', name: 'Admin User', email: 'admin@witbiz.com', role: 'Director' },
-    { id: 'user-2', name: 'Carla Collaborator', email: 'carla@witbiz.com', role: 'Colaborador' },
-    { id: 'user-3', name: 'Andrea Admin', email: 'andrea@witbiz.com', role: 'Administrador' },
 ];
 
 const initialRoles = [
@@ -96,7 +90,7 @@ const initialRoles = [
 export default function TeamPage() {
     const [isInviteDialogOpen, setIsInviteDialogOpen] = useState(false);
     const [roles, setRoles] = useState(initialRoles);
-    const { currentUser } = useCRMData();
+    const { currentUser, teamMembers } = useCRMData();
 
     const canInvite = currentUser?.permissions?.team_invite ?? false;
 
@@ -114,7 +108,7 @@ export default function TeamPage() {
                 const roleB = roleOrder[b.role as keyof typeof roleOrder] || 99;
                 return roleA - roleB;
             });
-    }, []);
+    }, [teamMembers]);
 
     const handlePermissionChange = (roleId: string, permissionKey: keyof AppPermissions, value: boolean) => {
         setRoles(currentRoles => 
@@ -174,7 +168,15 @@ export default function TeamPage() {
                         <TableBody>
                             {sortedTeamMembers.map((member) => (
                                 <TableRow key={member.id}>
-                                    <TableCell className="font-medium">{member.name}</TableCell>
+                                    <TableCell className="font-medium">
+                                        <div className="flex items-center gap-2">
+                                            <Avatar className="h-8 w-8">
+                                                <AvatarImage src={member.photoURL} alt={member.name} />
+                                                <AvatarFallback>{member.name.charAt(0)}</AvatarFallback>
+                                            </Avatar>
+                                            <span>{member.name}</span>
+                                        </div>
+                                    </TableCell>
                                     <TableCell>{member.email}</TableCell>
                                     <TableCell><Badge variant="secondary">{member.role}</Badge></TableCell>
                                     <TableCell className="text-right">

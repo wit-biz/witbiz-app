@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import React, { createContext, useContext, useState, useMemo, type ReactNode, useCallback, useEffect } from 'react';
@@ -22,12 +23,13 @@ import { useUser, useFirestore, useMemoFirebase, useDoc, useAuth } from '@/fireb
 import { collection, doc, writeBatch, setDoc, getDoc, addDoc, updateDoc, deleteDoc, serverTimestamp } from 'firebase/firestore';
 import { setDocumentNonBlocking, addDocumentNonBlocking, updateDocumentNonBlocking, deleteDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
-import { clients as mockClients, tasks as mockTasks, documents as mockDocuments, notes as mockNotes, serviceWorkflows as mockWorkflows } from '@/lib/data';
+import { clients as mockClients, tasks as mockTasks, documents as mockDocuments, notes as mockNotes, serviceWorkflows as mockWorkflows, teamMembers as mockTeamMembers } from '@/lib/data';
 import { addDays, format } from 'date-fns';
 
 interface CRMContextType {
   currentUser: AuthenticatedUser | null;
   isLoadingCurrentUser: boolean;
+  teamMembers: AppUser[];
   clients: Client[];
   isLoadingClients: boolean;
   addClient: (newClientData: Omit<Client, 'id'>) => Promise<Client | null>;
@@ -81,6 +83,7 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
     const [documents, setDocuments] = useState<Document[]>(mockDocuments);
     const [notes, setNotes] = useState<Note[]>(mockNotes);
     const [serviceWorkflows, setServiceWorkflows] = useState<ServiceWorkflow[]>(mockWorkflows);
+    const [teamMembers, setTeamMembers] = useState<AppUser[]>(mockTeamMembers);
     
     // LOADING STATES
     const [isLoadingClients, setIsLoadingClients] = useState(false);
@@ -93,11 +96,12 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
 
     useEffect(() => {
         if (user) {
+            const userInTeam = teamMembers.find(m => m.email === user.email);
             setCurrentUser({
                 uid: user.uid,
                 email: user.email,
                 displayName: user.displayName,
-                photoURL: user.photoURL,
+                photoURL: userInTeam?.photoURL || user.photoURL,
                 permissions: { 
                   dashboard: true, 
                   clients_view: true, 
@@ -120,7 +124,7 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
         } else {
             setCurrentUser(null);
         }
-    }, [user]);
+    }, [user, teamMembers]);
 
     const registerUser = async (name: string, email: string, pass: string) => {
         if (!auth || !firestore) {
@@ -174,12 +178,16 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
             finalDueDate = format(dueDate, 'yyyy-MM-dd');
         }
 
+        const assignedUser = teamMembers.find(m => m.id === newTaskData.assignedToId);
+
         const newTask: Task = { 
             ...newTaskData, 
             dueDate: finalDueDate,
             id: `task-${Date.now()}`, 
             status: 'Pendiente', 
-            clientName: client.name 
+            clientName: client.name,
+            assignedToName: assignedUser?.name,
+            assignedToPhotoURL: assignedUser?.photoURL,
         };
         setTasks(prev => [...prev, newTask].sort((a, b) => (a.dueTime || "23:59").localeCompare(b.dueTime || "23:59")));
         showNotification('success', 'Tarea Creada', `La tarea "${newTask.title}" ha sido creada.`);
@@ -245,7 +253,7 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
     }
 
     const value = useMemo(() => ({
-        currentUser, isLoadingCurrentUser: isUserLoading, 
+        currentUser, isLoadingCurrentUser: isUserLoading, teamMembers,
         clients, isLoadingClients, 
         addClient, updateClient, deleteClient,
         getClientById: (id: string) => clients.find(c => c.id === id),
@@ -276,7 +284,7 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
         registerUser,
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }), [
-        currentUser, isUserLoading, clients, isLoadingClients, 
+        currentUser, isUserLoading, teamMembers, clients, isLoadingClients, 
         tasks, isLoadingTasks, documents, isLoadingDocuments, notes, isLoadingNotes,
         serviceWorkflows, isLoadingWorkflows, getActionById
     ]);

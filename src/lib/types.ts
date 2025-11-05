@@ -32,6 +32,9 @@ export type Task = {
   status: 'Pendiente' | 'Completada';
   clientId: string;
   clientName: string;
+  assignedToId?: string;
+  assignedToName?: string;
+  assignedToPhotoURL?: string;
   description?: string;
   type?: 'Tarea' | 'Cita' | 'Operación Divisas';
   createdAt?: any;
@@ -126,9 +129,11 @@ export type UserRole = {
 }
 
 export interface AppUser {
-    uid: string;
-    roleId: string;
-    // ... otros campos del perfil de cliente
+    id: string;
+    name: string;
+    email: string;
+    role: string;
+    photoURL?: string;
 }
 
 export interface AuthenticatedUser {

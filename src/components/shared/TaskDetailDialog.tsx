@@ -23,6 +23,7 @@ import { parseDateString, formatTimeString } from '@/lib/utils';
 import { useCRMData } from '@/contexts/CRMDataContext';
 import { AddTaskDialog } from './AddTaskDialog';
 import { useDialogs } from '@/contexts/DialogsContext';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
 
 interface TaskDetailDialogProps {
@@ -113,13 +114,25 @@ export function TaskDetailDialog({
                 Vence: {dueDate ? format(dueDate, 'PPP', { locale: es }) : 'N/A'} {task.dueTime && `a las ${formatTimeString(task.dueTime)}`} | Estado: {task.status}
             </DialogDescription>
             </DialogHeader>
-            <div className="py-4 space-y-2">
-            <p>
-                <strong>Cliente:</strong> {task.clientName}
-            </p>
-            <p>
-                <strong>Detalles:</strong> {task.description || 'Sin detalles.'}
-            </p>
+            <div className="py-4 space-y-4">
+                <div className="flex items-center gap-2">
+                    <p className="font-semibold">Cliente:</p>
+                    <p>{task.clientName}</p>
+                </div>
+                 <div className="flex items-center gap-2">
+                    <p className="font-semibold">Asignada a:</p>
+                     <div className="flex items-center gap-2">
+                        <Avatar className="h-6 w-6">
+                            <AvatarImage src={task.assignedToPhotoURL} />
+                            <AvatarFallback>{task.assignedToName?.charAt(0)}</AvatarFallback>
+                        </Avatar>
+                        <p>{task.assignedToName}</p>
+                    </div>
+                </div>
+                <div>
+                    <p className="font-semibold">Detalles:</p>
+                    <p className="text-muted-foreground">{task.description || 'Sin detalles.'}</p>
+                </div>
              {task.requiredDocumentForCompletion && (
                 <div className="text-sm text-amber-600 dark:text-amber-500 pt-2">
                     <p className="font-semibold">Documento(s) Requerido(s) para Completar:</p>

@@ -1,6 +1,13 @@
 
 
-import type { Client, Task, Document, Note, WorkflowStage, NavItem, Promoter, ServiceWorkflow, SubService } from './types';
+import type { Client, Task, Document, Note, WorkflowStage, NavItem, Promoter, ServiceWorkflow, SubService, AppUser } from './types';
+import { addDays, format } from 'date-fns';
+
+export const teamMembers: AppUser[] = [
+    { id: 'user-1', name: 'Admin User', email: 'admin@witbiz.com', role: 'Director', photoURL: 'https://picsum.photos/seed/99/40/40' },
+    { id: 'user-2', name: 'Carla Collaborator', email: 'carla@witbiz.com', role: 'Colaborador', photoURL: 'https://picsum.photos/seed/2/40/40' },
+    { id: 'user-3', name: 'Andrea Admin', email: 'andrea@witbiz.com', role: 'Administrador', photoURL: 'https://picsum.photos/seed/1/40/40' },
+];
 
 export const serviceWorkflows: ServiceWorkflow[] = [
   {
@@ -75,16 +82,22 @@ export const tasks: Task[] = [
     clientName: 'Innovate Inc.',
     description: 'Llamada de seguimiento sobre la propuesta enviada.',
     type: 'Cita',
+    assignedToId: 'user-3',
+    assignedToName: 'Andrea Admin',
+    assignedToPhotoURL: 'https://picsum.photos/seed/1/40/40',
   },
   {
     id: 'T2',
     title: 'Preparar contrato de Synergy Corp.',
-    dueDate: new Date(new Date().setDate(new Date().getDate() + 1)).toISOString().split('T')[0],
+    dueDate: format(addDays(new Date(), 1), 'yyyy-MM-dd'),
     status: 'Pendiente',
     clientId: '2',
     clientName: 'Synergy Corp.',
     description: 'Revisión final del contrato antes de enviarlo.',
-    type: 'Tarea'
+    type: 'Tarea',
+    assignedToId: 'user-2',
+    assignedToName: 'Carla Collaborator',
+    assignedToPhotoURL: 'https://picsum.photos/seed/2/40/40',
   },
   {
     id: 'T3',
@@ -94,25 +107,34 @@ export const tasks: Task[] = [
     clientId: '3',
     clientName: 'Solutions LLC',
     type: 'Tarea',
+    assignedToId: 'user-1',
+    assignedToName: 'Admin User',
+    assignedToPhotoURL: 'https://picsum.photos/seed/99/40/40',
   },
   {
     id: 'T4',
     title: 'Agendar inicio de proyecto con Global Net',
-    dueDate: new Date(new Date().setDate(new Date().getDate() - 2)).toISOString().split('T')[0],
+    dueDate: format(addDays(new Date(), -2), 'yyyy-MM-dd'),
     status: 'Pendiente',
     clientId: '4',
     clientName: 'Global Net',
     type: 'Cita',
     dueTime: '14:30',
+    assignedToId: 'user-1',
+    assignedToName: 'Admin User',
+    assignedToPhotoURL: 'https://picsum.photos/seed/99/40/40',
   },
    {
     id: 'T5',
     title: 'Revisar archivos de cliente antiguo',
-    dueDate: new Date(new Date().setDate(new Date().getDate() - 7)).toISOString().split('T')[0],
+    dueDate: format(addDays(new Date(), -7), 'yyyy-MM-dd'),
     status: 'Completada',
     clientId: '2',
     clientName: 'Synergy Corp.',
     type: 'Tarea',
+    assignedToId: 'user-2',
+    assignedToName: 'Carla Collaborator',
+    assignedToPhotoURL: 'https://picsum.photos/seed/2/40/40',
   },
 ];
 

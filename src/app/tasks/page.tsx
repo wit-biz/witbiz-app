@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import React, { useState, useEffect, useMemo, type ChangeEvent, useCallback } from "react";
@@ -20,6 +21,7 @@ import { useCRMData } from "@/contexts/CRMDataContext";
 import { useTasksContext } from "@/contexts/TasksContext";
 import { Task } from "@/lib/types";
 import { AddTaskDialog } from "@/components/shared/AddTaskDialog";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 
 const MemoizedTaskItemDisplay = React.memo(function TaskItemDisplay({ task, icon: Icon, iconColor = "text-gray-500", showDate = true, isClient, onClickHandler }: { task: Task; icon?: React.ElementType; iconColor?: string, showDate?: boolean, isClient: boolean, onClickHandler: (task: Task) => void }) {
@@ -36,11 +38,27 @@ const MemoizedTaskItemDisplay = React.memo(function TaskItemDisplay({ task, icon
       {Icon && <Icon className={`h-5 w-5 mt-1 flex-shrink-0 ${iconColor}`} />} 
       <div className="flex-grow min-w-0"> 
         <p className="font-semibold text-card-foreground truncate">{task.title}</p> 
-        {task.clientName && ( 
-          <p className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5"> 
-            <Briefcase className="h-3 w-3" /> {task.clientName} 
-          </p> 
-        )} 
+        <div className="flex items-center gap-2 text-xs text-muted-foreground mt-1">
+            {task.clientName && ( 
+              <span className="inline-flex items-center gap-1"> 
+                <Briefcase className="h-3 w-3" /> {task.clientName} 
+              </span> 
+            )} 
+            {task.clientName && task.assignedToName && <span className="text-muted-foreground/50">|</span>}
+            {task.assignedToName && (
+                <Tooltip>
+                    <TooltipTrigger asChild>
+                        <Avatar className="h-4 w-4">
+                            <AvatarImage src={task.assignedToPhotoURL} />
+                            <AvatarFallback>{task.assignedToName.charAt(0)}</AvatarFallback>
+                        </Avatar>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                        <p>Asignado a: {task.assignedToName}</p>
+                    </TooltipContent>
+                </Tooltip>
+            )}
+        </div>
         {showDate && taskDueDate && isClient && ( 
           <p className="text-xs text-muted-foreground mt-1"> 
              {format(taskDueDate, 'PPP', { locale: es })}

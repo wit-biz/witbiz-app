@@ -20,9 +20,10 @@ import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
-import { type Client } from '@/lib/types';
+import { type Client, type AppUser } from '@/lib/types';
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Switch } from '@/components/ui/switch';
+import { useCRMData } from '@/contexts/CRMDataContext';
 
 
 const requiredDocSchema = z.object({
@@ -34,6 +35,7 @@ const baseSchema = z.object({
   description: z.string().optional(),
   requiredDocumentForCompletion: z.boolean().default(false),
   requiredDocuments: z.array(requiredDocSchema).optional(),
+  assignedToId: z.string().optional(),
 });
 
 const taskSchema = baseSchema.extend({
@@ -81,13 +83,14 @@ export function AddTaskDialog({
   preselectedClientId
 }: AddTaskDialogProps) {
   const { toast } = useToast();
+  const { currentUser, teamMembers } = useCRMData();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const form = useForm<AddTaskFormValues>({
     resolver: zodResolver(combinedSchema),
     defaultValues: isWorkflowMode ?
-      { isWorkflowMode: true, title: '', description: '', dueDays: 0, requiredDocumentForCompletion: false, requiredDocuments: [] } :
-      { isWorkflowMode: false, title: '', description: '', clientId: preselectedClientId || '', dueDate: new Date(), dueTime: '', requiredDocumentForCompletion: false, requiredDocuments: [] },
+      { isWorkflowMode: true, title: '', description: '', dueDays: 0, requiredDocumentForCompletion: false, requiredDocuments: [], assignedToId: currentUser?.uid } :
+      { isWorkflowMode: false, title: '', description: '', clientId: preselectedClientId || '', dueDate: new Date(), dueTime: '', requiredDocumentForCompletion: false, requiredDocuments: [], assignedToId: currentUser?.uid },
   });
   
   const { fields, append, remove } = useFieldArray({
@@ -98,11 +101,11 @@ export function AddTaskDialog({
   useEffect(() => {
     if (isOpen) {
       form.reset(isWorkflowMode ?
-        { isWorkflowMode: true, title: '', description: '', dueDays: 0, requiredDocumentForCompletion: false, requiredDocuments: [] } :
-        { isWorkflowMode: false, title: '', description: '', clientId: preselectedClientId || '', dueDate: new Date(), dueTime: '', requiredDocumentForCompletion: false, requiredDocuments: [] }
+        { isWorkflowMode: true, title: '', description: '', dueDays: 0, requiredDocumentForCompletion: false, requiredDocuments: [], assignedToId: currentUser?.uid } :
+        { isWorkflowMode: false, title: '', description: '', clientId: preselectedClientId || '', dueDate: new Date(), dueTime: '', requiredDocumentForCompletion: false, requiredDocuments: [], assignedToId: currentUser?.uid }
       );
     }
-  }, [isOpen, isWorkflowMode, preselectedClientId, form]);
+  }, [isOpen, isWorkflowMode, preselectedClientId, form, currentUser]);
   
   const requiresDoc = form.watch('requiredDocumentForCompletion');
 
@@ -171,6 +174,26 @@ export function AddTaskDialog({
                           </FormItem>
                       )}
                   />
+                   <FormField
+                        control={form.control}
+                        name="assignedToId"
+                        render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>Asignar a Miembro del Equipo</FormLabel>
+                                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                    <FormControl>
+                                        <SelectTrigger><SelectValue placeholder="Seleccione un miembro..." /></SelectTrigger>
+                                    </FormControl>
+                                    <SelectContent>
+                                        {teamMembers.map(member => (
+                                            <SelectItem key={member.id} value={member.id}>{member.name}</SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                                <FormMessage />
+                            </FormItem>
+                        )}
+                    />
                   <div className="grid grid-cols-2 gap-4">
                       <FormField
                           control={form.control}
