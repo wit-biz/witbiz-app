@@ -54,7 +54,8 @@ export default function CrmPage() {
   }, [clients, isLoadingClients]);
 
   const allStages = useMemo(() => {
-    return serviceWorkflows.flatMap(s => s.subServices.flatMap(ss => ss.stages));
+    if (!serviceWorkflows) return [];
+    return serviceWorkflows.flatMap(s => s.subServices?.flatMap(ss => ss.stages) || s.stages || []);
   }, [serviceWorkflows]);
 
   const handleClientClick = (client: Client) => {
@@ -105,7 +106,7 @@ export default function CrmPage() {
                 </CardHeader>
                 <CardContent className="pt-0 space-y-4">
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                        {service.subServices.flatMap(ss => ss.stages).sort((a,b) => a.order - b.order).map((stage, index) => {
+                        {(service.subServices?.flatMap(ss => ss.stages) || service.stages || []).sort((a,b) => a.order - b.order).map((stage, index) => {
                         const clientsInStage = clientsByStage.get(stage.id) || [];
                         return (
                             <Card key={stage.id} id={`stage-card-${stage.id}`} className="flex flex-col">
