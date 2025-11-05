@@ -150,7 +150,6 @@ export default function CrmPage() {
             <Card key={service.id} className="w-full">
                 <CardHeader>
                     <CardTitle className="flex items-center gap-2 text-xl">
-                        <Workflow className="h-5 w-5 text-primary" />
                         {service.name}
                     </CardTitle>
                     <CardDescription>Pipeline de clientes para este servicio.</CardDescription>
@@ -175,7 +174,6 @@ export default function CrmPage() {
                     {service.subServices && service.subServices.map(subService => (
                         <div key={subService.id} className="space-y-4 pt-4 border-t">
                             <h3 className="text-lg font-semibold flex items-center gap-2">
-                                <FolderCog className="h-5 w-5 text-accent"/>
                                 {subService.name}
                             </h3>
                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
