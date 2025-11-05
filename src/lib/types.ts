@@ -94,6 +94,7 @@ export type WorkflowAction = {
   subActions: SubAction[];
   requiredDocumentForCompletion?: boolean;
   requiredDocuments?: { id: string; description: string }[];
+  description?: string;
 };
 
 export type SubAction = {

@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import React, { createContext, useContext, useState, useMemo, type ReactNode, useCallback, useEffect } from 'react';
@@ -217,6 +218,7 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
             dueDate: finalDueDate,
             status: 'Pendiente', 
             clientName: client.name,
+            assignedToId: assignedUser?.id,
             assignedToName: assignedUser?.name,
             assignedToPhotoURL: assignedUser?.photoURL,
             createdAt: serverTimestamp()
