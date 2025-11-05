@@ -346,26 +346,30 @@ export default function WorkflowConfigurationPage() {
   const renderSubService = (subService: SubService) => (
     <AccordionItem value={subService.id} key={subService.id} asChild>
       <Card className="bg-muted/30">
-        <AccordionTrigger className="w-full p-0 [&_svg]:ml-auto [&_svg]:mr-4 hover:no-underline">
-          <CardHeader className="flex-1 text-left flex flex-row items-center justify-between">
-            <div className="flex items-center gap-3">
-              <FolderCog className="h-5 w-5 text-accent"/>
-              {canEditWorkflow ? (
-                  <Input 
-                    value={subService.name}
-                    onClick={e => e.stopPropagation()}
-                    onChange={e => handleUpdateSubService(subService.id, { name: e.target.value })}
-                    className="h-8 text-md font-semibold p-1"
-                  />
-              ) : <CardTitle className="text-md">{subService.name}</CardTitle>}
-            </div>
+        <div className="flex items-center">
+            <AccordionTrigger className="w-full p-0 flex-1 hover:no-underline [&_svg]:ml-auto [&_svg]:mr-4">
+              <CardHeader className="text-left">
+                <div className="flex items-center gap-3">
+                  <FolderCog className="h-5 w-5 text-accent"/>
+                  {canEditWorkflow ? (
+                      <Input 
+                        value={subService.name}
+                        onClick={e => e.stopPropagation()}
+                        onChange={e => handleUpdateSubService(subService.id, { name: e.target.value })}
+                        className="h-8 text-md font-semibold p-1"
+                      />
+                  ) : <CardTitle className="text-md">{subService.name}</CardTitle>}
+                </div>
+              </CardHeader>
+            </AccordionTrigger>
              {canEditWorkflow && (
-                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={(e) => { e.stopPropagation(); handleDeleteSubService(subService.id); }}>
-                    <Trash2 className="h-4 w-4 text-destructive"/>
-                </Button>
+                <div className="pr-4">
+                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={(e) => { e.stopPropagation(); handleDeleteSubService(subService.id); }}>
+                        <Trash2 className="h-4 w-4 text-destructive"/>
+                    </Button>
+                </div>
              )}
-          </CardHeader>
-        </AccordionTrigger>
+        </div>
         <AccordionContent className="p-4 pt-0">
           {subService.stages && subService.stages.length > 0 ? (
             renderStages(subService.stages, {
