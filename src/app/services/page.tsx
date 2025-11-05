@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import React, { useState, useMemo, useEffect, useCallback } from "react";
@@ -6,8 +7,8 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Header } from "@/components/header";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import { useCRMData, type WorkflowStage, type ServiceWorkflow, type WorkflowAction, type SubObjective, type SubService, type Task, type ClientRequirement } from "@/contexts/CRMDataContext"; 
-import { Edit, Save, Trash2, Plus, X, Loader2, UploadCloud, ChevronsRight, FileText, ListTodo, Workflow as WorkflowIcon, ArrowLeft, Download, PlusCircle, Briefcase } from "lucide-react";
+import { useCRMData, type WorkflowStage, type ServiceWorkflow, type WorkflowAction, type SubObjective, type SubService, type Task, type ClientRequirement, type Commission } from "@/contexts/CRMDataContext"; 
+import { Edit, Save, Trash2, Plus, X, Loader2, UploadCloud, ChevronsRight, FileText, ListTodo, Workflow as WorkflowIcon, ArrowLeft, Download, PlusCircle, Briefcase, Percent } from "lucide-react";
 import { Card, CardHeader, CardTitle, CardContent, CardDescription, CardFooter } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
@@ -83,7 +84,7 @@ export default function ServicesPage() {
   const { setIsSmartUploadDialogOpen } = useDialogs();
 
   const [editingServiceId, setEditingServiceId] = useState<string | null>(null);
-  const [editableFields, setEditableFields] = useState<{ description: string; clientRequirements: ClientRequirement[] }>({ description: '', clientRequirements: [] });
+  const [editableFields, setEditableFields] = useState<{ description: string; clientRequirements: ClientRequirement[], commissions: Commission[] }>({ description: '', clientRequirements: [], commissions: [] });
   const [isPromptNameOpen, setIsPromptNameOpen] = useState(false);
   const [openAccordionItem, setOpenAccordionItem] = useState<string | undefined>(undefined);
   
@@ -99,6 +100,7 @@ export default function ServicesPage() {
     setEditableFields({
       description: service.description || '',
       clientRequirements: service.clientRequirements ? JSON.parse(JSON.stringify(service.clientRequirements)) : [], // Deep copy
+      commissions: service.commissions ? JSON.parse(JSON.stringify(service.commissions)) : [],
     });
   };
 
@@ -110,6 +112,7 @@ export default function ServicesPage() {
     await updateService(serviceId, {
       description: editableFields.description,
       clientRequirements: editableFields.clientRequirements,
+      commissions: editableFields.commissions,
     });
     setEditingServiceId(null);
   };
@@ -136,6 +139,30 @@ export default function ServicesPage() {
   const handleRemoveRequirement = (index: number) => {
     const newRequirements = editableFields.clientRequirements.filter((_, i) => i !== index);
     setEditableFields(prev => ({ ...prev, clientRequirements: newRequirements }));
+  };
+  
+  // --- Commission Handlers ---
+  const handleCommissionChange = (index: number, field: 'name' | 'rate', value: string | number) => {
+    const newCommissions = [...editableFields.commissions];
+    if (field === 'rate') {
+      newCommissions[index][field] = Number(value) || 0;
+    } else {
+      newCommissions[index][field] = value as string;
+    }
+    setEditableFields(prev => ({ ...prev, commissions: newCommissions }));
+  };
+
+  const handleAddCommission = () => {
+    const newCommission: Commission = { id: `com-${Date.now()}`, name: '', rate: 0 };
+    setEditableFields(prev => ({
+      ...prev,
+      commissions: [...prev.commissions, newCommission]
+    }));
+  };
+
+  const handleRemoveCommission = (index: number) => {
+    const newCommissions = editableFields.commissions.filter((_, i) => i !== index);
+    setEditableFields(prev => ({ ...prev, commissions: newCommissions }));
   };
   
   const handleAddNewService = async (name: string) => {
@@ -246,7 +273,7 @@ export default function ServicesPage() {
                           <AccordionContent className="p-6 pt-0">
                               <div className="space-y-6">
                                   {isEditing ? (
-                                      <div className="space-y-4">
+                                      <div className="space-y-6">
                                           <div>
                                               <Label htmlFor="description">Descripción del Servicio</Label>
                                               <Textarea id="description" name="description" value={editableFields.description} onChange={handleDescriptionChange} placeholder="Describa en qué consiste el servicio..." />
@@ -275,6 +302,39 @@ export default function ServicesPage() {
                                               </Button>
                                             </div>
                                           </div>
+
+                                          <div>
+                                            <Label>Tarifas de Comisión</Label>
+                                            <div className="space-y-2">
+                                              {editableFields.commissions.map((com, index) => (
+                                                <div key={com.id} className="grid grid-cols-[1fr_100px_auto] items-center gap-2">
+                                                  <Input
+                                                    value={com.name}
+                                                    onChange={(e) => handleCommissionChange(index, 'name', e.target.value)}
+                                                    placeholder="Tipo de comisión (ej. Amex)"
+                                                  />
+                                                   <div className="relative">
+                                                      <Input
+                                                        type="number"
+                                                        value={com.rate}
+                                                        onChange={(e) => handleCommissionChange(index, 'rate', e.target.value)}
+                                                        placeholder="Tasa"
+                                                        className="pr-6"
+                                                      />
+                                                      <Percent className="absolute right-2 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                                                  </div>
+                                                  <Button variant="ghost" size="icon" onClick={() => handleRemoveCommission(index)}>
+                                                    <Trash2 className="h-4 w-4 text-destructive" />
+                                                  </Button>
+                                                </div>
+                                              ))}
+                                              <Button variant="outline" size="sm" onClick={handleAddCommission}>
+                                                <Plus className="h-4 w-4 mr-2" />
+                                                Añadir Comisión
+                                              </Button>
+                                            </div>
+                                          </div>
+
                                       </div>
                                   ) : (
                                       <>
@@ -295,6 +355,17 @@ export default function ServicesPage() {
                                                   <p className="text-sm text-muted-foreground mt-1">No hay requisitos especificados.</p>
                                               )}
                                           </div>
+                                          
+                                          <div>
+                                            <h4 className="font-semibold text-sm">Tarifas de Comisión</h4>
+                                            {service.commissions && service.commissions.length > 0 ? (
+                                              <ul className="list-disc list-inside space-y-1 mt-1 text-sm text-muted-foreground">
+                                                {service.commissions.map(com => <li key={com.id}>{com.name}: {com.rate}%</li>)}
+                                              </ul>
+                                            ) : (
+                                              <p className="text-sm text-muted-foreground mt-1">No hay comisiones especificadas.</p>
+                                            )}
+                                          </div>
                                       </>
                                   )}
 
@@ -305,7 +376,7 @@ export default function ServicesPage() {
                                               <Button variant="outline" onClick={handleCancelEdit}>Cancelar</Button>
                                           </>
                                       ) : (
-                                          <Button variant="outline" onClick={() => handleStartEdit(service)}><Edit className="mr-2 h-4 w-4"/>Editar Descripción y Requisitos</Button>
+                                          <Button variant="outline" onClick={() => handleStartEdit(service)}><Edit className="mr-2 h-4 w-4"/>Editar Descripción, Requisitos y Comisiones</Button>
                                       )}
                                       <Button asChild>
                                           <Link href={`/workflows?serviceId=${service.id}`}>

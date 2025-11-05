@@ -20,6 +20,7 @@ import {
     type WorkflowStage,
     type SubStage,
     type SubSubStage,
+    type Commission,
 } from '@/lib/types';
 import { useUser, useFirestore, useMemoFirebase, useCollection, useDoc, useAuth, addDocumentNonBlocking, setDocumentNonBlocking, deleteDocumentNonBlocking } from '@/firebase';
 import { collection, doc, writeBatch, serverTimestamp, query } from 'firebase/firestore';
@@ -368,6 +369,7 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
             name: name,
             description: "",
             clientRequirements: [],
+            commissions: [],
             stages: [],
             subServices: [], // legacy
         };

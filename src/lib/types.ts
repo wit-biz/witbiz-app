@@ -176,6 +176,12 @@ export type ClientRequirement = {
   text: string;
 }
 
+export type Commission = {
+  id: string;
+  name: string;
+  rate: number;
+}
+
 // Legacy type, will be phased out
 export interface SubService {
     id: string;
@@ -188,6 +194,7 @@ export interface ServiceWorkflow {
     name: string;
     description?: string;
     clientRequirements?: ClientRequirement[];
+    commissions?: Commission[];
     stages: WorkflowStage[];
     subServices: SubService[]; // Legacy, will be phased out
 }

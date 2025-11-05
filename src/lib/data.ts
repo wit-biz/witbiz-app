@@ -13,8 +13,13 @@ export const serviceWorkflows: ServiceWorkflow[] = [
   {
     id: 'service-terminales-1',
     name: 'Terminales',
-    description: '',
-    clientRequirements: [],
+    description: 'Proceso para la venta e instalación de terminales de punto de venta.',
+    clientRequirements: [{id: 'req-1', text: 'Acta constitutiva'}, {id: 'req-2', text: 'Comprobante de domicilio'}],
+    commissions: [
+        {id: 'com-1', name: 'Visa/Mastercard Débito', rate: 1.5},
+        {id: 'com-2', name: 'Visa/Mastercard Crédito', rate: 2.5},
+        {id: 'com-3', name: 'American Express', rate: 3.5},
+    ],
     subServices: []
   }
 ];
