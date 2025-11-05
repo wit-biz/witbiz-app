@@ -91,7 +91,7 @@ export default function TasksPage() {
 
   const [isClient, setIsClient] = useState(false);
   const [currentClientDate, setCurrentClientDate] = useState<Date | null>(null);
-  const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
+  const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
   const [calendarMonth, setCalendarMonth] = useState<Date>();
   const [openAccordionItem, setOpenAccordionItem] = useState<string>("today-tasks");
   
@@ -155,8 +155,6 @@ export default function TasksPage() {
   
   const dayModifiers = useMemo(() => {
     if (!currentClientDate || !Array.isArray(allTasks)) return {};
-    const today = new Date(currentClientDate);
-    today.setHours(0, 0, 0, 0);
   
     const pendingTasksWithValidDates = allTasks.filter(
       (task) =>
@@ -170,9 +168,9 @@ export default function TasksPage() {
     pendingTasksWithValidDates.forEach((task) => {
       const date = parseDateString(task.dueDate);
       if (date) {
-        if (date < today) {
+        if (date < currentClientDate) {
           overdueDays.push(date);
-        } else if (date.getTime() === today.getTime()) {
+        } else if (date.getTime() === currentClientDate.getTime()) {
           todayTaskDays.push(date);
         } else {
           upcomingTaskDays.push(date);
@@ -202,8 +200,17 @@ export default function TasksPage() {
   
   const handleTaskClick = useCallback((task: Task) => { setSelectedTaskDetail(task); setIsDetailDialogOpen(true); }, []);
   
-  const taskSections = [ { id: "overdue-tasks", title: "Tareas Atrasadas", tasks: overdueTasks, icon: AlertTriangle, color: "text-destructive", emptyMsg: "¡Ninguna tarea atrasada! Buen trabajo." }, { id: "today-tasks", title: "Tareas Para Hoy", tasks: todayTasks, icon: CheckCircle2, color: "text-green-500", emptyMsg: "No hay tareas programadas para hoy." }, { id: "upcoming-tasks", title: "Próximas Tareas", tasks: upcomingWeekTasks, icon: ListTodo, color: "text-blue-500", emptyMsg: "No hay más tareas para esta semana." } ];
+  const taskSections = [
+    { id: "today-tasks", title: "Tareas Para Hoy", tasks: todayTasks, icon: CheckCircle2, color: "text-green-500", emptyMsg: "No hay tareas programadas para hoy." },
+    { id: "overdue-tasks", title: "Tareas Atrasadas", tasks: overdueTasks, icon: AlertTriangle, color: "text-destructive", emptyMsg: "¡Ninguna tarea atrasada! Buen trabajo." },
+    { id: "upcoming-tasks", title: "Próximas Tareas", tasks: upcomingWeekTasks, icon: ListTodo, color: "text-blue-500", emptyMsg: "No hay más tareas para esta semana." }
+  ];
 
+  const handleAccordionChange = (value: string) => {
+    setOpenAccordionItem(value);
+    setSelectedDate(undefined);
+  };
+  
   const canCreateTask = currentUser?.permissions.tasks_create ?? true; 
 
   const handleAddTask = async (data: Omit<Task, 'id' | 'status'>) => {
@@ -243,7 +250,7 @@ export default function TasksPage() {
                     <Calendar 
                       mode="single" 
                       selected={selectedDate} 
-                      onSelect={setSelectedDate} 
+                      onSelect={(date) => { setSelectedDate(date); setOpenAccordionItem(''); }} 
                       month={calendarMonth} 
                       onMonthChange={setCalendarMonth} 
                       locale={es} 
@@ -265,7 +272,7 @@ export default function TasksPage() {
               {selectedDate && ( <Card> <CardHeader> <CardTitle>Tareas para el {isClient ? format(selectedDate, 'PPP', { locale: es }) : '...'}</CardTitle> </CardHeader> <CardContent className="space-y-3"> {tasksForSelectedDate.length > 0 ? ( tasksForSelectedDate.map(task => <MemoizedTaskItemDisplay key={task.id} task={task} showDate={false} icon={Clock} iconColor="text-blue-500" isClient={isClient} onClickHandler={handleTaskClick} />) ) : ( <div className="text-sm text-muted-foreground p-4 text-center flex flex-col items-center"> <Info className="h-8 w-8 text-muted-foreground mb-2"/> No hay tareas pendientes para esta fecha. </div> )} </CardContent> </Card> )}
             </div>
             <div className="lg:col-span-2 space-y-1">
-              <Accordion type="single" collapsible className="w-full space-y-4" value={openAccordionItem} onValueChange={setOpenAccordionItem} >
+              <Accordion type="single" collapsible className="w-full space-y-4" value={openAccordionItem} onValueChange={handleAccordionChange} >
                 {taskSections.map(section => ( 
                   <AccordionItem value={section.id} key={section.id} className="border-none"> 
                     <Card> 

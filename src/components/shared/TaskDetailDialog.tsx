@@ -38,6 +38,7 @@ const taskEditSchema = z.object({
   title: z.string().min(3, "El título debe tener al menos 3 caracteres."),
   description: z.string().optional(),
   clientId: z.string().min(1, "Debe seleccionar un cliente."),
+  assignedToId: z.string().optional(),
   dueDate: z.date({ required_error: "La fecha de vencimiento es requerida." }),
   dueTime: z.string().optional(),
 });
@@ -59,7 +60,7 @@ export function TaskDetailDialog({
   onDeleteTask,
 }: TaskDetailDialogProps) {
   const { toast } = useToast();
-  const { clients, addTask } = useCRMData();
+  const { clients, teamMembers, addTask } = useCRMData();
   const { setIsSmartUploadDialogOpen } = useDialogs();
   
   const [isEditing, setIsEditing] = useState(false);
@@ -75,6 +76,7 @@ export function TaskDetailDialog({
             title: task.title,
             description: task.description,
             clientId: task.clientId,
+            assignedToId: task.assignedToId,
             dueDate: parseDateString(task.dueDate) || new Date(),
             dueTime: task.dueTime,
         });
@@ -131,18 +133,22 @@ export function TaskDetailDialog({
     setIsSubmitting(true);
 
     const clientName = clients.find(c => c.id === data.clientId)?.name || task.clientName;
+    const assignedUser = teamMembers.find(m => m.id === data.assignedToId);
     
     const updates: Partial<Task> = {
         ...task,
         ...data,
         dueDate: format(data.dueDate, 'yyyy-MM-dd'),
         clientName: clientName,
+        assignedToName: assignedUser?.name,
+        assignedToPhotoURL: assignedUser?.photoURL,
     };
     
     const success = await onUpdateTask(task.id, updates);
     if (success) {
         toast({ title: 'Éxito', description: 'Tarea actualizada correctamente.' });
         setIsEditing(false);
+        onOpenChange(false); // Close dialog on successful update
     } else {
          toast({
             variant: 'destructive',
@@ -196,6 +202,24 @@ export function TaskDetailDialog({
                                         </FormControl>
                                         <SelectContent>
                                             {clients.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+                                        </SelectContent>
+                                    </Select>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+                         <FormField
+                            control={form.control}
+                            name="assignedToId"
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Asignar a</FormLabel>
+                                    <Select onValueChange={field.onChange} value={field.value}>
+                                        <FormControl>
+                                            <SelectTrigger><SelectValue placeholder="Seleccione un miembro..." /></SelectTrigger>
+                                        </FormControl>
+                                        <SelectContent>
+                                            {teamMembers.map(m => <SelectItem key={m.id} value={m.id}>{m.name}</SelectItem>)}
                                         </SelectContent>
                                     </Select>
                                     <FormMessage />
