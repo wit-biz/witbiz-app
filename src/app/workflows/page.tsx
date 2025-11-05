@@ -238,6 +238,20 @@ export default function WorkflowConfigurationPage() {
   
     setEditableStageData({ ...editableStageData, actions: newActions });
   };
+
+  const handleAddNewActionToStage = () => {
+    if (!editableStageData) return;
+    const newAction: WorkflowAction = {
+      id: `action-${Date.now()}`,
+      description: "Nueva Tarea",
+      order: (editableStageData.actions?.length || 0) + 1,
+      subActions: []
+    };
+    setEditableStageData(prev => ({
+        ...prev,
+        actions: [...(prev?.actions || []), newAction]
+    }));
+  };
   
   const renderStages = (stages: WorkflowStage[], serviceId: string, subServiceId: string | null) => {
     if (!stages) return null;
@@ -282,7 +296,7 @@ export default function WorkflowConfigurationPage() {
                               <div key={action.id} className="flex flex-col gap-2 p-3 border rounded-md bg-secondary/30">
                                 <div className="flex items-center gap-2">
                                   <div className="w-6 flex-shrink-0 text-lg font-bold text-accent/80">{actIndex + 1}.</div>
-                                  <Input value={action.description} onChange={(e) => handleActionChange(action.id, 'description', e.target.value)} placeholder="Descripción de la Acción..." className="font-semibold flex-grow"/>
+                                  <Input value={action.description} onChange={(e) => handleActionChange(action.id, 'description', e.target.value)} placeholder="Descripción de la Tarea..." className="font-semibold flex-grow"/>
                                   <Button type="button" size="icon" variant="ghost" onClick={() => deleteActionFromStage(serviceId, subServiceId, stage.id, action.id)} className="self-center"><Trash2 className="h-4 w-4 text-destructive" /></Button>
                                 </div>
                                 <div className="pl-8 pt-2 border-t border-border/50">
@@ -330,7 +344,9 @@ export default function WorkflowConfigurationPage() {
                           )
                         })}
                       </div>
-                      <Button type="button" size="sm" variant="outline" onClick={() => addActionToStage(serviceId, subServiceId, stage.id)}><Plus className="h-4 w-4 mr-2"/>Añadir Tarea</Button>
+                      <Button type="button" size="sm" variant="outline" onClick={handleAddNewActionToStage}>
+                        <Plus className="h-4 w-4 mr-2"/>Añadir Tarea
+                      </Button>
                     </div>
                 ) : (
                   <div>
@@ -561,4 +577,3 @@ export default function WorkflowConfigurationPage() {
     </TooltipProvider>
   );
 }
-
