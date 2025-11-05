@@ -18,12 +18,16 @@ import {
     type SubService,
     type ClientRequirement,
     type WorkflowStage,
+    type SubStage,
+    type SubSubStage,
 } from '@/lib/types';
 import { useUser, useFirestore, useMemoFirebase, useCollection, useDoc, useAuth, addDocumentNonBlocking, setDocumentNonBlocking, deleteDocumentNonBlocking } from '@/firebase';
 import { collection, doc, writeBatch, serverTimestamp, query } from 'firebase/firestore';
 import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
 import { teamMembers as mockTeamMembers } from '@/lib/data';
 import { addDays, format } from 'date-fns';
+
+type AnyStage = WorkflowStage | SubStage | SubSubStage;
 
 interface CRMContextType {
   currentUser: AuthenticatedUser | null;
@@ -165,7 +169,7 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
         // Find the first stage of the first subscribed service to set the initial state
         const firstServiceId = newClientData.subscribedServiceIds[0];
         const service = serviceWorkflows.find(s => s.id === firstServiceId);
-        const initialStage = service?.stages?.[0] || service?.subServices?.[0]?.stages?.[0];
+        const initialStage = service?.stages?.[0];
 
         const payload: Omit<Client, 'id'> = {
             ...newClientData,
@@ -254,15 +258,13 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
         if (!client || !client.currentWorkflowStageId) return;
 
         const clientTasks = tasks.filter(t => t.clientId === clientId);
-        const currentStageTasks = clientTasks.filter(t => {
-            // This is a simplification; a more robust solution would link tasks to stages.
-            // For now, we check all pending tasks for the client.
-            return t.status === 'Pendiente';
-        });
         
+        const allStages = getAllStages();
+        const currentStage = allStages.find(s => s.id === client.currentWorkflowStageId);
+        if (!currentStage) return;
+
         const tasksForCurrentStage = clientTasks.filter(task => {
-            const currentStage = getAllStages().find(s => s.id === client.currentWorkflowStageId);
-            return currentStage?.actions.some(action => action.title === task.title && task.status === 'Pendiente');
+            return currentStage.actions.some(action => action.title === task.title && task.status === 'Pendiente');
         });
 
         const allTasksForStageCompleted = tasksForCurrentStage.length === 0;
@@ -283,15 +285,27 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
         }
     };
     
-    const getAllStages = useCallback((): WorkflowStage[] => {
-        if (!serviceWorkflows) return [];
-        return serviceWorkflows.flatMap(service => [
-            ...(service.stages || []),
-            ...(service.subServices?.flatMap(ss => ss.stages) || [])
-        ]).sort((a, b) => a.order - b.order);
+    const getAllStages = useCallback((): AnyStage[] => {
+      if (!serviceWorkflows) return [];
+      
+      const all: AnyStage[] = [];
+      
+      serviceWorkflows.forEach(service => {
+        service.stages.forEach(stage => {
+          all.push(stage);
+          stage.subStages.forEach(subStage => {
+            all.push(subStage);
+            subStage.subSubStages.forEach(subSubStage => {
+              all.push(subSubStage);
+            });
+          });
+        });
+      });
+
+      return all.sort((a,b) => a.order - b.order);
     }, [serviceWorkflows]);
 
-    const findNextStage = (currentStageId: string): WorkflowStage | null => {
+    const findNextStage = (currentStageId: string): AnyStage | null => {
         const allStages = getAllStages();
         const currentIndex = allStages.findIndex(s => s.id === currentStageId);
         if (currentIndex !== -1 && currentIndex < allStages.length - 1) {
@@ -321,17 +335,17 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
     const getActionById = useCallback((actionId: string): WorkflowAction | null => {
         if (!serviceWorkflows) return null;
         for (const service of serviceWorkflows) {
-            if(service.stages) {
-                for (const stage of service.stages) {
-                    const action = stage.actions.find(o => o.id === actionId);
+            for (const stage of service.stages) {
+                let action = stage.actions.find(o => o.id === actionId);
+                if (action) return action;
+
+                for (const subStage of stage.subStages) {
+                    action = subStage.actions.find(o => o.id === actionId);
                     if (action) return action;
-                }
-            }
-            if(service.subServices) {
-                for (const subService of service.subServices) {
-                    for (const stage of subService.stages) {
-                        const action = stage.actions.find(o => o.id === actionId);
-                        if (action) return action;
+                    
+                    for (const subSubStage of subStage.subSubStages) {
+                         action = subSubStage.actions.find(o => o.id === actionId);
+                         if (action) return action;
                     }
                 }
             }
@@ -348,7 +362,7 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
             description: "",
             clientRequirements: [],
             stages: [],
-            subServices: [],
+            subServices: [], // legacy
         };
         const newDocRef = await addDocumentNonBlocking(workflowsCollection, newServiceData);
         return { ...newServiceData, id: newDocRef.id };

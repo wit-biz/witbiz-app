@@ -79,11 +79,28 @@ export type Note = {
   updatedAt?: any; // Firestore Timestamp o Date
 };
 
+// New 3-level structure
+export type SubSubStage = {
+  id: string;
+  title: string;
+  order: number;
+  actions: WorkflowAction[];
+};
+
+export type SubStage = {
+  id: string;
+  title: string;
+  order: number;
+  actions: WorkflowAction[];
+  subSubStages: SubSubStage[];
+};
+
 export type WorkflowStage = {
   id: string;
   title: string;
   order: number;
   actions: WorkflowAction[];
+  subStages: SubStage[];
 };
 
 export type WorkflowAction = {
@@ -158,6 +175,7 @@ export type ClientRequirement = {
   text: string;
 }
 
+// Legacy type, will be phased out
 export interface SubService {
     id: string;
     name: string;
@@ -169,8 +187,8 @@ export interface ServiceWorkflow {
     name: string;
     description?: string;
     clientRequirements?: ClientRequirement[];
-    stages?: WorkflowStage[];
-    subServices: SubService[];
+    stages: WorkflowStage[];
+    subServices: SubService[]; // Legacy, will be phased out
 }
 
 export interface NavItem {
