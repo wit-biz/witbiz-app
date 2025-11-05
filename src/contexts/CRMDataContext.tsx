@@ -230,6 +230,7 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
     }
 
     const getActionById = useCallback((actionId: string): WorkflowAction | null => {
+        if (!serviceWorkflows) return null;
         for (const service of serviceWorkflows) {
             if(service.stages) {
                 for (const stage of service.stages) {
@@ -356,5 +357,3 @@ export function useCRMData() {
   }
   return context;
 }
-
-    

@@ -78,7 +78,7 @@ service cloud.firestore {
      * @path /users/{userId}/serviceWorkflows/{workflowId}
      */
     match /users/{userId}/serviceWorkflows/{workflowId} {
-      allow list, get, create, update, delete: if isSignedIn() && isOwner(userId);
+      allow read, write: if isSignedIn() && isOwner(userId);
     }
 
     // --- Helper functions ---
