@@ -121,8 +121,16 @@ const StageCard = ({
                         </div>
                     )}
                     {/* Render nested stages inside the content area */}
-                    {'subStages' in stage && renderSubStages(stage.subStages, 2)}
-                    {'subSubStages' in stage && renderSubStages(stage.subSubStages, 3)}
+                    {'subStages' in stage && stage.subStages && stage.subStages.length > 0 && (
+                        <div className="mt-4 pt-4 border-t">
+                            {renderSubStages(stage.subStages, 2)}
+                        </div>
+                    )}
+                    {'subSubStages' in stage && stage.subSubStages && stage.subSubStages.length > 0 && (
+                        <div className="mt-4 pt-4 border-t pl-4">
+                             {renderSubStages(stage.subSubStages, 3)}
+                        </div>
+                    )}
                 </CardContent>
             </AccordionContent>
       </Card>
