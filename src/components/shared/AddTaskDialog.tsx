@@ -71,15 +71,15 @@ export function AddTaskDialog({
 
   const form = useForm<AddTaskFormValues>({
     resolver: zodResolver(combinedSchema),
-    defaultValues: isWorkflowMode ? 
-      { isWorkflowMode: true, title: '', description: '', dueDays: 0 } : 
+    defaultValues: isWorkflowMode ?
+      { isWorkflowMode: true, title: '', description: '', dueDays: 0 } :
       { isWorkflowMode: false, title: '', description: '', clientId: '', dueDate: new Date(), dueTime: '' },
   });
 
   useEffect(() => {
     if (isOpen) {
-      form.reset(isWorkflowMode ? 
-        { isWorkflowMode: true, title: '', description: '', dueDays: 0 } : 
+      form.reset(isWorkflowMode ?
+        { isWorkflowMode: true, title: '', description: '', dueDays: 0 } :
         { isWorkflowMode: false, title: '', description: '', clientId: '', dueDate: new Date(), dueTime: '' }
       );
     }
@@ -103,126 +103,127 @@ export function AddTaskDialog({
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
         <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)}>
+          <form onSubmit={form.handleSubmit(onSubmit)}>
             <DialogHeader>
-                <DialogTitle className="flex items-center gap-2">
+              <DialogTitle className="flex items-center gap-2">
                 <PlusCircle className="h-5 w-5 text-accent"/>
                 Crear Nueva Tarea
-                </DialogTitle>
-                <DialogDescription>
-                  {isWorkflowMode ? "Defina los detalles para esta tarea automática." : "Complete la información para crear una nueva tarea."}
-                </DialogDescription>
+              </DialogTitle>
+              <DialogDescription>
+                {isWorkflowMode ? "Defina los detalles para esta tarea automática." : "Complete la información para crear una nueva tarea."}
+              </DialogDescription>
             </DialogHeader>
 
             <div className="py-4 space-y-4">
-                <FormField
-                    control={form.control}
-                    name="title"
-                    render={({ field }) => (
-                        <FormItem>
-                            <FormLabel>Título de la Tarea <span className="text-destructive">*</span></FormLabel>
-                            <FormControl>
-                                <Input {...field} />
-                            </FormControl>
-                            <FormMessage />
-                        </FormItem>
-                    )}
-                />
-                
-                {!isWorkflowMode ? (
-                <>
-                    <FormField
-                        control={form.control}
-                        name="clientId"
-                        render={({ field }) => (
-                            <FormItem>
-                                <FormLabel>Asignar a Cliente <span className="text-destructive">*</span></FormLabel>
-                                <Select onValueChange={field.onChange} defaultValue={field.value}>
-                                    <FormControl>
-                                        <SelectTrigger><SelectValue placeholder="Seleccione un cliente..." /></SelectTrigger>
-                                    </FormControl>
-                                    <SelectContent>
-                                    {clients.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
-                                    </SelectContent>
-                                </Select>
-                                <FormMessage />
-                            </FormItem>
-                        )}
-                    />
-                    
-                    <div className="grid grid-cols-2 gap-4">
-                        <FormField
-                            control={form.control}
-                            name="dueDate"
-                            render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel>Fecha de Vencimiento</FormLabel>
-                                    <Popover>
-                                        <PopoverTrigger asChild>
-                                            <FormControl>
-                                                <Button variant="outline" className={cn('w-full justify-start text-left font-normal', !field.value && 'text-muted-foreground')}>
-                                                    <CalendarIcon className="mr-2 h-4 w-4" />
-                                                    {field.value ? format(field.value, 'PPP', { locale: es }) : <span>Seleccione fecha</span>}
-                                                </Button>
-                                            </FormControl>
-                                        </PopoverTrigger>
-                                        <PopoverContent className="w-auto p-0"><Calendar mode="single" selected={field.value} onSelect={field.onChange} initialFocus /></PopoverContent>
-                                    </Popover>
-                                    <FormMessage />
-                                </FormItem>
-                            )}
-                        />
-                        <FormField
-                            control={form.control}
-                            name="dueTime"
-                            render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel>Hora (Opcional)</FormLabel>
-                                    <FormControl>
-                                        <Input type="time" {...field} />
-                                    </FormControl>
-                                    <FormMessage />
-                                </FormItem>
-                            )}
-                        />
-                    </div>
-                </>
-                ) : (
-                    <FormField
-                        control={form.control}
-                        name="dueDays"
-                        render={({ field }) => (
-                            <FormItem>
-                                <FormLabel>Días para Vencer</FormLabel>
-                                <div className="flex items-center gap-4 pt-2">
-                                    <Slider
-                                        min={0}
-                                        max={30}
-                                        step={1}
-                                        value={[field.value || 0]}
-                                        onValueChange={(value) => field.onChange(value[0])}
-                                    />
-                                    <span className="text-sm font-medium w-8 text-center">{field.value}</span>
-                                </div>
-                                <FormMessage />
-                            </FormItem>
-                        )}
-                    />
-                )}
+              <FormField
+                  control={form.control}
+                  name="title"
+                  render={({ field }) => (
+                      <FormItem>
+                          <FormLabel>Título de la Tarea <span className="text-destructive">*</span></FormLabel>
+                          <FormControl>
+                              <Input {...field} />
+                          </FormControl>
+                          <FormMessage />
+                      </FormItem>
+                  )}
+              />
 
+              {!isWorkflowMode ? (
+                // --- VISTA PARA PÁGINA DE TAREAS ---
+                <>
+                  <FormField
+                      control={form.control}
+                      name="clientId"
+                      render={({ field }) => (
+                          <FormItem>
+                              <FormLabel>Asignar a Cliente <span className="text-destructive">*</span></FormLabel>
+                              <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                  <FormControl>
+                                      <SelectTrigger><SelectValue placeholder="Seleccione un cliente..." /></SelectTrigger>
+                                  </FormControl>
+                                  <SelectContent>
+                                  {clients.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+                                  </SelectContent>
+                              </Select>
+                              <FormMessage />
+                          </FormItem>
+                      )}
+                  />
+                  <div className="grid grid-cols-2 gap-4">
+                      <FormField
+                          control={form.control}
+                          name="dueDate"
+                          render={({ field }) => (
+                              <FormItem>
+                                  <FormLabel>Fecha de Vencimiento</FormLabel>
+                                  <Popover>
+                                      <PopoverTrigger asChild>
+                                          <FormControl>
+                                              <Button variant="outline" className={cn('w-full justify-start text-left font-normal', !field.value && 'text-muted-foreground')}>
+                                                  <CalendarIcon className="mr-2 h-4 w-4" />
+                                                  {field.value ? format(field.value, 'PPP', { locale: es }) : <span>Seleccione fecha</span>}
+                                              </Button>
+                                          </FormControl>
+                                      </PopoverTrigger>
+                                      <PopoverContent className="w-auto p-0"><Calendar mode="single" selected={field.value} onSelect={field.onChange} initialFocus /></PopoverContent>
+                                  </Popover>
+                                  <FormMessage />
+                              </FormItem>
+                          )}
+                      />
+                      <FormField
+                          control={form.control}
+                          name="dueTime"
+                          render={({ field }) => (
+                              <FormItem>
+                                  <FormLabel>Hora (Opcional)</FormLabel>
+                                  <FormControl>
+                                      <Input type="time" {...field} />
+                                  </FormControl>
+                                  <FormMessage />
+                              </FormItem>
+                          )}
+                      />
+                  </div>
+                </>
+              ) : (
+                // --- VISTA PARA WORKFLOWS (PLANTILLA) ---
                 <FormField
                     control={form.control}
-                    name="description"
+                    name="dueDays"
                     render={({ field }) => (
                         <FormItem>
-                            <FormLabel>Descripción (Opcional)</FormLabel>
-                            <FormControl>
-                                <Textarea {...field} />
-                            </FormControl>
+                            <FormLabel>Días para Vencer</FormLabel>
+                            <div className="flex items-center gap-4 pt-2">
+                                <Slider
+                                    min={0}
+                                    max={30}
+                                    step={1}
+                                    value={[field.value ?? 0]}
+                                    onValueChange={(value) => field.onChange(value[0])}
+                                />
+                                <span className="text-sm font-medium w-8 text-center">{field.value}</span>
+                            </div>
                             <FormMessage />
                         </FormItem>
                     )}
                 />
+              )}
+
+              <FormField
+                  control={form.control}
+                  name="description"
+                  render={({ field }) => (
+                      <FormItem>
+                          <FormLabel>Descripción (Opcional)</FormLabel>
+                          <FormControl>
+                              <Textarea {...field} />
+                          </FormControl>
+                          <FormMessage />
+                      </FormItem>
+                  )}
+              />
             </div>
 
             <DialogFooter>
@@ -232,7 +233,7 @@ export function AddTaskDialog({
                 Guardar Tarea
                 </Button>
             </DialogFooter>
-            </form>
+          </form>
         </Form>
       </DialogContent>
     </Dialog>
