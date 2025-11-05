@@ -156,24 +156,34 @@ export default function TasksPage() {
   const dayModifiers = useMemo(() => {
     if (!currentClientDate || !Array.isArray(allTasks)) return {};
     const today = new Date(currentClientDate);
-    const pendingTasksWithValidDates = allTasks.filter(task => task && task.status !== 'Completada' && parseDateString(task.dueDate));
+    today.setHours(0, 0, 0, 0);
   
-    const overdueDays = pendingTasksWithValidDates
-      .map(task => parseDateString(task.dueDate))
-      .filter((date): date is Date => date !== null && date < today);
-    
-    const todayTaskDays = pendingTasksWithValidDates
-      .map(task => parseDateString(task.dueDate))
-      .filter((date): date is Date => date !== null && date.getFullYear() === today.getFullYear() && date.getMonth() === today.getMonth() && date.getDate() === today.getDate());
-      
-    const upcomingTaskDays = pendingTasksWithValidDates
-      .map(task => parseDateString(task.dueDate))
-      .filter((date): date is Date => date !== null && date > today);
+    const pendingTasksWithValidDates = allTasks.filter(
+      (task) =>
+        task && task.status !== 'Completada' && parseDateString(task.dueDate)
+    );
   
-    return { 
-      overdue_highlight: overdueDays, 
-      today_task_highlight: todayTaskDays, 
-      upcoming_highlight: upcomingTaskDays 
+    const overdueDays: Date[] = [];
+    const todayTaskDays: Date[] = [];
+    const upcomingTaskDays: Date[] = [];
+  
+    pendingTasksWithValidDates.forEach((task) => {
+      const date = parseDateString(task.dueDate);
+      if (date) {
+        if (date < today) {
+          overdueDays.push(date);
+        } else if (date.getTime() === today.getTime()) {
+          todayTaskDays.push(date);
+        } else {
+          upcomingTaskDays.push(date);
+        }
+      }
+    });
+  
+    return {
+      overdue_highlight: overdueDays,
+      today_task_highlight: todayTaskDays,
+      upcoming_highlight: upcomingTaskDays,
     } as DayModifiers;
   }, [allTasks, currentClientDate]);
   
