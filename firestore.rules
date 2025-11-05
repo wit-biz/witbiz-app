@@ -63,7 +63,8 @@ service cloud.firestore {
     
     /**
      * @description Rules for listing and accessing the /users/{userId}/serviceWorkflows collection and its documents.
-     * @path /users/{userId}/serviceWorkflows/{workflowId}
+     * This recursive match ensures list, get, and write operations are allowed for the owner.
+     * @path /users/{userId}/serviceWorkflows/{workflowId=**}
      */
     match /users/{userId}/serviceWorkflows/{workflowId=**} {
         allow read, write: if isSignedIn() && isOwner(userId);
