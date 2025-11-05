@@ -33,6 +33,16 @@ const StageNumberIcon = ({ index }: { index: number }) => {
   );
 };
 
+const AutoSaveIndicator = ({ isSaving }: { isSaving: boolean }) => {
+    if (!isSaving) return null;
+    return (
+        <div className="flex items-center text-xs text-muted-foreground transition-opacity duration-300">
+            <Save className="h-3 w-3 mr-1 animate-pulse" />
+            <span>Guardado</span>
+        </div>
+    );
+};
+
 
 export default function WorkflowConfigurationPage() {
   const { 
@@ -84,6 +94,8 @@ export default function WorkflowConfigurationPage() {
     onSave: (name: string) => void;
   } | null>(null);
 
+  const [savingField, setSavingField] = useState<string | null>(null);
+
 
   const canEditWorkflow = currentUser?.permissions.crm_edit ?? true;
 
@@ -126,6 +138,21 @@ export default function WorkflowConfigurationPage() {
     });
     setIsPromptNameOpen(true);
   };
+  
+  const triggerSaveIndicator = (fieldId: string) => {
+    setSavingField(fieldId);
+    setTimeout(() => {
+        setSavingField(null);
+    }, 1500);
+  };
+  
+  const debouncedUpdate = useCallback(
+    (updateFunction: () => void, fieldId: string) => {
+        updateFunction();
+        triggerSaveIndicator(fieldId);
+    },
+    []
+  );
 
   useEffect(() => {
     const serviceIdFromUrl = searchParams.get('serviceId');
@@ -202,12 +229,15 @@ export default function WorkflowConfigurationPage() {
 
   const handleStageTitleChange = (serviceId: string, subServiceId: string | null, stageId: string, newTitle: string) => {
     updateStageInSubService(serviceId, subServiceId, stageId, { title: newTitle });
+    triggerSaveIndicator(`stage-title-${stageId}`);
   }
 
   const handleActionChange = (stage: WorkflowStage, actionId: string, updates: Partial<WorkflowAction>) => {
     if(selectedWorkflow) {
         const subService = selectedWorkflow.subServices.find(ss => ss.stages.some(s => s.id === stage.id));
         updateActionInStage(selectedWorkflow.id, subService?.id ?? null, stage.id, actionId, updates);
+        const fieldKey = 'title' in updates ? 'title' : 'dueDays';
+        triggerSaveIndicator(`action-${actionId}-${fieldKey}`);
     }
   };
 
@@ -227,14 +257,17 @@ export default function WorkflowConfigurationPage() {
             <AccordionItem value={stage.id} key={stage.id} className="border rounded-lg bg-card overflow-hidden">
               <div className="flex items-center p-4 pr-2">
                 <AccordionTrigger className="p-0 hover:no-underline flex-grow">
-                    <div className="flex items-center text-left gap-3">
+                    <div className="flex items-center text-left gap-3 w-full">
                         <StageNumberIcon index={stageIndex} />
-                        <Input 
-                            value={stage.title}
-                            onChange={(e) => handleStageTitleChange(serviceId, subServiceId, stage.id, e.target.value)}
-                            className="font-semibold text-base border-none focus-visible:ring-0 focus-visible:ring-offset-0 p-0 h-auto"
-                            disabled={!canEditWorkflow}
-                        />
+                         <div className="flex-grow">
+                             <Input 
+                                value={stage.title}
+                                onChange={(e) => handleStageTitleChange(serviceId, subServiceId, stage.id, e.target.value)}
+                                className="font-semibold text-base border-none focus-visible:ring-0 focus-visible:ring-offset-0 p-0 h-auto"
+                                disabled={!canEditWorkflow}
+                            />
+                            <AutoSaveIndicator isSaving={savingField === `stage-title-${stage.id}`} />
+                        </div>
                     </div>
                 </AccordionTrigger>
                 {canEditWorkflow && (
@@ -257,6 +290,7 @@ export default function WorkflowConfigurationPage() {
                                         className="h-8"
                                         disabled={!canEditWorkflow}
                                     />
+                                    <AutoSaveIndicator isSaving={savingField === `action-${action.id}-title`} />
                                   </div>
                                   <div className="flex items-center gap-2 w-full sm:w-auto">
                                     <div className="w-full sm:w-48">
@@ -272,6 +306,7 @@ export default function WorkflowConfigurationPage() {
                                         />
                                         <span className="text-sm font-medium w-6 text-center">{action.dueDays || 0}</span>
                                       </div>
+                                      <AutoSaveIndicator isSaving={savingField === `action-${action.id}-dueDays`} />
                                     </div>
                                     <div className="flex items-end h-8">
                                         <Tooltip>
