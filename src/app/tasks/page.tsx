@@ -93,7 +93,7 @@ export default function TasksPage() {
   const [currentClientDate, setCurrentClientDate] = useState<Date | null>(null);
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
   const [calendarMonth, setCalendarMonth] = useState<Date>();
-  const [openAccordionItem, setOpenAccordionItem] = useState<string>("today-tasks");
+  const [openAccordionItem, setOpenAccordionItem] = useState<string>("overdue-tasks");
   
   const [selectedTaskDetail, setSelectedTaskDetail] = useState<Task | null>(null);
   const [isDetailDialogOpen, setIsDetailDialogOpen] = useState(false);
@@ -201,8 +201,8 @@ export default function TasksPage() {
   const handleTaskClick = useCallback((task: Task) => { setSelectedTaskDetail(task); setIsDetailDialogOpen(true); }, []);
   
   const taskSections = [
-    { id: "today-tasks", title: "Tareas Para Hoy", tasks: todayTasks, icon: CheckCircle2, color: "text-green-500", emptyMsg: "No hay tareas programadas para hoy." },
     { id: "overdue-tasks", title: "Tareas Atrasadas", tasks: overdueTasks, icon: AlertTriangle, color: "text-destructive", emptyMsg: "¡Ninguna tarea atrasada! Buen trabajo." },
+    { id: "today-tasks", title: "Tareas Para Hoy", tasks: todayTasks, icon: CheckCircle2, color: "text-green-500", emptyMsg: "No hay tareas programadas para hoy." },
     { id: "upcoming-tasks", title: "Próximas Tareas", tasks: upcomingWeekTasks, icon: ListTodo, color: "text-blue-500", emptyMsg: "No hay más tareas para esta semana." }
   ];
 
