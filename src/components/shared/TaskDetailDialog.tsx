@@ -127,12 +127,16 @@ export function TaskDetailDialog({
   };
   
   const handleEditSubmit = async (data: z.infer<typeof taskEditSchema>) => {
-    if (!onUpdateTask) return;
+    if (!onUpdateTask || !task) return;
     setIsSubmitting(true);
+
+    const clientName = clients.find(c => c.id === data.clientId)?.name || task.clientName;
     
     const updates: Partial<Task> = {
+        ...task,
         ...data,
         dueDate: format(data.dueDate, 'yyyy-MM-dd'),
+        clientName: clientName,
     };
     
     const success = await onUpdateTask(task.id, updates);
@@ -355,5 +359,3 @@ export function TaskDetailDialog({
     </Dialog>
   );
 }
-
-    
