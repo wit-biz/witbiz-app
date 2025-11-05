@@ -62,19 +62,11 @@ service cloud.firestore {
     }
     
     /**
-     * @description Rules for individual documents in the /users/{userId}/serviceWorkflows collection.
+     * @description Rules for listing and accessing the /users/{userId}/serviceWorkflows collection and its documents.
      * @path /users/{userId}/serviceWorkflows/{workflowId}
      */
-    match /users/{userId}/serviceWorkflows/{workflowId} {
-      allow get, create, update, delete: if isSignedIn() && isOwner(userId);
-    }
-    
-    /**
-     * @description Rules for listing the /users/{userId}/serviceWorkflows collection.
-     * @path /users/{userId}/serviceWorkflows
-     */
-    match /users/{userId}/serviceWorkflows {
-        allow list: if isSignedIn() && isOwner(userId);
+    match /users/{userId}/serviceWorkflows/{workflowId=**} {
+        allow read, write: if isSignedIn() && isOwner(userId);
     }
 
     // --- Helper functions ---
