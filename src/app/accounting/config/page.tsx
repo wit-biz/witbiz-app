@@ -39,6 +39,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import Link from "next/link";
+import { Textarea } from "@/components/ui/textarea";
 
 // --- Mock Data ---
 
@@ -60,6 +61,7 @@ const initialCategoryGroups = [
     { 
         id: 'group-income', 
         name: 'Fuentes de Ingreso',
+        description: 'Agrupa todos los ingresos generados por la operación principal del negocio.',
         type: 'Ingreso',
         categories: [
             { id: 'cat-income-1', name: 'Ingreso por Desarrollo' },
@@ -68,6 +70,7 @@ const initialCategoryGroups = [
     {
         id: 'group-fixed',
         name: 'Gastos Fijos',
+        description: 'Costos recurrentes que no varían con el volumen de ventas.',
         type: 'Egreso',
         categories: [
             { id: 'cat-fixed-1', name: 'Sueldos' },
@@ -77,6 +80,7 @@ const initialCategoryGroups = [
     {
         id: 'group-variable',
         name: 'Gastos Variables',
+        description: 'Costos que fluctúan en función de la actividad del negocio.',
         type: 'Egreso',
         categories: [
              { id: 'cat-fixed-3', name: 'Software' },
@@ -88,6 +92,7 @@ const initialCategoryGroups = [
     {
         id: 'group-transfer',
         name: 'Movimientos Internos',
+        description: 'Transferencias de fondos entre cuentas de la misma entidad o grupo.',
         type: 'Transferencia',
         categories: [
             { id: 'cat-transfer-1', name: 'Transferencia Interna' },
@@ -118,13 +123,14 @@ export default function AccountingConfigPage() {
   const [editingEntity, setEditingEntity] = useState<any>(null);
   const [editingEntityType, setEditingEntityType] = useState<EditableEntityType | null>(null);
   const [editedName, setEditedName] = useState('');
+  const [editedDescription, setEditedDescription] = useState('');
 
   // State for Delete Dialog
   const [entityToDelete, setEntityToDelete] = useState<EntityToDelete | null>(null);
 
   const [newCompanyName, setNewCompanyName] = useState('');
   const [newAccountData, setNewAccountData] = useState({ name: '', companyId: '', type: 'Débito' });
-  const [newCategoryGroupName, setNewCategoryGroupName] = useState('');
+  const [newCategoryGroupData, setNewCategoryGroupData] = useState({ name: '', description: '' });
   const [newTypeName, setNewTypeName] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -162,14 +168,20 @@ export default function AccountingConfigPage() {
 
   const handleAddCategoryGroup = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newCategoryGroupName.trim()) return;
+    if (!newCategoryGroupData.name.trim()) return;
     setIsSubmitting(true);
     setTimeout(() => {
-        const newGroup = { id: `group-${Date.now()}`, name: newCategoryGroupName, type: 'Egreso', categories: [] };
+        const newGroup = { 
+            id: `group-${Date.now()}`, 
+            name: newCategoryGroupData.name, 
+            description: newCategoryGroupData.description, 
+            type: 'Egreso', // Default, can be changed later
+            categories: [] 
+        };
         setCategoryGroups(prev => [...prev, newGroup]);
-        toast({ title: "Categoría Añadida", description: `La categoría "${newCategoryGroupName}" ha sido creada.` });
+        toast({ title: "Categoría Añadida", description: `La categoría "${newCategoryGroupData.name}" ha sido creada.` });
         setIsSubmitting(false);
-        setNewCategoryGroupName('');
+        setNewCategoryGroupData({ name: '', description: '' });
         setIsAddCategoryGroupOpen(false);
     }, 500);
   };
@@ -204,12 +216,23 @@ export default function AccountingConfigPage() {
   const openEditDialog = (entity: any, type: EditableEntityType, parentId?: string) => {
     setEditingEntityType(type);
     let name = '';
-    if(type === 'company' || type === 'categoryGroup' || type === 'type') name = entity.name;
-    if(type === 'account') name = entity.bankName;
-    setEditingEntity({...entity, parentId });
+    let description = '';
+    
+    if (type === 'company' || type === 'type') {
+        name = entity.name;
+    } else if (type === 'account') {
+        name = entity.bankName;
+    } else if (type === 'categoryGroup') {
+        name = entity.name;
+        description = entity.description || '';
+    }
+    
+    setEditingEntity({ ...entity, parentId });
     setEditedName(name);
+    setEditedDescription(description); // Set description for categoryGroup
     setIsEditDialogOpen(true);
-  };
+};
+
 
   const handleEditSave = (e: React.FormEvent) => {
     e.preventDefault();
@@ -224,7 +247,7 @@ export default function AccountingConfigPage() {
                 setMockAccounts(prev => prev.map(a => a.id === editingEntity.id ? { ...a, bankName: editedName } : a));
                 break;
             case 'categoryGroup':
-                setCategoryGroups(prev => prev.map(g => g.id === editingEntity.id ? { ...g, name: editedName } : g));
+                setCategoryGroups(prev => prev.map(g => g.id === editingEntity.id ? { ...g, name: editedName, description: editedDescription } : g));
                 break;
             case 'type':
                 setCategoryGroups(prev => prev.map(g => 
@@ -234,7 +257,7 @@ export default function AccountingConfigPage() {
                 ));
                 break;
         }
-        toast({ title: "Entidad Actualizada", description: `"${editingEntity.name || editingEntity.bankName}" ha sido actualizado a "${editedName}".` });
+        toast({ title: "Entidad Actualizada", description: `La entidad ha sido actualizada correctamente.` });
         setIsSubmitting(false);
         setIsEditDialogOpen(false);
         setEditingEntity(null);
@@ -384,9 +407,10 @@ export default function AccountingConfigPage() {
                                             <AccordionItem value={group.id} key={group.id} className="border-none">
                                                 <Card className="overflow-hidden">
                                                     <div className="flex items-center justify-between p-4 bg-muted/50 hover:bg-muted/60">
-                                                        <CardTitle className="text-base flex-grow text-left">
-                                                            {group.name}
-                                                        </CardTitle>
+                                                        <div className="flex-grow text-left">
+                                                          <CardTitle className="text-base">{group.name}</CardTitle>
+                                                          {group.description && <p className="text-xs text-muted-foreground mt-1">{group.description}</p>}
+                                                        </div>
                                                         <div className="flex items-center gap-1 ml-auto mr-2">
                                                             <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEditDialog(group, 'categoryGroup')}><Edit className="h-4 w-4"/></Button>
                                                             <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => setEntityToDelete({ id: group.id, name: group.name, type: 'categoryGroup' })}><Trash2 className="h-4 w-4"/></Button>
@@ -507,9 +531,15 @@ export default function AccountingConfigPage() {
           <DialogContent>
               <form onSubmit={handleAddCategoryGroup}>
                   <DialogHeader><DialogTitle>Añadir Nueva Categoría</DialogTitle></DialogHeader>
-                  <div className="py-4">
-                      <Label htmlFor="new-group-name">Nombre de la Categoría</Label>
-                      <Input id="new-group-name" value={newCategoryGroupName} onChange={(e) => setNewCategoryGroupName(e.target.value)} placeholder="Ej. Gastos de Oficina" required />
+                  <div className="py-4 space-y-4">
+                      <div>
+                        <Label htmlFor="new-group-name">Nombre de la Categoría</Label>
+                        <Input id="new-group-name" value={newCategoryGroupData.name} onChange={(e) => setNewCategoryGroupData(p => ({...p, name: e.target.value}))} placeholder="Ej. Gastos de Oficina" required />
+                      </div>
+                      <div>
+                        <Label htmlFor="new-group-description">Descripción (Opcional)</Label>
+                        <Textarea id="new-group-description" value={newCategoryGroupData.description} onChange={(e) => setNewCategoryGroupData(p => ({...p, description: e.target.value}))} placeholder="Explique para qué sirve esta categoría." />
+                      </div>
                   </div>
                   <DialogFooter>
                       <DialogClose asChild><Button type="button" variant="outline">Cancelar</Button></DialogClose>
@@ -543,26 +573,35 @@ export default function AccountingConfigPage() {
       </Dialog>
 
       {/* Generic Edit Dialog */}
-      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-          <DialogContent>
-              <form onSubmit={handleEditSave}>
-                  <DialogHeader>
-                      <DialogTitle>Editar Nombre</DialogTitle>
-                  </DialogHeader>
-                  <div className="py-4">
-                      <Label htmlFor="edit-name">Nombre</Label>
-                      <Input id="edit-name" value={editedName} onChange={(e) => setEditedName(e.target.value)} required />
-                  </div>
-                  <DialogFooter>
-                      <DialogClose asChild><Button type="button" variant="outline">Cancelar</Button></DialogClose>
-                      <Button type="submit" disabled={isSubmitting}>
-                          {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
-                          Guardar Cambios
-                      </Button>
-                  </DialogFooter>
-              </form>
-          </DialogContent>
-      </Dialog>
+        <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+            <DialogContent>
+                <form onSubmit={handleEditSave}>
+                    <DialogHeader>
+                        <DialogTitle>Editar Entidad</DialogTitle>
+                    </DialogHeader>
+                    <div className="py-4 space-y-4">
+                        <div>
+                            <Label htmlFor="edit-name">Nombre</Label>
+                            <Input id="edit-name" value={editedName} onChange={(e) => setEditedName(e.target.value)} required />
+                        </div>
+                        {editingEntityType === 'categoryGroup' && (
+                             <div>
+                                <Label htmlFor="edit-description">Descripción</Label>
+                                <Textarea id="edit-description" value={editedDescription} onChange={(e) => setEditedDescription(e.target.value)} />
+                            </div>
+                        )}
+                    </div>
+                    <DialogFooter>
+                        <DialogClose asChild><Button type="button" variant="outline">Cancelar</Button></DialogClose>
+                        <Button type="submit" disabled={isSubmitting}>
+                            {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
+                            Guardar Cambios
+                        </Button>
+                    </DialogFooter>
+                </form>
+            </DialogContent>
+        </Dialog>
+
 
       {/* Generic Delete Confirmation Dialog */}
       <AlertDialog open={!!entityToDelete} onOpenChange={() => setEntityToDelete(null)}>
@@ -586,4 +625,3 @@ export default function AccountingConfigPage() {
     </>
   );
 }
-
