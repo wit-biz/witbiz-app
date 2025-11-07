@@ -326,8 +326,8 @@ export default function TasksPage() {
                   </CardDescription>
                   <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs text-muted-foreground pt-2">
                     <div className="flex items-center gap-2"><span className="w-3 h-3 rounded-full bg-indicator-upcoming" /> Próximas</div>
-                    <div className="flex items-center gap-2"><span className="w-3 h-3 rounded-full bg-destructive" /> Atrasadas</div>
                     <div className="flex items-center gap-2"><span className="w-3 h-3 rounded-full bg-indicator-today" /> Hoy</div>
+                    <div className="flex items-center gap-2"><span className="w-3 h-3 rounded-full bg-destructive" /> Atrasadas</div>
                     <div className="flex items-center gap-2"><span className="w-3 h-3 rounded-full bg-indicator-postponed" /> Pospuestas</div>
                   </div>
                 </CardHeader> 
@@ -361,12 +361,10 @@ export default function TasksPage() {
                     <Card> 
                       <AccordionTrigger className="w-full hover:no-underline p-0 [&_svg]:ml-auto [&_svg]:mr-2"> 
                         <CardHeader className="flex-1 p-4"> 
-                          <CardTitle className="flex items-center gap-2 text-lg"> 
-                            <span className="w-6 flex justify-center">
-                              <section.icon className={cn("h-5 w-5", section.color)} />
-                            </span>
-                            {section.title}
-                            <Badge variant={section.id === "overdue-tasks" && section.tasks.length > 0 ? "destructive" : "secondary"} className={cn("ml-auto mr-2", section.badgeClass)} > {section.tasks.length} </Badge> 
+                          <CardTitle className="grid grid-cols-[auto_1fr_auto] items-center gap-2 text-lg">
+                            <section.icon className={cn("h-5 w-5", section.color)} />
+                            <span className="text-center">{section.title}</span>
+                            <Badge variant={section.id === "overdue-tasks" && section.tasks.length > 0 ? "destructive" : "secondary"} className={cn("ml-auto", section.badgeClass)} > {section.tasks.length} </Badge> 
                           </CardTitle> 
                         </CardHeader> 
                       </AccordionTrigger> 
