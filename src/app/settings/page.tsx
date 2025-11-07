@@ -291,6 +291,10 @@ export default function SettingsPage() {
           title="Contabilidad"
           description="Centro de operaciones financieras y análisis de rentabilidad."
         >
+            <Button onClick={() => handleDownloadReport('Contabilidad General')}>
+                <Download className="mr-2 h-4 w-4" />
+                Descarga General
+            </Button>
             <Button variant="outline" onClick={() => setIsTransactionDialogOpen(true)}>
                 <ArrowRightLeft className="mr-2 h-4 w-4" />
                 Registrar Movimiento
@@ -691,3 +695,5 @@ export default function SettingsPage() {
     </TooltipProvider>
   );
 }
+
+    
