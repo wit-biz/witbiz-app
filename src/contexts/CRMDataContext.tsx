@@ -25,7 +25,7 @@ import {
 import { useUser, useFirestore, useMemoFirebase, useCollection, useDoc, useAuth, addDocumentNonBlocking, setDocumentNonBlocking, deleteDocumentNonBlocking } from '@/firebase';
 import { collection, doc, writeBatch, serverTimestamp, query } from 'firebase/firestore';
 import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
-import { teamMembers as mockTeamMembers } from '@/lib/data';
+import { teamMembers as mockTeamMembers, clients as mockClients } from '@/lib/data';
 import { addDays, format } from 'date-fns';
 
 type AnyStage = WorkflowStage | SubStage | SubSubStage;
@@ -91,8 +91,10 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
     const [currentUser, setCurrentUser] = useState<AuthenticatedUser | null>(null);
     
     // --- Firestore Data ---
-    const clientsCollection = useMemoFirebase(() => user ? collection(firestore, 'users', user.uid, 'clients') : null, [firestore, user]);
-    const { data: clients = [], isLoading: isLoadingClients } = useCollection<Client>(clientsCollection);
+    // const clientsCollection = useMemoFirebase(() => user ? collection(firestore, 'users', user.uid, 'clients') : null, [firestore, user]);
+    // const { data: clients = [], isLoading: isLoadingClients } = useCollection<Client>(clientsCollection);
+    const [clients, setClients] = useState<Client[]>(mockClients);
+    const [isLoadingClients, setIsLoadingClients] = useState(false);
     
     const tasksCollection = useMemoFirebase(() => user ? collection(firestore, 'users', user.uid, 'tasks') : null, [firestore, user]);
     const { data: tasks = [], isLoading: isLoadingTasks } = useCollection<Task>(tasksCollection);
@@ -165,43 +167,41 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
     // --- Data Handlers ---
 
     const addClient = async (newClientData: Omit<Client, 'id'>): Promise<Client | null> => {
-        if (!clientsCollection || !serviceWorkflows) return null;
+        // if (!clientsCollection || !serviceWorkflows) return null;
+        if (!serviceWorkflows) return null;
         
         // Find the first stage of the first subscribed service to set the initial state
         const firstServiceId = newClientData.subscribedServiceIds[0];
         const service = serviceWorkflows.find(s => s.id === firstServiceId);
         const initialStage = service?.stages?.[0];
 
-        const payload: Omit<Client, 'id'> = {
+        const payload: Client = {
+            id: `client-${Date.now()}`,
             ...newClientData,
             currentWorkflowStageId: initialStage?.id,
-            createdAt: serverTimestamp(),
+            createdAt: new Date(),
         };
         
-        const newClientDocRef = await addDocumentNonBlocking(clientsCollection, payload);
+        setClients(prev => [...prev, payload]);
         
         // Auto-generate tasks for the initial stage
-        if (initialStage?.actions && newClientDocRef) {
+        if (initialStage?.actions) {
             for (const action of initialStage.actions) {
                 await addTask({
                     ...action,
-                    clientId: newClientDocRef.id,
+                    clientId: payload.id,
                 });
             }
         }
         
-        return { ...payload, id: newClientDocRef.id };
+        return payload;
     };
     const updateClient = async (clientId: string, updates: Partial<Client>): Promise<boolean> => {
-        if (!clientsCollection) return false;
-        const clientDocRef = doc(clientsCollection, clientId);
-        setDocumentNonBlocking(clientDocRef, updates, { merge: true });
+        setClients(prev => prev.map(c => c.id === clientId ? {...c, ...updates} : c));
         return true;
     };
     const deleteClient = async (clientId: string): Promise<boolean> => {
-        if (!clientsCollection) return false;
-        const clientDocRef = doc(clientsCollection, clientId);
-        deleteDocumentNonBlocking(clientDocRef);
+        setClients(prev => prev.filter(c => c.id !== clientId));
         return true;
     };
     
