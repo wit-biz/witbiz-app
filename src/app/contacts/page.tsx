@@ -33,7 +33,7 @@ export default function DirectoryPage() {
   const [isAddSupplierDialogOpen, setIsAddSupplierDialogOpen] = useState(false);
   const [isAddPromoterDialogOpen, setIsAddPromoterDialogOpen] = useState(false);
   const [isDetailDialogOpen, setIsDetailDialogOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState('suppliers');
+  const [activeTab, setActiveTab] = useState('clients');
   
   useEffect(() => {
     const openClientId = searchParams.get('openClient');
@@ -109,7 +109,7 @@ export default function DirectoryPage() {
           )}
         </Header>
         <main className="flex-1 p-4 md:p-8">
-            <Tabs defaultValue="suppliers" className="w-full" onValueChange={setActiveTab}>
+            <Tabs defaultValue="clients" className="w-full" onValueChange={setActiveTab}>
                 <TabsList className="grid w-full grid-cols-3 mb-6">
                      <TabsTrigger value="suppliers">
                         <Truck className="mr-2 h-4 w-4"/>

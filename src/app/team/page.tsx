@@ -30,22 +30,36 @@ import {
 import { useCRMData } from "@/contexts/CRMDataContext";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 
-const allPermissions: { key: keyof AppPermissions; label: string }[] = [
-    { key: "dashboard", label: "Ver Dashboard" },
-    { key: "clients_view", label: "Ver Clientes" },
-    { key: "clients_create", label: "Crear Clientes" },
-    { key: "clients_edit", label: "Editar Clientes" },
-    { key: "clients_delete", label: "Eliminar Clientes" },
-    { key: "tasks_view", label: "Ver Tareas" },
-    { key: "tasks_create", label: "Crear Tareas" },
-    { key: "tasks_edit", label: "Editar Tareas" },
-    { key: "tasks_delete", label: "Eliminar Tareas" },
-    { key: "crm_view", label: "Ver Flujos CRM" },
-    { key: "crm_edit", label: "Editar Flujos CRM" },
-    { key: "finances_view", label: "Ver Finanzas" },
-    { key: "admin_view", label: "Ver Administración/Finanzas" },
-    { key: "team_invite", label: "Invitar Miembros" },
+const allPermissions: { key: keyof AppPermissions; label: string; section: string }[] = [
+    // Dashboard
+    { key: "dashboard", label: "Ver Dashboard", section: "General" },
+
+    // Clients
+    { key: "clients_view", label: "Ver Clientes", section: "Clientes" },
+    { key: "clients_create", label: "Crear Clientes", section: "Clientes" },
+    { key: "clients_edit", label: "Editar Clientes", section: "Clientes" },
+    { key: "clients_delete", label: "Eliminar Clientes", section: "Clientes" },
+    
+    // Tasks
+    { key: "tasks_view", label: "Ver Tareas", section: "Tareas" },
+    { key: "tasks_create", label: "Crear Tareas", section: "Tareas" },
+    { key: "tasks_edit", label: "Editar Tareas", section: "Tareas" },
+    { key: "tasks_delete", label: "Eliminar Tareas", section: "Tareas" },
+
+    // CRM
+    { key: "crm_view", label: "Ver Flujos CRM", section: "CRM y Servicios" },
+    { key: "crm_edit", label: "Editar Flujos CRM", section: "CRM y Servicios" },
+    { key: "services_view", label: "Ver Servicios", section: "CRM y Servicios" },
+
+    // Admin & Finances
+    { key: "finances_view", label: "Ver Finanzas", section: "Administración" },
+    { key: "admin_view", label: "Ver Contabilidad", section: "Administración" },
+    { key: "team_invite", label: "Invitar Miembros", section: "Administración" },
+
+    // Documents
+    { key: "documents_view", label: "Ver Documentos", section: "Documentos" },
 ];
+
 
 const initialRoles = [
     { 
@@ -55,24 +69,27 @@ const initialRoles = [
             dashboard: true, clients_view: true, clients_create: true, clients_edit: true, clients_delete: true,
             tasks_view: true, tasks_create: true, tasks_edit: true, tasks_delete: true,
             crm_view: true, crm_edit: true, finances_view: true, admin_view: true, team_invite: true,
+            documents_view: true, services_view: true,
         }
     },
     { 
         id: 'admin', 
         name: 'Administrador', 
         permissions: {
-            dashboard: true, clients_view: true, clients_create: true, clients_edit: true, clients_delete: true,
-            tasks_view: true, tasks_create: true, tasks_edit: true, tasks_delete: true,
+            dashboard: true, clients_view: true, clients_create: true, clients_edit: true, clients_delete: false,
+            tasks_view: true, tasks_create: true, tasks_edit: true, tasks_delete: false,
             crm_view: true, crm_edit: true, finances_view: false, admin_view: true, team_invite: true,
+            documents_view: true, services_view: true,
         }
     },
     { 
         id: 'collaborator', 
         name: 'Colaborador', 
         permissions: {
-            dashboard: true, clients_view: true, clients_create: false, clients_edit: false, clients_delete: false,
+            dashboard: true, clients_view: true, clients_create: true, clients_edit: false, clients_delete: false,
             tasks_view: true, tasks_create: true, tasks_edit: true, tasks_delete: false,
             crm_view: true, crm_edit: false, finances_view: false, admin_view: false, team_invite: false,
+            documents_view: true, services_view: true,
         }
     },
     { 
@@ -82,6 +99,7 @@ const initialRoles = [
             dashboard: false, clients_view: false, clients_create: false, clients_edit: false, clients_delete: false,
             tasks_view: false, tasks_create: false, tasks_edit: false, tasks_delete: false,
             crm_view: false, crm_edit: false, finances_view: false, admin_view: false, team_invite: false,
+            documents_view: false, services_view: false,
         }
     },
 ];
@@ -119,6 +137,16 @@ export default function TeamPage() {
             )
         );
     };
+    
+    const permissionsBySection = useMemo(() => {
+        return allPermissions.reduce((acc, permission) => {
+            if (!acc[permission.section]) {
+                acc[permission.section] = [];
+            }
+            acc[permission.section].push(permission);
+            return acc;
+        }, {} as Record<string, typeof allPermissions>);
+    }, []);
 
   return (
     <>
@@ -192,7 +220,7 @@ export default function TeamPage() {
           </TabsContent>
           <TabsContent value="permissions" className="mt-6">
              <Accordion type="single" collapsible className="w-full space-y-4">
-                {roles.filter(r => r.id !== 'director').map((role) => (
+                {roles.filter(r => r.id !== 'director' && r.id !== 'promoter').map((role) => (
                     <AccordionItem value={role.id} key={role.id} asChild>
                         <Card>
                             <AccordionTrigger className="w-full p-0 [&_svg]:ml-auto [&_svg]:mr-4">
@@ -202,15 +230,22 @@ export default function TeamPage() {
                                 </CardHeader>
                             </AccordionTrigger>
                             <AccordionContent>
-                                <CardContent className="space-y-4 max-h-[60vh] overflow-y-auto">
-                                    {allPermissions.map(permission => (
-                                        <div key={permission.key} className="flex items-center justify-between">
-                                            <Label htmlFor={`perm-${role.id}-${permission.key}`}>{permission.label}</Label>
-                                            <Switch
-                                                id={`perm-${role.id}-${permission.key}`}
-                                                checked={role.permissions[permission.key] || false}
-                                                onCheckedChange={(value) => handlePermissionChange(role.id, permission.key, value)}
-                                            />
+                                <CardContent className="space-y-6 max-h-[60vh] overflow-y-auto">
+                                    {Object.entries(permissionsBySection).map(([section, permissions]) => (
+                                        <div key={section}>
+                                            <h4 className="font-semibold mb-2">{section}</h4>
+                                            <div className="space-y-3 pl-4">
+                                            {permissions.map(permission => (
+                                                <div key={permission.key} className="flex items-center justify-between">
+                                                    <Label htmlFor={`perm-${role.id}-${permission.key}`}>{permission.label}</Label>
+                                                    <Switch
+                                                        id={`perm-${role.id}-${permission.key}`}
+                                                        checked={role.permissions[permission.key] || false}
+                                                        onCheckedChange={(value) => handlePermissionChange(role.id, permission.key, value)}
+                                                    />
+                                                </div>
+                                            ))}
+                                            </div>
                                         </div>
                                     ))}
                                 </CardContent>

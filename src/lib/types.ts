@@ -212,5 +212,5 @@ export interface NavItem {
   label: string;
   icon: LucideIcon | string;
   exactMatch?: boolean;
-  requiredPermission: keyof AppPermissions;
+  requiredPermission?: keyof AppPermissions;
 }
