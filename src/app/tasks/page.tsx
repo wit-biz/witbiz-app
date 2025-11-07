@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import React, { useState, useEffect, useMemo, type ChangeEvent, useCallback } from "react";
@@ -323,13 +322,13 @@ export default function TasksPage() {
                   </CardTitle> 
                   <CardDescription> 
                     Selecciona una fecha para ver las tareas. Fechas resaltadas:
-                    <ul className="mt-2 space-y-1 text-xs">
-                        <li className="flex items-center gap-2"><span className="w-3 h-3 rounded-full bg-indicator-upcoming" /> Próximas</li>
-                        <li className="flex items-center gap-2"><span className="w-3 h-3 rounded-full bg-indicator-today" /> Hoy</li>
-                        <li className="flex items-center gap-2"><span className="w-3 h-3 rounded-full bg-destructive" /> Atrasadas</li>
-                        <li className="flex items-center gap-2"><span className="w-3 h-3 rounded-full bg-indicator-postponed" /> Pospuestas</li>
-                    </ul>
-                  </CardDescription> 
+                  </CardDescription>
+                  <ul className="mt-2 space-y-1 text-xs text-muted-foreground">
+                      <li className="flex items-center gap-2"><span className="w-3 h-3 rounded-full bg-indicator-upcoming" /> Próximas</li>
+                      <li className="flex items-center gap-2"><span className="w-3 h-3 rounded-full bg-indicator-today" /> Hoy</li>
+                      <li className="flex items-center gap-2"><span className="w-3 h-3 rounded-full bg-destructive" /> Atrasadas</li>
+                      <li className="flex items-center gap-2"><span className="w-3 h-3 rounded-full bg-indicator-postponed" /> Pospuestas</li>
+                  </ul>
                 </CardHeader> 
                 <CardContent className="flex justify-center flex-grow items-center">
                   {!isClient ? (
@@ -426,7 +425,5 @@ export default function TasksPage() {
     </TooltipProvider>
   );
 }
-
-
 
     
