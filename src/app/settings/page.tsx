@@ -113,6 +113,11 @@ export default function SettingsPage() {
   const [selectedCategoryId, setSelectedCategoryId] = useState<string>("all");
   const [selectedType, setSelectedType] = useState<string>("all");
   
+  // --- State for Auxiliaries ---
+  const [auxiliaryType, setAuxiliaryType] = useState('clients');
+  const [selectedAuxiliaryId, setSelectedAuxiliaryId] = useState('all');
+
+
   const handleDownloadReport = (reportName: string) => {
     toast({
       title: "Descarga Simulada",
@@ -127,7 +132,10 @@ export default function SettingsPage() {
         const itemDate = new Date(item.date);
         const isDateInRange = date?.from && date.to ? isWithinInterval(itemDate, { start: startOfDay(date.from), end: endOfDay(date.to) }) : true;
         const isCompanyMatch = selectedCompanyId === 'all' || item.companyId === selectedCompanyId;
-        const isCategoryMatch = selectedCategoryId === 'all' || allCategories.find(c => c.name === item.category)?.id === selectedCategoryId;
+        
+        // Find category object by name to get its ID for filtering
+        const categoryObject = allCategories.find(c => c.name === item.category);
+        const isCategoryMatch = selectedCategoryId === 'all' || (categoryObject && categoryObject.id === selectedCategoryId);
         
         let typeMatch = false;
         if (selectedType === 'all') {
@@ -145,11 +153,18 @@ export default function SettingsPage() {
   }, [date, selectedCompanyId, selectedCategoryId, selectedType, allCategories, transactions]);
   
   const generalLedgerData = useMemo(() => {
-    const [selectedLedgerAccountId, setSelectedLedgerAccountId] = ['all', () => {}];
-    if (selectedLedgerAccountId === 'all') return [];
-    const categoryName = allCategories.find(c => c.id === selectedLedgerAccountId)?.name;
-    return filteredTransactions.filter(t => t.category === categoryName);
-  }, [allCategories, filteredTransactions]);
+    if (selectedAuxiliaryId === 'all') return [];
+    
+    if (auxiliaryType === 'clients') {
+        return filteredTransactions.filter(t => t.clientId === selectedAuxiliaryId);
+    }
+    
+    if (auxiliaryType === 'banks') {
+        return filteredTransactions.filter(t => t.accountId === selectedAuxiliaryId);
+    }
+
+    return [];
+  }, [auxiliaryType, selectedAuxiliaryId, filteredTransactions]);
 
   const trialBalanceData = useMemo(() => {
     const balances = allCategories.reduce((acc, category) => {
@@ -229,43 +244,49 @@ export default function SettingsPage() {
 
   const { balanceSheetData, cashFlowData } = useMemo(() => {
     const fromDate = date?.from ? startOfDay(date.from) : new Date(0);
-    const toDate = date?.to ? endOfDay(date.to) : new Date();
-
+    
+    // Calculate initial state before the selected period
     const priorTransactions = transactions.filter(t => new Date(t.date) < fromDate);
-    const retainedEarnings = priorTransactions
+    const initialRetainedEarnings = priorTransactions
       .filter(t => t.type === 'income' || t.type === 'expense')
       .reduce((sum, t) => sum + t.amount, 0);
-
-    const initialCash = mockAccounts.reduce((sum, acc) => sum + acc.balance, 0) - transactions.filter(t => new Date(t.date) >= fromDate).reduce((sum, t) => sum + t.amount, 0);
     
+    const initialCash = initialBankAccounts.reduce((sum, acc) => sum + acc.balance, 0) - priorTransactions.reduce((sum, t) => sum + t.amount, 0);
+
+    // Cash flow during the period
     const cashFromOperations = filteredTransactions
         .filter(t => t.type === 'income' || t.type === 'expense')
         .reduce((sum, t) => sum + t.amount, 0);
     
-    const finalCash = initialCash + cashFromOperations;
+    const cashFromTransfers = filteredTransactions
+        .filter(t => t.type.startsWith('transfer'))
+        .reduce((sum,t) => sum + t.amount, 0);
+
+    const netCashFlow = cashFromOperations + cashFromTransfers;
+    const finalCash = initialCash + netCashFlow;
     
     const bsData = {
         assets: { cash: finalCash },
         liabilities: { accountsPayable: 0 }, // Placeholder
         equity: {
-            retainedEarnings: retainedEarnings,
+            retainedEarnings: initialRetainedEarnings,
             netIncome: incomeStatementData.netIncome,
         },
-        totalAssets: finalCash,
-        totalLiabilitiesAndEquity: retainedEarnings + incomeStatementData.netIncome,
+        get totalAssets() { return this.assets.cash; },
+        get totalLiabilitiesAndEquity() { return this.liabilities.accountsPayable + this.equity.retainedEarnings + this.equity.netIncome; },
     };
     
     const cfData = {
         operating: cashFromOperations,
         investing: 0, // Placeholder
-        financing: 0, // Placeholder
+        financing: 0, // Placeholder for dividends, etc.
         netCashFlow: cashFromOperations,
         initialCash,
         finalCash
-    }
+    };
 
     return { balanceSheetData: bsData, cashFlowData: cfData };
-  }, [date, incomeStatementData.netIncome, mockAccounts, transactions, filteredTransactions]);
+  }, [date, incomeStatementData.netIncome, initialBankAccounts, transactions, filteredTransactions]);
 
   const handleAddTransaction = (data: any) => {
     const { amount, ...rest } = data;
@@ -491,18 +512,23 @@ export default function SettingsPage() {
                                     </Button>
                                 </div>
                                     <div className="flex items-center gap-4 mb-4">
-                                        <Select value={"clients"} onValueChange={()=>{}}>
+                                        <Select value={auxiliaryType} onValueChange={(value) => { setAuxiliaryType(value); setSelectedAuxiliaryId('all'); }}>
                                             <SelectTrigger className="w-[200px]"><SelectValue/></SelectTrigger>
                                             <SelectContent>
                                                 <SelectItem value="banks">Auxiliar de Bancos</SelectItem>
                                                 <SelectItem value="clients">Auxiliar de Clientes</SelectItem>
                                             </SelectContent>
                                         </Select>
-                                        <Select value={selectedCompanyId} onValueChange={setSelectedCompanyId}>
-                                            <SelectTrigger className="w-[300px]"><SelectValue placeholder="Seleccione un cliente..."/></SelectTrigger>
+                                        <Select value={selectedAuxiliaryId} onValueChange={setSelectedAuxiliaryId}>
+                                            <SelectTrigger className="w-[300px]">
+                                                <SelectValue placeholder={`Seleccione un ${auxiliaryType === 'clients' ? 'cliente' : 'banco'}...`}/>
+                                            </SelectTrigger>
                                             <SelectContent>
-                                                <SelectItem value="all">Todos los Clientes</SelectItem>
-                                                {clients && clients.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+                                                <SelectItem value="all">Todos</SelectItem>
+                                                {auxiliaryType === 'clients' ? 
+                                                    (clients.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)) : 
+                                                    (mockAccounts.map(a => <SelectItem key={a.id} value={a.id}>{a.bankName} - {a.companyName}</SelectItem>))
+                                                }
                                             </SelectContent>
                                         </Select>
                                     </div>
@@ -515,7 +541,7 @@ export default function SettingsPage() {
                                             </TableRow>
                                         </TableHeader>
                                         <TableBody>
-                                            {filteredTransactions.length > 0 ? filteredTransactions.map(trx => (
+                                            {generalLedgerData.length > 0 ? generalLedgerData.map(trx => (
                                                 <TableRow key={trx.id}>
                                                     <TableCell>{format(new Date(trx.date), "dd/MM/yyyy")}</TableCell>
                                                     <TableCell className="font-medium">{trx.description}</TableCell>
@@ -524,13 +550,13 @@ export default function SettingsPage() {
                                                     </TableCell>
                                                 </TableRow>
                                             )) : (
-                                                <TableRow><TableCell colSpan={3} className="text-center">Seleccione un auxiliar para ver su detalle.</TableCell></TableRow>
+                                                <TableRow><TableCell colSpan={3} className="text-center">Seleccione una opción para ver su detalle.</TableCell></TableRow>
                                             )}
                                         </TableBody>
                                         <TableFooter>
                                             <TableRow>
                                                 <TableCell colSpan={2} className="text-right font-bold">Saldo Total del Auxiliar:</TableCell>
-                                                <TableCell className="text-right font-bold">{filteredTransactions.reduce((sum, t) => sum + t.amount, 0).toLocaleString('en-US', { style: 'currency', currency: 'USD' })}</TableCell>
+                                                <TableCell className="text-right font-bold">{generalLedgerData.reduce((sum, t) => sum + t.amount, 0).toLocaleString('en-US', { style: 'currency', currency: 'USD' })}</TableCell>
                                             </TableRow>
                                         </TableFooter>
                                     </Table>
@@ -695,5 +721,3 @@ export default function SettingsPage() {
     </TooltipProvider>
   );
 }
-
-    
