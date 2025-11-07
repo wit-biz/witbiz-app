@@ -43,78 +43,47 @@ const StageClientCard = ({ client, onClientClick }: { client: Client, onClientCl
 
 const StageCard = ({ 
     stage, 
-    level = 1,
     clientsInStage, 
-    onClientClick, 
-    clientsByStage
+    onClientClick
 }: { 
     stage: AnyStage, 
-    level?: 1 | 2 | 3, 
     clientsInStage: Client[], 
-    onClientClick: (client: Client) => void,
-    clientsByStage: Map<string, Client[]>
+    onClientClick: (client: Client) => void
 }) => {
 
-  const renderSubStages = (subStages: (SubStage | SubSubStage)[], subLevel: 2 | 3) => {
-    if (!subStages || subStages.length === 0) return null;
-    
-    return (
-        <Accordion type="multiple" defaultValue={subStages.map(s => s.id)} className="space-y-3">
-            {subStages.map(subStage => (
-                <StageCard
-                    key={subStage.id}
-                    stage={subStage}
-                    level={subLevel}
-                    clientsInStage={clientsByStage.get(subStage.id) || []}
-                    onClientClick={onClientClick}
-                    clientsByStage={clientsByStage}
-                />
-            ))}
-        </Accordion>
-    );
-  };
-  
-  const hasSubStages = ('subStages' in stage && stage.subStages && stage.subStages.length > 0) || ('subSubStages' in stage && stage.subSubStages && stage.subSubStages.length > 0);
-
-  const levelStyles = {
-    1: { card: "bg-card", title: "text-base", contentPadding: "p-4" },
-    2: { card: "bg-muted/50", title: "text-sm", contentPadding: "p-4" },
-    3: { card: "bg-muted/30 border border-dashed", title: "text-sm", contentPadding: "p-4" }
-  };
-
   return (
-    <Card id={`stage-card-${stage.id}`} className={cn("flex flex-col w-72 shrink-0", levelStyles[level].card)}>
-        <CardHeader className="flex-grow w-full p-3">
-            <div className="flex items-center gap-2">
-                <CardTitle className={cn("flex-grow text-left", levelStyles[level].title)}>{stage.title}</CardTitle>
+    <Card id={`stage-card-${stage.id}`} className="flex flex-col w-64 shrink-0">
+        <CardHeader className="flex-grow-0 p-3">
+            <div className="flex items-center justify-between gap-2">
+                <CardTitle className="text-base">{stage.title}</CardTitle>
                 <span className="text-sm font-normal bg-muted text-muted-foreground rounded-full px-2 py-0.5 ml-auto">
                     {clientsInStage.length}
                 </span>
             </div>
         </CardHeader>
-        <CardContent className={cn("space-y-2 overflow-y-auto flex-1", levelStyles[level].contentPadding)}>
+        <CardContent className="space-y-3 overflow-y-auto flex-1 p-3">
            {stage.actions && stage.actions.length > 0 && (
-                <div className="text-sm text-muted-foreground pt-0 pl-2 space-y-2 border-l-2 ml-1">
-                     <h4 className="font-semibold text-xs text-foreground/80 pl-3">Acciones</h4>
-                     <ul className="space-y-1 pl-3">
+                <div className="text-sm text-muted-foreground pt-2 space-y-2">
+                     <h4 className="font-semibold text-xs text-foreground/80 pl-1">Acciones</h4>
+                     <ul className="space-y-1">
                         {stage.actions.map(action => (
-                            <li key={action.id} className="flex items-center gap-2 text-xs">
-                                <ListTodo className="h-3 w-3 shrink-0" />
+                            <li key={action.id} className="flex items-start gap-2 text-xs">
+                                <ListTodo className="h-3 w-3 shrink-0 mt-0.5" />
                                 <span className="truncate" title={action.title}>{action.title}</span>
                             </li>
                         ))}
                      </ul>
                 </div>
            )}
-           <div className="space-y-2 pt-4">
+           <div className="space-y-2 pt-2 border-t">
                {clientsInStage.length > 0 ? (
                     clientsInStage.map(client => (
                         <StageClientCard key={client.id} client={client} onClientClick={onClientClick} />
                     ))
                 ) : (
-                    <div className="text-center text-muted-foreground py-6 text-sm flex flex-col items-center">
-                        <Users className="h-8 w-8 mb-2" />
-                        <p>No hay clientes en esta etapa.</p>
+                    <div className="text-center text-muted-foreground py-4 text-sm flex flex-col items-center">
+                        <Users className="h-6 w-6 mb-1" />
+                        <p>No hay clientes.</p>
                     </div>
                 )}
            </div>
@@ -215,10 +184,8 @@ export default function CrmPage() {
                            <React.Fragment key={stage.id}>
                              <StageCard
                                 stage={stage}
-                                level={1}
                                 clientsInStage={clientsByStage.get(stage.id) || []}
                                 onClientClick={handleClientClick}
-                                clientsByStage={clientsByStage}
                             />
                             {index < service.stages.length - 1 && (
                                 <div className="flex items-center justify-center shrink-0">
