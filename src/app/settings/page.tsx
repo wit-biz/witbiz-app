@@ -3,7 +3,7 @@
 
 import React, { useState, useMemo } from "react";
 import Link from "next/link";
-import { Landmark, Briefcase, PlusCircle, ArrowRightLeft, DollarSign, BarChart as BarChartIcon, Settings, Edit, Trash2, KeyRound, Filter, ChevronsUpDown, Building, Loader2, Save, Calendar as CalendarIcon, ArrowUpCircle, ArrowDownCircle, TrendingUp, BookText, Users as UsersIcon, FilterX } from "lucide-react";
+import { Landmark, Briefcase, PlusCircle, ArrowRightLeft, DollarSign, BarChart as BarChartIcon, Settings, Edit, Trash2, KeyRound, Filter, ChevronsUpDown, Building, Loader2, Save, Calendar as CalendarIcon, ArrowUpCircle, ArrowDownCircle, TrendingUp, BookText, Users as UsersIcon, FilterX, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableFooter } from "@/components/ui/table";
@@ -113,6 +113,12 @@ export default function SettingsPage() {
   const [selectedCategoryId, setSelectedCategoryId] = useState<string>("all");
   const [selectedType, setSelectedType] = useState<string>("all");
   
+  const handleDownloadReport = (reportName: string) => {
+    toast({
+      title: "Descarga Simulada",
+      description: `Se ha iniciado la descarga de "${reportName}".`
+    })
+  }
 
   const allCategories = useMemo(() => categoryGroups.flatMap(g => g.categories.map(c => ({...c, groupName: g.name, type: g.type}))), [categoryGroups]);
 
@@ -393,8 +399,16 @@ export default function SettingsPage() {
                                 <TabsTrigger value="auxiliaries">Auxiliares Contables</TabsTrigger>
                             </TabsList>
                             <TabsContent value="daily-journal" className="p-6">
-                                <CardTitle>Libro de Transacciones</CardTitle>
-                                <CardDescription className="mb-4">Registro detallado de todas las operaciones financieras. Utilice los filtros globales para explorar.</CardDescription>
+                                <div className="flex justify-between items-start mb-4">
+                                    <div>
+                                        <CardTitle>Libro de Transacciones</CardTitle>
+                                        <CardDescription>Registro detallado de todas las operaciones financieras. Utilice los filtros globales para explorar.</CardDescription>
+                                    </div>
+                                    <Button variant="outline" size="sm" onClick={() => handleDownloadReport('Libro de Transacciones')}>
+                                        <Download className="mr-2 h-4 w-4" />
+                                        Descargar
+                                    </Button>
+                                </div>
                                 <Table>
                                     <TableHeader>
                                         <TableRow>
@@ -425,8 +439,16 @@ export default function SettingsPage() {
                                 </Table>
                             </TabsContent>
                             <TabsContent value="trial-balance" className="p-6">
-                                <CardTitle>Balanza de Comprobación</CardTitle>
-                                <CardDescription className="mb-4">Verificación de la suma de saldos deudores y acreedores.</CardDescription>
+                                <div className="flex justify-between items-start mb-4">
+                                    <div>
+                                        <CardTitle>Balanza de Comprobación</CardTitle>
+                                        <CardDescription>Verificación de la suma de saldos deudores y acreedores.</CardDescription>
+                                    </div>
+                                     <Button variant="outline" size="sm" onClick={() => handleDownloadReport('Balanza de Comprobación')}>
+                                        <Download className="mr-2 h-4 w-4" />
+                                        Descargar
+                                    </Button>
+                                </div>
                                 <Table>
                                     <TableHeader>
                                         <TableRow>
@@ -454,8 +476,16 @@ export default function SettingsPage() {
                                 </Table>
                             </TabsContent>
                             <TabsContent value="auxiliaries" className="p-6">
-                                    <CardTitle>Auxiliares Contables</CardTitle>
-                                    <CardDescription className="mb-4">Detalle de movimientos a nivel de subcuentas (Bancos, Clientes, etc.).</CardDescription>
+                                <div className="flex justify-between items-start mb-4">
+                                    <div>
+                                        <CardTitle>Auxiliares Contables</CardTitle>
+                                        <CardDescription>Detalle de movimientos a nivel de subcuentas (Bancos, Clientes, etc.).</CardDescription>
+                                    </div>
+                                     <Button variant="outline" size="sm" onClick={() => handleDownloadReport('Auxiliares Contables')}>
+                                        <Download className="mr-2 h-4 w-4" />
+                                        Descargar
+                                    </Button>
+                                </div>
                                     <div className="flex items-center gap-4 mb-4">
                                         <Select value={"clients"} onValueChange={()=>{}}>
                                             <SelectTrigger className="w-[200px]"><SelectValue/></SelectTrigger>
@@ -514,8 +544,16 @@ export default function SettingsPage() {
                                 <TabsTrigger value="equity-changes">Cambios en el Capital</TabsTrigger>
                             </TabsList>
                              <TabsContent value="income-statement" className="p-6">
-                                <CardTitle>Estado de Resultados (Pérdidas y Ganancias)</CardTitle>
-                                <CardDescription className="mb-4">Muestra ingresos, costos y gastos para determinar la utilidad o pérdida neta.</CardDescription>
+                                <div className="flex justify-between items-start mb-4">
+                                    <div>
+                                        <CardTitle>Estado de Resultados (Pérdidas y Ganancias)</CardTitle>
+                                        <CardDescription>Muestra ingresos, costos y gastos para determinar la utilidad o pérdida neta.</CardDescription>
+                                    </div>
+                                    <Button variant="outline" size="sm" onClick={() => handleDownloadReport('Estado de Resultados')}>
+                                        <Download className="mr-2 h-4 w-4" />
+                                        Descargar
+                                    </Button>
+                                </div>
                                 <Table>
                                     <TableBody>
                                         <TableRow className="font-semibold text-secondary-foreground"><TableCell>Ingresos</TableCell><TableCell></TableCell></TableRow>
@@ -545,8 +583,16 @@ export default function SettingsPage() {
                                 </Table>
                             </TabsContent>
                             <TabsContent value="balance-sheet" className="p-6">
-                                <CardTitle>Balance General (al {date?.to ? format(date.to, "dd/MM/yyyy") : format(new Date(), "dd/MM/yyyy")})</CardTitle>
-                                <CardDescription className="mb-4">Presenta activos, pasivos y capital contable en una fecha específica.</CardDescription>
+                                <div className="flex justify-between items-start mb-4">
+                                    <div>
+                                        <CardTitle>Balance General (al {date?.to ? format(date.to, "dd/MM/yyyy") : format(new Date(), "dd/MM/yyyy")})</CardTitle>
+                                        <CardDescription>Presenta activos, pasivos y capital contable en una fecha específica.</CardDescription>
+                                    </div>
+                                    <Button variant="outline" size="sm" onClick={() => handleDownloadReport('Balance General')}>
+                                        <Download className="mr-2 h-4 w-4" />
+                                        Descargar
+                                    </Button>
+                                </div>
                                 <Table>
                                     <TableHeader>
                                         <TableRow><TableHead colSpan={2}>Activos</TableHead></TableRow>
@@ -573,8 +619,16 @@ export default function SettingsPage() {
                                 </Table>
                             </TabsContent>
                             <TabsContent value="cash-flow" className="p-6">
-                                <CardTitle>Estado de Flujo de Efectivo</CardTitle>
-                                <CardDescription className="mb-4">Detalla entradas y salidas de efectivo por actividades.</CardDescription>
+                                <div className="flex justify-between items-start mb-4">
+                                    <div>
+                                        <CardTitle>Estado de Flujo de Efectivo</CardTitle>
+                                        <CardDescription>Detalla entradas y salidas de efectivo por actividades.</CardDescription>
+                                    </div>
+                                    <Button variant="outline" size="sm" onClick={() => handleDownloadReport('Estado de Flujo de Efectivo')}>
+                                        <Download className="mr-2 h-4 w-4" />
+                                        Descargar
+                                    </Button>
+                                </div>
                                 <Table>
                                     <TableBody>
                                         <TableRow><TableCell>Efectivo al inicio del período</TableCell><TableCell className="text-right">{cashFlowData.initialCash.toLocaleString('en-US', { style: 'currency', currency: 'USD' })}</TableCell></TableRow>
@@ -595,8 +649,16 @@ export default function SettingsPage() {
                                 </Table>
                             </TabsContent>
                             <TabsContent value="equity-changes" className="p-6">
-                                <CardTitle>Estado de Cambios en el Capital Contable</CardTitle>
-                                <CardDescription className="mb-4">Refleja variaciones en el patrimonio de los socios.</CardDescription>
+                                <div className="flex justify-between items-start mb-4">
+                                    <div>
+                                        <CardTitle>Estado de Cambios en el Capital Contable</CardTitle>
+                                        <CardDescription>Refleja variaciones en el patrimonio de los socios.</CardDescription>
+                                    </div>
+                                    <Button variant="outline" size="sm" onClick={() => handleDownloadReport('Estado de Cambios en el Capital Contable')}>
+                                        <Download className="mr-2 h-4 w-4" />
+                                        Descargar
+                                    </Button>
+                                </div>
                                 <Table>
                                      <TableBody>
                                         <TableRow><TableCell>Capital Inicial (Utilidades Retenidas)</TableCell><TableCell className="text-right">{balanceSheetData.equity.retainedEarnings.toLocaleString('en-US', { style: 'currency', currency: 'USD' })}</TableCell></TableRow>
