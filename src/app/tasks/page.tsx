@@ -276,10 +276,10 @@ export default function TasksPage() {
   const handleTaskClick = useCallback((task: Task) => { setSelectedTaskDetail(task); setIsDetailDialogOpen(true); }, []);
   
   const taskSections = [
-    { id: "upcoming-tasks", title: "Próximas Tareas", tasks: upcomingWeekTasks, icon: ListTodo, color: "text-blue-500", emptyMsg: "No hay más tareas para esta semana." },
-    { id: "today-tasks", title: "Tareas Para Hoy", tasks: todayTasks, icon: CheckCircle2, color: "text-green-500", emptyMsg: "No hay tareas programadas para hoy." },
-    { id: "overdue-tasks", title: "Tareas Atrasadas", tasks: overdueTasks, icon: AlertTriangle, color: "text-destructive", emptyMsg: "¡Ninguna tarea atrasada! Buen trabajo." },
-    { id: "postponed-tasks", title: "Tareas Pospuestas", tasks: postponedTasks, icon: History, color: "text-amber-500", emptyMsg: "No tienes tareas pospuestas recientemente." }
+    { id: "upcoming-tasks", title: "Próximas Tareas", tasks: upcomingWeekTasks, icon: ListTodo, color: "text-blue-500", badgeClass: "bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-300", emptyMsg: "No hay más tareas para esta semana." },
+    { id: "today-tasks", title: "Tareas Para Hoy", tasks: todayTasks, icon: CheckCircle2, color: "text-green-500", badgeClass: "bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300", emptyMsg: "No hay tareas programadas para hoy." },
+    { id: "overdue-tasks", title: "Tareas Atrasadas", tasks: overdueTasks, icon: AlertTriangle, color: "text-destructive", badgeClass: "bg-destructive text-destructive-foreground", emptyMsg: "¡Ninguna tarea atrasada! Buen trabajo." },
+    { id: "postponed-tasks", title: "Tareas Pospuestas", tasks: postponedTasks, icon: History, color: "text-amber-500", badgeClass: "bg-amber-100 text-amber-800 dark:bg-amber-900/50 dark:text-amber-300", emptyMsg: "No tienes tareas pospuestas recientemente." }
   ];
 
   const postponedSections = [
@@ -354,7 +354,7 @@ export default function TasksPage() {
                       <AccordionTrigger className="w-full hover:no-underline p-0 [&_svg]:ml-auto [&_svg]:mr-2"> 
                         <CardHeader className="flex-1 p-4"> 
                           <CardTitle className="flex items-center gap-2 text-lg"> 
-                            <section.icon className={`h-6 w-6 ${section.color}`} /> {section.title} <Badge variant={(section.id === "overdue-tasks" && section.tasks.length > 0) ? "destructive" : "secondary"} className={cn("ml-auto mr-2", section.id === "postponed-tasks" && "bg-amber-100 text-amber-800 dark:bg-amber-900/50 dark:text-amber-300")} > {section.tasks.length} </Badge> 
+                            <section.icon className={`h-6 w-6 ${section.color}`} /> {section.title} <Badge variant={section.id === "overdue-tasks" && section.tasks.length > 0 ? "destructive" : "secondary"} className={cn("ml-auto mr-2", section.badgeClass)} > {section.tasks.length} </Badge> 
                           </CardTitle> 
                         </CardHeader> 
                       </AccordionTrigger> 
