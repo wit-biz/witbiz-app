@@ -315,43 +315,6 @@ export default function TasksPage() {
         </Header>
         <main className="flex-1 p-4 md:p-8">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <div className="lg:col-span-1 space-y-6">
-              <Card className="h-full"> 
-                <CardHeader> 
-                  <CardTitle className="flex items-center gap-2"> 
-                    <CalendarDays className="h-6 w-6 text-accent" /> Calendario 
-                  </CardTitle> 
-                  <CardDescription> 
-                    Selecciona una fecha para ver las tareas. Fechas resaltadas: 
-                    <span className="inline-flex items-center ml-2"><span className="w-3 h-3 rounded-full mr-1 bg-indicator-upcoming" />Próximas</span>,
-                    <span className="inline-flex items-center ml-2"><span className="w-3 h-3 rounded-full mr-1 bg-indicator-today" />Hoy</span>,
-                    <span className="inline-flex items-center ml-2"><span className="w-3 h-3 rounded-full mr-1 bg-indicator-overdue" />Atrasadas</span>,
-                    <span className="inline-flex items-center ml-2"><span className="w-3 h-3 rounded-full mr-1 bg-indicator-postponed" />Pospuestas</span>.
-                  </CardDescription> 
-                </CardHeader> 
-                <CardContent className="flex justify-center">
-                  {!isClient ? (
-                    <div className="p-3 rounded-md border w-[280px] h-[321px] flex items-center justify-center">
-                      <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-                    </div>
-                  ) : (
-                    <Calendar 
-                      mode="single" 
-                      selected={selectedDate} 
-                      onSelect={(date) => { setSelectedDate(date); setOpenAccordionItem(''); }} 
-                      month={calendarMonth} 
-                      onMonthChange={setCalendarMonth} 
-                      locale={es} 
-                      className="rounded-md border" 
-                      disabled={!currentClientDate} 
-                      modifiers={dayModifiers} 
-                      modifiersClassNames={dayModifiersClassNames} 
-                    />
-                  )}
-                </CardContent> 
-              </Card>
-              {selectedDate && ( <Card> <CardHeader> <CardTitle>Tareas para el {isClient ? format(selectedDate, 'PPP', { locale: es }) : '...'}</CardTitle> </CardHeader> <CardContent className="space-y-3"> {tasksForSelectedDate.length > 0 ? ( tasksForSelectedDate.map(task => <MemoizedTaskItemDisplay key={task.id} task={task} showDate={false} icon={Clock} iconColor={task.status === 'Pospuesta' ? 'text-amber-500' : 'text-blue-500'} isClient={isClient} onClickHandler={handleTaskClick} />) ) : ( <div className="text-sm text-muted-foreground p-4 text-center flex flex-col items-center"> <Info className="h-8 w-8 text-muted-foreground mb-2"/> No hay tareas para esta fecha. </div> )} </CardContent> </Card> )}
-            </div>
             <div className="lg:col-span-2 space-y-1">
               <Accordion type="single" collapsible className="w-full space-y-4" value={openAccordionItem} onValueChange={handleAccordionChange} >
                 {taskSections.map(section => ( 
@@ -400,6 +363,45 @@ export default function TasksPage() {
                   </AccordionItem> 
                 ))} 
               </Accordion>
+            </div>
+            <div className="lg:col-span-1 space-y-6">
+              <Card className="h-full"> 
+                <CardHeader> 
+                  <CardTitle className="flex items-center gap-2"> 
+                    <CalendarDays className="h-6 w-6 text-accent" /> Calendario 
+                  </CardTitle> 
+                  <CardDescription> 
+                    Selecciona una fecha para ver las tareas. Fechas resaltadas:
+                    <ul className="mt-2 space-y-1 text-xs">
+                        <li className="flex items-center gap-2"><span className="w-3 h-3 rounded-full bg-indicator-upcoming" /> Próximas</li>
+                        <li className="flex items-center gap-2"><span className="w-3 h-3 rounded-full bg-indicator-today" /> Hoy</li>
+                        <li className="flex items-center gap-2"><span className="w-3 h-3 rounded-full bg-destructive" /> Atrasadas</li>
+                        <li className="flex items-center gap-2"><span className="w-3 h-3 rounded-full bg-indicator-postponed" /> Pospuestas</li>
+                    </ul>
+                  </CardDescription> 
+                </CardHeader> 
+                <CardContent className="flex justify-center">
+                  {!isClient ? (
+                    <div className="p-3 rounded-md border w-[280px] h-[321px] flex items-center justify-center">
+                      <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                    </div>
+                  ) : (
+                    <Calendar 
+                      mode="single" 
+                      selected={selectedDate} 
+                      onSelect={(date) => { setSelectedDate(date); setOpenAccordionItem(''); }} 
+                      month={calendarMonth} 
+                      onMonthChange={setCalendarMonth} 
+                      locale={es} 
+                      className="rounded-md border" 
+                      disabled={!currentClientDate} 
+                      modifiers={dayModifiers} 
+                      modifiersClassNames={dayModifiersClassNames} 
+                    />
+                  )}
+                </CardContent> 
+              </Card>
+              {selectedDate && ( <Card> <CardHeader> <CardTitle>Tareas para el {isClient ? format(selectedDate, 'PPP', { locale: es }) : '...'}</CardTitle> </CardHeader> <CardContent className="space-y-3"> {tasksForSelectedDate.length > 0 ? ( tasksForSelectedDate.map(task => <MemoizedTaskItemDisplay key={task.id} task={task} showDate={false} icon={Clock} iconColor={task.status === 'Pospuesta' ? 'text-amber-500' : 'text-blue-500'} isClient={isClient} onClickHandler={handleTaskClick} />) ) : ( <div className="text-sm text-muted-foreground p-4 text-center flex flex-col items-center"> <Info className="h-8 w-8 text-muted-foreground mb-2"/> No hay tareas para esta fecha. </div> )} </CardContent> </Card> )}
             </div>
           </div>
         </main>
