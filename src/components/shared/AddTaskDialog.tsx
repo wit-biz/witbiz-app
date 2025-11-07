@@ -117,7 +117,10 @@ export function AddTaskDialog({
     }
   }, [isOpen, isWorkflowMode, preselectedClientId, form, currentUser]);
   
-  const requiresDoc = form.watch('requiredDocumentForCompletion');
+  useEffect(() => {
+    // Automatically set requiredDocumentForCompletion based on whether there are documents
+    form.setValue('requiredDocumentForCompletion', docFields.length > 0);
+  }, [docFields, form]);
 
   const onSubmit = (data: AddTaskFormValues) => {
     setIsSubmitting(true);
@@ -295,40 +298,18 @@ export function AddTaskDialog({
                   </Button>
               </div>
 
-              <FormField
-                control={form.control}
-                name="requiredDocumentForCompletion"
-                render={({ field }) => (
-                  <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
-                    <div className="space-y-0.5">
-                      <FormLabel>Requiere Documento(s) Adjunto(s)</FormLabel>
-                      <FormDescription>
-                        Marcar si esta tarea necesita archivos para completarse.
-                      </FormDescription>
-                    </div>
-                    <FormControl>
-                      <Switch
-                        checked={field.value}
-                        onCheckedChange={field.onChange}
-                      />
-                    </FormControl>
-                  </FormItem>
-                )}
-              />
-
-              {requiresDoc && (
-                <div className="pl-4 border-l-2 ml-1 space-y-4">
-                  {docFields.map((field, index) => (
+              <div className="space-y-2">
+                <Label>Documentos Requeridos (Opcional)</Label>
+                 {docFields.map((field, index) => (
                       <FormField
                           key={field.id}
                           control={form.control}
                           name={`requiredDocuments.${index}.description`}
                           render={({ field }) => (
                               <FormItem>
-                                  <FormLabel>Documento Requerido #{index + 1} <span className="text-destructive">*</span></FormLabel>
                                   <div className="flex items-center gap-2">
                                       <FormControl>
-                                          <Input placeholder="Ej. Identificación oficial" {...field} />
+                                          <Input placeholder={`Documento requerido #${index + 1}`} {...field} />
                                       </FormControl>
                                       <Button type="button" variant="ghost" size="icon" onClick={() => removeDoc(index)}>
                                           <Trash2 className="h-4 w-4 text-destructive" />
@@ -346,13 +327,12 @@ export function AddTaskDialog({
                       onClick={() => appendDoc({ description: '' })}
                     >
                       <PlusCircle className="mr-2 h-4 w-4" />
-                      Añadir Otro Documento
+                      Añadir Documento Requerido
                     </Button>
                     {form.formState.errors.requiredDocuments && (
                         <p className="text-sm font-medium text-destructive">{form.formState.errors.requiredDocuments.message}</p>
                     )}
                 </div>
-              )}
 
             </div>
 
