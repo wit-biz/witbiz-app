@@ -24,6 +24,25 @@ import { Switch } from "@/components/ui/switch";
 
 type AnyStage = WorkflowStage | SubStage | SubSubStage;
 
+const StageNumberIcon = ({ path }: { path: string }) => {
+    // path is like "stages.0.subStages.1.subSubStages.0"
+    const numbers = path.split('.').filter(p => !isNaN(parseInt(p))).map(p => parseInt(p) + 1);
+    const displayNumber = numbers.join('.');
+    
+    const level = numbers.length;
+    const levelStyles = {
+        1: "text-lg",
+        2: "text-md",
+        3: "text-base",
+    };
+
+    return (
+        <span className={cn("font-bold text-accent", levelStyles[level as keyof typeof levelStyles])}>
+            {displayNumber}
+        </span>
+    );
+};
+
 const StageCard = ({ 
     stage, 
     level,
@@ -49,11 +68,10 @@ const StageCard = ({
     const [addTaskDialogState, setAddTaskDialogState] = useState<{isOpen: boolean, path: string | null}>({isOpen: false, path: null});
 
     const levelStyles = {
-        1: { card: "bg-card", trigger: "text-lg", icon: Layers, subStageContainer: "", subStageButton: "secondary", subSubStageButton: "outline" },
-        2: { card: "bg-muted/40", trigger: "text-md", icon: FolderCog, subStageContainer: "pl-4", subStageButton: "outline", subSubStageButton: "ghost" },
-        3: { card: "bg-muted/20", trigger: "text-base", icon: ListTodo, subStageContainer: "pl-8", subStageButton: "ghost", subSubStageButton: "ghost" }
+        1: { card: "bg-card", trigger: "text-lg", subStageContainer: "", subStageButton: "secondary", subSubStageButton: "outline" },
+        2: { card: "bg-muted/40", trigger: "text-md", subStageContainer: "pl-4", subStageButton: "outline", subSubStageButton: "ghost" },
+        3: { card: "bg-muted/20", trigger: "text-base", subStageContainer: "pl-8", subStageButton: "ghost", subSubStageButton: "ghost" }
     }
-    const Icon = levelStyles[level].icon;
 
     const handleUpdateAction = (actionId: string, updates: Partial<WorkflowAction>) => {
         const newActions = stage.actions.map(a => a.id === actionId ? { ...a, ...updates } : a);
@@ -76,7 +94,7 @@ const StageCard = ({
                 <div className="flex items-center p-2 pr-1">
                      <AccordionTrigger className="p-2 hover:no-underline flex-grow text-left">
                         <div className="flex items-center gap-3">
-                             <Icon className="h-5 w-5 text-accent"/>
+                             <StageNumberIcon path={path} />
                              {canEditWorkflow ? (
                                 <Input 
                                     value={stage.title}
@@ -538,3 +556,4 @@ export default function WorkflowConfigurationPage() {
     </>
   );
 }
+
