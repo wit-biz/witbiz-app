@@ -253,10 +253,9 @@ export default function TasksPage() {
   
   const tasksForSelectedDate = useMemo(() => {
     if (!selectedDate || !Array.isArray(allTasks) || !currentUser) return [];
-    
+
     const selectedDayStart = new Date(selectedDate);
     selectedDayStart.setHours(0, 0, 0, 0);
-    const selectedDayTime = selectedDayStart.getTime();
 
     return allTasks.filter(task => {
         if (!task || task.status === 'Completada' || task.assignedToId !== currentUser.uid) {
@@ -266,10 +265,11 @@ export default function TasksPage() {
         const taskDueDate = parseDateString(task.dueDate);
         if (!taskDueDate) return false;
         
-        // Normalize task due date to the start of the day in UTC for comparison
-        const taskDayStart = new Date(Date.UTC(taskDueDate.getUTCFullYear(), taskDueDate.getUTCMonth(), taskDueDate.getUTCDate()));
-
-        return taskDayStart.getTime() === selectedDayTime;
+        // Normalize task due date to the start of the day for comparison
+        const taskDayStart = new Date(taskDueDate);
+        taskDayStart.setHours(0, 0, 0, 0);
+        
+        return taskDayStart.getTime() === selectedDayStart.getTime();
     }).sort((a,b) => (a.dueTime || "23:59").localeCompare(b.dueTime || "23:59"));
   }, [selectedDate, allTasks, currentUser]);
   
@@ -418,4 +418,3 @@ export default function TasksPage() {
     </TooltipProvider>
   );
 }
-

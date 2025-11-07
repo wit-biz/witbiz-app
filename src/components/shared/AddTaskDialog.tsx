@@ -31,7 +31,9 @@ const requiredDocSchema = z.object({
 });
 
 const subTaskSchema = z.object({
+  id: z.string(),
   description: z.string().min(1, "La descripción del requisito no puede estar vacía."),
+  completed: z.boolean(),
 });
 
 const baseSchema = z.object({
@@ -286,7 +288,7 @@ export function AddTaskDialog({
                     type="button"
                     variant="outline"
                     size="sm"
-                    onClick={() => appendSubTask({ description: '' })}
+                    onClick={() => appendSubTask({ id: `new-${subTaskFields.length}`, description: '', completed: false })}
                   >
                     <PlusCircle className="mr-2 h-4 w-4" />
                     Añadir Requisito

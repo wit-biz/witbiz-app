@@ -38,7 +38,7 @@ export type Task = {
   dueTime?: string; // HH:MM
   status: 'Pendiente' | 'Completada' | 'Pospuesta';
   clientId: string;
-  clientName: string;
+  clientName?: string;
   assignedToId?: string;
   assignedToName?: string;
   assignedToPhotoURL?: string;
@@ -120,6 +120,7 @@ export type WorkflowAction = {
   requiredDocumentForCompletion?: boolean;
   requiredDocuments?: { id: string; description: string }[];
   description?: string;
+  assignedToId?: string;
 };
 
 export type SubAction = {

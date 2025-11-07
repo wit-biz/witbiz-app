@@ -191,6 +191,7 @@ export function TaskDetailDialog({
         ...data,
         dueDate: format(data.dueDate, 'yyyy-MM-dd'),
         clientName: clientName,
+        assignedToId: assignedUser?.id,
         assignedToName: assignedUser?.name,
         assignedToPhotoURL: assignedUser?.photoURL,
     };

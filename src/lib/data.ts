@@ -20,6 +20,7 @@ export const serviceWorkflows: ServiceWorkflow[] = [
         {id: 'com-2', name: 'Visa/Mastercard Crédito', rate: 2.5},
         {id: 'com-3', name: 'American Express', rate: 3.5},
     ],
+    stages: [],
     subServices: []
   }
 ];

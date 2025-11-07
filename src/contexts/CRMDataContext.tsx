@@ -43,7 +43,7 @@ interface CRMContextType {
   
   tasks: Task[];
   isLoadingTasks: boolean;
-  addTask: (newTaskData: Omit<Task, 'id' | 'status' | 'clientName'>) => Promise<Task | null>;
+  addTask: (newTaskData: Omit<Task, 'id' | 'status' >) => Promise<Task | null>;
   updateTask: (taskId: string, updates: Partial<Task>) => Promise<boolean>;
   deleteTask: (taskId: string) => Promise<boolean>;
   getTasksByClientId: (clientId: string) => Task[];
@@ -205,7 +205,7 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
         return true;
     };
     
-    const addTask = async (newTaskData: Omit<Task, 'id' | 'status' | 'clientName'>): Promise<Task | null> => {
+    const addTask = async (newTaskData: Omit<Task, 'id' | 'status'>): Promise<Task | null> => {
         if (!tasksCollection || !currentUser) return null;
         const client = clients.find(c => c.id === newTaskData.clientId);
         if (!client) return null;
