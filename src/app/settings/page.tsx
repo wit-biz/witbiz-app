@@ -387,15 +387,14 @@ export default function SettingsPage() {
                 <TabsContent value="ledger" className="mt-4">
                      <Card>
                         <Tabs defaultValue="daily-journal" className="w-full">
-                            <TabsList className="grid w-full grid-cols-4 rounded-t-lg rounded-b-none">
-                                <TabsTrigger value="daily-journal">Libro Diario</TabsTrigger>
-                                <TabsTrigger value="general-ledger">Libro Mayor</TabsTrigger>
+                            <TabsList className="grid w-full grid-cols-3 rounded-t-lg rounded-b-none">
+                                <TabsTrigger value="daily-journal">Libro de Transacciones</TabsTrigger>
                                 <TabsTrigger value="trial-balance">Balanza de Comprobación</TabsTrigger>
                                 <TabsTrigger value="auxiliaries">Auxiliares Contables</TabsTrigger>
                             </TabsList>
                             <TabsContent value="daily-journal" className="p-6">
-                                <CardTitle>Libro Diario</CardTitle>
-                                <CardDescription className="mb-4">Registro cronológico de todas las operaciones financieras de la empresa.</CardDescription>
+                                <CardTitle>Libro de Transacciones</CardTitle>
+                                <CardDescription className="mb-4">Registro detallado de todas las operaciones financieras. Utilice los filtros globales para explorar.</CardDescription>
                                 <Table>
                                     <TableHeader>
                                         <TableRow>
@@ -424,48 +423,6 @@ export default function SettingsPage() {
                                         ))}
                                     </TableBody>
                                 </Table>
-                            </TabsContent>
-                            <TabsContent value="general-ledger" className="p-6">
-                                    <CardTitle>Libro Mayor</CardTitle>
-                                    <CardDescription className="mb-4">Concentración de movimientos por cuenta contable (categoría).</CardDescription>
-                                    <div className="flex items-center gap-2 mb-4">
-                                        <Label htmlFor="ledger-account-filter">Cuenta Contable</Label>
-                                        <Select value={selectedCategoryId} onValueChange={setSelectedCategoryId}>
-                                            <SelectTrigger id="ledger-account-filter" className="w-[300px]"><SelectValue placeholder="Seleccione una cuenta..."/></SelectTrigger>
-                                            <SelectContent>
-                                                <SelectItem value="all">Ver todas las transacciones</SelectItem>
-                                                {allCategories.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
-                                            </SelectContent>
-                                        </Select>
-                                    </div>
-                                    <Table>
-                                        <TableHeader>
-                                            <TableRow>
-                                                <TableHead>Fecha</TableHead>
-                                                <TableHead>Descripción</TableHead>
-                                                <TableHead className="text-right">Monto</TableHead>
-                                            </TableRow>
-                                        </TableHeader>
-                                        <TableBody>
-                                            {filteredTransactions.length > 0 ? filteredTransactions.map(trx => (
-                                                <TableRow key={trx.id}>
-                                                    <TableCell>{format(new Date(trx.date), "dd/MM/yyyy")}</TableCell>
-                                                    <TableCell className="font-medium">{trx.description}</TableCell>
-                                                    <TableCell className={`text-right font-semibold ${trx.amount > 0 ? 'text-green-600' : 'text-red-600'}`}>
-                                                        {trx.amount.toLocaleString('en-US', { style: 'currency', currency: 'USD' })}
-                                                    </TableCell>
-                                                </TableRow>
-                                            )) : (
-                                                <TableRow><TableCell colSpan={3} className="text-center">Seleccione una cuenta para ver sus movimientos.</TableCell></TableRow>
-                                            )}
-                                        </TableBody>
-                                        <TableFooter>
-                                            <TableRow>
-                                                <TableCell colSpan={2} className="text-right font-bold">Saldo Total de la Cuenta:</TableCell>
-                                                <TableCell className="text-right font-bold">{filteredTransactions.reduce((sum, t) => sum + t.amount, 0).toLocaleString('en-US', { style: 'currency', currency: 'USD' })}</TableCell>
-                                            </TableRow>
-                                        </TableFooter>
-                                    </Table>
                             </TabsContent>
                             <TabsContent value="trial-balance" className="p-6">
                                 <CardTitle>Balanza de Comprobación</CardTitle>
