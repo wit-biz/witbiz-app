@@ -316,12 +316,18 @@ export default function TasksPage() {
         <main className="flex-1 p-4 md:p-8">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <div className="lg:col-span-1 space-y-6">
-              <Card> 
+              <Card className="h-full"> 
                 <CardHeader> 
                   <CardTitle className="flex items-center gap-2"> 
                     <CalendarDays className="h-6 w-6 text-accent" /> Calendario 
                   </CardTitle> 
-                  <CardDescription> Selecciona una fecha para ver las tareas. Fechas resaltadas: <span className="inline-block w-3 h-3 rounded-full mx-1 align-middle bg-indicator-overdue" ></span> Atrasadas, <span className="inline-block w-3 h-3 rounded-full mx-1 align-middle bg-indicator-today" ></span> Hoy, <span className="inline-block w-3 h-3 rounded-full mx-1 align-middle bg-indicator-upcoming" ></span> Futuras, <span className="inline-block w-3 h-3 rounded-full mx-1 align-middle bg-indicator-postponed" ></span> Pospuestas. </CardDescription> 
+                  <CardDescription> 
+                    Selecciona una fecha para ver las tareas. Fechas resaltadas: 
+                    <span className="inline-flex items-center ml-2"><span className="w-3 h-3 rounded-full mr-1 bg-indicator-upcoming" />Próximas</span>,
+                    <span className="inline-flex items-center ml-2"><span className="w-3 h-3 rounded-full mr-1 bg-indicator-today" />Hoy</span>,
+                    <span className="inline-flex items-center ml-2"><span className="w-3 h-3 rounded-full mr-1 bg-indicator-overdue" />Atrasadas</span>,
+                    <span className="inline-flex items-center ml-2"><span className="w-3 h-3 rounded-full mr-1 bg-indicator-postponed" />Pospuestas</span>.
+                  </CardDescription> 
                 </CardHeader> 
                 <CardContent className="flex justify-center">
                   {!isClient ? (
