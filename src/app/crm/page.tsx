@@ -20,6 +20,7 @@ import {
   Settings,
   ListTodo,
   ChevronDown,
+  ChevronsRight,
   ChevronRight
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -82,59 +83,43 @@ const StageCard = ({
   };
 
   return (
-    <AccordionItem value={stage.id} className="border-none">
-       <Card id={`stage-card-${stage.id}`} className={cn("flex flex-col", levelStyles[level].card)}>
-            <AccordionTrigger className="p-0 hover:no-underline w-full">
-                <CardHeader className="flex-grow w-full p-3">
-                    <div className="flex items-center gap-2">
-                        <CardTitle className={cn("flex-grow text-left", levelStyles[level].title)}>{stage.title}</CardTitle>
-                        <span className="text-sm font-normal bg-muted text-muted-foreground rounded-full px-2 py-0.5 ml-auto">
-                            {clientsInStage.length}
-                        </span>
-                        {/* The chevron is part of the trigger */}
+    <Card id={`stage-card-${stage.id}`} className={cn("flex flex-col w-72 shrink-0", levelStyles[level].card)}>
+        <CardHeader className="flex-grow w-full p-3">
+            <div className="flex items-center gap-2">
+                <CardTitle className={cn("flex-grow text-left", levelStyles[level].title)}>{stage.title}</CardTitle>
+                <span className="text-sm font-normal bg-muted text-muted-foreground rounded-full px-2 py-0.5 ml-auto">
+                    {clientsInStage.length}
+                </span>
+            </div>
+        </CardHeader>
+        <CardContent className={cn("space-y-2 overflow-y-auto flex-1", levelStyles[level].contentPadding)}>
+           {stage.actions && stage.actions.length > 0 && (
+                <div className="text-sm text-muted-foreground pt-0 pl-2 space-y-2 border-l-2 ml-1">
+                     <h4 className="font-semibold text-xs text-foreground/80 pl-3">Acciones</h4>
+                     <ul className="space-y-1 pl-3">
+                        {stage.actions.map(action => (
+                            <li key={action.id} className="flex items-center gap-2 text-xs">
+                                <ListTodo className="h-3 w-3 shrink-0" />
+                                <span className="truncate" title={action.title}>{action.title}</span>
+                            </li>
+                        ))}
+                     </ul>
+                </div>
+           )}
+           <div className="space-y-2 pt-4">
+               {clientsInStage.length > 0 ? (
+                    clientsInStage.map(client => (
+                        <StageClientCard key={client.id} client={client} onClientClick={onClientClick} />
+                    ))
+                ) : (
+                    <div className="text-center text-muted-foreground py-6 text-sm flex flex-col items-center">
+                        <Users className="h-8 w-8 mb-2" />
+                        <p>No hay clientes en esta etapa.</p>
                     </div>
-                </CardHeader>
-            </AccordionTrigger>
-            <AccordionContent asChild>
-                <CardContent className={cn("space-y-2 overflow-y-auto", levelStyles[level].contentPadding)}>
-                   {stage.actions && stage.actions.length > 0 && (
-                        <div className="text-sm text-muted-foreground pt-0 pl-2 space-y-2 border-l-2 ml-1">
-                             <h4 className="font-semibold text-xs text-foreground/80 pl-3">Acciones</h4>
-                             <ul className="space-y-1 pl-3">
-                                {stage.actions.map(action => (
-                                    <li key={action.id} className="flex items-center gap-2 text-xs">
-                                        <ListTodo className="h-3 w-3 shrink-0" />
-                                        <span className="truncate" title={action.title}>{action.title}</span>
-                                    </li>
-                                ))}
-                             </ul>
-                        </div>
-                   )}
-                   {clientsInStage.length > 0 ? (
-                        clientsInStage.map(client => (
-                            <StageClientCard key={client.id} client={client} onClientClick={onClientClick} />
-                        ))
-                    ) : (
-                        <div className="text-center text-muted-foreground py-6 text-sm flex flex-col items-center">
-                            <Users className="h-8 w-8 mb-2" />
-                            <p>No hay clientes en esta etapa.</p>
-                        </div>
-                    )}
-                    {/* Render nested stages inside the content area */}
-                    {'subStages' in stage && stage.subStages && stage.subStages.length > 0 && (
-                        <div className="mt-4 pt-4 border-t pl-4">
-                            {renderSubStages(stage.subStages, 2)}
-                        </div>
-                    )}
-                    {'subSubStages' in stage && stage.subSubStages && stage.subSubStages.length > 0 && (
-                        <div className="mt-4 pt-4 border-t pl-6">
-                             {renderSubStages(stage.subSubStages, 3)}
-                        </div>
-                    )}
-                </CardContent>
-            </AccordionContent>
-      </Card>
-    </AccordionItem>
+                )}
+           </div>
+        </CardContent>
+    </Card>
   );
 };
 
@@ -225,9 +210,9 @@ export default function CrmPage() {
                     <CardDescription>Pipeline de clientes para este servicio.</CardDescription>
                 </CardHeader>
                 <CardContent className="pt-0">
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                        {(service.stages || []).sort((a,b) => a.order - b.order).map((stage) => (
-                           <Accordion type="single" collapsible defaultValue={stage.id} className="w-full" key={stage.id}>
+                    <div className="flex overflow-x-auto py-4 space-x-4">
+                        {(service.stages || []).sort((a,b) => a.order - b.order).map((stage, index) => (
+                           <React.Fragment key={stage.id}>
                              <StageCard
                                 stage={stage}
                                 level={1}
@@ -235,7 +220,12 @@ export default function CrmPage() {
                                 onClientClick={handleClientClick}
                                 clientsByStage={clientsByStage}
                             />
-                           </Accordion>
+                            {index < service.stages.length - 1 && (
+                                <div className="flex items-center justify-center shrink-0">
+                                    <ChevronsRight className="h-8 w-8 text-muted-foreground/50" />
+                                </div>
+                            )}
+                           </React.Fragment>
                         ))}
                     </div>
                 </CardContent>
