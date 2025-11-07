@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import React, { useState, useEffect, useMemo, type ChangeEvent, useCallback } from "react";
@@ -323,12 +324,12 @@ export default function TasksPage() {
                   <CardDescription> 
                     Selecciona una fecha para ver las tareas. Fechas resaltadas:
                   </CardDescription>
-                  <ul className="mt-2 space-y-1 text-xs text-muted-foreground">
-                      <li className="flex items-center gap-2"><span className="w-3 h-3 rounded-full bg-indicator-upcoming" /> Próximas</li>
-                      <li className="flex items-center gap-2"><span className="w-3 h-3 rounded-full bg-indicator-today" /> Hoy</li>
-                      <li className="flex items-center gap-2"><span className="w-3 h-3 rounded-full bg-destructive" /> Atrasadas</li>
-                      <li className="flex items-center gap-2"><span className="w-3 h-3 rounded-full bg-indicator-postponed" /> Pospuestas</li>
-                  </ul>
+                  <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs text-muted-foreground pt-2">
+                    <div className="flex items-center gap-2"><span className="w-3 h-3 rounded-full bg-indicator-upcoming" /> Próximas</div>
+                    <div className="flex items-center gap-2"><span className="w-3 h-3 rounded-full bg-destructive" /> Atrasadas</div>
+                    <div className="flex items-center gap-2"><span className="w-3 h-3 rounded-full bg-indicator-today" /> Hoy</div>
+                    <div className="flex items-center gap-2"><span className="w-3 h-3 rounded-full bg-indicator-postponed" /> Pospuestas</div>
+                  </div>
                 </CardHeader> 
                 <CardContent className="flex justify-center flex-grow items-center">
                   {!isClient ? (
