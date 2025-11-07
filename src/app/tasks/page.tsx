@@ -374,7 +374,7 @@ export default function TasksPage() {
                         <CardContent className="space-y-3 pt-0 p-4"> 
                           {isLoadingTasks ? (
                              <div className="flex items-center justify-center p-12"><Loader2 className="h-8 w-8 animate-spin text-primary"/></div>
-                          ) : section.tasks.length > 0 ? ( section.tasks.map(task => <MemoizedTaskItemDisplay key={task.id} task={task} icon={section.icon} iconColor={section.color} showDate={section.id !== 'today-tasks'} isClient={isClient} onClickHandler={handleTaskClick} />) ) : ( <div className="text-sm text-muted-foreground p-4 text-center flex flex-col items-center"> <Info className="h-8 w-8 text-muted-foreground mb-2"/> {section.emptyMsg} </div> )} 
+                          ) : section.tasks.length > 0 ? ( section.tasks.map(task => <MemoizedTaskItemDisplay key={task.id} task={task} icon={section.icon} iconColor={section.color} showDate={section.id !== 'today-tasks'} isClient={isClient} onClickHandler={handleTaskClick} />) ) : ( <div className="text-sm text-muted-foreground p-4 text-center flex flex-col items-center justify-center h-full"> <Info className="h-8 w-8 text-muted-foreground mb-2"/> <p>{section.emptyMsg}</p> </div> )} 
                           {section.id === 'postponed-tasks' && (
                             <Accordion type="multiple" className="w-full space-y-2 mt-4">
                               {postponedSections.map(pSection => (
