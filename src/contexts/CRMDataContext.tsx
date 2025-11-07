@@ -25,7 +25,7 @@ import {
 import { useUser, useFirestore, useMemoFirebase, useCollection, useDoc, useAuth, addDocumentNonBlocking, setDocumentNonBlocking, deleteDocumentNonBlocking } from '@/firebase';
 import { collection, doc, writeBatch, serverTimestamp, query } from 'firebase/firestore';
 import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
-import { teamMembers as mockTeamMembers, clients as mockClients } from '@/lib/data';
+import { teamMembers as mockTeamMembers, clients as mockClients, serviceWorkflows as mockServiceWorkflows } from '@/lib/data';
 import { addDays, format } from 'date-fns';
 
 type AnyStage = WorkflowStage | SubStage | SubSubStage;
@@ -102,8 +102,9 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
     const documentsCollection = useMemoFirebase(() => user ? collection(firestore, 'users', user.uid, 'documents') : null, [firestore, user]);
     const { data: documents = [], isLoading: isLoadingDocuments } = useCollection<Document>(documentsCollection);
 
-    const workflowsCollection = useMemoFirebase(() => user ? collection(firestore, 'users', user.uid, 'serviceWorkflows') : null, [firestore, user]);
-    const { data: serviceWorkflows = [], isLoading: isLoadingWorkflows } = useCollection<ServiceWorkflow>(workflowsCollection);
+    // Use mock data for service workflows
+    const [serviceWorkflows, setServiceWorkflows] = useState<ServiceWorkflow[]>(mockServiceWorkflows);
+    const [isLoadingWorkflows, setIsLoadingWorkflows] = useState(false);
 
 
     useEffect(() => {
@@ -364,7 +365,6 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
     // --- Service / Workflow Handlers ---
 
     const addService = async (name: string): Promise<ServiceWorkflow | null> => {
-        if (!workflowsCollection) return null;
         const newServiceData: Omit<ServiceWorkflow, 'id'> = {
             name: name,
             description: "",
@@ -373,39 +373,25 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
             stages: [],
             subServices: [], // legacy
         };
-        const newDocRef = await addDocumentNonBlocking(workflowsCollection, newServiceData);
-        return { ...newServiceData, id: newDocRef.id };
+        const newService = { ...newServiceData, id: `service-${Date.now()}` };
+        setServiceWorkflows(prev => [...prev, newService]);
+        return newService;
     };
 
     const updateService = async (serviceId: string, updates: Partial<Omit<ServiceWorkflow, 'id' | 'stages' | 'subServices'>>): Promise<boolean> => {
-        if (!workflowsCollection) return false;
-        const serviceDocRef = doc(workflowsCollection, serviceId);
-        setDocumentNonBlocking(serviceDocRef, updates, { merge: true });
+        setServiceWorkflows(prev => prev.map(s => s.id === serviceId ? { ...s, ...updates } : s));
         showNotification('success', 'Servicio Guardado', 'Los cambios se han guardado correctamente.');
         return true;
     }
     
     const setServiceWorkflowsAndPersist = (workflows: ServiceWorkflow[]) => {
-      if (!workflowsCollection) return;
-      const batch = writeBatch(firestore);
-      workflows.forEach(wf => {
-        const { id, ...data } = wf;
-        const docRef = doc(workflowsCollection, id);
-        batch.set(docRef, data);
-      });
-      batch.commit().then(() => {
-         // Data will be updated by the realtime listener, no need for local state update
-      }).catch(err => {
-        console.error("Error saving workflows", err);
-        showNotification('error', 'Error al Guardar', 'No se pudieron guardar los cambios en los flujos.');
-      });
+      // In mock mode, just update the state
+      setServiceWorkflows(workflows);
     };
 
 
     const deleteService = async (serviceId: string): Promise<boolean> => {
-        if (!workflowsCollection) return false;
-        const serviceDocRef = doc(workflowsCollection, serviceId);
-        deleteDocumentNonBlocking(serviceDocRef);
+        setServiceWorkflows(prev => prev.filter(s => s.id !== serviceId));
         showNotification('success', 'Servicio Eliminado', 'El servicio ha sido eliminado.');
         return true;
     }
