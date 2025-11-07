@@ -31,9 +31,9 @@ const StageNumberIcon = ({ path }: { path: string }) => {
     
     const level = numbers.length;
     const levelStyles = {
-        1: "text-lg",
-        2: "text-md",
-        3: "text-base",
+        1: "text-xl", // Largest
+        2: "text-lg", // Medium
+        3: "text-base", // Smallest
     };
 
     return (
@@ -556,4 +556,5 @@ export default function WorkflowConfigurationPage() {
     </>
   );
 }
+
 
