@@ -105,7 +105,7 @@ export default function TasksPage() {
   const [currentClientDate, setCurrentClientDate] = useState<Date | null>(null);
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
   const [calendarMonth, setCalendarMonth] = useState<Date>();
-  const [openAccordionItem, setOpenAccordionItem] = useState<string>("upcoming-tasks");
+  const [openAccordionItem, setOpenAccordionItem] = useState<string>("today-tasks");
   
   const [selectedTaskDetail, setSelectedTaskDetail] = useState<Task | null>(null);
   const [isDetailDialogOpen, setIsDetailDialogOpen] = useState(false);
@@ -316,7 +316,7 @@ export default function TasksPage() {
         <main className="flex-1 p-4 md:p-8">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <div className="lg:col-span-1 space-y-6">
-              <Card> 
+              <Card className="flex flex-col h-full"> 
                 <CardHeader> 
                   <CardTitle className="flex items-center gap-2"> 
                     <CalendarDays className="h-6 w-6 text-accent" /> Calendario 
@@ -331,7 +331,7 @@ export default function TasksPage() {
                     </ul>
                   </CardDescription> 
                 </CardHeader> 
-                <CardContent className="flex justify-center">
+                <CardContent className="flex justify-center flex-grow items-center">
                   {!isClient ? (
                     <div className="p-3 rounded-md border w-[280px] h-[321px] flex items-center justify-center">
                       <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
@@ -427,3 +427,6 @@ export default function TasksPage() {
   );
 }
 
+
+
+    
