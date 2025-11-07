@@ -11,7 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { AddTransactionDialog } from "@/components/shared/AddTransactionDialog";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
-import { format, isWithinInterval, startOfDay, endOfDay, subDays } from "date-fns";
+import { format, isWithinInterval, startOfDay, endOfDay, subDays, startOfMonth, endOfMonth } from "date-fns";
 import { es } from "date-fns/locale";
 import { DateRange } from "react-day-picker";
 import { cn } from "@/lib/utils";
@@ -42,13 +42,22 @@ const initialBankAccounts = [
 ];
 
 const initialTransactions: Transaction[] = [
-    { id: 'trx1', date: '2024-07-20', description: 'Ingreso por consultoría - Proyecto Alpha', type: 'income', category: 'Ingreso por Consultoría', amount: 50000, companyId: 'emp3', accountId: 'cta4', clientId: '1' },
-    { id: 'trx2', date: '2024-07-19', description: 'Pago de nómina Q1 Julio', type: 'expense', category: 'Sueldos', amount: -25000, companyId: 'emp1', accountId: 'cta1' },
-    { id: 'trx3', date: '2024-07-18', description: 'Transferencia a WitBiz Servicios Digitales', type: 'expense', category: 'Transferencia Interna', amount: -10000, companyId: 'emp1', accountId: 'cta1' },
-    { id: 'trx4', date: '2024-07-18', description: 'Recepción de transferencia de WitBiz Core', type: 'transfer_in', category: 'Transferencia Interna', amount: 10000, companyId: 'emp2', accountId: 'cta3' },
-    { id: 'trx5', date: '2024-07-17', description: 'Pago de licencia de software (Adobe)', type: 'expense', category: 'Software', amount: -600, companyId: 'emp2', accountId: 'cta3' },
-    { id: 'trx6', date: '2024-07-15', description: 'Ingreso por servicio web - Cliente Beta', type: 'income', category: 'Ingreso por Desarrollo', amount: 15000, companyId: 'emp2', accountId: 'cta3', clientId: '2' },
-    { id: 'trx7', date: '2024-07-14', description: 'Pago de renta de oficina', type: 'expense', category: 'Renta', amount: -12000, companyId: 'emp1', accountId: 'cta2' },
+    { id: 'trx1', date: format(new Date(), 'yyyy-MM-dd'), description: 'Ingreso por consultoría - Proyecto Alpha', type: 'income', category: 'Ingreso por Consultoría', amount: 50000, companyId: 'emp3', accountId: 'cta4', clientId: '1' },
+    { id: 'trx2', date: format(subDays(new Date(), 1), 'yyyy-MM-dd'), description: 'Pago de nómina Q1 Julio', type: 'expense', category: 'Sueldos', amount: -25000, companyId: 'emp1', accountId: 'cta1' },
+    { id: 'trx3', date: format(subDays(new Date(), 2), 'yyyy-MM-dd'), description: 'Transferencia a WitBiz Servicios Digitales', type: 'expense', category: 'Transferencia Interna', amount: -10000, companyId: 'emp1', accountId: 'cta1' },
+    { id: 'trx4', date: format(subDays(new Date(), 2), 'yyyy-MM-dd'), description: 'Recepción de transferencia de WitBiz Core', type: 'transfer_in', category: 'Transferencia Interna', amount: 10000, companyId: 'emp2', accountId: 'cta3' },
+    { id: 'trx5', date: format(subDays(new Date(), 3), 'yyyy-MM-dd'), description: 'Pago de licencia de software (Adobe)', type: 'expense', category: 'Software', amount: -600, companyId: 'emp2', accountId: 'cta3' },
+    { id: 'trx6', date: format(subDays(new Date(), 5), 'yyyy-MM-dd'), description: 'Ingreso por servicio web - Cliente Beta', type: 'income', category: 'Ingreso por Desarrollo', amount: 15000, companyId: 'emp2', accountId: 'cta3', clientId: '2' },
+    { id: 'trx7', date: format(subDays(new Date(), 6), 'yyyy-MM-dd'), description: 'Pago de renta de oficina', type: 'expense', category: 'Renta', amount: -12000, companyId: 'emp1', accountId: 'cta2' },
+    { id: 'trx8', date: format(subDays(new Date(), 8), 'yyyy-MM-dd'), description: 'Viáticos - Comida con cliente', type: 'expense', category: 'Comida y Viáticos', amount: -1250, companyId: 'emp3', accountId: 'cta5' },
+    { id: 'trx9', date: format(subDays(new Date(), 10), 'yyyy-MM-dd'), description: 'Campaña de publicidad en Google Ads', type: 'expense', category: 'Publicidad', amount: -5000, companyId: 'emp2', accountId: 'cta3' },
+    { id: 'trx10', date: format(subDays(new Date(), 12), 'yyyy-MM-dd'), description: 'Ingreso por desarrollo - App Móvil', type: 'income', category: 'Ingreso por Desarrollo', amount: 80000, companyId: 'emp2', accountId: 'cta3', clientId: '7' },
+    { id: 'trx11', date: format(subDays(new Date(), 15), 'yyyy-MM-dd'), description: 'Pago de servicios (Luz, Agua)', type: 'expense', category: 'Servicios (Luz, Agua)', amount: -3500, companyId: 'emp1', accountId: 'cta1' },
+    { id: 'trx12', date: format(subDays(new Date(), 20), 'yyyy-MM-dd'), description: 'Ingreso por consultoría estratégica', type: 'income', category: 'Ingreso por Consultoría', amount: 35000, companyId: 'emp3', accountId: 'cta4', clientId: '4' },
+    { id: 'trx13', date: format(subDays(new Date(), 25), 'yyyy-MM-dd'), description: 'Pago de nómina Q2 Junio', type: 'expense', category: 'Sueldos', amount: -25000, companyId: 'emp1', accountId: 'cta2' },
+    { id: 'trx14', date: format(subDays(new Date(), 35), 'yyyy-MM-dd'), description: 'Compra de equipo de cómputo', type: 'expense', category: 'Software', amount: -45000, companyId: 'emp1', accountId: 'cta1' }, // Note: Category might need adjustment
+    { id: 'trx15', date: format(subDays(new Date(), 40), 'yyyy-MM-dd'), description: 'Factura de honorarios legales', type: 'expense', category: 'Gastos Variables', amount: -8000, companyId: 'emp3', accountId: 'cta5' },
+    { id: 'trx16', date: format(subDays(new Date(), 45), 'yyyy-MM-dd'), description: 'Ingreso por mantenimiento web - Cliente Gamma', type: 'income', category: 'Ingreso por Desarrollo', amount: 5000, companyId: 'emp2', accountId: 'cta3', clientId: '10' },
 ];
 
 const initialCategoryGroups = [
@@ -106,7 +115,7 @@ export default function SettingsPage() {
   
   // -- General Filter States --
   const [date, setDate] = useState<DateRange | undefined>({
-    from: subDays(new Date(), 30),
+    from: startOfMonth(subDays(new Date(), 30)),
     to: new Date()
   });
   const [selectedCompanyId, setSelectedCompanyId] = useState<string>("all");
