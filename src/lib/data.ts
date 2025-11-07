@@ -12,9 +12,9 @@ export const teamMembers: AppUser[] = [
 export const serviceWorkflows: ServiceWorkflow[] = [
   {
     id: 'service-terminales-1',
-    name: 'Terminales',
-    description: 'Proceso para la venta e instalación de terminales de punto de venta.',
-    clientRequirements: [{id: 'req-1', text: 'Acta constitutiva'}, {id: 'req-2', text: 'Comprobante de domicilio'}],
+    name: 'Venta de Terminales',
+    description: 'Proceso para la venta e instalación de terminales de punto de venta (TPV) para comercios.',
+    clientRequirements: [{id: 'req-1', text: 'Acta constitutiva'}, {id: 'req-2', text: 'Comprobante de domicilio fiscal'}],
     commissions: [
         {id: 'com-1', name: 'Visa/Mastercard Débito', rate: 1.5},
         {id: 'com-2', name: 'Visa/Mastercard Crédito', rate: 2.5},
@@ -23,29 +23,29 @@ export const serviceWorkflows: ServiceWorkflow[] = [
     stages: [
         {
             id: 's1-st1', title: 'Prospecto', order: 1, actions: [
-                { id: 's1-st1-obj1', title: 'Enviar correo de bienvenida', order: 1, subActions: [] },
-                { id: 's1-st1-obj2', title: 'Agendar llamada inicial', order: 2, subActions: [] }
+                { id: 's1-st1-act1', title: 'Enviar correo de bienvenida', order: 1, subActions: [] },
+                { id: 's1-st1-act2', title: 'Agendar llamada inicial de 15 min', order: 2, subActions: [] }
             ],
             subStages: []
         },
         {
             id: 's1-st2', title: 'Contacto Inicial', order: 2, actions: [
-                { id: 's1-st2-obj1', title: 'Realizar llamada de descubrimiento', order: 1, subActions: [] }
+                { id: 's1-st2-act1', title: 'Realizar llamada de descubrimiento', order: 1, subActions: [] }
             ],
             subStages: []
         },
         {
             id: 's1-st3', title: 'Propuesta', order: 3, actions: [
-                { id: 's1-st3-obj1', title: 'Preparar y enviar propuesta', order: 1, subActions: [] },
-                { id: 's1-st3-obj2', title: 'Agendar reunión de revisión de propuesta', order: 2, subActions: [] }
+                { id: 's1-st3-act1', title: 'Preparar y enviar propuesta comercial', order: 1, subActions: [] },
+                { id: 's1-st3-act2', title: 'Agendar reunión de revisión de propuesta', order: 2, subActions: [] }
             ],
             subStages: []
         },
         {
             id: 's1-st4', title: 'Cierre', order: 4, actions: [
-                { id: 's1-st4-obj1', title: 'Recibir contrato firmado', order: 1, requiredDocumentForCompletion: true, requiredDocuments: [{id: 'doc-req-1', description: 'Contrato firmado'}] },
-                { id: 's1-st4-obj2', title: 'Enviar factura inicial', order: 2, subActions: [] },
-                { id: 's1-st4-obj3', title: 'Coordinar instalación', order: 3, subActions: [] }
+                { id: 's1-st4-act1', title: 'Recibir contrato firmado', order: 1, requiredDocumentForCompletion: true, requiredDocuments: [{id: 'doc-req-1', description: 'Contrato firmado'}] },
+                { id: 's1-st4-act2', title: 'Enviar factura de anticipo/compra', order: 2, subActions: [] },
+                { id: 's1-st4-act3', title: 'Coordinar instalación de terminal', order: 3, subActions: [] }
             ],
             subStages: []
         }
@@ -55,15 +55,15 @@ export const serviceWorkflows: ServiceWorkflow[] = [
   {
     id: 'service-credito-2',
     name: 'Crédito Empresarial',
-    description: 'Gestión y asesoría para la obtención de créditos para empresas.',
-    clientRequirements: [{id: 'req-3', text: 'Estados financieros de los últimos 2 años'}, {id: 'req-4', text: 'Declaración de impuestos'}],
+    description: 'Gestión y asesoría para la obtención de créditos y financiamiento para empresas.',
+    clientRequirements: [{id: 'req-3', text: 'Estados financieros de los últimos 2 años'}, {id: 'req-4', text: 'Declaración anual de impuestos'}],
     commissions: [{id: 'com-4', name: 'Comisión por éxito', rate: 5}],
     stages: [
         { 
             id: 's2-st1', title: 'Análisis Preliminar', order: 1,
             actions: [
-                { id: 's2-st1-obj1', title: 'Recopilar documentación inicial', order: 1, requiredDocumentForCompletion: true, requiredDocuments: [{id: 'doc-req-2', description: 'Acta constitutiva'}] },
-                { id: 's2-st1-obj2', title: 'Evaluar viabilidad del crédito', order: 2, subActions: [] }
+                { id: 's2-st1-act1', title: 'Recopilar documentación inicial', order: 1, requiredDocumentForCompletion: true, requiredDocuments: [{id: 'doc-req-2', description: 'Acta constitutiva y estados financieros'}] },
+                { id: 's2-st1-act2', title: 'Evaluar viabilidad del crédito', order: 2, subActions: [] }
             ],
             subStages: [
                 { 
@@ -75,15 +75,23 @@ export const serviceWorkflows: ServiceWorkflow[] = [
         {
             id: 's2-st2', title: 'Armado de Expediente', order: 2,
             actions: [
-                { id: 's2-st2-obj1', title: 'Completar expediente para banco', order: 1, subActions: [] }
+                { id: 's2-st2-act1', title: 'Completar expediente para banco', order: 1, subActions: [] }
             ],
             subStages: []
         },
         {
             id: 's2-st3', title: 'Seguimiento con Banco', order: 3,
             actions: [
-                { id: 's2-st3-obj1', title: 'Llamada semanal de seguimiento', order: 1, subActions: [] },
-                { id: 's2-st3-obj2', title: 'Notificar al cliente sobre avances', order: 2, subActions: [] }
+                { id: 's2-st3-act1', title: 'Llamada semanal de seguimiento con ejecutivo', order: 1, subActions: [] },
+                { id: 's2-st3-act2', title: 'Notificar al cliente sobre avances', order: 2, subActions: [] }
+            ],
+            subStages: []
+        },
+        {
+            id: 's2-st4', title: 'Aprobación y Firma', order: 4,
+            actions: [
+                { id: 's2-st4-act1', title: 'Confirmar aprobación de crédito', order: 1, subActions: [] },
+                { id: 's2-st4-act2', title: 'Coordinar firma de contrato con banco', order: 2, subActions: [] }
             ],
             subStages: []
         }
@@ -93,34 +101,103 @@ export const serviceWorkflows: ServiceWorkflow[] = [
   {
       id: 'service-divisas-3',
       name: 'Operaciones con Divisas',
-      description: 'Asesoría y ejecución de operaciones de cambio de divisas para empresas.',
-      clientRequirements: [{id: 'req-5', text: 'Cuenta en dólares y moneda local'}],
+      description: 'Asesoría y ejecución de operaciones de cambio de divisas para importación/exportación.',
+      clientRequirements: [{id: 'req-5', text: 'Cuenta bancaria en dólares y moneda local'}],
       commissions: [{id: 'com-5', name: 'Spread por operación', rate: 0.5}],
       stages: [
           {
               id: 's3-st1', title: 'Alta de Cliente', order: 1, actions: [
-                  { id: 's3-st1-obj1', title: 'Verificar identidad del cliente (KYC)', order: 1, subActions: [] }
+                  { id: 's3-st1-act1', title: 'Verificar identidad del cliente (KYC)', order: 1, subActions: [] }
               ],
               subStages: []
           },
           {
               id: 's3-st2', title: 'Preparación de Operación', order: 2, actions: [
-                   { id: 's3-st2-obj1', title: 'Análisis de mercado cambiario', order: 1, subActions: [] },
-                   { id: 's3-st2-obj2', title: 'Confirmar tipo de cambio con cliente', order: 2, subActions: [] }
+                   { id: 's3-st2-act1', title: 'Análisis de mercado cambiario del día', order: 1, subActions: [] },
+                   { id: 's3-st2-act2', title: 'Confirmar tipo de cambio y monto con cliente', order: 2, subActions: [] }
               ],
               subStages: []
           },
            {
               id: 's3-st3', title: 'Ejecución y Cierre', order: 3, actions: [
-                  { id: 's3-st3-obj3', title: 'Ejecutar operación en mercado', order: 1, subActions: [] },
-                  { id: 's3-st3-obj4', title: 'Enviar confirmación de operación al cliente', order: 2, subActions: [] }
+                  { id: 's3-st3-act1', title: 'Ejecutar operación en mercado', order: 1, subActions: [] },
+                  { id: 's3-st3-act2', title: 'Enviar confirmación de operación al cliente', order: 2, subActions: [] }
               ],
               subStages: []
            }
       ],
       subServices: []
+  },
+  {
+    id: 'service-fiscal-4',
+    name: 'Consultoría Fiscal',
+    description: 'Asesoría especializada para la optimización fiscal y cumplimiento de obligaciones tributarias.',
+    clientRequirements: [{id: 'req-6', text: 'Declaraciones anuales anteriores'}, {id: 'req-7', text: 'RFC y e.firma vigentes'}],
+    commissions: [{id: 'com-6', name: 'Iguala mensual', rate: 10}],
+    stages: [
+        {
+            id: 's4-st1', title: 'Diagnóstico Inicial', order: 1, actions: [
+                { id: 's4-st1-act1', title: 'Recopilar documentación fiscal del cliente', order: 1, subActions: [] },
+                { id: 's4-st1-act2', title: 'Realizar entrevista de diagnóstico fiscal', order: 2, subActions: [] }
+            ],
+            subStages: []
+        },
+        {
+            id: 's4-st2', title: 'Análisis y Estrategia', order: 2, actions: [
+                { id: 's4-st2-act1', title: 'Analizar situación fiscal actual y áreas de oportunidad', order: 1, subActions: [] },
+                { id: 's4-st2-act2', title: 'Desarrollar plan de optimización fiscal', order: 2, subActions: [] }
+            ],
+            subStages: []
+        },
+        {
+            id: 's4-st3', title: 'Presentación de Plan', order: 3, actions: [
+                { id: 's4-st3-act1', title: 'Presentar estrategia fiscal al cliente', order: 1, subActions: [] }
+            ],
+            subStages: []
+        }
+    ],
+    subServices: []
+  },
+  {
+    id: 'service-patrimonial-5',
+    name: 'Gestión Patrimonial',
+    description: 'Servicios de inversión y gestión de patrimonio para personas físicas y morales.',
+    clientRequirements: [{id: 'req-8', text: 'Identificación oficial'}, {id: 'req-9', text: 'Comprobante de ingresos'}],
+    commissions: [{id: 'com-7', name: 'Cuota de administración anual', rate: 1.2}],
+    stages: [
+        {
+            id: 's5-st1', title: 'Perfil de Inversionista', order: 1, actions: [
+                { id: 's5-st1-act1', title: 'Aplicar cuestionario de perfil de riesgo', order: 1, subActions: [] },
+                { id: 's5-st1-act2', title: 'Definir objetivos de inversión del cliente', order: 2, subActions: [] }
+            ],
+            subStages: []
+        },
+        {
+            id: 's5-st2', title: 'Propuesta de Inversión', order: 2, actions: [
+                { id: 's5-st2-act1', title: 'Elaborar portafolio de inversión personalizado', order: 1, subActions: [] },
+                { id: 's5-st2-act2', title: 'Presentar propuesta de portafolio al cliente', order: 2, subActions: [] }
+            ],
+            subStages: []
+        },
+        {
+            id: 's5-st3', title: 'Apertura de Contrato', order: 3, actions: [
+                { id: 's5-st3-act1', title: 'Recabar firmas para contrato de gestión', order: 1, subActions: [] },
+                { id: 's5-st3-act2', title: 'Fondear cuenta de inversión', order: 2, subActions: [] }
+            ],
+            subStages: []
+        },
+        {
+            id: 's5-st4', title: 'Seguimiento Trimestral', order: 4, actions: [
+                { id: 's5-st4-act1', title: 'Generar y enviar reporte de rendimiento', order: 1, subActions: [] },
+                { id: 's5-st4-act2', title: 'Agendar reunión de revisión de portafolio', order: 2, subActions: [] }
+            ],
+            subStages: []
+        }
+    ],
+    subServices: []
   }
 ];
+
 
 export const promoters: Promoter[] = [
     { id: 'p1', name: 'Mariana Fernandez', referredClients: 5, totalCommissions: 1250.50, status: 'Activo' },
@@ -133,67 +210,67 @@ export const promoters: Promoter[] = [
 export const clients: Client[] = [
   {
     id: '1', name: 'Innovate Inc.', owner: 'Mariana Fernandez', category: 'Tecnología',
-    subscribedServiceIds: ['service-terminales-1'], currentWorkflowStageId: 's1-st2', currentActionId: 's1-st2-obj1',
+    subscribedServiceIds: ['service-terminales-1'], currentWorkflowStageId: 's1-st2', currentActionId: 's1-st2-act1',
   },
   {
     id: '2', name: 'Synergy Corp.', owner: 'Juan Carlos Bodoque', category: 'Finanzas',
-    subscribedServiceIds: ['service-credito-2'], currentWorkflowStageId: 's2-st1', currentActionId: 's2-st1-obj2',
+    subscribedServiceIds: ['service-credito-2'], currentWorkflowStageId: 's2-st1', currentActionId: 's2-st1-act2',
   },
   {
     id: '3', name: 'Solutions LLC', owner: 'Mariana Fernandez', category: 'Salud',
-    subscribedServiceIds: ['service-divisas-3'], currentWorkflowStageId: 's3-st1', currentActionId: 's3-st1-obj1',
+    subscribedServiceIds: ['service-divisas-3'], currentWorkflowStageId: 's3-st1', currentActionId: 's3-st1-act1',
   },
   {
     id: '4', name: 'Global Net', owner: 'Sofía Rodriguez', category: 'Logística',
-    subscribedServiceIds: ['service-terminales-1'], currentWorkflowStageId: 's1-st4', currentActionId: 's1-st4-obj2',
+    subscribedServiceIds: ['service-terminales-1'], currentWorkflowStageId: 's1-st4', currentActionId: 's1-st4-act2',
   },
   {
     id: '5', name: 'Marketing Pro', owner: 'Carla Santamaria', category: 'Marketing',
-    subscribedServiceIds: ['service-divisas-3'], currentWorkflowStageId: 's3-st3', currentActionId: 's3-st3-obj3',
+    subscribedServiceIds: ['service-divisas-3'], currentWorkflowStageId: 's3-st3', currentActionId: 's3-st3-act1',
   },
   {
     id: '6', name: 'QuantumLeap', owner: 'Sofía Rodriguez', category: 'Investigación',
-    subscribedServiceIds: ['service-credito-2'], currentWorkflowStageId: 's2-st2', currentActionId: 's2-st2-obj1',
+    subscribedServiceIds: ['service-credito-2'], currentWorkflowStageId: 's2-st2', currentActionId: 's2-st2-act1',
   },
   {
     id: '7', name: 'Nexus Enterprises', owner: 'Mariana Fernandez', category: 'Retail',
-    subscribedServiceIds: ['service-terminales-1'], currentWorkflowStageId: 's1-st3', currentActionId: 's1-st3-obj1',
+    subscribedServiceIds: ['service-terminales-1'], currentWorkflowStageId: 's1-st3', currentActionId: 's1-st3-act1',
   },
   {
     id: '8', name: 'BioGen', owner: 'Juan Carlos Bodoque', category: 'Biotecnología',
-    subscribedServiceIds: ['service-credito-2'], currentWorkflowStageId: 's2-st3', currentActionId: 's2-st3-obj2',
+    subscribedServiceIds: ['service-credito-2'], currentWorkflowStageId: 's2-st3', currentActionId: 's2-st3-act2',
   },
   {
     id: '9', name: 'AeroDynamics', owner: 'Carla Santamaria', category: 'Aeroespacial',
-    subscribedServiceIds: ['service-terminales-1'], currentWorkflowStageId: 's1-st4', currentActionId: 's1-st4-obj3',
+    subscribedServiceIds: ['service-terminales-1'], currentWorkflowStageId: 's1-st4', currentActionId: 's1-st4-act3',
   },
   {
     id: '10', name: 'EcoBuild', owner: 'Mariana Fernandez', category: 'Construcción',
-    subscribedServiceIds: ['service-divisas-3'], currentWorkflowStageId: 's3-st2', currentActionId: 's3-st2-obj2',
+    subscribedServiceIds: ['service-divisas-3'], currentWorkflowStageId: 's3-st2', currentActionId: 's3-st2-act2',
   },
   {
     id: '11', name: 'AlphaStream', owner: 'Juan Carlos Bodoque', category: 'Entretenimiento',
-    subscribedServiceIds: ['service-terminales-1'], currentWorkflowStageId: 's1-st1', currentActionId: 's1-st1-obj1',
+    subscribedServiceIds: ['service-terminales-1'], currentWorkflowStageId: 's1-st1', currentActionId: 's1-st1-act1',
   },
   {
     id: '12', name: 'Zenith Real Estate', owner: 'Sofía Rodriguez', category: 'Inmobiliaria',
-    subscribedServiceIds: ['service-credito-2'], currentWorkflowStageId: 's2-st1', currentActionId: 's2-st1-obj2',
+    subscribedServiceIds: ['service-credito-2'], currentWorkflowStageId: 's2-st1', currentActionId: 's2-st1-act2',
   },
   {
     id: '13', name: 'Starlight Foods', owner: 'Carla Santamaria', category: 'Alimentos',
-    subscribedServiceIds: ['service-divisas-3'], currentWorkflowStageId: 's3-st2', currentActionId: 's3-st2-obj1',
+    subscribedServiceIds: ['service-divisas-3'], currentWorkflowStageId: 's3-st2', currentActionId: 's3-st2-act1',
   },
   {
     id: '14', name: 'Meridian Shipping', owner: 'Mariana Fernandez', category: 'Transporte',
-    subscribedServiceIds: ['service-terminales-1'], currentWorkflowStageId: 's1-st3', currentActionId: 's1-st3-obj2',
+    subscribedServiceIds: ['service-terminales-1'], currentWorkflowStageId: 's1-st3', currentActionId: 's1-st3-act2',
   },
   {
     id: '15', name: 'Vertex Software', owner: 'Juan Carlos Bodoque', category: 'Tecnología',
-    subscribedServiceIds: ['service-credito-2'], currentWorkflowStageId: 's2-st3', currentActionId: 's2-st3-obj1',
+    subscribedServiceIds: ['service-credito-2'], currentWorkflowStageId: 's2-st3', currentActionId: 's2-st3-act1',
   },
   {
     id: '16', name: 'Phoenix Holdings', owner: 'Sofía Rodriguez', category: 'Inversiones',
-    subscribedServiceIds: ['service-credito-2'], currentWorkflowStageId: 's2-st1',
+    subscribedServiceIds: ['service-patrimonial-5'], currentWorkflowStageId: 's5-st1',
   },
   {
     id: '17', name: 'Momentum Dynamics', owner: 'Carla Santamaria', category: 'Ingeniería',
@@ -201,7 +278,7 @@ export const clients: Client[] = [
   },
   {
     id: '18', name: 'Horizon Labs', owner: 'Mariana Fernandez', category: 'Investigación',
-    subscribedServiceIds: ['service-divisas-3'], currentWorkflowStageId: 's3-st1',
+    subscribedServiceIds: ['service-fiscal-4'], currentWorkflowStageId: 's4-st1',
   },
   {
     id: '19', name: 'Evergreen Organics', owner: 'Juan Carlos Bodoque', category: 'Agricultura',
@@ -361,3 +438,5 @@ export const navItems: NavItem[] = [
     { href: '/settings', label: 'Contabilidad', icon: 'DollarSign', requiredPermission: 'admin_view' },
     { href: '/finances', label: 'Finanzas', icon: 'Landmark', requiredPermission: 'finances_view' },
 ];
+
+    
