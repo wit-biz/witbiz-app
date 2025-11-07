@@ -74,6 +74,26 @@ export const clients: Client[] = [
     id: '10', name: 'EcoBuild', owner: 'Mariana Fernandez', category: 'Construcción',
     subscribedServiceIds: ['service-3'], currentWorkflowStageId: 's3-st2', currentActionId: 's3-st2-obj2',
   },
+  {
+    id: '11', name: 'AlphaStream', owner: 'Juan Carlos Bodoque', category: 'Entretenimiento',
+    subscribedServiceIds: ['service-1'], currentWorkflowStageId: 's1-st1', currentActionId: 's1-st1-obj1',
+  },
+  {
+    id: '12', name: 'Zenith Real Estate', owner: 'Sofía Rodriguez', category: 'Inmobiliaria',
+    subscribedServiceIds: ['service-2'], currentWorkflowStageId: 's2-st1', currentActionId: 's2-st1-obj2',
+  },
+  {
+    id: '13', name: 'Starlight Foods', owner: 'Carla Santamaria', category: 'Alimentos',
+    subscribedServiceIds: ['service-3'], currentWorkflowStageId: 's3-st2', currentActionId: 's3-st2-obj1',
+  },
+  {
+    id: '14', name: 'Meridian Shipping', owner: 'Mariana Fernandez', category: 'Transporte',
+    subscribedServiceIds: ['service-1'], currentWorkflowStageId: 's1-st3', currentActionId: 's1-st3-obj2',
+  },
+  {
+    id: '15', name: 'Vertex Software', owner: 'Juan Carlos Bodoque', category: 'Tecnología',
+    subscribedServiceIds: ['service-2'], currentWorkflowStageId: 's2-st3', currentActionId: 's2-st3-obj1',
+  },
 ];
 
 
