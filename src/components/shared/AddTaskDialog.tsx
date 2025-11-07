@@ -30,11 +30,16 @@ const requiredDocSchema = z.object({
   description: z.string().min(1, "La descripción del documento no puede estar vacía."),
 });
 
+const subTaskSchema = z.object({
+  description: z.string().min(1, "La descripción del requisito no puede estar vacía."),
+});
+
 const baseSchema = z.object({
   title: z.string().min(3, "El título debe tener al menos 3 caracteres."),
   description: z.string().optional(),
   requiredDocumentForCompletion: z.boolean().default(false),
   requiredDocuments: z.array(requiredDocSchema).optional(),
+  subTasks: z.array(subTaskSchema).optional(),
   assignedToId: z.string().optional(),
 });
 
@@ -87,20 +92,25 @@ export function AddTaskDialog({
   const form = useForm<AddTaskFormValues>({
     resolver: zodResolver(combinedSchema),
     defaultValues: isWorkflowMode ?
-      { isWorkflowMode: true, title: '', description: '', requiredDocumentForCompletion: false, requiredDocuments: [], assignedToId: currentUser?.uid } :
-      { isWorkflowMode: false, title: '', description: '', clientId: preselectedClientId || '', dueDate: new Date(), dueTime: '', requiredDocumentForCompletion: false, requiredDocuments: [], assignedToId: currentUser?.uid },
+      { isWorkflowMode: true, title: '', description: '', requiredDocumentForCompletion: false, requiredDocuments: [], subTasks: [], assignedToId: currentUser?.uid } :
+      { isWorkflowMode: false, title: '', description: '', clientId: preselectedClientId || '', dueDate: new Date(), dueTime: '', requiredDocumentForCompletion: false, requiredDocuments: [], subTasks: [], assignedToId: currentUser?.uid },
   });
   
-  const { fields, append, remove } = useFieldArray({
+  const { fields: docFields, append: appendDoc, remove: removeDoc } = useFieldArray({
     control: form.control,
     name: "requiredDocuments",
+  });
+
+  const { fields: subTaskFields, append: appendSubTask, remove: removeSubTask } = useFieldArray({
+    control: form.control,
+    name: "subTasks",
   });
 
   useEffect(() => {
     if (isOpen) {
       form.reset(isWorkflowMode ?
-        { isWorkflowMode: true, title: '', description: '', requiredDocumentForCompletion: false, requiredDocuments: [], assignedToId: currentUser?.uid } :
-        { isWorkflowMode: false, title: '', description: '', clientId: preselectedClientId || '', dueDate: new Date(), dueTime: '', requiredDocumentForCompletion: false, requiredDocuments: [], assignedToId: currentUser?.uid }
+        { isWorkflowMode: true, title: '', description: '', requiredDocumentForCompletion: false, requiredDocuments: [], subTasks: [], assignedToId: currentUser?.uid } :
+        { isWorkflowMode: false, title: '', description: '', clientId: preselectedClientId || '', dueDate: new Date(), dueTime: '', requiredDocumentForCompletion: false, requiredDocuments: [], subTasks: [], assignedToId: currentUser?.uid }
       );
     }
   }, [isOpen, isWorkflowMode, preselectedClientId, form, currentUser]);
@@ -111,7 +121,12 @@ export function AddTaskDialog({
     setIsSubmitting(true);
     // Simulación de llamada a API
     setTimeout(() => {
-      onTaskAdd(data);
+      // Add completed: false to each subtask before submitting
+      const finalData = {
+          ...data,
+          subTasks: data.subTasks?.map(st => ({ ...st, completed: false, id: `subtask-${Date.now()}-${Math.random()}` }))
+      };
+      onTaskAdd(finalData);
       toast({
         title: "Tarea Creada",
         description: `Se ha guardado "${data.title}" correctamente.`,
@@ -245,15 +260,48 @@ export function AddTaskDialog({
                   )}
               />
 
+              <div className="space-y-2">
+                <Label>Requisitos de la Tarea (Opcional)</Label>
+                {subTaskFields.map((field, index) => (
+                   <FormField
+                        key={field.id}
+                        control={form.control}
+                        name={`subTasks.${index}.description`}
+                        render={({ field }) => (
+                            <FormItem>
+                                <div className="flex items-center gap-2">
+                                    <FormControl>
+                                        <Input placeholder={`Requisito #${index + 1}`} {...field} />
+                                    </FormControl>
+                                    <Button type="button" variant="ghost" size="icon" onClick={() => removeSubTask(index)}>
+                                        <Trash2 className="h-4 w-4 text-destructive" />
+                                    </Button>
+                                </div>
+                                <FormMessage />
+                            </FormItem>
+                        )}
+                    />
+                ))}
+                 <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => appendSubTask({ description: '' })}
+                  >
+                    <PlusCircle className="mr-2 h-4 w-4" />
+                    Añadir Requisito
+                  </Button>
+              </div>
+
               <FormField
                 control={form.control}
                 name="requiredDocumentForCompletion"
                 render={({ field }) => (
                   <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
                     <div className="space-y-0.5">
-                      <FormLabel>Requiere Documento(s)</FormLabel>
+                      <FormLabel>Requiere Documento(s) Adjunto(s)</FormLabel>
                       <FormDescription>
-                        Marcar si esta tarea necesita archivos adjuntos para completarse.
+                        Marcar si esta tarea necesita archivos para completarse.
                       </FormDescription>
                     </div>
                     <FormControl>
@@ -268,7 +316,7 @@ export function AddTaskDialog({
 
               {requiresDoc && (
                 <div className="pl-4 border-l-2 ml-1 space-y-4">
-                  {fields.map((field, index) => (
+                  {docFields.map((field, index) => (
                       <FormField
                           key={field.id}
                           control={form.control}
@@ -280,7 +328,7 @@ export function AddTaskDialog({
                                       <FormControl>
                                           <Input placeholder="Ej. Identificación oficial" {...field} />
                                       </FormControl>
-                                      <Button type="button" variant="ghost" size="icon" onClick={() => remove(index)}>
+                                      <Button type="button" variant="ghost" size="icon" onClick={() => removeDoc(index)}>
                                           <Trash2 className="h-4 w-4 text-destructive" />
                                       </Button>
                                   </div>
@@ -293,7 +341,7 @@ export function AddTaskDialog({
                       type="button"
                       variant="outline"
                       size="sm"
-                      onClick={() => append({ description: '' })}
+                      onClick={() => appendDoc({ description: '' })}
                     >
                       <PlusCircle className="mr-2 h-4 w-4" />
                       Añadir Otro Documento

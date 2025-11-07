@@ -25,6 +25,12 @@ export type Promoter = {
   status: 'Activo' | 'Inactivo';
 };
 
+export type SubTask = {
+  id: string;
+  description: string;
+  completed: boolean;
+};
+
 export type Task = {
   id: string;
   title: string;
@@ -44,6 +50,7 @@ export type Task = {
   postponedReason?: string;
   postponedAt?: string; // ISO String YYYY-MM-DD
   reactivationDate?: string; // ISO String YYYY-MM-DD
+  subTasks?: SubTask[];
 };
 
 export type Document = {

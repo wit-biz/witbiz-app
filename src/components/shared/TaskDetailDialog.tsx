@@ -17,7 +17,7 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Edit, Trash, CheckCircle, Loader2, PlusCircle, UploadCloud, Calendar as CalendarIcon, Save, History, Redo } from 'lucide-react';
-import { Task, Client } from '@/lib/types';
+import { Task, Client, SubTask } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -32,6 +32,8 @@ import { Popover, PopoverTrigger, PopoverContent } from '../ui/popover';
 import { Calendar } from '../ui/calendar';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '../ui/form';
+import { Checkbox } from '../ui/checkbox';
+import { Progress } from '../ui/progress';
 
 const taskEditSchema = z.object({
   title: z.string().min(3, "El título debe tener al menos 3 caracteres."),
@@ -59,7 +61,7 @@ interface TaskDetailDialogProps {
 export function TaskDetailDialog({
   isOpen,
   onOpenChange,
-  task,
+  task: initialTask,
   onUpdateTask,
   onDeleteTask,
 }: TaskDetailDialogProps) {
@@ -67,6 +69,7 @@ export function TaskDetailDialog({
   const { clients, teamMembers, addTask } = useCRMData();
   const { setIsSmartUploadDialogOpen } = useDialogs();
   
+  const [task, setTask] = useState(initialTask);
   const [isEditing, setIsEditing] = useState(false);
   const [isPostponing, setIsPostponing] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -80,33 +83,47 @@ export function TaskDetailDialog({
   });
 
   useEffect(() => {
-    if (task) {
+    setTask(initialTask);
+    if (initialTask) {
         form.reset({
-            title: task.title,
-            description: task.description,
-            clientId: task.clientId,
-            assignedToId: task.assignedToId,
-            dueDate: parseDateString(task.dueDate) || new Date(),
-            dueTime: task.dueTime,
+            title: initialTask.title,
+            description: initialTask.description,
+            clientId: initialTask.clientId,
+            assignedToId: initialTask.assignedToId,
+            dueDate: parseDateString(initialTask.dueDate) || new Date(),
+            dueTime: initialTask.dueTime,
         });
         postponeForm.reset({
-            reactivationDate: task.reactivationDate ? parseDateString(task.reactivationDate) || new Date() : new Date(),
-            postponedReason: task.postponedReason || '',
+            reactivationDate: initialTask.reactivationDate ? parseDateString(initialTask.reactivationDate) || new Date() : new Date(),
+            postponedReason: initialTask.postponedReason || '',
         });
     }
     if (!isOpen) {
       setIsEditing(false);
       setIsPostponing(false);
     }
-  }, [task, isOpen, form, postponeForm]);
+  }, [initialTask, isOpen, form, postponeForm]);
 
   if (!task) return null;
   
+  const areAllSubTasksCompleted = task.subTasks ? task.subTasks.every(st => st.completed) : true;
+  const progress = task.subTasks && task.subTasks.length > 0
+    ? (task.subTasks.filter(st => st.completed).length / task.subTasks.length) * 100
+    : 100;
+
   const dueDate = parseDateString(task.dueDate);
   const reactivationDate = task.reactivationDate ? parseDateString(task.reactivationDate) : null;
   
   const handleMarkAsComplete = async () => {
     if (!onUpdateTask) return;
+    if (!areAllSubTasksCompleted) {
+        toast({
+            variant: 'destructive',
+            title: 'Requisitos pendientes',
+            description: 'Debe completar todos los requisitos antes de marcar la tarea como completada.'
+        });
+        return;
+    }
     setIsSubmitting(true);
     const success = await onUpdateTask(task.id, { status: 'Completada' });
     if (success) {
@@ -211,6 +228,23 @@ export function TaskDetailDialog({
       toast({ variant: 'destructive', title: 'Error', description: 'No se pudo posponer la tarea.' });
     }
     setIsSubmitting(false);
+  };
+  
+   const handleSubTaskToggle = async (subTaskId: string) => {
+    if (!onUpdateTask) return;
+    
+    const updatedSubTasks = task.subTasks?.map(st => 
+        st.id === subTaskId ? { ...st, completed: !st.completed } : st
+    );
+
+    if (updatedSubTasks) {
+        setTask(prev => prev ? { ...prev, subTasks: updatedSubTasks } : null); // Optimistic UI update
+        const success = await onUpdateTask(task.id, { subTasks: updatedSubTasks });
+        if (!success) {
+             toast({ variant: 'destructive', title: 'Error', description: 'No se pudo actualizar el requisito.' });
+             setTask(initialTask); // Revert on failure
+        }
+    }
   };
 
   return (
@@ -386,6 +420,32 @@ export function TaskDetailDialog({
                         <p className="font-semibold">Detalles:</p>
                         <p className="text-muted-foreground">{task.description || 'Sin detalles.'}</p>
                     </div>
+                    
+                    {task.subTasks && task.subTasks.length > 0 && (
+                        <div>
+                            <p className="font-semibold mb-2">Requisitos de la Tarea:</p>
+                            <div className="space-y-2">
+                                {task.subTasks.map(st => (
+                                    <div key={st.id} className="flex items-center space-x-2">
+                                        <Checkbox
+                                            id={`subtask-${st.id}`}
+                                            checked={st.completed}
+                                            onCheckedChange={() => handleSubTaskToggle(st.id)}
+                                            disabled={task.status !== 'Pendiente'}
+                                        />
+                                        <label
+                                            htmlFor={`subtask-${st.id}`}
+                                            className={cn("text-sm leading-none", st.completed && "line-through text-muted-foreground")}
+                                        >
+                                            {st.description}
+                                        </label>
+                                    </div>
+                                ))}
+                                <Progress value={progress} className="h-2 mt-3" />
+                            </div>
+                        </div>
+                    )}
+
                     {task.status === 'Pospuesta' && (
                         <div className="p-3 bg-amber-100 dark:bg-amber-900/30 rounded-md border border-amber-300 dark:border-amber-800">
                              <p className="font-semibold text-amber-800 dark:text-amber-300">Tarea Pospuesta</p>
@@ -474,7 +534,7 @@ export function TaskDetailDialog({
                                             Completar con Documento
                                         </Button>
                                     ) : (
-                                        <Button onClick={handleMarkAsComplete} disabled={isSubmitting || task.status === 'Completada' || !onUpdateTask} className="bg-green-600 hover:bg-green-700 text-white">
+                                        <Button onClick={handleMarkAsComplete} disabled={isSubmitting || task.status === 'Completada' || !onUpdateTask || !areAllSubTasksCompleted} className="bg-green-600 hover:bg-green-700 text-white">
                                             {isSubmitting && onUpdateTask ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <CheckCircle className="mr-2 h-4 w-4" />}
                                             Completada
                                         </Button>
@@ -490,4 +550,3 @@ export function TaskDetailDialog({
     </Dialog>
   );
 }
-
