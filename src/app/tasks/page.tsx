@@ -362,7 +362,11 @@ export default function TasksPage() {
                       <AccordionTrigger className="w-full hover:no-underline p-0 [&_svg]:ml-auto [&_svg]:mr-2"> 
                         <CardHeader className="flex-1 p-4"> 
                           <CardTitle className="flex items-center gap-2 text-lg"> 
-                            <section.icon className={`h-6 w-6 ${section.color}`} /> {section.title} <Badge variant={section.id === "overdue-tasks" && section.tasks.length > 0 ? "destructive" : "secondary"} className={cn("ml-auto mr-2", section.badgeClass)} > {section.tasks.length} </Badge> 
+                            <span className="w-6 flex justify-center">
+                              <section.icon className={cn("h-5 w-5", section.color)} />
+                            </span>
+                            {section.title}
+                            <Badge variant={section.id === "overdue-tasks" && section.tasks.length > 0 ? "destructive" : "secondary"} className={cn("ml-auto mr-2", section.badgeClass)} > {section.tasks.length} </Badge> 
                           </CardTitle> 
                         </CardHeader> 
                       </AccordionTrigger> 
