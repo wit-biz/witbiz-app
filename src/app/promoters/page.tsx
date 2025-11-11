@@ -29,42 +29,9 @@ import {
 } from "@/components/ui/sheet";
 
 // --- Mock Data ---
-const referredClients = [
-    { id: 'c1', name: 'Global Tech Inc.', joinDate: '2024-05-15', status: 'Activo' },
-    { id: 'c2', name: 'Innovate Solutions', joinDate: '2024-05-20', status: 'Activo' },
-    { id: 'c3', name: 'Quantum Industries', joinDate: '2024-04-10', status: 'Inactivo' },
-    { id: 'c4', name: 'Synergy Group', joinDate: '2024-06-01', status: 'Activo' },
-    { id: 'c5', name: 'Eco Builders', joinDate: '2023-11-28', status: 'Activo' },
-];
-
-const generateCommissions = () => {
-    const today = new Date();
-    const currentMonth = today.getMonth();
-    const currentYear = today.getFullYear();
-    
-    const createDate = (day: number, monthOffset = 0) => {
-        const date = new Date(currentYear, currentMonth + monthOffset, day);
-        date.setHours(0, 0, 0, 0); // Normalize to start of the day
-        return date;
-    };
-
-    return [
-        { id: 'com1', clientName: 'Global Tech Inc.', amount: 250.00, date: createDate(2), status: 'Pagada' },
-        { id: 'com2', clientName: 'Innovate Solutions', amount: 300.50, date: createDate(5), status: 'Pendiente' },
-        { id: 'com3', clientName: 'Quantum Industries', amount: 150.75, date: createDate(18, -1), status: 'Pagada' },
-        { id: 'com4', clientName: 'Synergy Group', amount: 450.00, date: createDate(12), status: 'Pendiente' },
-        { id: 'com5', clientName: 'Global Tech Inc.', amount: 275.00, date: createDate(15), status: 'Pendiente' },
-        { id: 'com6', clientName: 'Eco Builders', amount: 500.25, date: createDate(22, -2), status: 'Pagada' },
-    ];
-};
-
-const commissions = generateCommissions();
-
-const resources = [
-    { id: 'res1', title: 'Kit de Bienvenida para Promotores', description: 'Todo lo que necesitas para empezar a referir clientes.' },
-    { id: 'res2', title: 'Manual de Marca y Logos', description: 'Guías de estilo y logos oficiales de WitBiz.' },
-    { id: 'res3', title: 'Presentación de Servicios', description: 'Deck actualizado de todos nuestros servicios.' },
-];
+const referredClients: any[] = [];
+const commissions: any[] = [];
+const resources: any[] = [];
 
 // --- Components for each view ---
 
@@ -92,7 +59,7 @@ function ClientsView() {
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                            {referredClients.map(client => (
+                            {referredClients.length > 0 ? referredClients.map(client => (
                                 <TableRow key={client.id}>
                                     <TableCell className="font-medium">{client.name}</TableCell>
                                     <TableCell>{isClient ? format(new Date(client.joinDate), 'dd/MM/yyyy') : '-'}</TableCell>
@@ -100,7 +67,11 @@ function ClientsView() {
                                         <Badge variant={client.status === 'Activo' ? 'default' : 'secondary'}>{client.status}</Badge>
                                     </TableCell>
                                 </TableRow>
-                            ))}
+                            )) : (
+                                <TableRow>
+                                    <TableCell colSpan={3} className="text-center h-24">No hay clientes referidos.</TableCell>
+                                </TableRow>
+                            )}
                         </TableBody>
                     </Table>
                 </div>
@@ -267,7 +238,7 @@ function CommissionsView() {
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
-                                {filteredCommissions.map(c => (
+                                {filteredCommissions.length > 0 ? filteredCommissions.map(c => (
                                     <TableRow key={c.id}>
                                         <TableCell className="font-medium">{c.clientName}</TableCell>
                                         <TableCell>{isClient ? format(c.date, 'PPP', { locale: es }) : '-'}</TableCell>
@@ -276,7 +247,11 @@ function CommissionsView() {
                                             <Badge variant={c.status === 'Pagada' ? 'default' : 'secondary'} className={cn(c.status === 'Pagada' ? 'bg-blue-600 text-white' : 'bg-slate-500 text-white')}>{c.status}</Badge>
                                         </TableCell>
                                     </TableRow>
-                                ))}
+                                )) : (
+                                    <TableRow>
+                                        <TableCell colSpan={4} className="text-center h-24">No hay comisiones para mostrar.</TableCell>
+                                    </TableRow>
+                                )}
                             </TableBody>
                         </Table>
                     </div>
@@ -297,22 +272,36 @@ function ResourcesView() {
     };
 
     return (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {resources.map(resource => (
-                <Card key={resource.id}>
-                    <CardHeader>
-                        <CardTitle className="flex items-center gap-2"><BookText className="h-5 w-5 text-accent"/>{resource.title}</CardTitle>
-                        <CardDescription>{resource.description}</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                        <Button className="w-full" onClick={() => handleDownload(resource.title)}>
-                            <Download className="mr-2 h-4 w-4" />
-                            Descargar
-                        </Button>
-                    </CardContent>
-                </Card>
-            ))}
-        </div>
+        <Card>
+            <CardHeader>
+                <CardTitle>Recursos</CardTitle>
+                <CardDescription>Material de apoyo para promotores.</CardDescription>
+            </CardHeader>
+            <CardContent>
+                {resources.length > 0 ? (
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        {resources.map(resource => (
+                            <Card key={resource.id}>
+                                <CardHeader>
+                                    <CardTitle className="flex items-center gap-2"><BookText className="h-5 w-5 text-accent"/>{resource.title}</CardTitle>
+                                    <CardDescription>{resource.description}</CardDescription>
+                                </CardHeader>
+                                <CardContent>
+                                    <Button className="w-full" onClick={() => handleDownload(resource.title)}>
+                                        <Download className="mr-2 h-4 w-4" />
+                                        Descargar
+                                    </Button>
+                                </CardContent>
+                            </Card>
+                        ))}
+                    </div>
+                ) : (
+                    <div className="text-center text-muted-foreground py-10">
+                        <p>No hay recursos disponibles en este momento.</p>
+                    </div>
+                )}
+            </CardContent>
+        </Card>
     );
 }
 
@@ -472,5 +461,7 @@ export default function PromoterPage() {
         </div>
     );
 }
+
+    
 
     

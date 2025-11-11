@@ -43,19 +43,9 @@ import { Textarea } from "@/components/ui/textarea";
 
 // --- Mock Data ---
 
-const initialCompanies = [
-  { id: 'emp1', name: 'WitBiz Core', totalBalance: 125000.75 },
-  { id: 'emp2', name: 'WitBiz Servicios Digitales', totalBalance: 82500.50 },
-  { id: 'emp3', name: 'WitBiz Consultoría', totalBalance: 210000.00 },
-];
+const initialCompanies: any[] = [];
 
-const initialBankAccounts = [
-  { id: 'cta1', companyId: 'emp1', companyName: 'WitBiz Core', bankName: 'BBVA', balance: 75000.25, type: 'Débito' },
-  { id: 'cta2', companyId: 'emp1', companyName: 'WitBiz Core', bankName: 'Santander', balance: 50000.50, type: 'Débito' },
-  { id: 'cta3', companyId: 'emp2', companyName: 'WitBiz Servicios Digitales', bankName: 'Banorte', balance: 82500.50, type: 'Débito' },
-  { id: 'cta4', companyId: 'emp3', companyName: 'WitBiz Consultoría', bankName: 'HSBC', balance: 110000.00, type: 'Crédito' },
-  { id: 'cta5', companyId: 'emp3', companyName: 'WitBiz Consultoría', bankName: 'Inbursa', balance: 100000.00, type: 'Débito' },
-];
+const initialBankAccounts: any[] = [];
 
 const initialCategoryGroups = [
     { id: 'group-1', name: 'Activo Circulante', description: 'Parte del Activo', categories: [ { id: 'type-1-1', name: 'Caja' }, { id: 'type-1-2', name: 'Bancos' }, { id: 'type-1-3', name: 'Clientes' }, { id: 'type-1-4', name: 'Mercancías / Inventarios' }, { id: 'type-1-5', name: 'Documentos por cobrar' }, { id: 'type-1-6', name: 'Deudores diversos' }, { id: 'type-1-7', name: 'IVA acreditable pagado' }, { id: 'type-1-8', name: 'IVA por acreditar' }, { id: 'type-1-9', name: 'IVA a favor' } ] },
@@ -607,3 +597,5 @@ export default function AccountingConfigPage() {
     </>
   );
 }
+
+    

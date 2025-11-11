@@ -3,11 +3,7 @@
 import type { Client, Task, Document, Note, WorkflowStage, NavItem, Promoter, ServiceWorkflow, SubService, AppUser } from './types';
 import { addDays, format, subDays } from 'date-fns';
 
-export const teamMembers: AppUser[] = [
-    { id: 'user-1', name: 'Admin User', email: 'admin@witbiz.com', role: 'Director', photoURL: 'https://picsum.photos/seed/99/40/40' },
-    { id: 'user-2', name: 'Carla Collaborator', email: 'carla@witbiz.com', role: 'Colaborador', photoURL: 'https://picsum.photos/seed/2/40/40' },
-    { id: 'user-3', name: 'Andrea Admin', email: 'andrea@witbiz.com', role: 'Administrador', photoURL: 'https://picsum.photos/seed/1/40/40' },
-];
+export const teamMembers: AppUser[] = [];
 
 // This will now be fetched from Firestore, so we can keep it empty.
 export const serviceWorkflows: ServiceWorkflow[] = [];
@@ -35,3 +31,5 @@ export const navItems: NavItem[] = [
     { href: '/settings', label: 'Contabilidad', icon: 'DollarSign', requiredPermission: 'admin_view' },
     { href: '/finances', label: 'Finanzas', icon: 'Landmark', requiredPermission: 'finances_view' },
 ];
+
+    
