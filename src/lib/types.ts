@@ -7,6 +7,11 @@ export type PosTerminal = {
   serialNumber: string;
 }
 
+export type PromoterRef = {
+  promoterId: string;
+  percentage: number;
+}
+
 export type Client = {
   id: string;
   name: string;
@@ -21,7 +26,7 @@ export type Client = {
   subscribedServiceIds: string[];
   currentWorkflowStageId?: string;
   createdAt?: any;
-  promoterId?: string;
+  promoters?: PromoterRef[];
   posTerminals?: PosTerminal[];
 };
 
@@ -233,3 +238,5 @@ export interface NavItem {
   exactMatch?: boolean;
   requiredPermission?: keyof AppPermissions;
 }
+
+    

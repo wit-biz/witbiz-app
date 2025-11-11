@@ -17,7 +17,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Loader2, Save, Check, ChevronsUpDown, PlusCircle, Trash2 } from 'lucide-react';
+import { Loader2, Save, Check, ChevronsUpDown, PlusCircle, Trash2, Percent } from 'lucide-react';
 import { useCRMData } from '@/contexts/CRMDataContext';
 import { useToast } from '@/hooks/use-toast';
 import type { Client } from '@/lib/types';
@@ -41,6 +41,11 @@ const posTerminalSchema = z.object({
   serialNumber: z.string().min(1, "El número de serie es requerido."),
 });
 
+const promoterRefSchema = z.object({
+  promoterId: z.string().min(1, "Debe seleccionar un promotor."),
+  percentage: z.coerce.number().min(0, "El porcentaje no puede ser negativo.").max(100, "El porcentaje no puede ser mayor a 100."),
+});
+
 const clientSchema = z.object({
   name: z.string().min(2, { message: "El nombre debe tener al menos 2 caracteres." }),
   owner: z.string().optional(),
@@ -48,10 +53,20 @@ const clientSchema = z.object({
   contactEmail: z.string().email({ message: "Por favor, introduzca un email válido." }).optional().or(z.literal('')),
   contactPhone: z.string().optional(),
   website: z.string().url({ message: "Por favor, introduzca una URL válida." }).optional().or(z.literal('')),
-  promoterId: z.string().optional(),
+  promoters: z.array(promoterRefSchema).optional(),
   subscribedServiceIds: z.array(z.string()).min(1, { message: "Debe seleccionar al menos un servicio." }),
   status: z.enum(['Activo', 'Inactivo']),
   posTerminals: z.array(posTerminalSchema).optional(),
+}).refine(data => {
+    if (data.promoters && data.promoters.length > 0) {
+        const totalPercentage = data.promoters.reduce((sum, p) => sum + p.percentage, 0);
+        // Use a small tolerance for floating point issues
+        return Math.abs(totalPercentage - 100) < 0.01;
+    }
+    return true;
+}, {
+    message: "La suma de los porcentajes de los promotores debe ser exactamente 100.",
+    path: ["promoters"],
 });
 
 
@@ -77,16 +92,21 @@ export function AddEditClientDialog({ client, isOpen, onClose }: AddEditClientDi
       contactEmail: client?.contactEmail || '',
       contactPhone: client?.contactPhone || '',
       website: client?.website || '',
-      promoterId: client?.promoterId || 'none',
+      promoters: client?.promoters || [],
       subscribedServiceIds: client?.subscribedServiceIds || [],
       status: client?.status || 'Activo',
       posTerminals: client?.posTerminals || [],
     },
   });
   
-   const { fields, append, remove } = useFieldArray({
+   const { fields: terminalFields, append: appendTerminal, remove: removeTerminal } = useFieldArray({
     control: form.control,
     name: "posTerminals",
+  });
+  
+   const { fields: promoterFields, append: appendPromoter, remove: removePromoter } = useFieldArray({
+    control: form.control,
+    name: "promoters",
   });
   
   React.useEffect(() => {
@@ -98,7 +118,7 @@ export function AddEditClientDialog({ client, isOpen, onClose }: AddEditClientDi
             contactEmail: client?.contactEmail || '',
             contactPhone: client?.contactPhone || '',
             website: client?.website || '',
-            promoterId: client?.promoterId || 'none',
+            promoters: client?.promoters || [],
             subscribedServiceIds: client?.subscribedServiceIds || [],
             status: client?.status || 'Activo',
             posTerminals: client?.posTerminals || [],
@@ -110,20 +130,11 @@ export function AddEditClientDialog({ client, isOpen, onClose }: AddEditClientDi
   const onSubmit = async (values: z.infer<typeof clientSchema>) => {
     setIsSubmitting(true);
     let success = false;
-
-    const { promoterId, ...restOfValues } = values;
-    const finalValues: Partial<Client> = { ...restOfValues };
-
-    if (promoterId && promoterId !== 'none') {
-        finalValues.promoterId = promoterId;
-    } else {
-        delete finalValues.promoterId;
-    }
     
     if (isEditMode && client) {
-        success = await updateClient(client.id, finalValues);
+        success = await updateClient(client.id, values);
     } else {
-        const newClient = await addClient(finalValues as Omit<Client, 'id'>);
+        const newClient = await addClient(values as Omit<Client, 'id'>);
         success = !!newClient;
     }
     
@@ -239,29 +250,71 @@ export function AddEditClientDialog({ client, isOpen, onClose }: AddEditClientDi
                             </FormItem>
                         )}
                     />
-                     <FormField
-                        control={form.control}
-                        name="promoterId"
-                        render={({ field }) => (
-                            <FormItem>
-                                <FormLabel>Referido por (Promotor)</FormLabel>
-                                 <Select onValueChange={field.onChange} value={field.value}>
-                                    <FormControl>
-                                        <SelectTrigger>
-                                            <SelectValue placeholder="Seleccione un promotor (opcional)..." />
-                                        </SelectTrigger>
-                                    </FormControl>
-                                    <SelectContent>
-                                        <SelectItem value="none">Ninguno</SelectItem>
-                                        {promoters.map(promoter => (
-                                            <SelectItem key={promoter.id} value={promoter.id}>{promoter.name}</SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
-                                <FormMessage />
-                            </FormItem>
-                        )}
-                    />
+                    
+                    <Separator />
+                    
+                    <div>
+                        <Label>Promotores Referidos</Label>
+                        <div className="space-y-3 mt-2">
+                          {promoterFields.map((field, index) => (
+                            <div key={field.id} className="flex items-center gap-2 p-2 border rounded-md">
+                               <div className="flex-grow space-y-2">
+                                  <FormField
+                                        control={form.control}
+                                        name={`promoters.${index}.promoterId`}
+                                        render={({ field }) => (
+                                            <FormItem>
+                                                <Select onValueChange={field.onChange} value={field.value}>
+                                                    <FormControl>
+                                                        <SelectTrigger>
+                                                            <SelectValue placeholder="Seleccione un promotor..." />
+                                                        </SelectTrigger>
+                                                    </FormControl>
+                                                    <SelectContent>
+                                                        {promoters.map(p => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}
+                                                    </SelectContent>
+                                                </Select>
+                                                <FormMessage />
+                                            </FormItem>
+                                        )}
+                                    />
+                                    <FormField
+                                        control={form.control}
+                                        name={`promoters.${index}.percentage`}
+                                        render={({ field }) => (
+                                            <FormItem>
+                                                 <div className="relative">
+                                                      <FormControl>
+                                                        <Input type="number" placeholder="Porcentaje" {...field} />
+                                                      </FormControl>
+                                                      <Percent className="absolute right-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                                                  </div>
+                                                <FormMessage />
+                                            </FormItem>
+                                        )}
+                                    />
+                               </div>
+                              <Button type="button" variant="ghost" size="icon" onClick={() => removePromoter(index)} disabled={isSubmitting}>
+                                <Trash2 className="h-4 w-4 text-destructive" />
+                              </Button>
+                            </div>
+                          ))}
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => appendPromoter({ promoterId: '', percentage: 0 })}
+                          >
+                            <PlusCircle className="mr-2 h-4 w-4" />
+                            Añadir Promotor
+                          </Button>
+                          {form.formState.errors.promoters && <p className="text-sm font-medium text-destructive">{form.formState.errors.promoters.message}</p>}
+                        </div>
+                    </div>
+
+
+                    <Separator />
+
                     <FormField
                         control={form.control}
                         name="owner"
@@ -332,7 +385,7 @@ export function AddEditClientDialog({ client, isOpen, onClose }: AddEditClientDi
                      <div>
                         <Label>Terminales Punto de Venta (TPV)</Label>
                         <div className="space-y-2 mt-2">
-                          {fields.map((field, index) => (
+                          {terminalFields.map((field, index) => (
                             <div key={field.id} className="flex items-center gap-2">
                                <FormField
                                     control={form.control}
@@ -346,7 +399,7 @@ export function AddEditClientDialog({ client, isOpen, onClose }: AddEditClientDi
                                         </FormItem>
                                     )}
                                 />
-                              <Button type="button" variant="ghost" size="icon" onClick={() => remove(index)} disabled={isSubmitting}>
+                              <Button type="button" variant="ghost" size="icon" onClick={() => removeTerminal(index)} disabled={isSubmitting}>
                                 <Trash2 className="h-4 w-4 text-destructive" />
                               </Button>
                             </div>
@@ -355,7 +408,7 @@ export function AddEditClientDialog({ client, isOpen, onClose }: AddEditClientDi
                             type="button"
                             variant="outline"
                             size="sm"
-                            onClick={() => append({ id: `new-${fields.length}`, serialNumber: '' })}
+                            onClick={() => appendTerminal({ id: `new-${terminalFields.length}`, serialNumber: '' })}
                           >
                             <PlusCircle className="mr-2 h-4 w-4" />
                             Añadir Terminal
@@ -385,3 +438,4 @@ export function AddEditClientDialog({ client, isOpen, onClose }: AddEditClientDi
     </Dialog>
   );
 }
+    

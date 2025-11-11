@@ -6,12 +6,12 @@ import { type Client, type Document, type Task, type WorkflowAction, type Workfl
 import { useCRMData } from "@/contexts/CRMDataContext";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { X, Edit, Trash2, Plus, Download, FileText, UploadCloud, Info, Users, Target, ListTodo, CheckCircle2, Briefcase, UserCheck, Smartphone, CalendarDays } from "lucide-react";
+import { X, Edit, Trash2, Plus, Download, FileText, UploadCloud, Info, Users, Target, ListTodo, CheckCircle2, Briefcase, UserCheck, Smartphone, CalendarDays, Percent } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { SmartDocumentUploadDialog } from "./SmartDocumentUploadDialog";
 import { DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { formatDateString } from "@/lib/utils";
-import { promoters } from "@/lib/data";
+
 
 type AnyStage = WorkflowStage | SubStage | SubSubStage;
 
@@ -35,7 +35,7 @@ const DetailItem = ({ label, value, href }: { label: string; value?: string; hre
 };
 
 export function ClientDetailView({ client, onClose }: ClientDetailViewProps) {
-    const { getDocumentsByClientId, serviceWorkflows, getTasksByClientId } = useCRMData();
+    const { getDocumentsByClientId, serviceWorkflows, getTasksByClientId, promoters: allPromoters } = useCRMData();
     const { toast } = useToast();
     
     const [isUploadDialogOpen, setIsUploadDialogOpen] = useState(false);
@@ -57,10 +57,17 @@ export function ClientDetailView({ client, onClose }: ClientDetailViewProps) {
             .filter(Boolean) as typeof serviceWorkflows;
     }, [client, serviceWorkflows]);
 
-    const promoterName = useMemo(() => {
-        if (!client.promoterId) return undefined;
-        return promoters.find(p => p.id === client.promoterId)?.name;
-    }, [client.promoterId]);
+    const promoterDetails = useMemo(() => {
+        if (!client.promoters || !allPromoters) return [];
+        return client.promoters.map(ref => {
+            const promoter = allPromoters.find(p => p.id === ref.promoterId);
+            return {
+                ...ref,
+                name: promoter?.name || 'Promotor Desconocido'
+            }
+        });
+    }, [client.promoters, allPromoters]);
+
 
     const clientDocuments = getDocumentsByClientId(client.id);
     const clientTasks = getTasksByClientId(client.id);
@@ -113,7 +120,6 @@ export function ClientDetailView({ client, onClose }: ClientDetailViewProps) {
                             <DetailItem label="Email de Contacto" value={client.contactEmail} href={`mailto:${client.contactEmail}`} />
                             <DetailItem label="Teléfono" value={client.contactPhone} href={`tel:${client.contactPhone}`} />
                             <DetailItem label="Sitio Web" value={client.website} href={client.website} />
-                            <DetailItem label="Referido por (Promotor)" value={promoterName} />
                              {client.createdAt && (
                                 <div className="flex items-start gap-3">
                                     <CalendarDays className="h-5 w-5 text-muted-foreground mt-0.5" />
@@ -159,6 +165,30 @@ export function ClientDetailView({ client, onClose }: ClientDetailViewProps) {
                             </CardContent>
                         </Card>
                     )}
+
+                     <Card>
+                        <CardHeader><CardTitle>Promotores Referidos</CardTitle></CardHeader>
+                        <CardContent>
+                             {promoterDetails && promoterDetails.length > 0 ? (
+                                <ul className="space-y-2">
+                                    {promoterDetails.map(ref => (
+                                        <li key={ref.promoterId} className="flex items-center justify-between text-sm font-medium">
+                                            <span className="flex items-center gap-2">
+                                                <UserCheck className="h-4 w-4 text-accent" />
+                                                {ref.name}
+                                            </span>
+                                            <span className="flex items-center gap-1 text-muted-foreground">
+                                                {ref.percentage}
+                                                <Percent className="h-3 w-3" />
+                                            </span>
+                                        </li>
+                                    ))}
+                                </ul>
+                            ) : (
+                                <p className="text-sm text-muted-foreground">No hay promotores referidos.</p>
+                            )}
+                        </CardContent>
+                    </Card>
 
                     <Card>
                         <CardHeader><CardTitle>Estado</CardTitle></CardHeader>
@@ -241,3 +271,4 @@ export function ClientDetailView({ client, onClose }: ClientDetailViewProps) {
         </>
     );
 }
+    
