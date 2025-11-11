@@ -70,6 +70,23 @@ service cloud.firestore {
         allow read, write: if isSignedIn() && isOwner(userId);
     }
 
+    /**
+     * @description Rules for the /users/{userId}/promoters/{promoterId} subcollection. Users can only access promoters they own.
+     * @path /users/{userId}/promoters/{promoterId}
+     */
+    match /users/{userId}/promoters/{promoterId} {
+      allow read, write: if isSignedIn() && isOwner(userId);
+    }
+
+    /**
+     * @description Rules for the /users/{userId}/suppliers/{supplierId} subcollection. Users can only access suppliers they own.
+     * @path /users/{userId}/suppliers/{supplierId}
+     */
+    match /users/{userId}/suppliers/{supplierId} {
+      allow read, write: if isSignedIn() && isOwner(userId);
+    }
+
+
     // --- Helper functions ---
     function isSignedIn() {
       return request.auth != null;

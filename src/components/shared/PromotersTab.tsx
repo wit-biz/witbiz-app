@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import React, { useState, useMemo, useCallback } from 'react';
@@ -17,12 +18,13 @@ import { useToast } from '@/hooks/use-toast';
 
 interface PromotersTabProps {
     promoters: Promoter[];
-    setPromoters: React.Dispatch<React.SetStateAction<Promoter[]>>;
     isLoading: boolean;
     showActions?: boolean;
+    onUpdate?: (promoter: Promoter) => Promise<void>;
+    onDelete?: (promoterId: string) => Promise<boolean>;
 }
 
-export function PromotersTab({ promoters, setPromoters, isLoading, showActions = false }: PromotersTabProps) {
+export function PromotersTab({ promoters, isLoading, showActions = false, onUpdate, onDelete }: PromotersTabProps) {
     const { toast } = useToast();
     const [searchTerm, setSearchTerm] = useState('');
     const [statusFilter, setStatusFilter] = useState('all');
@@ -63,20 +65,22 @@ export function PromotersTab({ promoters, setPromoters, isLoading, showActions =
         setPromoterToDelete(promoter);
     }, []);
 
-    const confirmDelete = useCallback(() => {
-        if (!promoterToDelete) return;
+    const confirmDelete = useCallback(async () => {
+        if (!promoterToDelete || !onDelete) return;
         setIsDeleting(true);
-        // Simulate API call
-        setTimeout(() => {
-            setPromoters(prev => prev.filter(p => p.id !== promoterToDelete.id));
+        const success = await onDelete(promoterToDelete.id);
+        if (success) {
             toast({ title: "Promotor eliminado", description: `El promotor "${promoterToDelete.name}" ha sido eliminado.` });
-            setIsDeleting(false);
-            setPromoterToDelete(null);
-        }, 500);
-    }, [promoterToDelete, setPromoters, toast]);
+        } else {
+            toast({ variant: 'destructive', title: 'Error', description: 'No se pudo eliminar al promotor.' });
+        }
+        setIsDeleting(false);
+        setPromoterToDelete(null);
+    }, [promoterToDelete, onDelete, toast]);
 
-    const handleEditSave = (updatedPromoter: Promoter) => {
-        setPromoters(prev => prev.map(p => p.id === updatedPromoter.id ? updatedPromoter : p));
+    const handleEditSave = async (updatedPromoter: Promoter) => {
+        if (!onUpdate) return;
+        await onUpdate(updatedPromoter);
         setEditDialogState({ open: false, promoter: null });
     };
     

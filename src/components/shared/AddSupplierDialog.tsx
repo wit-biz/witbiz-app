@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import React, { useState, useEffect } from 'react';
@@ -27,7 +28,9 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { promoters } from '@/lib/data';
+import { useCRMData } from '@/contexts/CRMDataContext';
+import { type Supplier } from '@/lib/types';
+
 
 const supplierSchema = z.object({
   id: z.string().optional(),
@@ -38,18 +41,18 @@ const supplierSchema = z.object({
 });
 
 type SupplierFormValues = z.infer<typeof supplierSchema>;
-type Supplier = SupplierFormValues & { id: string };
 
 interface AddSupplierDialogProps {
   isOpen: boolean;
   onClose: () => void;
   supplier?: Supplier | null;
-  onAdd?: (data: SupplierFormValues) => void;
+  onAdd?: (data: Omit<SupplierFormValues, 'id'>) => void;
   onSave?: (data: Supplier) => void;
 }
 
 export function AddSupplierDialog({ isOpen, onClose, supplier, onAdd, onSave }: AddSupplierDialogProps) {
   const { toast } = useToast();
+  const { promoters } = useCRMData();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const isEditMode = !!supplier;
 
@@ -78,15 +81,18 @@ export function AddSupplierDialog({ isOpen, onClose, supplier, onAdd, onSave }: 
 
   const onSubmit = async (values: SupplierFormValues) => {
     setIsSubmitting(true);
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 500));
     
-    if (isEditMode && onSave) {
-        onSave(values as Supplier);
-        toast({ title: 'Proveedor Actualizado', description: `El proveedor "${values.name}" ha sido actualizado.` });
-    } else if (onAdd) {
-        onAdd(values);
-        toast({ title: 'Proveedor Creado', description: `El proveedor "${values.name}" ha sido creado (simulación).` });
+    try {
+        if (isEditMode && onSave) {
+            await onSave(values as Supplier);
+            toast({ title: 'Proveedor Actualizado', description: `El proveedor "${values.name}" ha sido actualizado.` });
+        } else if (onAdd) {
+            const { id, ...addValues } = values;
+            await onAdd(addValues);
+            toast({ title: 'Proveedor Creado', description: `El proveedor "${values.name}" ha sido creado.` });
+        }
+    } catch (error) {
+         toast({ variant: 'destructive', title: 'Error', description: 'No se pudo guardar el proveedor.' });
     }
 
     setIsSubmitting(false);

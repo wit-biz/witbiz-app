@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import React, { useState, useMemo, useCallback } from 'react';
@@ -11,21 +12,17 @@ import { Button } from '@/components/ui/button';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { AddSupplierDialog } from './AddSupplierDialog';
 import { useToast } from '@/hooks/use-toast';
-
-type Supplier = {
-  id: string;
-  name: string;
-  contact: string;
-  service: string;
-};
+import { type Supplier } from '@/lib/types';
 
 interface SuppliersTabProps {
     suppliers: Supplier[];
-    setSuppliers: React.Dispatch<React.SetStateAction<Supplier[]>>;
+    isLoading: boolean;
     showActions?: boolean;
+    onUpdate?: (supplier: Supplier) => Promise<void>;
+    onDelete?: (supplierId: string) => Promise<boolean>;
 }
 
-export function SuppliersTab({ suppliers, setSuppliers, showActions = false }: SuppliersTabProps) {
+export function SuppliersTab({ suppliers, isLoading, showActions = false, onUpdate, onDelete }: SuppliersTabProps) {
   const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState('');
   const [serviceFilter, setServiceFilter] = useState('all');
@@ -35,18 +32,20 @@ export function SuppliersTab({ suppliers, setSuppliers, showActions = false }: S
   const [isDeleting, setIsDeleting] = useState(false);
 
   const services = useMemo(() => {
-    const allServices = suppliers.map(s => s.service);
-    return [...new Set(allServices)];
+    if (!suppliers) return [];
+    const allServices = suppliers.map(s => s.service).filter(Boolean);
+    return [...new Set(allServices)] as string[];
   }, [suppliers]);
 
   const filteredSuppliers = useMemo(() => {
+    if (!suppliers) return [];
     let filtered = suppliers;
 
     if (searchTerm) {
       const lowerSearchTerm = searchTerm.toLowerCase();
       filtered = filtered.filter(s =>
         s.name.toLowerCase().includes(lowerSearchTerm) ||
-        s.contact.toLowerCase().includes(lowerSearchTerm)
+        (s.contact && s.contact.toLowerCase().includes(lowerSearchTerm))
       );
     }
 
@@ -65,20 +64,22 @@ export function SuppliersTab({ suppliers, setSuppliers, showActions = false }: S
     setSupplierToDelete(supplier);
   }, []);
 
-  const confirmDelete = useCallback(() => {
-    if (!supplierToDelete) return;
+  const confirmDelete = useCallback(async () => {
+    if (!supplierToDelete || !onDelete) return;
     setIsDeleting(true);
-    // Simulate API call
-    setTimeout(() => {
-      setSuppliers(prev => prev.filter(s => s.id !== supplierToDelete.id));
-      toast({ title: "Proveedor eliminado", description: `El proveedor "${supplierToDelete.name}" ha sido eliminado.` });
-      setIsDeleting(false);
-      setSupplierToDelete(null);
-    }, 500);
-  }, [supplierToDelete, setSuppliers, toast]);
+    const success = await onDelete(supplierToDelete.id);
+     if (success) {
+        toast({ title: "Proveedor eliminado", description: `El proveedor "${supplierToDelete.name}" ha sido eliminado.` });
+    } else {
+        toast({ variant: 'destructive', title: 'Error', description: 'No se pudo eliminar al proveedor.' });
+    }
+    setIsDeleting(false);
+    setSupplierToDelete(null);
+  }, [supplierToDelete, onDelete, toast]);
 
-  const handleEditSave = (updatedSupplier: Supplier) => {
-    setSuppliers(prev => prev.map(s => s.id === updatedSupplier.id ? updatedSupplier : s));
+  const handleEditSave = async (updatedSupplier: Supplier) => {
+    if (!onUpdate) return;
+    await onUpdate(updatedSupplier);
     setEditDialogState({ open: false, supplier: null });
   };
 
@@ -112,6 +113,11 @@ export function SuppliersTab({ suppliers, setSuppliers, showActions = false }: S
                   </SelectContent>
               </Select>
           </div>
+          {isLoading ? (
+            <div className="flex items-center justify-center p-12">
+              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            </div>
+          ) : (
           <div className="relative w-full overflow-auto">
               <Table>
                   <TableHeader>
@@ -143,7 +149,8 @@ export function SuppliersTab({ suppliers, setSuppliers, showActions = false }: S
                   </TableBody>
               </Table>
           </div>
-          {filteredSuppliers.length === 0 && (
+          )}
+          {!isLoading && filteredSuppliers.length === 0 && (
               <div className="text-center py-10 text-muted-foreground">
                   No se encontraron proveedores que coincidan con los filtros.
               </div>

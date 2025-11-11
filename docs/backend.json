@@ -148,6 +148,65 @@
         "id",
         "email"
       ]
+    },
+    "Promoter": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Promoter",
+      "type": "object",
+      "description": "Represents a promoter who refers clients.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Promoter entity."
+        },
+        "name": {
+          "type": "string",
+          "description": "Name of the promoter."
+        },
+        "status": {
+          "type": "string",
+          "enum": ["Activo", "Inactivo"],
+          "description": "Current status of the promoter."
+        },
+        "referredClients": {
+          "type": "number",
+          "description": "Number of clients referred by the promoter."
+        },
+        "totalCommissions": {
+          "type": "number",
+          "description": "Total commissions earned by the promoter."
+        }
+      },
+      "required": ["id", "name", "status"]
+    },
+    "Supplier": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Supplier",
+      "type": "object",
+      "description": "Represents a supplier of goods or services.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Supplier entity."
+        },
+        "name": {
+          "type": "string",
+          "description": "Name of the supplier."
+        },
+        "contact": {
+          "type": "string",
+          "description": "Contact information for the supplier (e.g., email or phone)."
+        },
+        "service": {
+          "type": "string",
+          "description": "The service or product provided by the supplier."
+        },
+        "promoterId": {
+          "type": "string",
+          "description": "Optional reference to a promoter who referred this supplier."
+        }
+      },
+      "required": ["id", "name"]
     }
   },
   "auth": {
@@ -230,6 +289,46 @@
             {
               "name": "taskId",
               "description": "The unique identifier of the task."
+            }
+          ]
+        }
+      },
+       {
+        "path": "/users/{userId}/promoters/{promoterId}",
+        "definition": {
+          "entityName": "Promoter",
+          "schema": {
+            "$ref": "#/backend/entities/Promoter"
+          },
+          "description": "Subcollection to store promoters managed by a specific user.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The Firebase Auth UID of the user who manages the promoter."
+            },
+            {
+              "name": "promoterId",
+              "description": "The unique identifier of the promoter."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/suppliers/{supplierId}",
+        "definition": {
+          "entityName": "Supplier",
+          "schema": {
+            "$ref": "#/backend/entities/Supplier"
+          },
+          "description": "Subcollection to store suppliers managed by a specific user.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The Firebase Auth UID of the user who manages the supplier."
+            },
+            {
+              "name": "supplierId",
+              "description": "The unique identifier of the supplier."
             }
           ]
         }

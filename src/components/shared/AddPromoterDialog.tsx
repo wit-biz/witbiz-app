@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import React, { useState, useEffect } from 'react';
@@ -33,6 +34,8 @@ const promoterSchema = z.object({
   id: z.string().optional(),
   name: z.string().min(2, { message: "El nombre debe tener al menos 2 caracteres." }),
   status: z.enum(['Activo', 'Inactivo']),
+  referredClients: z.number().optional(),
+  totalCommissions: z.number().optional(),
 });
 
 type PromoterFormValues = z.infer<typeof promoterSchema>;
@@ -41,7 +44,7 @@ interface AddPromoterDialogProps {
   isOpen: boolean;
   onClose: () => void;
   promoter?: Promoter | null;
-  onAdd?: (data: Omit<PromoterFormValues, 'id'>) => void;
+  onAdd?: (data: Omit<PromoterFormValues, 'id' | 'referredClients' | 'totalCommissions'>) => void;
   onSave?: (data: Promoter) => void;
 }
 
@@ -71,16 +74,18 @@ export function AddPromoterDialog({ isOpen, onClose, promoter, onAdd, onSave }: 
 
   const onSubmit = async (values: PromoterFormValues) => {
     setIsSubmitting(true);
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 500));
     
-    if (isEditMode && onSave) {
-        onSave(values as Promoter);
-        toast({ title: 'Promotor Actualizado', description: `El promotor "${values.name}" ha sido actualizado.` });
-    } else if (onAdd) {
-        const { id, ...addValues } = values;
-        onAdd(addValues);
-        toast({ title: 'Promotor Creado', description: `El promotor "${values.name}" ha sido creado (simulación).` });
+    try {
+      if (isEditMode && onSave) {
+          await onSave(values as Promoter);
+          toast({ title: 'Promotor Actualizado', description: `El promotor "${values.name}" ha sido actualizado.` });
+      } else if (onAdd) {
+          const { id, referredClients, totalCommissions, ...addValues } = values;
+          await onAdd(addValues);
+          toast({ title: 'Promotor Creado', description: `El promotor "${values.name}" ha sido creado.` });
+      }
+    } catch (error) {
+       toast({ variant: 'destructive', title: 'Error', description: 'No se pudo guardar el promotor.' });
     }
 
     setIsSubmitting(false);

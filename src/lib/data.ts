@@ -1,6 +1,6 @@
 
 
-import type { Client, Task, Document, Note, WorkflowStage, NavItem, Promoter, ServiceWorkflow, SubService, AppUser } from './types';
+import type { Client, Task, Document, Note, WorkflowStage, NavItem, Promoter, ServiceWorkflow, SubService, AppUser, Supplier } from './types';
 import { addDays, format, subDays } from 'date-fns';
 
 export const teamMembers: AppUser[] = [];
@@ -18,9 +18,9 @@ export const tasks: Task[] = [];
 export const documents: Document[] = [];
 
 
-// Mock data for entities not yet in Firestore.
+// This will now be fetched from Firestore, so we can keep it empty.
 export const promoters: Promoter[] = [];
-export const suppliers: { id: string; name: string; contact: string; service: string }[] = [];
+export const suppliers: Supplier[] = [];
 export const notes: Note[] = [];
 
 export const navItems: NavItem[] = [

@@ -26,6 +26,14 @@ export type Promoter = {
   status: 'Activo' | 'Inactivo';
 };
 
+export type Supplier = {
+  id: string;
+  name: string;
+  contact?: string;
+  service?: string;
+  promoterId?: string;
+}
+
 export type SubTask = {
   id: string;
   description: string;

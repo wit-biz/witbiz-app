@@ -21,6 +21,8 @@ import {
     type SubStage,
     type SubSubStage,
     type Commission,
+    type Promoter,
+    type Supplier,
 } from '@/lib/types';
 import { useUser, useFirestore, useMemoFirebase, useCollection, useDoc, useAuth, addDocumentNonBlocking, setDocumentNonBlocking, deleteDocumentNonBlocking } from '@/firebase';
 import { collection, doc, writeBatch, serverTimestamp, query, where } from 'firebase/firestore';
@@ -34,6 +36,7 @@ interface CRMContextType {
   currentUser: AuthenticatedUser | null;
   isLoadingCurrentUser: boolean;
   teamMembers: AppUser[];
+
   clients: Client[];
   isLoadingClients: boolean;
   addClient: (newClientData: Omit<Client, 'id'>) => Promise<Client | null>;
@@ -70,6 +73,18 @@ interface CRMContextType {
   deleteService: (serviceId: string) => Promise<boolean>;
   getActionById: (actionId: string) => WorkflowAction | null;
   
+  promoters: Promoter[];
+  isLoadingPromoters: boolean;
+  addPromoter: (promoterData: Omit<Promoter, 'id'>) => Promise<Promoter | null>;
+  updatePromoter: (promoterId: string, updates: Partial<Promoter>) => Promise<boolean>;
+  deletePromoter: (promoterId: string) => Promise<boolean>;
+
+  suppliers: Supplier[];
+  isLoadingSuppliers: boolean;
+  addSupplier: (supplierData: Omit<Supplier, 'id'>) => Promise<Supplier | null>;
+  updateSupplier: (supplierId: string, updates: Partial<Supplier>) => Promise<boolean>;
+  deleteSupplier: (supplierId: string) => Promise<boolean>;
+
   registerUser: (name: string, email: string, pass: string) => Promise<any>;
 }
 
@@ -95,12 +110,16 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
     const tasksCollection = useMemoFirebase(() => user ? collection(firestore, 'users', user.uid, 'tasks') : null, [firestore, user]);
     const documentsCollection = useMemoFirebase(() => user ? collection(firestore, 'users', user.uid, 'documents') : null, [firestore, user]);
     const serviceWorkflowsCollection = useMemoFirebase(() => user ? collection(firestore, 'users', user.uid, 'serviceWorkflows') : null, [firestore, user]);
+    const promotersCollection = useMemoFirebase(() => user ? collection(firestore, 'users', user.uid, 'promoters') : null, [firestore, user]);
+    const suppliersCollection = useMemoFirebase(() => user ? collection(firestore, 'users', user.uid, 'suppliers') : null, [firestore, user]);
 
     // --- Firestore Data ---
     const { data: clients = [], isLoading: isLoadingClients } = useCollection<Client>(clientsCollection);
     const { data: tasks = [], isLoading: isLoadingTasks } = useCollection<Task>(tasksCollection);
     const { data: documents = [], isLoading: isLoadingDocuments } = useCollection<Document>(documentsCollection);
     const { data: serviceWorkflows = [], isLoading: isLoadingWorkflows } = useCollection<ServiceWorkflow>(serviceWorkflowsCollection);
+    const { data: promoters = [], isLoading: isLoadingPromoters } = useCollection<Promoter>(promotersCollection);
+    const { data: suppliers = [], isLoading: isLoadingSuppliers } = useCollection<Supplier>(suppliersCollection);
 
 
     useEffect(() => {
@@ -416,6 +435,44 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
         showNotification('success', 'Servicio Eliminado', 'El servicio ha sido eliminado.');
         return true;
     }
+
+    // --- Promoter Handlers ---
+    const addPromoter = async (promoterData: Omit<Promoter, 'id'>): Promise<Promoter | null> => {
+        if (!promotersCollection) return null;
+        const docRef = await addDocumentNonBlocking(promotersCollection, promoterData);
+        return { ...promoterData, id: docRef.id };
+    };
+    const updatePromoter = async (promoterId: string, updates: Partial<Promoter>): Promise<boolean> => {
+        if (!user || !firestore) return false;
+        const docRef = doc(firestore, 'users', user.uid, 'promoters', promoterId);
+        await setDocumentNonBlocking(docRef, updates, { merge: true });
+        return true;
+    };
+    const deletePromoter = async (promoterId: string): Promise<boolean> => {
+        if (!user || !firestore) return false;
+        const docRef = doc(firestore, 'users', user.uid, 'promoters', promoterId);
+        await deleteDocumentNonBlocking(docRef);
+        return true;
+    };
+
+    // --- Supplier Handlers ---
+    const addSupplier = async (supplierData: Omit<Supplier, 'id'>): Promise<Supplier | null> => {
+        if (!suppliersCollection) return null;
+        const docRef = await addDocumentNonBlocking(suppliersCollection, supplierData);
+        return { ...supplierData, id: docRef.id };
+    };
+    const updateSupplier = async (supplierId: string, updates: Partial<Supplier>): Promise<boolean> => {
+        if (!user || !firestore) return false;
+        const docRef = doc(firestore, 'users', user.uid, 'suppliers', supplierId);
+        await setDocumentNonBlocking(docRef, updates, { merge: true });
+        return true;
+    };
+    const deleteSupplier = async (supplierId: string): Promise<boolean> => {
+        if (!user || !firestore) return false;
+        const docRef = doc(firestore, 'users', user.uid, 'suppliers', supplierId);
+        await deleteDocumentNonBlocking(docRef);
+        return true;
+    };
     
     const placeholderPromise = async <T,>(data: T | null = null): Promise<any> => {
         showNotification('info', 'Funcionalidad no implementada', 'Esta acción aún no está conectada.');
@@ -450,12 +507,19 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
         addService, updateService, deleteService,
         getActionById,
         
+        promoters, isLoadingPromoters,
+        addPromoter, updatePromoter, deletePromoter,
+
+        suppliers, isLoadingSuppliers,
+        addSupplier, updateSupplier, deleteSupplier,
+        
         registerUser,
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }), [
         currentUser, isUserLoading, teamMembers, clients, isLoadingClients, 
         tasks, isLoadingTasks, documents, isLoadingDocuments, notes, isLoadingNotes,
-        serviceWorkflows, isLoadingWorkflows, getActionById
+        serviceWorkflows, isLoadingWorkflows, getActionById,
+        promoters, isLoadingPromoters, suppliers, isLoadingSuppliers
     ]);
 
     return (

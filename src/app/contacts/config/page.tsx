@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import React, { useState } from "react";
@@ -9,22 +10,25 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ClientsTab } from "@/components/shared/ClientsTab";
 import { PromotersTab } from "@/components/shared/PromotersTab";
 import { SuppliersTab } from "@/components/shared/SuppliersTab";
-import { promoters as initialPromoters, suppliers as initialSuppliers } from "@/lib/data";
 import { useCRMData } from "@/contexts/CRMDataContext";
 import { AddEditClientDialog } from "@/components/shared/AddEditClientDialog";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { AddSupplierDialog } from "@/components/shared/AddSupplierDialog";
 import { AddPromoterDialog } from "@/components/shared/AddPromoterDialog";
+import { type Promoter, type Supplier } from "@/lib/types";
 
 export default function DirectoryConfigPage() {
-  const { clients, isLoadingClients, currentUser } = useCRMData();
+  const { 
+    clients, isLoadingClients, 
+    promoters, isLoadingPromoters, addPromoter, updatePromoter, deletePromoter,
+    suppliers, isLoadingSuppliers, addSupplier, updateSupplier, deleteSupplier,
+    currentUser 
+  } = useCRMData();
   
   const [isAddClientDialogOpen, setIsAddClientDialogOpen] = useState(false);
   const [isAddSupplierDialogOpen, setIsAddSupplierDialogOpen] = useState(false);
   const [isAddPromoterDialogOpen, setIsAddPromoterDialogOpen] = useState(false);
-  const [promoters, setPromoters] = useState(initialPromoters);
-  const [suppliers, setSuppliers] = useState(initialSuppliers);
 
   const canCreate = currentUser?.permissions.clients_create ?? true;
 
@@ -38,23 +42,25 @@ export default function DirectoryConfigPage() {
     }
   };
 
-  const handleAddSupplier = (data: Omit<typeof suppliers[0], 'id'>) => {
-    const newSupplier = {
-      ...data,
-      id: `sup-${Date.now()}`
-    };
-    setSuppliers(prev => [newSupplier, ...prev]);
+  const handleAddSupplier = async (data: Omit<Supplier, 'id'>) => {
+    await addSupplier(data);
+  };
+  
+  const handleUpdateSupplier = async (data: Supplier) => {
+    await updateSupplier(data.id, data);
   };
 
-  const handleAddPromoter = (data: Omit<typeof promoters[0], 'id' | 'referredClients' | 'totalCommissions'>) => {
-    const newPromoter = {
+  const handleAddPromoter = async (data: Omit<Promoter, 'id' | 'referredClients' | 'totalCommissions' | 'status'> & {status: string}) => {
+    await addPromoter({
       ...data,
-      id: `promo-${Date.now()}`,
+      status: data.status as 'Activo' | 'Inactivo',
       referredClients: 0,
       totalCommissions: 0,
-      status: 'Activo' as 'Activo' | 'Inactivo',
-    };
-    setPromoters(prev => [newPromoter, ...prev]);
+    });
+  };
+
+  const handleUpdatePromoter = async (data: Promoter) => {
+    await updatePromoter(data.id, data);
   };
   
   return (
@@ -112,7 +118,13 @@ export default function DirectoryConfigPage() {
                     </TabsTrigger>
                 </TabsList>
                 <TabsContent value="suppliers">
-                    <SuppliersTab suppliers={suppliers} setSuppliers={setSuppliers} showActions={true} />
+                    <SuppliersTab 
+                      suppliers={suppliers} 
+                      isLoading={isLoadingSuppliers}
+                      onUpdate={handleUpdateSupplier}
+                      onDelete={deleteSupplier}
+                      showActions={true} 
+                    />
                 </TabsContent>
                 <TabsContent value="clients">
                     <ClientsTab 
@@ -124,7 +136,13 @@ export default function DirectoryConfigPage() {
                     />
                 </TabsContent>
                 <TabsContent value="promoters">
-                    <PromotersTab promoters={promoters} setPromoters={setPromoters} isLoading={false} showActions={true} />
+                    <PromotersTab 
+                      promoters={promoters} 
+                      isLoading={isLoadingPromoters} 
+                      onUpdate={handleUpdatePromoter}
+                      onDelete={deletePromoter}
+                      showActions={true} 
+                    />
                 </TabsContent>
             </Tabs>
         </main>
@@ -145,7 +163,7 @@ export default function DirectoryConfigPage() {
       <AddPromoterDialog
         isOpen={isAddPromoterDialogOpen}
         onClose={() => setIsAddPromoterDialogOpen(false)}
-        onAdd={handleAddPromoter}
+        onAdd={handleAddPromoter as any}
       />
     </>
   );
