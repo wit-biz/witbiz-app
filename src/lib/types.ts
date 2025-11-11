@@ -2,6 +2,11 @@
 
 import { type LucideIcon } from "lucide-react";
 
+export type PosTerminal = {
+  id: string;
+  serialNumber: string;
+}
+
 export type Client = {
   id: string;
   name: string;
@@ -17,6 +22,7 @@ export type Client = {
   currentWorkflowStageId?: string;
   createdAt?: any;
   promoterId?: string;
+  posTerminals?: PosTerminal[];
 };
 
 export type Promoter = {
@@ -221,3 +227,5 @@ export interface NavItem {
   exactMatch?: boolean;
   requiredPermission?: keyof AppPermissions;
 }
+
+    

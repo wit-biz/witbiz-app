@@ -2,7 +2,7 @@
 "use client";
 
 import React from 'react';
-import { useForm } from 'react-hook-form';
+import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import {
@@ -17,7 +17,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Loader2, Save, Check, ChevronsUpDown } from 'lucide-react';
+import { Loader2, Save, Check, ChevronsUpDown, PlusCircle, Trash2 } from 'lucide-react';
 import { useCRMData } from '@/contexts/CRMDataContext';
 import { useToast } from '@/hooks/use-toast';
 import type { Client } from '@/lib/types';
@@ -33,7 +33,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Checkbox } from '@/components/ui/checkbox';
 import { cn } from '@/lib/utils';
+import { Separator } from '../ui/separator';
 
+
+const posTerminalSchema = z.object({
+  id: z.string().optional(),
+  serialNumber: z.string().min(1, "El número de serie es requerido."),
+});
 
 const clientSchema = z.object({
   name: z.string().min(2, { message: "El nombre debe tener al menos 2 caracteres." }),
@@ -45,6 +51,7 @@ const clientSchema = z.object({
   promoterId: z.string().optional(),
   subscribedServiceIds: z.array(z.string()).min(1, { message: "Debe seleccionar al menos un servicio." }),
   status: z.enum(['Activo', 'Inactivo']),
+  posTerminals: z.array(posTerminalSchema).optional(),
 });
 
 
@@ -73,7 +80,13 @@ export function AddEditClientDialog({ client, isOpen, onClose }: AddEditClientDi
       promoterId: client?.promoterId || 'none',
       subscribedServiceIds: client?.subscribedServiceIds || [],
       status: client?.status || 'Activo',
+      posTerminals: client?.posTerminals || [],
     },
+  });
+  
+   const { fields, append, remove } = useFieldArray({
+    control: form.control,
+    name: "posTerminals",
   });
   
   React.useEffect(() => {
@@ -88,6 +101,7 @@ export function AddEditClientDialog({ client, isOpen, onClose }: AddEditClientDi
             promoterId: client?.promoterId || 'none',
             subscribedServiceIds: client?.subscribedServiceIds || [],
             status: client?.status || 'Activo',
+            posTerminals: client?.posTerminals || [],
         });
     }
   }, [isOpen, client, form]);
@@ -103,7 +117,6 @@ export function AddEditClientDialog({ client, isOpen, onClose }: AddEditClientDi
     if (promoterId && promoterId !== 'none') {
         finalValues.promoterId = promoterId;
     } else {
-        // Ensure the field is removed if not provided or 'none'
         delete finalValues.promoterId;
     }
     
@@ -127,7 +140,7 @@ export function AddEditClientDialog({ client, isOpen, onClose }: AddEditClientDi
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-lg">
         <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)}>
                 <DialogHeader>
@@ -314,6 +327,41 @@ export function AddEditClientDialog({ client, isOpen, onClose }: AddEditClientDi
                             </FormItem>
                         )}
                     />
+                    <Separator />
+
+                     <div>
+                        <Label>Terminales Punto de Venta (TPV)</Label>
+                        <div className="space-y-2 mt-2">
+                          {fields.map((field, index) => (
+                            <div key={field.id} className="flex items-center gap-2">
+                               <FormField
+                                    control={form.control}
+                                    name={`posTerminals.${index}.serialNumber`}
+                                    render={({ field }) => (
+                                        <FormItem className="flex-grow">
+                                            <FormControl>
+                                                <Input placeholder={`Número de Serie #${index + 1}`} {...field} />
+                                            </FormControl>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )}
+                                />
+                              <Button type="button" variant="ghost" size="icon" onClick={() => remove(index)} disabled={isSubmitting}>
+                                <Trash2 className="h-4 w-4 text-destructive" />
+                              </Button>
+                            </div>
+                          ))}
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => append({ id: `new-${fields.length}`, serialNumber: '' })}
+                          >
+                            <PlusCircle className="mr-2 h-4 w-4" />
+                            Añadir Terminal
+                          </Button>
+                        </div>
+                    </div>
                 </div>
 
                 <DialogFooter>
@@ -337,3 +385,5 @@ export function AddEditClientDialog({ client, isOpen, onClose }: AddEditClientDi
     </Dialog>
   );
 }
+
+    

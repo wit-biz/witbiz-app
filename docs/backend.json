@@ -29,8 +29,32 @@
         },
         "status": {
           "type": "string",
-          "enum": ["Activo", "Inactivo"],
+          "enum": [
+            "Activo",
+            "Inactivo"
+          ],
           "description": "Current status of the contact."
+        },
+        "posTerminals": {
+          "type": "array",
+          "description": "List of Point of Sale terminals assigned to the client.",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "description": "Unique identifier for the terminal entry."
+              },
+              "serialNumber": {
+                "type": "string",
+                "description": "The serial number of the POS terminal."
+              }
+            },
+            "required": [
+              "id",
+              "serialNumber"
+            ]
+          }
         }
       },
       "required": [
@@ -161,7 +185,10 @@
         },
         "status": {
           "type": "string",
-          "enum": ["Activo", "Inactivo"],
+          "enum": [
+            "Activo",
+            "Inactivo"
+          ],
           "description": "Current status of the promoter."
         },
         "referredClients": {
@@ -173,7 +200,11 @@
           "description": "Total commissions earned by the promoter."
         }
       },
-      "required": ["id", "name", "status"]
+      "required": [
+        "id",
+        "name",
+        "status"
+      ]
     },
     "Supplier": {
       "$schema": "http://json-schema.org/draft-07/schema#",
@@ -203,11 +234,18 @@
         },
         "status": {
           "type": "string",
-          "enum": ["Activo", "Inactivo"],
+          "enum": [
+            "Activo",
+            "Inactivo"
+          ],
           "description": "Current status of the supplier."
         }
       },
-      "required": ["id", "name", "status"]
+      "required": [
+        "id",
+        "name",
+        "status"
+      ]
     }
   },
   "auth": {
@@ -294,7 +332,7 @@
           ]
         }
       },
-       {
+      {
         "path": "/users/{userId}/promoters/{promoterId}",
         "definition": {
           "entityName": "Promoter",
@@ -338,3 +376,5 @@
     "reasoning": "The Firestore data structure is designed to address the reported permission error and ensure secure and scalable data management for the WitCRM application. The primary principle is Authorization Independence, achieved through denormalization and structural segregation.  The error `Missing or insufficient permissions` on the path `/databases/(default)/documents/users/lbz7nN49aERC4AwnsGSruB6spQJ3/notes` indicates the security rules are not allowing the user to `list` notes.  This structure uses path-based ownership for notes and other user-owned data, resolving the immediate issue and preventing future authorization problems.  \n\n**Authorization Independence:** User-owned entities like `Leads`, `Tasks`, and `Contacts` are stored under user-specific subcollections (e.g., `/users/{userId}/leads/{leadId}`). This structure inherently enforces ownership and eliminates the need for complex `get()` calls in security rules. This avoids hierarchical authorization dependencies, crucial for atomic operations and debuggability.  The security rules can simply check `request.auth.uid == userId`.\n\n**Structural Segregation:**  Data with different access requirements is stored in separate collections. All documents within a collection share the same security posture, simplifying rule definitions. For example, `Leads`, `Tasks`, and `Contacts` are stored under their respective user subcollections, ensuring that only the assigned user can access them.\n\n**QAPs (Rules are not Filters):**  The path-based ownership model enables secure `list` operations. A user can only list the documents within their own `/users/{userId}` subcollections. This directly addresses the error reported, allowing users to list their notes (after the appropriate rules are added, which this data structure facilitates).  \n\n**Invariants:**  The structure supports the integrity of ownership. The `assignedTo` field in `Lead` and `Task` documents is used for relationship purposes, but the actual ownership and access control are enforced by the path structure."
   }
 }
+
+    

@@ -7,7 +7,7 @@ import { type Client, type Document, type Task, type WorkflowAction, type Workfl
 import { useCRMData } from "@/contexts/CRMDataContext";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { X, Edit, Trash2, Plus, Download, FileText, UploadCloud, Info, Users, Target, ListTodo, CheckCircle2, Briefcase, UserCheck } from "lucide-react";
+import { X, Edit, Trash2, Plus, Download, FileText, UploadCloud, Info, Users, Target, ListTodo, CheckCircle2, Briefcase, UserCheck, Smartphone } from "lucide-react";
 import { AddEditClientDialog } from "./AddEditClientDialog";
 import { useToast } from "@/hooks/use-toast";
 import { SmartDocumentUploadDialog } from "./SmartDocumentUploadDialog";
@@ -169,8 +169,8 @@ export function ClientDetailView({ client, onClose }: ClientDetailViewProps) {
                                                  <li key={task.id} className="flex flex-col text-sm">
                                                     <span className="font-medium text-foreground">{task.title}</span>
                                                     <div className="text-xs text-muted-foreground mt-0.5">
-                                                        {serviceName && <span className="text-blue-500">Servicio: {serviceName}</span>}
-                                                        <span className={serviceName ? "ml-2" : ""}>Vence: {formatDateString(task.dueDate)}</span>
+                                                        {serviceName && <span>Servicio: {serviceName} | </span>}
+                                                        <span>Vence: {formatDateString(task.dueDate)}</span>
                                                     </div>
                                                 </li>
                                             )
@@ -182,6 +182,22 @@ export function ClientDetailView({ client, onClose }: ClientDetailViewProps) {
                             </div>
                         </CardContent>
                     </Card>
+
+                    {client.posTerminals && client.posTerminals.length > 0 && (
+                        <Card>
+                            <CardHeader><CardTitle>Terminales Punto de Venta (TPV)</CardTitle></CardHeader>
+                            <CardContent>
+                                <ul className="space-y-2">
+                                    {client.posTerminals.map((terminal) => (
+                                        <li key={terminal.id} className="flex items-center gap-2 text-sm font-medium">
+                                            <Smartphone className="h-4 w-4 text-accent" />
+                                            <span>Número de Serie: {terminal.serialNumber}</span>
+                                        </li>
+                                    ))}
+                                </ul>
+                            </CardContent>
+                        </Card>
+                    )}
                     
                     <Card>
                         <CardHeader>
@@ -230,3 +246,5 @@ export function ClientDetailView({ client, onClose }: ClientDetailViewProps) {
         </>
     );
 }
+
+    
