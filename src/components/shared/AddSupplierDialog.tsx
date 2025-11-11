@@ -64,7 +64,7 @@ export function AddSupplierDialog({ isOpen, onClose, supplier, onAdd, onSave }: 
       name: supplier?.name || '',
       contact: supplier?.contact || '',
       service: supplier?.service || '',
-      promoterId: supplier?.promoterId || '',
+      promoterId: supplier?.promoterId || 'none',
       status: supplier?.status || 'Activo',
     },
   });
@@ -76,7 +76,7 @@ export function AddSupplierDialog({ isOpen, onClose, supplier, onAdd, onSave }: 
             name: supplier?.name || '',
             contact: supplier?.contact || '',
             service: supplier?.service || '',
-            promoterId: supplier?.promoterId || '',
+            promoterId: supplier?.promoterId || 'none',
             status: supplier?.status || 'Activo',
         });
     }
@@ -86,11 +86,16 @@ export function AddSupplierDialog({ isOpen, onClose, supplier, onAdd, onSave }: 
     setIsSubmitting(true);
     
     try {
+        const finalValues = {
+            ...values,
+            promoterId: values.promoterId === 'none' ? undefined : values.promoterId,
+        };
+
         if (isEditMode && onSave) {
-            await onSave(values as Supplier);
+            await onSave(finalValues as Supplier);
             toast({ title: 'Proveedor Actualizado', description: `El proveedor "${values.name}" ha sido actualizado.` });
         } else if (onAdd) {
-            const { id, ...addValues } = values;
+            const { id, ...addValues } = finalValues;
             await onAdd(addValues);
             toast({ title: 'Proveedor Creado', description: `El proveedor "${values.name}" ha sido creado.` });
         }

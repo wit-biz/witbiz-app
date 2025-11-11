@@ -71,7 +71,7 @@ export function AddEditClientDialog({ client, isOpen, onClose }: AddEditClientDi
       contactEmail: client?.contactEmail || '',
       contactPhone: client?.contactPhone || '',
       website: client?.website || '',
-      promoterId: client?.promoterId || '',
+      promoterId: client?.promoterId || 'none',
       subscribedServiceIds: client?.subscribedServiceIds || [],
       status: client?.status || 'Activo',
     },
@@ -86,7 +86,7 @@ export function AddEditClientDialog({ client, isOpen, onClose }: AddEditClientDi
             contactEmail: client?.contactEmail || '',
             contactPhone: client?.contactPhone || '',
             website: client?.website || '',
-            promoterId: client?.promoterId || '',
+            promoterId: client?.promoterId || 'none',
             subscribedServiceIds: client?.subscribedServiceIds || [],
             status: client?.status || 'Activo',
         });
@@ -97,11 +97,16 @@ export function AddEditClientDialog({ client, isOpen, onClose }: AddEditClientDi
   const onSubmit = async (values: z.infer<typeof clientSchema>) => {
     setIsSubmitting(true);
     let success = false;
+
+    const finalValues = {
+        ...values,
+        promoterId: values.promoterId === 'none' ? undefined : values.promoterId,
+    };
     
     if (isEditMode && client) {
-        success = await updateClient(client.id, values);
+        success = await updateClient(client.id, finalValues);
     } else {
-        const newClient = await addClient(values as Omit<Client, 'id'>);
+        const newClient = await addClient(finalValues as Omit<Client, 'id'>);
         success = !!newClient;
     }
     
@@ -230,7 +235,7 @@ export function AddEditClientDialog({ client, isOpen, onClose }: AddEditClientDi
                                         </SelectTrigger>
                                     </FormControl>
                                     <SelectContent>
-                                        <SelectItem value="">Ninguno</SelectItem>
+                                        <SelectItem value="none">Ninguno</SelectItem>
                                         {promoters.map(promoter => (
                                             <SelectItem key={promoter.id} value={promoter.id}>{promoter.name}</SelectItem>
                                         ))}
