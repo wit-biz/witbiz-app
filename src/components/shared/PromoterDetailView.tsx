@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import React from "react";
@@ -46,10 +45,6 @@ export function PromoterDetailView({ promoter, onClose }: PromoterDetailViewProp
     return (
         <>
             <div className="relative bg-background max-h-[80vh] overflow-y-auto p-1">
-                <Button variant="ghost" size="icon" className="absolute top-3 right-3 h-7 w-7" onClick={onClose}>
-                    <X className="h-4 w-4" />
-                    <span className="sr-only">Cerrar</span>
-                </Button>
                 
                 <DialogHeader>
                     <DialogTitle className="text-2xl font-bold">{promoter.name}</DialogTitle>
@@ -78,5 +73,3 @@ export function PromoterDetailView({ promoter, onClose }: PromoterDetailViewProp
         </>
     );
 }
-
-    
