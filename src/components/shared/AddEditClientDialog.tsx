@@ -154,9 +154,11 @@ export function AddEditClientDialog({ client, isOpen, onClose }: AddEditClientDi
                                                 className={cn("w-full justify-between", !field.value?.length && "text-muted-foreground")}
                                             >
                                                 <span className="truncate">
-                                                {field.value?.length > 0
-                                                    ? serviceWorkflows.filter(s => field.value.includes(s.id)).map(s => s.name).join(', ')
-                                                    : "Seleccione servicios..."}
+                                                    {field.value?.length > 1
+                                                        ? `${field.value.length} servicios seleccionados`
+                                                        : field.value?.length === 1
+                                                        ? '1 servicio seleccionado'
+                                                        : 'Seleccione servicios...'}
                                                 </span>
                                                 <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                                             </Button>
