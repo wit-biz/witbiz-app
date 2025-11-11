@@ -38,6 +38,7 @@ const supplierSchema = z.object({
   contact: z.string().optional(),
   service: z.string().optional(),
   promoterId: z.string().optional(),
+  status: z.enum(['Activo', 'Inactivo']),
 });
 
 type SupplierFormValues = z.infer<typeof supplierSchema>;
@@ -64,6 +65,7 @@ export function AddSupplierDialog({ isOpen, onClose, supplier, onAdd, onSave }: 
       contact: supplier?.contact || '',
       service: supplier?.service || '',
       promoterId: supplier?.promoterId || '',
+      status: supplier?.status || 'Activo',
     },
   });
   
@@ -75,6 +77,7 @@ export function AddSupplierDialog({ isOpen, onClose, supplier, onAdd, onSave }: 
             contact: supplier?.contact || '',
             service: supplier?.service || '',
             promoterId: supplier?.promoterId || '',
+            status: supplier?.status || 'Activo',
         });
     }
   }, [isOpen, supplier, form]);
@@ -124,6 +127,27 @@ export function AddSupplierDialog({ isOpen, onClose, supplier, onAdd, onSave }: 
                                 <FormControl>
                                     <Input placeholder="Ej. Tech Solutions" {...field} disabled={isSubmitting}/>
                                 </FormControl>
+                                <FormMessage />
+                            </FormItem>
+                        )}
+                    />
+                    <FormField
+                        control={form.control}
+                        name="status"
+                        render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>Estado <span className="text-destructive">*</span></FormLabel>
+                                <Select onValueChange={field.onChange} value={field.value}>
+                                    <FormControl>
+                                        <SelectTrigger>
+                                            <SelectValue />
+                                        </SelectTrigger>
+                                    </FormControl>
+                                    <SelectContent>
+                                        <SelectItem value="Activo">Activo</SelectItem>
+                                        <SelectItem value="Inactivo">Inactivo</SelectItem>
+                                    </SelectContent>
+                                </Select>
                                 <FormMessage />
                             </FormItem>
                         )}

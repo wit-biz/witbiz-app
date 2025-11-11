@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import React, { useState, useMemo, useCallback } from "react";
@@ -13,6 +14,7 @@ import { useToast } from "@/hooks/use-toast";
 import { AddEditClientDialog } from "@/components/shared/AddEditClientDialog";
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
 
 interface ClientsTabProps {
     clients: Client[];
@@ -102,6 +104,7 @@ export function ClientsTab({ clients, isLoading, onClientSelect, selectedClientI
                   <TableHeader>
                     <TableRow>
                       <TableHead>Nombre</TableHead>
+                      <TableHead>Estado</TableHead>
                       <TableHead className="hidden sm:table-cell">Propietario</TableHead>
                       <TableHead className="hidden md:table-cell">Categoría</TableHead>
                       {showActions && <TableHead className="text-right">Acciones</TableHead>}
@@ -115,6 +118,9 @@ export function ClientsTab({ clients, isLoading, onClientSelect, selectedClientI
                         className={cn(showActions ? 'cursor-default' : 'cursor-pointer', selectedClientId === client.id && "bg-secondary hover:bg-secondary/90")}
                       >
                         <TableCell className="font-medium">{client.name}</TableCell>
+                        <TableCell>
+                          <Badge variant={client.status === 'Activo' ? 'default' : 'secondary'}>{client.status}</Badge>
+                        </TableCell>
                         <TableCell className="hidden sm:table-cell">{client.owner || 'N/A'}</TableCell>
                         <TableCell className="hidden md:table-cell">{client.category || 'N/A'}</TableCell>
                         {showActions && (

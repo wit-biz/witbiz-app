@@ -10,13 +10,9 @@
           "type": "string",
           "description": "Unique identifier for the Contact entity."
         },
-        "firstName": {
+        "name": {
           "type": "string",
-          "description": "First name of the contact."
-        },
-        "lastName": {
-          "type": "string",
-          "description": "Last name of the contact."
+          "description": "Full name of the contact or company."
         },
         "email": {
           "type": "string",
@@ -31,16 +27,16 @@
           "type": "string",
           "description": "Company the contact is associated with."
         },
-        "leadId": {
+        "status": {
           "type": "string",
-          "description": "Reference to Lead. (Relationship: Lead 1:N Contact)"
+          "enum": ["Activo", "Inactivo"],
+          "description": "Current status of the contact."
         }
       },
       "required": [
         "id",
-        "firstName",
-        "lastName",
-        "email"
+        "name",
+        "status"
       ]
     },
     "Lead": {
@@ -204,9 +200,14 @@
         "promoterId": {
           "type": "string",
           "description": "Optional reference to a promoter who referred this supplier."
+        },
+        "status": {
+          "type": "string",
+          "enum": ["Activo", "Inactivo"],
+          "description": "Current status of the supplier."
         }
       },
-      "required": ["id", "name"]
+      "required": ["id", "name", "status"]
     }
   },
   "auth": {

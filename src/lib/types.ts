@@ -8,6 +8,7 @@ export type Client = {
   owner: string;
   category: string;
   stage?: string; // Opcional, legado
+  status: 'Activo' | 'Inactivo';
   currentActionId?: string;
   contactEmail?: string;
   contactPhone?: string;
@@ -32,6 +33,7 @@ export type Supplier = {
   contact?: string;
   service?: string;
   promoterId?: string;
+  status: 'Activo' | 'Inactivo';
 }
 
 export type SubTask = {

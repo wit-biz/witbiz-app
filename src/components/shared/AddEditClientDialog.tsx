@@ -45,6 +45,7 @@ const clientSchema = z.object({
   website: z.string().url({ message: "Por favor, introduzca una URL válida." }).optional().or(z.literal('')),
   promoterId: z.string().optional(),
   subscribedServiceIds: z.array(z.string()).min(1, { message: "Debe seleccionar al menos un servicio." }),
+  status: z.enum(['Activo', 'Inactivo']),
 });
 
 
@@ -72,6 +73,7 @@ export function AddEditClientDialog({ client, isOpen, onClose }: AddEditClientDi
       website: client?.website || '',
       promoterId: client?.promoterId || '',
       subscribedServiceIds: client?.subscribedServiceIds || [],
+      status: client?.status || 'Activo',
     },
   });
   
@@ -86,6 +88,7 @@ export function AddEditClientDialog({ client, isOpen, onClose }: AddEditClientDi
             website: client?.website || '',
             promoterId: client?.promoterId || '',
             subscribedServiceIds: client?.subscribedServiceIds || [],
+            status: client?.status || 'Activo',
         });
     }
   }, [isOpen, client, form]);
@@ -135,6 +138,27 @@ export function AddEditClientDialog({ client, isOpen, onClose }: AddEditClientDi
                                 <FormControl>
                                     <Input placeholder="Nombre del cliente" {...field} disabled={isSubmitting}/>
                                 </FormControl>
+                                <FormMessage />
+                            </FormItem>
+                        )}
+                    />
+                    <FormField
+                        control={form.control}
+                        name="status"
+                        render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>Estado <span className="text-destructive">*</span></FormLabel>
+                                <Select onValueChange={field.onChange} value={field.value}>
+                                    <FormControl>
+                                        <SelectTrigger>
+                                            <SelectValue />
+                                        </SelectTrigger>
+                                    </FormControl>
+                                    <SelectContent>
+                                        <SelectItem value="Activo">Activo</SelectItem>
+                                        <SelectItem value="Inactivo">Inactivo</SelectItem>
+                                    </SelectContent>
+                                </Select>
                                 <FormMessage />
                             </FormItem>
                         )}

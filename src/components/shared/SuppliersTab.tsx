@@ -13,6 +13,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { AddSupplierDialog } from './AddSupplierDialog';
 import { useToast } from '@/hooks/use-toast';
 import { type Supplier } from '@/lib/types';
+import { Badge } from '../ui/badge';
 
 interface SuppliersTabProps {
     suppliers: Supplier[];
@@ -123,6 +124,7 @@ export function SuppliersTab({ suppliers, isLoading, showActions = false, onUpda
                   <TableHeader>
                       <TableRow>
                           <TableHead>Nombre del Proveedor</TableHead>
+                          <TableHead>Estado</TableHead>
                           <TableHead>Contacto</TableHead>
                           <TableHead>Servicio/Producto</TableHead>
                           {showActions && <TableHead className="text-right">Acciones</TableHead>}
@@ -132,6 +134,9 @@ export function SuppliersTab({ suppliers, isLoading, showActions = false, onUpda
                       {filteredSuppliers.map((supplier) => (
                           <TableRow key={supplier.id}>
                               <TableCell className="font-medium">{supplier.name}</TableCell>
+                              <TableCell>
+                                  <Badge variant={supplier.status === 'Activo' ? 'default' : 'secondary'}>{supplier.status}</Badge>
+                              </TableCell>
                               <TableCell>{supplier.contact}</TableCell>
                               <TableCell>{supplier.service}</TableCell>
                               {showActions && (
