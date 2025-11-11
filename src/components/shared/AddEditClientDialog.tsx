@@ -70,7 +70,7 @@ export function AddEditClientDialog({ client, isOpen, onClose }: AddEditClientDi
       contactEmail: client?.contactEmail || '',
       contactPhone: client?.contactPhone || '',
       website: client?.website || '',
-      promoterId: '',
+      promoterId: client?.promoterId || '',
       subscribedServiceIds: client?.subscribedServiceIds || [],
     },
   });
@@ -84,7 +84,7 @@ export function AddEditClientDialog({ client, isOpen, onClose }: AddEditClientDi
             contactEmail: client?.contactEmail || '',
             contactPhone: client?.contactPhone || '',
             website: client?.website || '',
-            promoterId: '',
+            promoterId: client?.promoterId || '',
             subscribedServiceIds: client?.subscribedServiceIds || [],
         });
     }
@@ -154,11 +154,7 @@ export function AddEditClientDialog({ client, isOpen, onClose }: AddEditClientDi
                                                 className={cn("w-full justify-between", !field.value?.length && "text-muted-foreground")}
                                             >
                                                 <span className="truncate">
-                                                    {field.value?.length > 1
-                                                        ? `${field.value.length} servicios seleccionados`
-                                                        : field.value?.length === 1
-                                                        ? '1 servicio seleccionado'
-                                                        : 'Seleccione servicios...'}
+                                                   Seleccione servicios...
                                                 </span>
                                                 <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                                             </Button>
@@ -203,14 +199,14 @@ export function AddEditClientDialog({ client, isOpen, onClose }: AddEditClientDi
                         render={({ field }) => (
                             <FormItem>
                                 <FormLabel>Referido por (Promotor)</FormLabel>
-                                 <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                 <Select onValueChange={field.onChange} value={field.value}>
                                     <FormControl>
                                         <SelectTrigger>
                                             <SelectValue placeholder="Seleccione un promotor (opcional)..." />
                                         </SelectTrigger>
                                     </FormControl>
                                     <SelectContent>
-                                        <SelectItem value="none">Ninguno</SelectItem>
+                                        <SelectItem value="">Ninguno</SelectItem>
                                         {promoters.map(promoter => (
                                             <SelectItem key={promoter.id} value={promoter.id}>{promoter.name}</SelectItem>
                                         ))}

@@ -15,6 +15,7 @@ export type Client = {
   subscribedServiceIds: string[];
   currentWorkflowStageId?: string;
   createdAt?: any;
+  promoterId?: string;
 };
 
 export type Promoter = {
