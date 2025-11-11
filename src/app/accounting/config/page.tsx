@@ -57,7 +57,25 @@ const initialBankAccounts = [
   { id: 'cta5', companyId: 'emp3', companyName: 'WitBiz Consultoría', bankName: 'Inbursa', balance: 100000.00, type: 'Débito' },
 ];
 
-const initialCategoryGroups: any[] = [];
+const initialCategoryGroups = [
+    { id: 'group-1', name: 'Activo Circulante', description: 'Parte del Activo', categories: [ { id: 'type-1-1', name: 'Caja' }, { id: 'type-1-2', name: 'Bancos' }, { id: 'type-1-3', name: 'Clientes' }, { id: 'type-1-4', name: 'Mercancías / Inventarios' }, { id: 'type-1-5', name: 'Documentos por cobrar' }, { id: 'type-1-6', name: 'Deudores diversos' }, { id: 'type-1-7', name: 'IVA acreditable pagado' }, { id: 'type-1-8', name: 'IVA por acreditar' }, { id: 'type-1-9', name: 'IVA a favor' } ] },
+    { id: 'group-2', name: 'Activo Fijo', description: 'Parte del Activo', categories: [ { id: 'type-2-1', name: 'Terreno' }, { id: 'type-2-2', name: 'Mobiliario y equipo' }, { id: 'type-2-3', name: 'Equipo de transporte' }, { id: 'type-2-4', name: 'Edificio' }, { id: 'type-2-5', name: 'Depósitos en garantía' }, { id: 'type-2-6', name: 'Equipo de cómputo' } ] },
+    { id: 'group-3', name: 'Activo Diferido', description: 'Parte del Activo', categories: [ { id: 'type-3-1', name: 'Gastos de instalación' }, { id: 'type-3-2', name: 'Papelería y útiles de oficina' }, { id: 'type-3-3', name: 'Rentas pagadas por adelantado' }, { id: 'type-3-4', name: 'Seguros pagados por adelantado' } ] },
+    { id: 'group-4', name: 'Pasivo Circulante', description: 'Parte del Pasivo', categories: [ { id: 'type-4-1', name: 'Documentos por pagar' }, { id: 'type-4-2', name: 'Proveedores' }, { id: 'type-4-3', name: 'Acreedores diversos' }, { id: 'type-4-4', name: 'Sueldos por pagar' }, { id: 'type-4-5', name: 'Impuestos por pagar' }, { id: 'type-4-6', name: 'IVA por pagar' }, { id: 'type-4-7', name: 'IVA trasladado cobrado' }, { id: 'type-4-8', name: 'IVA por trasladar' } ] },
+    { id: 'group-5', name: 'Pasivo Fijo', description: 'Parte del Pasivo', categories: [ { id: 'type-5-1', name: 'Hipotecas por pagar' } ] },
+    { id: 'group-6', name: 'Pasivo Diferido', description: 'Parte del Pasivo', categories: [ { id: 'type-6-1', name: 'Rentas cobradas por anticipado' }, { id: 'type-6-2', name: 'Intereses cobrados por anticipado' } ] },
+    { id: 'group-7', name: 'Capital Contribuido', description: 'Parte del Capital Contable', categories: [ { id: 'type-7-1', name: 'Capital social' } ] },
+    { id: 'group-8', name: 'Capital Ganado', description: 'Parte del Capital Contable', categories: [ { id: 'type-8-1', name: 'Utilidad del ejercicio' }, { id: 'type-8-2', name: 'Pérdida del ejercicio' } ] },
+    { id: 'group-9', name: 'Cuentas de Ingreso', description: 'Cuentas de resultados acreedoras', categories: [ { id: 'type-9-1', name: 'Ventas' }, { id: 'type-9-2', name: 'Devoluciones sobre compras' }, { id: 'type-9-3', name: 'Rebajas sobre compras' } ] },
+    { id: 'group-10', name: 'Cuentas de Costos', description: 'Cuentas de resultados deudoras', categories: [ { id: 'type-10-1', name: 'Compras' }, { id: 'type-10-2', name: 'Devoluciones sobre ventas' }, { id: 'type-10-3', name: 'Rebajas sobre ventas' }, { id: 'type-10-4', name: 'Gastos de compra' } ] },
+    { id: 'group-11', name: 'Gastos de Venta', description: 'Parte de Gastos de Operación', categories: [ { id: 'type-11-1', name: 'Sueldos y salarios' }, { id: 'type-11-2', name: 'Energía eléctrica' }, { id: 'type-11-3', name: 'Papelería y artículos de oficina' }, { id: 'type-11-4', name: 'Seguros y fianzas' } ] },
+    { id: 'group-12', name: 'Gastos de Administración', description: 'Parte de Gastos de Operación', categories: [ { id: 'type-12-1', name: 'Sueldos y salarios' }, { id: 'type-12-2', name: 'Energía eléctrica' }, { id: 'type-12-3', name: 'Papelería y artículos de oficina' }, { id: 'type-12-4', name: 'Seguros y fianzas' } ] },
+    { id: 'group-13', name: 'Gastos Financieros', description: 'Parte de Gastos de Operación', categories: [ { id: 'type-13-1', name: 'Intereses a cargo' }, { id: 'type-13-2', name: 'Comisiones bancarias' } ] },
+    { id: 'group-14', name: 'Productos Financieros', description: '', categories: [ { id: 'type-14-1', name: 'Intereses a favor' }, { id: 'type-14-2', name: 'Utilidad cambiaria' } ] },
+    { id: 'group-15', name: 'Otros Gastos', description: '', categories: [ { id: 'type-15-1', name: 'Pérdida en ventas de mobiliario' }, { id: 'type-15-2', name: 'Pérdida en ventas de acciones' } ] },
+    { id: 'group-16', name: 'Otros Productos', description: '', categories: [ { id: 'type-16-1', name: 'Comisiones cobradas' }, { id: 'type-16-2', name: 'Ganancia en venta y/o baja de mobiliario y equipo' } ] },
+    { id: 'group-17', name: 'Cuentas Puente', description: '', categories: [ { id: 'type-17-1', name: 'Pérdidas y ganancias' } ] }
+];
 
 type EditableEntityType = 'company' | 'account' | 'categoryGroup' | 'type';
 type EntityToDelete = { id: string; name: string; type: EditableEntityType; parentId?: string };
