@@ -312,6 +312,11 @@ export default function WorkflowConfigurationPage() {
     }
   }, [selectedWorkflow]);
 
+  const hasChanges = useMemo(() => {
+    if (!selectedWorkflow || !editableWorkflow) return false;
+    return JSON.stringify(selectedWorkflow) !== JSON.stringify(editableWorkflow);
+  }, [selectedWorkflow, editableWorkflow]);
+
   const handleDragEnd = (event: DragEndEvent) => {
       const { active, over } = event;
       if (over && active.id !== over.id) {
@@ -346,7 +351,7 @@ export default function WorkflowConfigurationPage() {
     setIsPromptNameOpen(true);
   };
   
-  const handleSelectService = (id: string) => {
+  const handleSelectService = useCallback((id: string) => {
     if (hasChanges) {
         showNotification('warning', 'Cambios sin guardar', 'Guarde o descarte sus cambios antes de seleccionar otro servicio.');
         return;
@@ -354,7 +359,7 @@ export default function WorkflowConfigurationPage() {
     setSelectedWorkflowId(id);
     router.push(`/workflows?serviceId=${id}`);
     setIsSelectorOpen(false);
-  }
+  }, [hasChanges, router, showNotification]);
 
 
   const handleDiscardChanges = () => {
@@ -371,10 +376,6 @@ export default function WorkflowConfigurationPage() {
     showNotification('success', 'Flujo Guardado', 'Los cambios en el flujo de trabajo han sido guardados.');
   };
   
-  const hasChanges = useMemo(() => {
-    if (!selectedWorkflow || !editableWorkflow) return false;
-    return JSON.stringify(selectedWorkflow) !== JSON.stringify(editableWorkflow);
-  }, [selectedWorkflow, editableWorkflow]);
 
 
   const updateNestedState = (path: string, value: any, operation: 'update' | 'add' | 'delete') => {
