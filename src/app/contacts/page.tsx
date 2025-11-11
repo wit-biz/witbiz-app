@@ -22,7 +22,7 @@ type DetailEntityType = 'client' | 'promoter' | 'supplier';
 
 export default function DirectoryPage() {
   const { 
-    clients, isLoadingClients, getClientById,
+    clients, isLoadingClients,
     promoters, isLoadingPromoters,
     suppliers, isLoadingSuppliers,
   } = useCRMData();
@@ -37,19 +37,19 @@ export default function DirectoryPage() {
     const openPromoterId = searchParams.get('openPromoter');
     const openSupplierId = searchParams.get('openSupplier');
 
-    if (openClientId) {
+    if (openClientId && clients) {
       const client = clients.find(c => c.id === openClientId);
       if(client) {
         setSelectedEntity({ type: 'client', data: client });
         setIsDetailDialogOpen(true);
       }
-    } else if (openPromoterId) {
+    } else if (openPromoterId && promoters) {
       const promoter = promoters.find(p => p.id === openPromoterId);
       if(promoter) {
         setSelectedEntity({ type: 'promoter', data: promoter });
         setIsDetailDialogOpen(true);
       }
-    } else if (openSupplierId) {
+    } else if (openSupplierId && suppliers) {
        const supplier = suppliers.find(s => s.id === openSupplierId);
       if(supplier) {
         setSelectedEntity({ type: 'supplier', data: supplier });
