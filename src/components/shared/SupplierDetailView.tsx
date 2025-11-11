@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import React, { useMemo, useState } from "react";
@@ -38,11 +39,6 @@ const DetailItem = ({ icon: Icon, label, value, href }: { icon: React.ElementTyp
 export function SupplierDetailView({ supplier, onClose }: SupplierDetailViewProps) {
     const { promoters, getDocumentsBySupplierId } = useCRMData();
     const { toast } = useToast();
-
-    const promoterName = useMemo(() => {
-        if (!supplier?.promoterId) return undefined;
-        return promoters.find(p => p.id === supplier.promoterId)?.name;
-    }, [supplier, promoters]);
 
     if (!supplier) {
         return (
@@ -91,7 +87,6 @@ export function SupplierDetailView({ supplier, onClose }: SupplierDetailViewProp
                             <DetailItem icon={Mail} label="Email de Contacto" value={supplier.email} href={`mailto:${supplier.email}`} />
                             <DetailItem icon={Phone} label="Teléfono de Contacto" value={supplier.phone} href={`tel:${supplier.phone}`} />
                             <DetailItem icon={Briefcase} label="Servicio / Producto" value={supplier.service} />
-                            <DetailItem icon={UserCheck} label="Referido por (Promotor)" value={promoterName} />
                              {supplier.createdAt && (
                                 <div className="flex items-start gap-3">
                                     <CalendarDays className="h-5 w-5 text-muted-foreground mt-0.5" />

@@ -38,7 +38,6 @@ const supplierSchema = z.object({
   email: z.string().email({ message: "Email inválido." }).optional().or(z.literal('')),
   phone: z.string().optional(),
   service: z.string().optional(),
-  promoterId: z.string().optional(),
   status: z.enum(['Activo', 'Inactivo']),
 });
 
@@ -66,7 +65,6 @@ export function AddSupplierDialog({ isOpen, onClose, supplier, onAdd, onSave }: 
       email: supplier?.email || '',
       phone: supplier?.phone || '',
       service: supplier?.service || '',
-      promoterId: supplier?.promoterId || 'none',
       status: supplier?.status || 'Activo',
     },
   });
@@ -79,7 +77,6 @@ export function AddSupplierDialog({ isOpen, onClose, supplier, onAdd, onSave }: 
             email: supplier?.email || '',
             phone: supplier?.phone || '',
             service: supplier?.service || '',
-            promoterId: supplier?.promoterId || 'none',
             status: supplier?.status || 'Activo',
         });
     }
@@ -89,14 +86,7 @@ export function AddSupplierDialog({ isOpen, onClose, supplier, onAdd, onSave }: 
     setIsSubmitting(true);
     
     try {
-        const { promoterId, ...restOfValues } = values;
-        const finalValues: Partial<Supplier> = { ...restOfValues };
-
-        if (promoterId && promoterId !== 'none') {
-            finalValues.promoterId = promoterId;
-        } else {
-            delete finalValues.promoterId;
-        }
+        const finalValues: Partial<Supplier> = { ...values };
 
         if (isEditMode && onSave) {
             await onSave(finalValues as Supplier);
@@ -199,29 +189,6 @@ export function AddSupplierDialog({ isOpen, onClose, supplier, onAdd, onSave }: 
                                 <FormControl>
                                     <Input placeholder="Soporte TI" {...field} disabled={isSubmitting}/>
                                 </FormControl>
-                                <FormMessage />
-                            </FormItem>
-                        )}
-                    />
-                     <FormField
-                        control={form.control}
-                        name="promoterId"
-                        render={({ field }) => (
-                            <FormItem>
-                                <FormLabel>Referido por (Promotor)</FormLabel>
-                                 <Select onValueChange={field.onChange} value={field.value}>
-                                    <FormControl>
-                                        <SelectTrigger>
-                                            <SelectValue placeholder="Seleccione un promotor (opcional)..." />
-                                        </SelectTrigger>
-                                    </FormControl>
-                                    <SelectContent>
-                                        <SelectItem value="none">Ninguno</SelectItem>
-                                        {promoters.map(promoter => (
-                                            <SelectItem key={promoter.id} value={promoter.id}>{promoter.name}</SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
                                 <FormMessage />
                             </FormItem>
                         )}

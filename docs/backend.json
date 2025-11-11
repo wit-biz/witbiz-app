@@ -256,10 +256,6 @@
           "type": "string",
           "description": "The service or product provided by the supplier."
         },
-        "promoterId": {
-          "type": "string",
-          "description": "Optional reference to a promoter who referred this supplier."
-        },
         "status": {
           "type": "string",
           "enum": [

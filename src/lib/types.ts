@@ -42,7 +42,6 @@ export type Supplier = {
   email?: string;
   phone?: string;
   service?: string;
-  promoterId?: string;
   status: 'Activo' | 'Inactivo';
   createdAt?: any;
 }
