@@ -9,16 +9,22 @@ import {
   SidebarSeparator,
 } from '@/components/ui/sidebar';
 import { SidebarNav } from './shared/sidebar-nav';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
-import { Plus, UploadCloud, UserPlus } from 'lucide-react';
+import { Plus, UploadCloud, UserPlus, ListTodo, Users, UserCheck, Truck } from 'lucide-react';
 import { useDialogs } from '@/contexts/DialogsContext';
 import { cn } from '@/lib/utils';
 import { Logo } from './shared/logo';
 
 
 export function AppSidebar() {
-  const { setIsSmartUploadDialogOpen } = useDialogs();
+  const { 
+    setIsSmartUploadDialogOpen,
+    setIsAddClientDialogOpen,
+    setIsAddTaskDialogOpen,
+    setIsAddPromoterDialogOpen,
+    setIsAddSupplierDialogOpen,
+   } = useDialogs();
 
   return (
     <Sidebar>
@@ -47,11 +53,23 @@ export function AppSidebar() {
                         <UploadCloud className="mr-2 h-4 w-4" />
                         <span>Subir Documento</span>
                     </DropdownMenuItem>
-                    {/* The AddEditClientDialog will be opened from the contacts page */}
-                    {/* <DropdownMenuItem onSelect={() => {}}>
-                        <UserPlus className="mr-2 h-4 w-4" />
-                        <span>Crear Usuario</span>
-                    </DropdownMenuItem> */}
+                    <DropdownMenuItem onSelect={() => setIsAddTaskDialogOpen(true)}>
+                        <ListTodo className="mr-2 h-4 w-4" />
+                        <span>Crear Tarea</span>
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onSelect={() => setIsAddClientDialogOpen(true)}>
+                        <Users className="mr-2 h-4 w-4" />
+                        <span>Crear Cliente</span>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onSelect={() => setIsAddPromoterDialogOpen(true)}>
+                        <UserCheck className="mr-2 h-4 w-4" />
+                        <span>Crear Promotor</span>
+                    </DropdownMenuItem>
+                     <DropdownMenuItem onSelect={() => setIsAddSupplierDialogOpen(true)}>
+                        <Truck className="mr-2 h-4 w-4" />
+                        <span>Crear Proveedor</span>
+                    </DropdownMenuItem>
                 </DropdownMenuContent>
             </DropdownMenu>
         </div>

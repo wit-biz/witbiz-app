@@ -2,18 +2,34 @@
 "use client";
 
 import React, { createContext, useContext, useState, useMemo, type ReactNode } from 'react';
-import { type Client } from '@/lib/types';
+import { type Client, type Task } from '@/lib/types';
 import { AddEditClientDialog } from '@/components/shared/AddEditClientDialog';
 import { SmartDocumentUploadDialog } from '@/components/shared/SmartDocumentUploadDialog';
 import { useRouter } from 'next/navigation';
+import { AddTaskDialog } from '@/components/shared/AddTaskDialog';
+import { AddPromoterDialog } from '@/components/shared/AddPromoterDialog';
+import { AddSupplierDialog } from '@/components/shared/AddSupplierDialog';
+import { useCRMData } from './CRMDataContext';
+
 
 interface DialogsContextType {
   isSmartUploadDialogOpen: boolean;
   setIsSmartUploadDialogOpen: (isOpen: boolean) => void;
+  
   isAddClientDialogOpen: boolean;
   setIsAddClientDialogOpen: (isOpen: boolean) => void;
   editingClient: Client | null;
   setEditingClient: (client: Client | null) => void;
+  
+  isAddTaskDialogOpen: boolean;
+  setIsAddTaskDialogOpen: (isOpen: boolean) => void;
+
+  isAddPromoterDialogOpen: boolean;
+  setIsAddPromoterDialogOpen: (isOpen: boolean) => void;
+
+  isAddSupplierDialogOpen: boolean;
+  setIsAddSupplierDialogOpen: (isOpen: boolean) => void;
+
   preselectedServiceId: string | null;
   setPreselectedServiceId: (serviceId: string | null) => void;
 }
@@ -24,9 +40,25 @@ export function DialogsProvider({ children }: { children: ReactNode }) {
   const [isSmartUploadDialogOpen, setIsSmartUploadDialogOpen] = useState(false);
   const [isAddClientDialogOpen, setIsAddClientDialogOpen] = useState(false);
   const [editingClient, setEditingClient] = useState<Client | null>(null);
+  const [isAddTaskDialogOpen, setIsAddTaskDialogOpen] = useState(false);
+  const [isAddPromoterDialogOpen, setIsAddPromoterDialogOpen] = useState(false);
+  const [isAddSupplierDialogOpen, setIsAddSupplierDialogOpen] = useState(false);
+
   const [preselectedServiceId, setPreselectedServiceId] = useState<string | null>(null);
   const router = useRouter();
+  const { clients, addTask, addPromoter, addSupplier } = useCRMData();
 
+  const handleAddTask = async (data: Omit<Task, 'id' | 'status'>) => {
+    await addTask(data);
+  };
+
+  const handleAddPromoter = async (data: any) => {
+      await addPromoter(data);
+  }
+
+  const handleAddSupplier = async (data: any) => {
+      await addSupplier(data);
+  }
 
   const value = useMemo(() => ({
     isSmartUploadDialogOpen,
@@ -35,9 +67,15 @@ export function DialogsProvider({ children }: { children: ReactNode }) {
     setIsAddClientDialogOpen,
     editingClient,
     setEditingClient,
+    isAddTaskDialogOpen,
+    setIsAddTaskDialogOpen,
+    isAddPromoterDialogOpen,
+    setIsAddPromoterDialogOpen,
+    isAddSupplierDialogOpen,
+    setIsAddSupplierDialogOpen,
     preselectedServiceId,
     setPreselectedServiceId,
-  }), [isSmartUploadDialogOpen, isAddClientDialogOpen, editingClient, preselectedServiceId]);
+  }), [isSmartUploadDialogOpen, isAddClientDialogOpen, editingClient, preselectedServiceId, isAddTaskDialogOpen, isAddPromoterDialogOpen, isAddSupplierDialogOpen]);
 
   const handleSmartUploadClose = (isOpen: boolean) => {
       if(!isOpen) {
@@ -64,6 +102,23 @@ export function DialogsProvider({ children }: { children: ReactNode }) {
                 router.push(`/contacts?openClient=${client.id}`);
             }}
         />
+       <AddTaskDialog
+          isOpen={isAddTaskDialogOpen}
+          onOpenChange={setIsAddTaskDialogOpen}
+          clients={clients}
+          onTaskAdd={handleAddTask}
+          isWorkflowMode={false}
+      />
+      <AddPromoterDialog
+          isOpen={isAddPromoterDialogOpen}
+          onClose={() => setIsAddPromoterDialogOpen(false)}
+          onAdd={handleAddPromoter as any}
+      />
+       <AddSupplierDialog
+          isOpen={isAddSupplierDialogOpen}
+          onClose={() => setIsAddSupplierDialogOpen(false)}
+          onAdd={handleAddSupplier}
+      />
     </DialogsContext.Provider>
   );
 }
