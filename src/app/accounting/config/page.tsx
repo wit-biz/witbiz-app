@@ -57,48 +57,7 @@ const initialBankAccounts = [
   { id: 'cta5', companyId: 'emp3', companyName: 'WitBiz Consultoría', bankName: 'Inbursa', balance: 100000.00, type: 'Débito' },
 ];
 
-const initialCategoryGroups = [
-    { 
-        id: 'group-income', 
-        name: 'Fuentes de Ingreso',
-        description: 'Agrupa todos los ingresos generados por la operación principal del negocio.',
-        type: 'Ingreso',
-        categories: [
-            { id: 'cat-income-1', name: 'Ingreso por Desarrollo' },
-        ]
-    },
-    {
-        id: 'group-fixed',
-        name: 'Gastos Fijos',
-        description: 'Costos recurrentes que no varían con el volumen de ventas.',
-        type: 'Egreso',
-        categories: [
-            { id: 'cat-fixed-1', name: 'Sueldos' },
-            { id: 'cat-fixed-2', name: 'Renta' },
-        ]
-    },
-    {
-        id: 'group-variable',
-        name: 'Gastos Variables',
-        description: 'Costos que fluctúan en función de la actividad del negocio.',
-        type: 'Egreso',
-        categories: [
-             { id: 'cat-fixed-3', name: 'Software' },
-            { id: 'cat-var-1', name: 'Publicidad' },
-            { id: 'cat-var-2', name: 'Servicios (Luz, Agua)' },
-            { id: 'cat-var-3', name: 'Comida y Viáticos' },
-        ]
-    },
-    {
-        id: 'group-transfer',
-        name: 'Movimientos Internos',
-        description: 'Transferencias de fondos entre cuentas de la misma entidad o grupo.',
-        type: 'Transferencia',
-        categories: [
-            { id: 'cat-transfer-1', name: 'Transferencia Interna' },
-        ]
-    }
-];
+const initialCategoryGroups: any[] = [];
 
 type EditableEntityType = 'company' | 'account' | 'categoryGroup' | 'type';
 type EntityToDelete = { id: string; name: string; type: EditableEntityType; parentId?: string };
@@ -449,6 +408,11 @@ export default function AccountingConfigPage() {
                                             </AccordionItem>
                                         ))}
                                     </Accordion>
+                                    {categoryGroups.length === 0 && (
+                                        <div className="text-center text-muted-foreground py-10 border border-dashed rounded-lg">
+                                            <p>No hay categorías definidas. Empiece por añadir una.</p>
+                                        </div>
+                                    )}
                                 </CardContent>
                             </Card>
                         </TabsContent>
