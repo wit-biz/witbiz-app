@@ -37,6 +37,25 @@ export default function DirectoryConfigPage() {
         setIsAddPromoterDialogOpen(true);
     }
   };
+
+  const handleAddSupplier = (data: Omit<typeof suppliers[0], 'id'>) => {
+    const newSupplier = {
+      ...data,
+      id: `sup-${Date.now()}`
+    };
+    setSuppliers(prev => [newSupplier, ...prev]);
+  };
+
+  const handleAddPromoter = (data: Omit<typeof promoters[0], 'id' | 'referredClients' | 'totalCommissions'>) => {
+    const newPromoter = {
+      ...data,
+      id: `promo-${Date.now()}`,
+      referredClients: 0,
+      totalCommissions: 0,
+      status: 'Activo' as 'Activo' | 'Inactivo',
+    };
+    setPromoters(prev => [newPromoter, ...prev]);
+  };
   
   return (
     <>
@@ -120,13 +139,13 @@ export default function DirectoryConfigPage() {
       <AddSupplierDialog
         isOpen={isAddSupplierDialogOpen}
         onClose={() => setIsAddSupplierDialogOpen(false)}
-        onAdd={(data) => console.log('New Supplier:', data)}
+        onAdd={handleAddSupplier}
       />
 
       <AddPromoterDialog
         isOpen={isAddPromoterDialogOpen}
         onClose={() => setIsAddPromoterDialogOpen(false)}
-        onAdd={(data) => console.log('New Promoter:', data)}
+        onAdd={handleAddPromoter}
       />
     </>
   );
