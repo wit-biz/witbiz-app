@@ -36,7 +36,7 @@ const DetailItem = ({ label, value, href }: { label: string; value?: string; hre
 };
 
 export function ClientDetailView({ client, onClose }: ClientDetailViewProps) {
-    const { getDocumentsByClientId, getTasksByClientId, getActionById, serviceWorkflows } = useCRMData();
+    const { getDocumentsByClientId, serviceWorkflows } = useCRMData();
     const { toast } = useToast();
     
     const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
@@ -65,8 +65,6 @@ export function ClientDetailView({ client, onClose }: ClientDetailViewProps) {
     }, [client.promoterId]);
 
     const clientDocuments = getDocumentsByClientId(client.id);
-    const clientTasks = getTasksByClientId(client.id);
-    const pendingTasks = clientTasks.filter(task => task.status === 'Pendiente');
     
     const currentStage = useMemo((): AnyStage | null => {
         if (!client.currentWorkflowStageId || !serviceWorkflows) return null;
@@ -153,34 +151,6 @@ export function ClientDetailView({ client, onClose }: ClientDetailViewProps) {
                             </CardContent>
                         </Card>
                     )}
-
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>Tareas Pendientes</CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                            {pendingTasks.length > 0 ? (
-                                <ul className="space-y-2">
-                                    {pendingTasks.map(task => (
-                                        <li key={task.id} className="flex items-center justify-between p-2 rounded-md bg-secondary/30">
-                                            <div className="flex items-center gap-2 min-w-0">
-                                                <ListTodo className="h-4 w-4 text-muted-foreground flex-shrink-0"/>
-                                                <div className="truncate">
-                                                    <p className="text-sm font-medium truncate" title={task.title}>{task.title}</p>
-                                                    <p className="text-xs text-muted-foreground">Vence: {formatDateString(task.dueDate)}</p>
-                                                </div>
-                                            </div>
-                                        </li>
-                                    ))}
-                                </ul>
-                            ) : (
-                                <div className="text-center text-muted-foreground py-6">
-                                    <CheckCircle2 className="mx-auto h-8 w-8 text-green-500 mb-2" />
-                                    <p className="text-sm">No hay tareas pendientes para este cliente.</p>
-                                </div>
-                            )}
-                        </CardContent>
-                    </Card>
 
                     <Card>
                         <CardHeader>
