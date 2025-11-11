@@ -2,7 +2,7 @@
 "use client";
 
 import React, { useState, useMemo } from "react";
-import { type Client, type Document, type Task, type WorkflowAction } from "@/lib/types";
+import { type Client, type Document, type Task, type WorkflowAction, type WorkflowStage, type SubStage, type SubSubStage } from "@/lib/types";
 import { useCRMData } from "@/contexts/CRMDataContext";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -14,6 +14,7 @@ import { DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/di
 import { formatDateString } from "@/lib/utils";
 import { promoters } from "@/lib/data";
 
+type AnyStage = WorkflowStage | SubStage | SubSubStage;
 
 interface ClientDetailViewProps {
   client: Client | null;
@@ -62,11 +63,27 @@ export function ClientDetailView({ client, onClose }: ClientDetailViewProps) {
         if (!client.promoterId) return undefined;
         return promoters.find(p => p.id === client.promoterId)?.name;
     }, [client.promoterId]);
-    
+
     const clientDocuments = getDocumentsByClientId(client.id);
     const clientTasks = getTasksByClientId(client.id);
     const pendingTasks = clientTasks.filter(task => task.status === 'Pendiente');
-    const currentStageAction = client?.currentActionId ? getActionById(client.currentActionId) : null;
+    
+    const currentStage = useMemo((): AnyStage | null => {
+        if (!client.currentWorkflowStageId || !serviceWorkflows) return null;
+        for (const service of serviceWorkflows) {
+            for (const stage1 of service.stages || []) {
+                if (stage1.id === client.currentWorkflowStageId) return stage1;
+                for (const stage2 of stage1.subStages || []) {
+                    if (stage2.id === client.currentWorkflowStageId) return stage2;
+                    for (const stage3 of stage2.subSubStages || []) {
+                        if (stage3.id === client.currentWorkflowStageId) return stage3;
+                    }
+                }
+            }
+        }
+        return null;
+    }, [client.currentWorkflowStageId, serviceWorkflows]);
+
 
     const handleDownload = (doc: Document) => {
         toast({
@@ -123,7 +140,7 @@ export function ClientDetailView({ client, onClose }: ClientDetailViewProps) {
                         </CardContent>
                     </Card>
 
-                    {currentStageAction && (
+                    {currentStage && (
                         <Card>
                             <CardHeader>
                                 <CardTitle>Estado Actual en el Flujo</CardTitle>
@@ -131,7 +148,7 @@ export function ClientDetailView({ client, onClose }: ClientDetailViewProps) {
                             <CardContent>
                                 <div className="flex items-start gap-2">
                                     <Target className="h-4 w-4 text-blue-500 mt-1 flex-shrink-0" />
-                                    <DetailItem label="Acción Actual" value={currentStageAction.description} />
+                                    <DetailItem label="Etapa Actual" value={currentStage.title} />
                                 </div>
                             </CardContent>
                         </Card>
