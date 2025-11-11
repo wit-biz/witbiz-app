@@ -96,6 +96,7 @@ export default function DirectoryConfigPage() {
                       isLoading={isLoadingClients}
                       onClientSelect={() => {}} // No detail view from config page
                       selectedClientId={null}
+                      showActions={true}
                     />
                 </TabsContent>
                 <TabsContent value="suppliers">

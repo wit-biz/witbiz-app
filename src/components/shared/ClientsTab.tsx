@@ -19,9 +19,10 @@ interface ClientsTabProps {
     isLoading: boolean;
     onClientSelect: (client: Client) => void;
     selectedClientId: string | null;
+    showActions?: boolean;
 }
 
-export function ClientsTab({ clients, isLoading, onClientSelect, selectedClientId }: ClientsTabProps) {
+export function ClientsTab({ clients, isLoading, onClientSelect, selectedClientId, showActions = false }: ClientsTabProps) {
   const { toast } = useToast();
   const { deleteClient, currentUser } = useCRMData();
 
@@ -103,7 +104,7 @@ export function ClientsTab({ clients, isLoading, onClientSelect, selectedClientI
                       <TableHead>Nombre</TableHead>
                       <TableHead className="hidden sm:table-cell">Propietario</TableHead>
                       <TableHead className="hidden md:table-cell">Categoría</TableHead>
-                      <TableHead className="text-right">Acciones</TableHead>
+                      {showActions && <TableHead className="text-right">Acciones</TableHead>}
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -111,23 +112,25 @@ export function ClientsTab({ clients, isLoading, onClientSelect, selectedClientI
                       <TableRow
                         key={client.id}
                         onClick={() => onClientSelect(client)}
-                        className={cn("cursor-pointer", selectedClientId === client.id && "bg-secondary hover:bg-secondary/90")}
+                        className={cn(showActions ? 'cursor-default' : 'cursor-pointer', selectedClientId === client.id && "bg-secondary hover:bg-secondary/90")}
                       >
                         <TableCell className="font-medium">{client.name}</TableCell>
                         <TableCell className="hidden sm:table-cell">{client.owner || 'N/A'}</TableCell>
                         <TableCell className="hidden md:table-cell">{client.category || 'N/A'}</TableCell>
-                        <TableCell className="text-right">
-                            {canEditClient && (
-                                <Button variant="ghost" size="icon" onClick={(e) => handleEditClick(e, client)}>
-                                    <Edit3 className="h-4 w-4" />
-                                </Button>
-                            )}
-                            {canDeleteClient && (
-                                <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive" onClick={(e) => openDeleteConfirmation(e, client)}>
-                                    <Trash2 className="h-4 w-4" />
-                                </Button>
-                            )}
-                        </TableCell>
+                        {showActions && (
+                          <TableCell className="text-right">
+                              {canEditClient && (
+                                  <Button variant="ghost" size="icon" onClick={(e) => handleEditClick(e, client)}>
+                                      <Edit3 className="h-4 w-4" />
+                                  </Button>
+                              )}
+                              {canDeleteClient && (
+                                  <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive" onClick={(e) => openDeleteConfirmation(e, client)}>
+                                      <Trash2 className="h-4 w-4" />
+                                  </Button>
+                              )}
+                          </TableCell>
+                        )}
                       </TableRow>
                     ))}
                   </TableBody>

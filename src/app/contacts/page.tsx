@@ -90,6 +90,7 @@ export default function DirectoryPage() {
                       isLoading={isLoadingClients}
                       onClientSelect={handleClientSelect}
                       selectedClientId={selectedClient?.id || null}
+                      showActions={false}
                     />
                 </TabsContent>
                 <TabsContent value="promoters">
