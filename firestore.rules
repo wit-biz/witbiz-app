@@ -77,6 +77,10 @@ service cloud.firestore {
     match /users/{userId}/promoters/{promoterId} {
       allow read, write: if isSignedIn() && isOwner(userId);
     }
+    
+    match /users/{userId}/promoters {
+        allow list: if isSignedIn() && isOwner(userId);
+    }
 
     /**
      * @description Rules for the /users/{userId}/suppliers/{supplierId} subcollection. Users can only access suppliers they own.
@@ -84,6 +88,10 @@ service cloud.firestore {
      */
     match /users/{userId}/suppliers/{supplierId} {
       allow read, write: if isSignedIn() && isOwner(userId);
+    }
+
+    match /users/{userId}/suppliers {
+        allow list: if isSignedIn() && isOwner(userId);
     }
 
 
