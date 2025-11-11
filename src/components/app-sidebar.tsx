@@ -82,7 +82,7 @@ export function AppSidebar() {
         </div>
         <div className="p-2 flex justify-center">
             {isSearching ? (
-                 <Popover open={searchTerm.length > 0 && hasResults}>
+                 <Popover open={isSearching && searchTerm.length > 0 && hasResults}>
                     <PopoverTrigger asChild>
                          <div className="relative w-full">
                             <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -101,7 +101,7 @@ export function AppSidebar() {
                     <PopoverContent
                         className="w-[var(--radix-popover-trigger-width)] p-0 bg-card"
                         side="bottom"
-                        align="center"
+                        align="start"
                         onOpenAutoFocus={(e) => e.preventDefault()}
                         onInteractOutside={() => setIsSearching(false)}
                     >
@@ -167,7 +167,7 @@ export function AppSidebar() {
                             <span className="sr-only">Nuevo...</span>
                         </Button>
                     </DropdownMenuTrigger>
-                    <DropdownMenuContent side="bottom" align="center" className="mb-2 bg-card">
+                    <DropdownMenuContent side="bottom" align="start" className="mb-2 bg-card">
                          <DropdownMenuItem onSelect={(e) => { e.preventDefault(); setIsSearching(true); }}>
                            <Search className="mr-2 h-4 w-4" />
                            <span>Buscar</span>
