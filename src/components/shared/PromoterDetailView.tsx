@@ -48,9 +48,9 @@ export function PromoterDetailView({ promoter, onClose }: PromoterDetailViewProp
                 
                 <DialogHeader>
                     <DialogTitle className="text-2xl font-bold">{promoter.name}</DialogTitle>
-                    <DialogDescription>
+                    <div className="pt-1">
                         <Badge variant={promoter.status === 'Activo' ? 'default' : 'secondary'}>{promoter.status}</Badge>
-                    </DialogDescription>
+                    </div>
                 </DialogHeader>
 
                 <div className="space-y-6 pt-4">

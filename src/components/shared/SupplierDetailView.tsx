@@ -60,9 +60,9 @@ export function SupplierDetailView({ supplier, onClose }: SupplierDetailViewProp
                 
                 <DialogHeader>
                     <DialogTitle className="text-2xl font-bold">{supplier.name}</DialogTitle>
-                    <DialogDescription>
+                    <div className="pt-1">
                         <Badge variant={supplier.status === 'Activo' ? 'default' : 'secondary'}>{supplier.status}</Badge>
-                    </DialogDescription>
+                    </div>
                 </DialogHeader>
 
                 <div className="space-y-6 pt-4">
