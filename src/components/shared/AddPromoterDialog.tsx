@@ -33,6 +33,8 @@ import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '.
 const promoterSchema = z.object({
   id: z.string().optional(),
   name: z.string().min(2, { message: "El nombre debe tener al menos 2 caracteres." }),
+  email: z.string().email({ message: "Email inválido." }).optional().or(z.literal('')),
+  phone: z.string().optional(),
   status: z.enum(['Activo', 'Inactivo']),
   referredClients: z.number().optional(),
   totalCommissions: z.number().optional(),
@@ -58,6 +60,8 @@ export function AddPromoterDialog({ isOpen, onClose, promoter, onAdd, onSave }: 
     defaultValues: {
       id: promoter?.id || '',
       name: promoter?.name || '',
+      email: promoter?.email || '',
+      phone: promoter?.phone || '',
       status: promoter?.status || 'Activo',
     },
   });
@@ -67,6 +71,8 @@ export function AddPromoterDialog({ isOpen, onClose, promoter, onAdd, onSave }: 
         form.reset({
             id: promoter?.id || '',
             name: promoter?.name || '',
+            email: promoter?.email || '',
+            phone: promoter?.phone || '',
             status: promoter?.status || 'Activo',
         });
     }
@@ -121,6 +127,32 @@ export function AddPromoterDialog({ isOpen, onClose, promoter, onAdd, onSave }: 
                             </FormItem>
                         )}
                     />
+                    <FormField
+                        control={form.control}
+                        name="email"
+                        render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>Email</FormLabel>
+                                <FormControl>
+                                    <Input type="email" placeholder="ej. mariana.f@email.com" {...field} disabled={isSubmitting}/>
+                                </FormControl>
+                                <FormMessage />
+                            </FormItem>
+                        )}
+                    />
+                    <FormField
+                        control={form.control}
+                        name="phone"
+                        render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>Teléfono</FormLabel>
+                                <FormControl>
+                                    <Input placeholder="Ej. +52 55 1234 5678" {...field} disabled={isSubmitting}/>
+                                </FormControl>
+                                <FormMessage />
+                            </FormItem>
+                        )}
+                    />
                     {isEditMode && (
                         <FormField
                             control={form.control}
@@ -163,3 +195,5 @@ export function AddPromoterDialog({ isOpen, onClose, promoter, onAdd, onSave }: 
     </Dialog>
   );
 }
+
+    

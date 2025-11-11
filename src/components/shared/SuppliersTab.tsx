@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import React, { useState, useMemo, useCallback } from 'react';
@@ -56,7 +57,7 @@ export function SuppliersTab({
       const lowerSearchTerm = searchTerm.toLowerCase();
       filtered = filtered.filter(s =>
         s.name.toLowerCase().includes(lowerSearchTerm) ||
-        (s.contact && s.contact.toLowerCase().includes(lowerSearchTerm))
+        (s.email && s.email.toLowerCase().includes(lowerSearchTerm))
       );
     }
 
@@ -115,7 +116,7 @@ export function SuppliersTab({
               <div className="relative flex-grow">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                   <Input
-                      placeholder="Buscar por nombre o contacto..."
+                      placeholder="Buscar por nombre o email..."
                       className="pl-10"
                       value={searchTerm}
                       onChange={(e) => setSearchTerm(e.target.value)}
@@ -144,7 +145,7 @@ export function SuppliersTab({
                       <TableRow>
                           <TableHead>Nombre del Proveedor</TableHead>
                           <TableHead>Estado</TableHead>
-                          <TableHead>Contacto</TableHead>
+                          <TableHead>Contacto (Email)</TableHead>
                           <TableHead>Servicio/Producto</TableHead>
                           {showActions && <TableHead className="text-right">Acciones</TableHead>}
                       </TableRow>
@@ -163,7 +164,7 @@ export function SuppliersTab({
                               <TableCell>
                                   <Badge variant={supplier.status === 'Activo' ? 'default' : 'secondary'}>{supplier.status}</Badge>
                               </TableCell>
-                              <TableCell>{supplier.contact}</TableCell>
+                              <TableCell>{supplier.email}</TableCell>
                               <TableCell>{supplier.service}</TableCell>
                               {showActions && (
                                 <TableCell className="text-right">
@@ -223,3 +224,5 @@ export function SuppliersTab({
     </>
   );
 }
+
+    

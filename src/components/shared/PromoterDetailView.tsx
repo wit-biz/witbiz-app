@@ -1,11 +1,12 @@
 
+
 "use client";
 
 import React from "react";
 import { type Promoter } from "@/lib/types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { X, UserCheck, Users, CircleDollarSign } from "lucide-react";
+import { X, UserCheck, Users, CircleDollarSign, Mail, Phone } from "lucide-react";
 import { DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Badge } from "../ui/badge";
 
@@ -14,14 +15,18 @@ interface PromoterDetailViewProps {
   onClose: () => void;
 }
 
-const DetailItem = ({ icon: Icon, label, value }: { icon: React.ElementType; label: string; value?: string | number }) => {
+const DetailItem = ({ icon: Icon, label, value, href }: { icon: React.ElementType; label: string; value?: string | number; href?: string }) => {
     if (!value && value !== 0) return null;
     return (
-        <div className="flex items-center gap-3">
-            <Icon className="h-5 w-5 text-muted-foreground" />
+         <div className="flex items-start gap-3">
+            <Icon className="h-5 w-5 text-muted-foreground mt-0.5" />
             <div className="flex flex-col">
                 <span className="text-sm text-muted-foreground">{label}</span>
-                <span className="font-medium">{typeof value === 'number' ? value.toLocaleString() : value}</span>
+                {href ? (
+                    <a href={href} target="_blank" rel="noopener noreferrer" className="text-sm font-medium text-primary hover:underline">{value}</a>
+                ) : (
+                    <p className="text-sm font-medium">{typeof value === 'number' ? value.toLocaleString() : value}</p>
+                )}
             </div>
         </div>
     );
@@ -55,7 +60,14 @@ export function PromoterDetailView({ promoter, onClose }: PromoterDetailViewProp
 
                 <div className="space-y-6 pt-4">
                     <Card>
-                        <CardHeader><CardTitle>Resumen del Promotor</CardTitle></CardHeader>
+                        <CardHeader><CardTitle>Información de Contacto</CardTitle></CardHeader>
+                        <CardContent className="grid grid-cols-1 gap-4">
+                            <DetailItem icon={Mail} label="Email" value={promoter.email} href={`mailto:${promoter.email}`} />
+                            <DetailItem icon={Phone} label="Teléfono" value={promoter.phone} href={`tel:${promoter.phone}`} />
+                        </CardContent>
+                    </Card>
+                    <Card>
+                        <CardHeader><CardTitle>Resumen de Actividad</CardTitle></CardHeader>
                         <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <DetailItem icon={Users} label="Clientes Referidos" value={promoter.referredClients} />
                             <DetailItem icon={CircleDollarSign} label="Comisiones Totales" value={`$${promoter.totalCommissions.toFixed(2)}`} />
@@ -66,3 +78,5 @@ export function PromoterDetailView({ promoter, onClose }: PromoterDetailViewProp
         </>
     );
 }
+
+    

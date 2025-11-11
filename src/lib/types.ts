@@ -28,6 +28,8 @@ export type Client = {
 export type Promoter = {
   id: string;
   name: string;
+  email?: string;
+  phone?: string;
   referredClients: number;
   totalCommissions: number;
   status: 'Activo' | 'Inactivo';
@@ -36,7 +38,8 @@ export type Promoter = {
 export type Supplier = {
   id: string;
   name: string;
-  contact?: string;
+  email?: string;
+  phone?: string;
   service?: string;
   promoterId?: string;
   status: 'Activo' | 'Inactivo';

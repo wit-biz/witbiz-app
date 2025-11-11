@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import React, { useMemo } from "react";
@@ -6,7 +7,7 @@ import { type Supplier } from "@/lib/types";
 import { useCRMData } from "@/contexts/CRMDataContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { X, Truck, UserCheck, Briefcase, Phone } from "lucide-react";
+import { X, Truck, UserCheck, Briefcase, Phone, Mail } from "lucide-react";
 import { DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Badge } from "../ui/badge";
 
@@ -69,7 +70,8 @@ export function SupplierDetailView({ supplier, onClose }: SupplierDetailViewProp
                     <Card>
                         <CardHeader><CardTitle>Información del Proveedor</CardTitle></CardHeader>
                         <CardContent className="grid grid-cols-1 gap-4">
-                            <DetailItem icon={Phone} label="Contacto" value={supplier.contact} />
+                            <DetailItem icon={Mail} label="Email de Contacto" value={supplier.email} href={`mailto:${supplier.email}`} />
+                            <DetailItem icon={Phone} label="Teléfono de Contacto" value={supplier.phone} href={`tel:${supplier.phone}`} />
                             <DetailItem icon={Briefcase} label="Servicio / Producto" value={supplier.service} />
                             <DetailItem icon={UserCheck} label="Referido por (Promotor)" value={promoterName} />
                         </CardContent>
@@ -79,3 +81,5 @@ export function SupplierDetailView({ supplier, onClose }: SupplierDetailViewProp
         </>
     );
 }
+
+    

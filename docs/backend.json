@@ -183,6 +183,15 @@
           "type": "string",
           "description": "Name of the promoter."
         },
+        "email": {
+          "type": "string",
+          "description": "Email address of the promoter.",
+          "format": "email"
+        },
+        "phone": {
+          "type": "string",
+          "description": "Phone number of the promoter."
+        },
         "status": {
           "type": "string",
           "enum": [
@@ -220,9 +229,14 @@
           "type": "string",
           "description": "Name of the supplier."
         },
-        "contact": {
+        "email": {
           "type": "string",
-          "description": "Contact information for the supplier (e.g., email or phone)."
+          "description": "Contact email for the supplier.",
+          "format": "email"
+        },
+        "phone": {
+          "type": "string",
+          "description": "Contact phone for the supplier."
         },
         "service": {
           "type": "string",

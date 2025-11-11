@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import React, { useState, useEffect } from 'react';
@@ -34,7 +35,8 @@ import { type Supplier } from '@/lib/types';
 const supplierSchema = z.object({
   id: z.string().optional(),
   name: z.string().min(2, { message: "El nombre debe tener al menos 2 caracteres." }),
-  contact: z.string().optional(),
+  email: z.string().email({ message: "Email inválido." }).optional().or(z.literal('')),
+  phone: z.string().optional(),
   service: z.string().optional(),
   promoterId: z.string().optional(),
   status: z.enum(['Activo', 'Inactivo']),
@@ -61,7 +63,8 @@ export function AddSupplierDialog({ isOpen, onClose, supplier, onAdd, onSave }: 
     defaultValues: {
       id: supplier?.id || '',
       name: supplier?.name || '',
-      contact: supplier?.contact || '',
+      email: supplier?.email || '',
+      phone: supplier?.phone || '',
       service: supplier?.service || '',
       promoterId: supplier?.promoterId || 'none',
       status: supplier?.status || 'Activo',
@@ -73,7 +76,8 @@ export function AddSupplierDialog({ isOpen, onClose, supplier, onAdd, onSave }: 
         form.reset({
             id: supplier?.id || '',
             name: supplier?.name || '',
-            contact: supplier?.contact || '',
+            email: supplier?.email || '',
+            phone: supplier?.phone || '',
             service: supplier?.service || '',
             promoterId: supplier?.promoterId || 'none',
             status: supplier?.status || 'Activo',
@@ -160,7 +164,46 @@ export function AddSupplierDialog({ isOpen, onClose, supplier, onAdd, onSave }: 
                             </FormItem>
                         )}
                     />
+                     <FormField
+                        control={form.control}
+                        name="email"
+                        render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>Email de Contacto</FormLabel>
+                                <FormControl>
+                                    <Input type="email" placeholder="ventas@techsol.com" {...field} disabled={isSubmitting}/>
+                                </FormControl>
+                                <FormMessage />
+                            </FormItem>
+                        )}
+                    />
+                     <FormField
+                        control={form.control}
+                        name="phone"
+                        render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>Teléfono de Contacto</FormLabel>
+                                <FormControl>
+                                    <Input placeholder="+52 55 8765 4321" {...field} disabled={isSubmitting}/>
+                                </FormControl>
+                                <FormMessage />
+                            </FormItem>
+                        )}
+                    />
                     <FormField
+                        control={form.control}
+                        name="service"
+                        render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>Servicio / Producto</FormLabel>
+                                <FormControl>
+                                    <Input placeholder="Soporte TI" {...field} disabled={isSubmitting}/>
+                                </FormControl>
+                                <FormMessage />
+                            </FormItem>
+                        )}
+                    />
+                     <FormField
                         control={form.control}
                         name="promoterId"
                         render={({ field }) => (
@@ -179,32 +222,6 @@ export function AddSupplierDialog({ isOpen, onClose, supplier, onAdd, onSave }: 
                                         ))}
                                     </SelectContent>
                                 </Select>
-                                <FormMessage />
-                            </FormItem>
-                        )}
-                    />
-                    <FormField
-                        control={form.control}
-                        name="contact"
-                        render={({ field }) => (
-                            <FormItem>
-                                <FormLabel>Contacto (Email/Teléfono)</FormLabel>
-                                <FormControl>
-                                    <Input placeholder="ventas@techsol.com" {...field} disabled={isSubmitting}/>
-                                </FormControl>
-                                <FormMessage />
-                            </FormItem>
-                        )}
-                    />
-                    <FormField
-                        control={form.control}
-                        name="service"
-                        render={({ field }) => (
-                            <FormItem>
-                                <FormLabel>Servicio / Producto</FormLabel>
-                                <FormControl>
-                                    <Input placeholder="Soporte TI" {...field} disabled={isSubmitting}/>
-                                </FormControl>
                                 <FormMessage />
                             </FormItem>
                         )}
@@ -228,3 +245,5 @@ export function AddSupplierDialog({ isOpen, onClose, supplier, onAdd, onSave }: 
     </Dialog>
   );
 }
+
+    
