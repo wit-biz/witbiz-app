@@ -1,7 +1,7 @@
 
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -29,8 +29,8 @@ import {
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { promoters } from '@/lib/data';
 
-
 const supplierSchema = z.object({
+  id: z.string().optional(),
   name: z.string().min(2, { message: "El nombre debe tener al menos 2 caracteres." }),
   contact: z.string().optional(),
   service: z.string().optional(),
@@ -38,43 +38,58 @@ const supplierSchema = z.object({
 });
 
 type SupplierFormValues = z.infer<typeof supplierSchema>;
+type Supplier = SupplierFormValues & { id: string };
 
 interface AddSupplierDialogProps {
   isOpen: boolean;
   onClose: () => void;
-  onAdd: (data: SupplierFormValues) => void;
+  supplier?: Supplier | null;
+  onAdd?: (data: SupplierFormValues) => void;
+  onSave?: (data: Supplier) => void;
 }
 
-export function AddSupplierDialog({ isOpen, onClose, onAdd }: AddSupplierDialogProps) {
+export function AddSupplierDialog({ isOpen, onClose, supplier, onAdd, onSave }: AddSupplierDialogProps) {
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const isEditMode = !!supplier;
 
   const form = useForm<SupplierFormValues>({
     resolver: zodResolver(supplierSchema),
     defaultValues: {
-      name: '',
-      contact: '',
-      service: '',
-      promoterId: '',
+      id: supplier?.id || '',
+      name: supplier?.name || '',
+      contact: supplier?.contact || '',
+      service: supplier?.service || '',
+      promoterId: supplier?.promoterId || '',
     },
   });
   
-  React.useEffect(() => {
-    if (!isOpen) {
-        form.reset();
+  useEffect(() => {
+    if (isOpen) {
+        form.reset({
+            id: supplier?.id || '',
+            name: supplier?.name || '',
+            contact: supplier?.contact || '',
+            service: supplier?.service || '',
+            promoterId: supplier?.promoterId || '',
+        });
     }
-  }, [isOpen, form]);
+  }, [isOpen, supplier, form]);
 
   const onSubmit = async (values: SupplierFormValues) => {
     setIsSubmitting(true);
     // Simulate API call
     await new Promise(resolve => setTimeout(resolve, 500));
-    onAdd(values);
+    
+    if (isEditMode && onSave) {
+        onSave(values as Supplier);
+        toast({ title: 'Proveedor Actualizado', description: `El proveedor "${values.name}" ha sido actualizado.` });
+    } else if (onAdd) {
+        onAdd(values);
+        toast({ title: 'Proveedor Creado', description: `El proveedor "${values.name}" ha sido creado (simulación).` });
+    }
+
     setIsSubmitting(false);
-    toast({
-      title: 'Proveedor Creado',
-      description: `El proveedor "${values.name}" ha sido creado correctamente (simulación).`,
-    });
     onClose();
   };
 
@@ -84,9 +99,12 @@ export function AddSupplierDialog({ isOpen, onClose, onAdd }: AddSupplierDialogP
         <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)}>
                 <DialogHeader>
-                    <DialogTitle className="flex items-center gap-2"><Truck className="h-5 w-5 text-accent"/>Añadir Nuevo Proveedor</DialogTitle>
+                    <DialogTitle className="flex items-center gap-2">
+                        <Truck className="h-5 w-5 text-accent"/>
+                        {isEditMode ? 'Editar Proveedor' : 'Añadir Nuevo Proveedor'}
+                    </DialogTitle>
                     <DialogDescription>
-                        Complete los detalles para crear un nuevo proveedor.
+                        Complete los detalles para {isEditMode ? 'actualizar' : 'crear'} un proveedor.
                     </DialogDescription>
                 </DialogHeader>
 
@@ -110,7 +128,7 @@ export function AddSupplierDialog({ isOpen, onClose, onAdd }: AddSupplierDialogP
                         render={({ field }) => (
                             <FormItem>
                                 <FormLabel>Referido por (Promotor)</FormLabel>
-                                 <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                 <Select onValueChange={field.onChange} value={field.value}>
                                     <FormControl>
                                         <SelectTrigger>
                                             <SelectValue placeholder="Seleccione un promotor (opcional)..." />
@@ -163,7 +181,7 @@ export function AddSupplierDialog({ isOpen, onClose, onAdd }: AddSupplierDialogP
                     </DialogClose>
                     <Button type="submit" disabled={isSubmitting}>
                         {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
-                        Crear Proveedor
+                        {isEditMode ? 'Guardar Cambios' : 'Crear Proveedor'}
                     </Button>
                 </DialogFooter>
             </form>

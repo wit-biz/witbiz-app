@@ -20,6 +20,7 @@ export const documents: Document[] = [];
 
 // Mock data for entities not yet in Firestore.
 export const promoters: Promoter[] = [];
+export const suppliers: { id: string; name: string; contact: string; service: string }[] = [];
 export const notes: Note[] = [];
 
 export const navItems: NavItem[] = [

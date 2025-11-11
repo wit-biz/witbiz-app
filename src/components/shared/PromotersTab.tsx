@@ -1,8 +1,8 @@
 
 "use client";
 
-import React, { useState, useMemo } from 'react';
-import { UserCheck, CircleDollarSign, Loader2, Search, FilterX } from 'lucide-react';
+import React, { useState, useMemo, useCallback } from 'react';
+import { UserCheck, CircleDollarSign, Loader2, Search, FilterX, Edit3, Trash2 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from '@/components/ui/badge';
@@ -11,18 +11,27 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { type Promoter } from '@/lib/types';
 import { Tooltip, TooltipProvider, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
-
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { AddPromoterDialog } from './AddPromoterDialog';
+import { useToast } from '@/hooks/use-toast';
 
 interface PromotersTabProps {
     promoters: Promoter[];
+    setPromoters: React.Dispatch<React.SetStateAction<Promoter[]>>;
     isLoading: boolean;
+    showActions?: boolean;
 }
 
-export function PromotersTab({ promoters, isLoading }: PromotersTabProps) {
+export function PromotersTab({ promoters, setPromoters, isLoading, showActions = false }: PromotersTabProps) {
+    const { toast } = useToast();
     const [searchTerm, setSearchTerm] = useState('');
     const [statusFilter, setStatusFilter] = useState('all');
     const [sortBy, setSortBy] = useState('name-asc');
     
+    const [editDialogState, setEditDialogState] = useState<{ open: boolean; promoter: Promoter | null }>({ open: false, promoter: null });
+    const [promoterToDelete, setPromoterToDelete] = useState<Promoter | null>(null);
+    const [isDeleting, setIsDeleting] = useState(false);
+
     const filteredAndSortedPromoters = useMemo(() => {
         let filtered = promoters;
 
@@ -46,6 +55,31 @@ export function PromotersTab({ promoters, isLoading }: PromotersTabProps) {
 
     }, [promoters, searchTerm, statusFilter, sortBy]);
 
+    const handleEditClick = useCallback((promoter: Promoter) => {
+        setEditDialogState({ open: true, promoter });
+    }, []);
+
+    const openDeleteConfirmation = useCallback((promoter: Promoter) => {
+        setPromoterToDelete(promoter);
+    }, []);
+
+    const confirmDelete = useCallback(() => {
+        if (!promoterToDelete) return;
+        setIsDeleting(true);
+        // Simulate API call
+        setTimeout(() => {
+            setPromoters(prev => prev.filter(p => p.id !== promoterToDelete.id));
+            toast({ title: "Promotor eliminado", description: `El promotor "${promoterToDelete.name}" ha sido eliminado.` });
+            setIsDeleting(false);
+            setPromoterToDelete(null);
+        }, 500);
+    }, [promoterToDelete, setPromoters, toast]);
+
+    const handleEditSave = (updatedPromoter: Promoter) => {
+        setPromoters(prev => prev.map(p => p.id === updatedPromoter.id ? updatedPromoter : p));
+        setEditDialogState({ open: false, promoter: null });
+    };
+    
     const clearFilters = () => {
         setSearchTerm('');
         setStatusFilter('all');
@@ -117,6 +151,7 @@ export function PromotersTab({ promoters, isLoading }: PromotersTabProps) {
                                         <TableHead className="text-center">Clientes Referidos</TableHead>
                                         <TableHead>Comisiones Generadas</TableHead>
                                         <TableHead>Estado</TableHead>
+                                        {showActions && <TableHead className="text-right">Acciones</TableHead>}
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
@@ -133,10 +168,20 @@ export function PromotersTab({ promoters, isLoading }: PromotersTabProps) {
                                             <TableCell>
                                                 <Badge variant={promoter.status === 'Activo' ? 'default' : 'secondary'}>{promoter.status}</Badge>
                                             </TableCell>
+                                            {showActions && (
+                                                <TableCell className="text-right">
+                                                    <Button variant="ghost" size="icon" onClick={() => handleEditClick(promoter)}>
+                                                        <Edit3 className="h-4 w-4" />
+                                                    </Button>
+                                                    <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive" onClick={() => openDeleteConfirmation(promoter)}>
+                                                        <Trash2 className="h-4 w-4" />
+                                                    </Button>
+                                                </TableCell>
+                                            )}
                                         </TableRow>
                                     )) : (
                                         <TableRow>
-                                            <TableCell colSpan={4} className="text-center h-24">
+                                            <TableCell colSpan={showActions ? 5 : 4} className="text-center h-24">
                                                 No hay promotores que mostrar.
                                             </TableCell>
                                         </TableRow>
@@ -152,6 +197,32 @@ export function PromotersTab({ promoters, isLoading }: PromotersTabProps) {
                     )}
                 </CardContent>
             </Card>
+
+             {editDialogState.open && (
+                <AddPromoterDialog
+                    isOpen={editDialogState.open}
+                    onClose={() => setEditDialogState({ open: false, promoter: null })}
+                    promoter={editDialogState.promoter}
+                    onSave={handleEditSave}
+                />
+            )}
+
+            <AlertDialog open={!!promoterToDelete} onOpenChange={(open) => !open && setPromoterToDelete(null)}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>¿Confirmar Eliminación?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            Esta acción no se puede deshacer. ¿Está seguro de que desea eliminar al promotor "{promoterToDelete?.name}"?
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel onClick={() => setPromoterToDelete(null)} disabled={isDeleting}>Cancelar</AlertDialogCancel>
+                        <AlertDialogAction onClick={confirmDelete} disabled={isDeleting} className="bg-destructive hover:bg-destructive/90">
+                            {isDeleting ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Eliminando...</> : "Eliminar"}
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </TooltipProvider>
     );
 }

@@ -10,7 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ClientsTab } from "@/components/shared/ClientsTab";
 import { PromotersTab } from "@/components/shared/PromotersTab";
 import { SuppliersTab } from "@/components/shared/SuppliersTab";
-import { promoters } from "@/lib/data";
+import { promoters, suppliers } from "@/lib/data";
 import { useCRMData } from "@/contexts/CRMDataContext";
 import { ClientDetailView } from "@/components/shared/ClientDetailView";
 import type { Client } from "@/lib/types";
@@ -66,7 +66,7 @@ export default function DirectoryPage() {
           </Button>
         </Header>
         <main className="flex-1 p-4 md:p-8">
-            <Tabs defaultValue="clients" className="w-full">
+            <Tabs defaultValue="suppliers" className="w-full">
                 <TabsList className="grid w-full grid-cols-3 mb-6">
                      <TabsTrigger value="suppliers">
                         <Truck className="mr-2 h-4 w-4"/>
@@ -82,7 +82,7 @@ export default function DirectoryPage() {
                     </TabsTrigger>
                 </TabsList>
                 <TabsContent value="suppliers">
-                    <SuppliersTab />
+                    <SuppliersTab suppliers={suppliers} setSuppliers={() => {}} showActions={false}/>
                 </TabsContent>
                 <TabsContent value="clients">
                     <ClientsTab 
@@ -94,7 +94,7 @@ export default function DirectoryPage() {
                     />
                 </TabsContent>
                 <TabsContent value="promoters">
-                    <PromotersTab promoters={promoters} isLoading={false} />
+                    <PromotersTab promoters={promoters} setPromoters={() => {}} isLoading={false} showActions={false} />
                 </TabsContent>
             </Tabs>
         </main>

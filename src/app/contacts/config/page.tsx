@@ -9,7 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ClientsTab } from "@/components/shared/ClientsTab";
 import { PromotersTab } from "@/components/shared/PromotersTab";
 import { SuppliersTab } from "@/components/shared/SuppliersTab";
-import { promoters } from "@/lib/data";
+import { promoters as initialPromoters, suppliers as initialSuppliers } from "@/lib/data";
 import { useCRMData } from "@/contexts/CRMDataContext";
 import { AddEditClientDialog } from "@/components/shared/AddEditClientDialog";
 import { Button } from "@/components/ui/button";
@@ -23,6 +23,8 @@ export default function DirectoryConfigPage() {
   const [isAddClientDialogOpen, setIsAddClientDialogOpen] = useState(false);
   const [isAddSupplierDialogOpen, setIsAddSupplierDialogOpen] = useState(false);
   const [isAddPromoterDialogOpen, setIsAddPromoterDialogOpen] = useState(false);
+  const [promoters, setPromoters] = useState(initialPromoters);
+  const [suppliers, setSuppliers] = useState(initialSuppliers);
 
   const canCreate = currentUser?.permissions.clients_create ?? true;
 
@@ -58,13 +60,13 @@ export default function DirectoryConfigPage() {
                     </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent>
-                    <DropdownMenuItem onSelect={() => handleAddOptionClick('client')}>
-                        <Users className="mr-2 h-4 w-4" />
-                        <span>Añadir Cliente</span>
-                    </DropdownMenuItem>
                     <DropdownMenuItem onSelect={() => handleAddOptionClick('supplier')}>
                         <Truck className="mr-2 h-4 w-4" />
                         <span>Añadir Proveedor</span>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onSelect={() => handleAddOptionClick('client')}>
+                        <Users className="mr-2 h-4 w-4" />
+                        <span>Añadir Cliente</span>
                     </DropdownMenuItem>
                      <DropdownMenuItem onSelect={() => handleAddOptionClick('promoter')}>
                         <UserCheck className="mr-2 h-4 w-4" />
@@ -75,21 +77,24 @@ export default function DirectoryConfigPage() {
           )}
         </Header>
         <main className="flex-1 p-4 md:p-8">
-            <Tabs defaultValue="clients" className="w-full">
+            <Tabs defaultValue="suppliers" className="w-full">
                 <TabsList className="grid w-full grid-cols-3 mb-6">
-                    <TabsTrigger value="clients">
-                        <Users className="mr-2 h-4 w-4"/>
-                        Clientes
-                    </TabsTrigger>
                     <TabsTrigger value="suppliers">
                         <Truck className="mr-2 h-4 w-4"/>
                         Proveedores
+                    </TabsTrigger>
+                    <TabsTrigger value="clients">
+                        <Users className="mr-2 h-4 w-4"/>
+                        Clientes
                     </TabsTrigger>
                     <TabsTrigger value="promoters">
                         <UserCheck className="mr-2 h-4 w-4" />
                         Promotores
                     </TabsTrigger>
                 </TabsList>
+                <TabsContent value="suppliers">
+                    <SuppliersTab suppliers={suppliers} setSuppliers={setSuppliers} showActions={true} />
+                </TabsContent>
                 <TabsContent value="clients">
                     <ClientsTab 
                       clients={clients} 
@@ -99,11 +104,8 @@ export default function DirectoryConfigPage() {
                       showActions={true}
                     />
                 </TabsContent>
-                <TabsContent value="suppliers">
-                    <SuppliersTab />
-                </TabsContent>
                 <TabsContent value="promoters">
-                    <PromotersTab promoters={promoters} isLoading={false} />
+                    <PromotersTab promoters={promoters} setPromoters={setPromoters} isLoading={false} showActions={true} />
                 </TabsContent>
             </Tabs>
         </main>
