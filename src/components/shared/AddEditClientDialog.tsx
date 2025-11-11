@@ -32,7 +32,6 @@ import {
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Checkbox } from '@/components/ui/checkbox';
-import { promoters } from '@/lib/data';
 import { cn } from '@/lib/utils';
 
 
@@ -56,7 +55,7 @@ type AddEditClientDialogProps = {
 };
 
 export function AddEditClientDialog({ client, isOpen, onClose }: AddEditClientDialogProps) {
-  const { addClient, updateClient, serviceWorkflows } = useCRMData();
+  const { addClient, updateClient, serviceWorkflows, promoters } = useCRMData();
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = React.useState(false);
 
@@ -98,10 +97,15 @@ export function AddEditClientDialog({ client, isOpen, onClose }: AddEditClientDi
     setIsSubmitting(true);
     let success = false;
 
-    const finalValues = {
-        ...values,
-        promoterId: values.promoterId === 'none' ? undefined : values.promoterId,
-    };
+    const { promoterId, ...restOfValues } = values;
+    const finalValues: Partial<Client> = { ...restOfValues };
+
+    if (promoterId && promoterId !== 'none') {
+        finalValues.promoterId = promoterId;
+    } else {
+        // Ensure the field is removed if not provided or 'none'
+        delete finalValues.promoterId;
+    }
     
     if (isEditMode && client) {
         success = await updateClient(client.id, finalValues);

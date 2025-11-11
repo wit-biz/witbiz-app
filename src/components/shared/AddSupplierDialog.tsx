@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import React, { useState, useEffect } from 'react';
@@ -86,17 +85,21 @@ export function AddSupplierDialog({ isOpen, onClose, supplier, onAdd, onSave }: 
     setIsSubmitting(true);
     
     try {
-        const finalValues = {
-            ...values,
-            promoterId: values.promoterId === 'none' ? undefined : values.promoterId,
-        };
+        const { promoterId, ...restOfValues } = values;
+        const finalValues: Partial<Supplier> = { ...restOfValues };
+
+        if (promoterId && promoterId !== 'none') {
+            finalValues.promoterId = promoterId;
+        } else {
+            delete finalValues.promoterId;
+        }
 
         if (isEditMode && onSave) {
             await onSave(finalValues as Supplier);
             toast({ title: 'Proveedor Actualizado', description: `El proveedor "${values.name}" ha sido actualizado.` });
         } else if (onAdd) {
             const { id, ...addValues } = finalValues;
-            await onAdd(addValues);
+            await onAdd(addValues as Omit<Supplier, 'id'>);
             toast({ title: 'Proveedor Creado', description: `El proveedor "${values.name}" ha sido creado.` });
         }
     } catch (error) {
