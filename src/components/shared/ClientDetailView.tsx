@@ -86,6 +86,22 @@ export function ClientDetailView({ client, onClose }: ClientDetailViewProps) {
         }
         return null;
     }, [client.currentWorkflowStageId, serviceWorkflows]);
+    
+    const getServiceForTask = (task: Task): string | null => {
+        if (!serviceWorkflows) return null;
+        for (const service of serviceWorkflows) {
+            for (const stage1 of service.stages || []) {
+                if (stage1.actions.some(a => a.title === task.title)) return service.name;
+                for (const stage2 of stage1.subStages || []) {
+                    if (stage2.actions.some(a => a.title === task.title)) return service.name;
+                    for (const stage3 of stage2.subSubStages || []) {
+                        if (stage3.actions.some(a => a.title === task.title)) return service.name;
+                    }
+                }
+            }
+        }
+        return null;
+    };
 
 
     const handleDownload = (doc: Document) => {
@@ -160,9 +176,16 @@ export function ClientDetailView({ client, onClose }: ClientDetailViewProps) {
                                 </h4>
                                 {pendingTasks.length > 0 ? (
                                     <ul className="space-y-2">
-                                        {pendingTasks.map(task => (
-                                            <li key={task.id} className="text-sm text-muted-foreground pl-6">{task.title} (Vence: {formatDateString(task.dueDate)})</li>
-                                        ))}
+                                        {pendingTasks.map(task => {
+                                            const serviceName = getServiceForTask(task);
+                                            return (
+                                                <li key={task.id} className="text-sm text-muted-foreground pl-6">
+                                                    {task.title}
+                                                    {serviceName && <span className="text-xs text-blue-500 ml-2">({serviceName})</span>}
+                                                    (Vence: {formatDateString(task.dueDate)})
+                                                </li>
+                                            )
+                                        })}
                                     </ul>
                                 ) : (
                                     <p className="text-sm text-muted-foreground pl-6">No hay tareas pendientes para este cliente.</p>
