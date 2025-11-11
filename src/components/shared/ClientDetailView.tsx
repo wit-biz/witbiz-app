@@ -8,7 +8,6 @@ import { useCRMData } from "@/contexts/CRMDataContext";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { X, Edit, Trash2, Plus, Download, FileText, UploadCloud, Info, Users, Target, ListTodo, CheckCircle2, Briefcase, UserCheck, Smartphone } from "lucide-react";
-import { AddEditClientDialog } from "./AddEditClientDialog";
 import { useToast } from "@/hooks/use-toast";
 import { SmartDocumentUploadDialog } from "./SmartDocumentUploadDialog";
 import { DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
@@ -40,7 +39,6 @@ export function ClientDetailView({ client, onClose }: ClientDetailViewProps) {
     const { getDocumentsByClientId, serviceWorkflows, getTasksByClientId } = useCRMData();
     const { toast } = useToast();
     
-    const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
     const [isUploadDialogOpen, setIsUploadDialogOpen] = useState(false);
     
     if (!client) {
@@ -110,7 +108,6 @@ export function ClientDetailView({ client, onClose }: ClientDetailViewProps) {
 
                 <div className="space-y-6 pt-4">
                     <div className="flex items-center gap-2">
-                        <Button variant="outline" onClick={() => setIsEditDialogOpen(true)}><Edit className="mr-2 h-4 w-4"/>Editar</Button>
                         <Button variant="outline" onClick={() => setIsUploadDialogOpen(true)}><UploadCloud className="mr-2 h-4 w-4"/>Subir Documento</Button>
                     </div>
 
@@ -142,6 +139,22 @@ export function ClientDetailView({ client, onClose }: ClientDetailViewProps) {
                             )}
                         </CardContent>
                     </Card>
+
+                    {client.posTerminals && client.posTerminals.length > 0 && (
+                        <Card>
+                            <CardHeader><CardTitle>Terminales Punto de Venta (TPV)</CardTitle></CardHeader>
+                            <CardContent>
+                                <ul className="space-y-2">
+                                    {client.posTerminals.map((terminal) => (
+                                        <li key={terminal.id} className="flex items-center gap-2 text-sm font-medium">
+                                            <Smartphone className="h-4 w-4 text-accent" />
+                                            <span>Número de Serie: {terminal.serialNumber}</span>
+                                        </li>
+                                    ))}
+                                </ul>
+                            </CardContent>
+                        </Card>
+                    )}
 
                     <Card>
                         <CardHeader><CardTitle>Estado</CardTitle></CardHeader>
@@ -182,22 +195,6 @@ export function ClientDetailView({ client, onClose }: ClientDetailViewProps) {
                             </div>
                         </CardContent>
                     </Card>
-
-                    {client.posTerminals && client.posTerminals.length > 0 && (
-                        <Card>
-                            <CardHeader><CardTitle>Terminales Punto de Venta (TPV)</CardTitle></CardHeader>
-                            <CardContent>
-                                <ul className="space-y-2">
-                                    {client.posTerminals.map((terminal) => (
-                                        <li key={terminal.id} className="flex items-center gap-2 text-sm font-medium">
-                                            <Smartphone className="h-4 w-4 text-accent" />
-                                            <span>Número de Serie: {terminal.serialNumber}</span>
-                                        </li>
-                                    ))}
-                                </ul>
-                            </CardContent>
-                        </Card>
-                    )}
                     
                     <Card>
                         <CardHeader>
@@ -232,12 +229,6 @@ export function ClientDetailView({ client, onClose }: ClientDetailViewProps) {
                 </div>
             </div>
             
-            <AddEditClientDialog 
-                client={client}
-                isOpen={isEditDialogOpen}
-                onClose={() => setIsEditDialogOpen(false)}
-            />
-            
             <SmartDocumentUploadDialog
                 isOpen={isUploadDialogOpen}
                 onOpenChange={setIsUploadDialogOpen}
@@ -246,5 +237,3 @@ export function ClientDetailView({ client, onClose }: ClientDetailViewProps) {
         </>
     );
 }
-
-    
