@@ -27,78 +27,13 @@ import { Tooltip, TooltipProvider, TooltipTrigger, TooltipContent } from "@/comp
 
 // --- Mock Data ---
 
-const initialCompanies = [
-  { id: 'emp1', name: 'WitBiz Core', totalBalance: 125000.75 },
-  { id: 'emp2', name: 'WitBiz Servicios Digitales', totalBalance: 82500.50 },
-  { id: 'emp3', name: 'WitBiz Consultoría', totalBalance: 210000.00 },
-];
+const initialCompanies: { id: string; name: string; totalBalance: number }[] = [];
 
-const initialBankAccounts = [
-  { id: 'cta1', companyId: 'emp1', companyName: 'WitBiz Core', bankName: 'BBVA', balance: 75000.25, type: 'Débito' },
-  { id: 'cta2', companyId: 'emp1', companyName: 'WitBiz Core', bankName: 'Santander', balance: 50000.50, type: 'Débito' },
-  { id: 'cta3', companyId: 'emp2', companyName: 'WitBiz Servicios Digitales', bankName: 'Banorte', balance: 82500.50, type: 'Débito' },
-  { id: 'cta4', companyId: 'emp3', companyName: 'WitBiz Consultoría', bankName: 'HSBC', balance: 110000.00, type: 'Crédito' },
-  { id: 'cta5', companyId: 'emp3', companyName: 'WitBiz Consultoría', bankName: 'Inbursa', balance: 100000.00, type: 'Débito' },
-];
+const initialBankAccounts: { id: string; companyId: string; companyName: string; bankName: string; balance: number; type: string; }[] = [];
 
-const initialTransactions: Transaction[] = [
-    { id: 'trx1', date: format(new Date(), 'yyyy-MM-dd'), description: 'Ingreso por consultoría - Proyecto Alpha', type: 'income', category: 'Ingreso por Consultoría', amount: 50000, companyId: 'emp3', accountId: 'cta4', clientId: '1' },
-    { id: 'trx2', date: format(subDays(new Date(), 1), 'yyyy-MM-dd'), description: 'Pago de nómina Q1 Julio', type: 'expense', category: 'Sueldos', amount: -25000, companyId: 'emp1', accountId: 'cta1' },
-    { id: 'trx3', date: format(subDays(new Date(), 2), 'yyyy-MM-dd'), description: 'Transferencia a WitBiz Servicios Digitales', type: 'expense', category: 'Transferencia Interna', amount: -10000, companyId: 'emp1', accountId: 'cta1' },
-    { id: 'trx4', date: format(subDays(new Date(), 2), 'yyyy-MM-dd'), description: 'Recepción de transferencia de WitBiz Core', type: 'transfer_in', category: 'Transferencia Interna', amount: 10000, companyId: 'emp2', accountId: 'cta3' },
-    { id: 'trx5', date: format(subDays(new Date(), 3), 'yyyy-MM-dd'), description: 'Pago de licencia de software (Adobe)', type: 'expense', category: 'Software', amount: -600, companyId: 'emp2', accountId: 'cta3' },
-    { id: 'trx6', date: format(subDays(new Date(), 5), 'yyyy-MM-dd'), description: 'Ingreso por servicio web - Cliente Beta', type: 'income', category: 'Ingreso por Desarrollo', amount: 15000, companyId: 'emp2', accountId: 'cta3', clientId: '2' },
-    { id: 'trx7', date: format(subDays(new Date(), 6), 'yyyy-MM-dd'), description: 'Pago de renta de oficina', type: 'expense', category: 'Renta', amount: -12000, companyId: 'emp1', accountId: 'cta2' },
-    { id: 'trx8', date: format(subDays(new Date(), 8), 'yyyy-MM-dd'), description: 'Viáticos - Comida con cliente', type: 'expense', category: 'Comida y Viáticos', amount: -1250, companyId: 'emp3', accountId: 'cta5' },
-    { id: 'trx9', date: format(subDays(new Date(), 10), 'yyyy-MM-dd'), description: 'Campaña de publicidad en Google Ads', type: 'expense', category: 'Publicidad', amount: -5000, companyId: 'emp2', accountId: 'cta3' },
-    { id: 'trx10', date: format(subDays(new Date(), 12), 'yyyy-MM-dd'), description: 'Ingreso por desarrollo - App Móvil', type: 'income', category: 'Ingreso por Desarrollo', amount: 80000, companyId: 'emp2', accountId: 'cta3', clientId: '7' },
-    { id: 'trx11', date: format(subDays(new Date(), 15), 'yyyy-MM-dd'), description: 'Pago de servicios (Luz, Agua)', type: 'expense', category: 'Servicios (Luz, Agua)', amount: -3500, companyId: 'emp1', accountId: 'cta1' },
-    { id: 'trx12', date: format(subDays(new Date(), 20), 'yyyy-MM-dd'), description: 'Ingreso por consultoría estratégica', type: 'income', category: 'Ingreso por Consultoría', amount: 35000, companyId: 'emp3', accountId: 'cta4', clientId: '4' },
-    { id: 'trx13', date: format(subDays(new Date(), 25), 'yyyy-MM-dd'), description: 'Pago de nómina Q2 Junio', type: 'expense', category: 'Sueldos', amount: -25000, companyId: 'emp1', accountId: 'cta2' },
-    { id: 'trx14', date: format(subDays(new Date(), 35), 'yyyy-MM-dd'), description: 'Compra de equipo de cómputo', type: 'expense', category: 'Software', amount: -45000, companyId: 'emp1', accountId: 'cta1' }, // Note: Category might need adjustment
-    { id: 'trx15', date: format(subDays(new Date(), 40), 'yyyy-MM-dd'), description: 'Factura de honorarios legales', type: 'expense', category: 'Gastos Variables', amount: -8000, companyId: 'emp3', accountId: 'cta5' },
-    { id: 'trx16', date: format(subDays(new Date(), 45), 'yyyy-MM-dd'), description: 'Ingreso por mantenimiento web - Cliente Gamma', type: 'income', category: 'Ingreso por Desarrollo', amount: 5000, companyId: 'emp2', accountId: 'cta3', clientId: '10' },
-];
+const initialTransactions: Transaction[] = [];
 
-const initialCategoryGroups = [
-    { 
-        id: 'group-income', 
-        name: 'Fuentes de Ingreso',
-        type: 'Ingreso',
-        categories: [
-            { id: 'cat-income-1', name: 'Ingreso por Desarrollo' },
-            { id: 'cat-income-2', name: 'Ingreso por Consultoría' },
-        ]
-    },
-    { 
-        id: 'group-fixed',
-        name: 'Gastos Fijos',
-        type: 'Egreso',
-        categories: [
-            { id: 'cat-fixed-1', name: 'Sueldos' },
-            { id: 'cat-fixed-2', name: 'Renta' },
-        ]
-    },
-    {
-        id: 'group-variable',
-        name: 'Gastos Variables',
-        type: 'Egreso',
-        categories: [
-             { id: 'cat-fixed-3', name: 'Software' },
-            { id: 'cat-var-1', name: 'Publicidad' },
-            { id: 'cat-var-2', name: 'Servicios (Luz, Agua)' },
-            { id: 'cat-var-3', name: 'Comida y Viáticos' },
-        ]
-    },
-    {
-        id: 'group-transfer',
-        name: 'Movimientos Internos',
-        type: 'Transferencia',
-        categories: [
-            { id: 'cat-transfer-1', name: 'Transferencia Interna' },
-        ]
-    }
-];
+const initialCategoryGroups: { id: string; name: string; type: string; categories: { id: string; name: string; }[]; }[] = [];
 
 export default function SettingsPage() {
   const { toast } = useToast();
@@ -454,7 +389,7 @@ export default function SettingsPage() {
                                         </TableRow>
                                     </TableHeader>
                                     <TableBody>
-                                        {filteredTransactions.map((trx) => (
+                                        {filteredTransactions.length > 0 ? filteredTransactions.map((trx) => (
                                             <TableRow key={trx.id}>
                                                 <TableCell>{format(new Date(trx.date), "dd/MM/yyyy")}</TableCell>
                                                 <TableCell className="font-medium">{trx.description}</TableCell>
@@ -468,7 +403,9 @@ export default function SettingsPage() {
                                                     {trx.amount.toLocaleString('en-US', { style: 'currency', currency: 'USD' })}
                                                 </TableCell>
                                             </TableRow>
-                                        ))}
+                                        )) : (
+                                          <TableRow><TableCell colSpan={5} className="text-center h-24">No hay transacciones que mostrar.</TableCell></TableRow>
+                                        )}
                                     </TableBody>
                                 </Table>
                             </TabsContent>
@@ -492,13 +429,15 @@ export default function SettingsPage() {
                                         </TableRow>
                                     </TableHeader>
                                     <TableBody>
-                                        {trialBalanceData.map(item => (
+                                        {trialBalanceData.length > 0 ? trialBalanceData.map(item => (
                                             <TableRow key={item.account}>
                                                 <TableCell className="font-medium">{item.account}</TableCell>
                                                 <TableCell className="text-right text-red-600">{item.debit > 0 ? item.debit.toLocaleString('en-US', { style: 'currency', currency: 'USD' }) : '-'}</TableCell>
                                                 <TableCell className="text-right text-green-600">{item.credit > 0 ? item.credit.toLocaleString('en-US', { style: 'currency', currency: 'USD' }) : '-'}</TableCell>
                                             </TableRow>
-                                        ))}
+                                        )) : (
+                                          <TableRow><TableCell colSpan={3} className="text-center h-24">No hay datos para la balanza.</TableCell></TableRow>
+                                        )}
                                     </TableBody>
                                     <TableFooter>
                                         <TableRow className="font-bold bg-muted">
@@ -559,7 +498,7 @@ export default function SettingsPage() {
                                                     </TableCell>
                                                 </TableRow>
                                             )) : (
-                                                <TableRow><TableCell colSpan={3} className="text-center">Seleccione una opción para ver su detalle.</TableCell></TableRow>
+                                                <TableRow><TableCell colSpan={3} className="text-center h-24">Seleccione una opción para ver su detalle.</TableCell></TableRow>
                                             )}
                                         </TableBody>
                                         <TableFooter>
@@ -596,17 +535,17 @@ export default function SettingsPage() {
                                 <Table>
                                     <TableBody>
                                         <TableRow className="font-semibold text-secondary-foreground"><TableCell>Ingresos</TableCell><TableCell></TableCell></TableRow>
-                                        {Object.entries(incomeStatementData.revenueByCategory).map(([category, amount]) => (
+                                        {Object.entries(incomeStatementData.revenueByCategory).length > 0 ? Object.entries(incomeStatementData.revenueByCategory).map(([category, amount]) => (
                                             <TableRow key={category}><TableCell className="pl-8">{category}</TableCell><TableCell className="text-right">{amount.toLocaleString('en-US', { style: 'currency', currency: 'USD' })}</TableCell></TableRow>
-                                        ))}
+                                        )) : <TableRow><TableCell className="pl-8 text-muted-foreground">No hay ingresos registrados</TableCell><TableCell></TableCell></TableRow>}
                                         <TableRow className="font-semibold border-t"><TableCell>Total de Ingresos</TableCell><TableCell className="text-right">{incomeStatementData.totalRevenue.toLocaleString('en-US', { style: 'currency', currency: 'USD' })}</TableCell></TableRow>
                                         
                                         <TableRow className="font-semibold text-secondary-foreground"><TableCell>Utilidad Bruta</TableCell><TableCell className="text-right">{incomeStatementData.grossProfit.toLocaleString('en-US', { style: 'currency', currency: 'USD' })}</TableCell></TableRow>
                                         
                                         <TableRow className="font-semibold text-secondary-foreground"><TableCell>Gastos Operativos</TableCell><TableCell></TableCell></TableRow>
-                                        {Object.entries(incomeStatementData.expensesByCategory).map(([category, amount]) => (
+                                        {Object.entries(incomeStatementData.expensesByCategory).length > 0 ? Object.entries(incomeStatementData.expensesByCategory).map(([category, amount]) => (
                                             <TableRow key={category}><TableCell className="pl-8">{category}</TableCell><TableCell className="text-right text-red-600">({amount.toLocaleString('en-US', { style: 'currency', currency: 'USD' })})</TableCell></TableRow>
-                                        ))}
+                                        )) : <TableRow><TableCell className="pl-8 text-muted-foreground">No hay gastos registrados</TableCell><TableCell></TableCell></TableRow>}
                                         <TableRow className="font-semibold border-t"><TableCell>Total de Gastos Operativos</TableCell><TableCell className="text-right text-red-600">({incomeStatementData.totalExpenses.toLocaleString('en-US', { style: 'currency', currency: 'USD' })})</TableCell></TableRow>
                                         
                                         <TableRow className="font-bold text-lg bg-muted"><TableCell>Utilidad Operativa</TableCell><TableCell className={cn("text-right", incomeStatementData.operatingIncome >= 0 ? "text-blue-600" : "text-orange-600")}>{incomeStatementData.operatingIncome.toLocaleString('en-US', { style: 'currency', currency: 'USD' })}</TableCell></TableRow>

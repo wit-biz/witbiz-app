@@ -120,7 +120,7 @@ export function PromotersTab({ promoters, isLoading }: PromotersTabProps) {
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
-                                    {filteredAndSortedPromoters.map((promoter) => (
+                                    {filteredAndSortedPromoters.length > 0 ? filteredAndSortedPromoters.map((promoter) => (
                                         <TableRow key={promoter.id}>
                                             <TableCell className="font-medium">{promoter.name}</TableCell>
                                             <TableCell className="text-center">{promoter.referredClients}</TableCell>
@@ -134,14 +134,20 @@ export function PromotersTab({ promoters, isLoading }: PromotersTabProps) {
                                                 <Badge variant={promoter.status === 'Activo' ? 'default' : 'secondary'}>{promoter.status}</Badge>
                                             </TableCell>
                                         </TableRow>
-                                    ))}
+                                    )) : (
+                                        <TableRow>
+                                            <TableCell colSpan={4} className="text-center h-24">
+                                                No hay promotores que mostrar.
+                                            </TableCell>
+                                        </TableRow>
+                                    )}
                                 </TableBody>
                             </Table>
                         </div>
                     )}
-                     {filteredAndSortedPromoters.length === 0 && !isLoading && (
+                     {filteredAndSortedPromoters.length === 0 && !isLoading && searchTerm && (
                         <div className="text-center py-10 text-muted-foreground">
-                            No se encontraron promotores que coincidan con los filtros.
+                            No se encontraron promotores que coincidan con la búsqueda.
                         </div>
                     )}
                 </CardContent>

@@ -25,7 +25,7 @@ import {
 import { useUser, useFirestore, useMemoFirebase, useCollection, useDoc, useAuth, addDocumentNonBlocking, setDocumentNonBlocking, deleteDocumentNonBlocking } from '@/firebase';
 import { collection, doc, writeBatch, serverTimestamp, query } from 'firebase/firestore';
 import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
-import { teamMembers as mockTeamMembers, clients as mockClients, serviceWorkflows as mockServiceWorkflows } from '@/lib/data';
+import { teamMembers as mockTeamMembers, clients as mockClients, serviceWorkflows as mockServiceWorkflows, tasks as mockTasks, documents as mockDocuments } from '@/lib/data';
 import { addDays, format } from 'date-fns';
 
 type AnyStage = WorkflowStage | SubStage | SubSubStage;
@@ -91,18 +91,15 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
     const [currentUser, setCurrentUser] = useState<AuthenticatedUser | null>(null);
     
     // --- Firestore Data ---
-    // const clientsCollection = useMemoFirebase(() => user ? collection(firestore, 'users', user.uid, 'clients') : null, [firestore, user]);
-    // const { data: clients = [], isLoading: isLoadingClients } = useCollection<Client>(clientsCollection);
     const [clients, setClients] = useState<Client[]>(mockClients);
     const [isLoadingClients, setIsLoadingClients] = useState(false);
     
-    const tasksCollection = useMemoFirebase(() => user ? collection(firestore, 'users', user.uid, 'tasks') : null, [firestore, user]);
-    const { data: tasks = [], isLoading: isLoadingTasks } = useCollection<Task>(tasksCollection);
+    const [tasks, setTasks] = useState<Task[]>(mockTasks);
+    const [isLoadingTasks, setIsLoadingTasks] = useState(false);
     
-    const documentsCollection = useMemoFirebase(() => user ? collection(firestore, 'users', user.uid, 'documents') : null, [firestore, user]);
-    const { data: documents = [], isLoading: isLoadingDocuments } = useCollection<Document>(documentsCollection);
+    const [documents, setDocuments] = useState<Document[]>(mockDocuments);
+    const [isLoadingDocuments, setIsLoadingDocuments] = useState(false);
 
-    // Use mock data for service workflows
     const [serviceWorkflows, setServiceWorkflows] = useState<ServiceWorkflow[]>(mockServiceWorkflows);
     const [isLoadingWorkflows, setIsLoadingWorkflows] = useState(false);
 
@@ -207,7 +204,7 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
     };
     
     const addTask = async (newTaskData: Omit<Task, 'id' | 'status'>): Promise<Task | null> => {
-        if (!tasksCollection || !currentUser) return null;
+        if (!currentUser) return null;
         const client = clients.find(c => c.id === newTaskData.clientId);
         if (!client) return null;
 
@@ -225,7 +222,8 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
         const assignedUserId = newTaskData.assignedToId || currentUser.uid;
         const assignedUser = teamMembers.find(m => m.id === assignedUserId);
 
-        const newTaskPayload: Omit<Task, 'id'> = { 
+        const newTaskPayload: Task = { 
+            id: `task-${Date.now()}`,
             ...newTaskData, 
             dueDate: finalDueDate,
             status: 'Pendiente', 
@@ -235,15 +233,13 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
             assignedToPhotoURL: assignedUser?.photoURL || currentUser.photoURL || '',
             createdAt: serverTimestamp()
         };
-        const newDocRef = await addDocumentNonBlocking(tasksCollection, newTaskPayload);
+        setTasks(prev => [...prev, newTaskPayload]);
         showNotification('success', 'Tarea Creada', `La tarea "${newTaskPayload.title}" ha sido creada.`);
-        return { ...newTaskPayload, id: newDocRef.id };
+        return newTaskPayload;
     };
     
     const updateTask = async (taskId: string, updates: Partial<Task>): Promise<boolean> => {
-        if (!tasksCollection || !clients.length) return false;
-        const taskDocRef = doc(tasksCollection, taskId);
-        setDocumentNonBlocking(taskDocRef, updates, { merge: true });
+        setTasks(prev => prev.map(t => t.id === taskId ? {...t, ...updates} : t));
 
         // Check for workflow progression if task is completed
         if (updates.status === 'Completada') {
@@ -259,7 +255,7 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
         const client = clients.find(c => c.id === clientId);
         if (!client || !client.currentWorkflowStageId) return;
 
-        // Give Firestore a moment to update the task status via the listener
+        // Give state a moment to update
         await new Promise(resolve => setTimeout(resolve, 500));
 
         const clientTasks = tasks.filter(t => t.clientId === clientId);
@@ -321,21 +317,24 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
     };
 
     const deleteTask = async (taskId: string): Promise<boolean> => {
-        if (!tasksCollection) return false;
-        const taskDocRef = doc(tasksCollection, taskId);
-        deleteDocumentNonBlocking(taskDocRef);
+        setTasks(prev => prev.filter(t => t.id !== taskId));
         return true;
     };
 
     const addDocument = async (newDocumentData: Omit<Document, 'id' | 'uploadedAt' | 'downloadURL'>, file?: File): Promise<Document | null> => {
-         if (!documentsCollection) return null;
-        // NOTE: File upload to storage is not implemented here. This just saves metadata.
-        const newDocRef = await addDocumentNonBlocking(documentsCollection, {
-            ...newDocumentData,
-            uploadedAt: serverTimestamp(),
-            downloadURL: '#'
-        });
-        return { ...newDocumentData, id: newDocRef.id, uploadedAt: new Date(), downloadURL: '#' };
+        const newDoc = { 
+            ...newDocumentData, 
+            id: `doc-${Date.now()}`, 
+            uploadedAt: new Date(), 
+            downloadURL: '#' 
+        };
+        setDocuments(prev => [...prev, newDoc]);
+        return newDoc;
+    }
+
+    const deleteDocument = async (id: string): Promise<boolean> => {
+        setDocuments(prev => prev.filter(d => d.id !== id));
+        return true;
     }
 
     const getActionById = useCallback((actionId: string): WorkflowAction | null => {
@@ -414,11 +413,7 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
         documents, isLoadingDocuments,
         addDocument,
         updateDocument: (id, d) => placeholderPromise(false),
-        deleteDocument: (id) => {
-            if(!documentsCollection) return Promise.resolve(false);
-            deleteDocumentNonBlocking(doc(documentsCollection, id));
-            return Promise.resolve(true);
-        },
+        deleteDocument: deleteDocument,
         getDocumentsByClientId: (id) => documents.filter(d => d.clientId === id),
         getDocumentsByServiceId: (id) => documents.filter(d => d.serviceId === id),
 
