@@ -474,7 +474,7 @@ export default function SettingsPage() {
                                             <SelectContent>
                                                 <SelectItem value="all">Todos</SelectItem>
                                                 {auxiliaryType === 'clients' ? 
-                                                    (clients.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)) : 
+                                                    (clients && clients.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)) : 
                                                     (mockAccounts.map(a => <SelectItem key={a.id} value={a.id}>{a.bankName} - {a.companyName}</SelectItem>))
                                                 }
                                             </SelectContent>
