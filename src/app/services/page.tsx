@@ -80,13 +80,14 @@ function ServiceDocuments({ serviceId }: { serviceId: string }) {
 
 
 export default function ServicesPage() {
-  const { serviceWorkflows, isLoadingWorkflows, addService, updateService, setServiceWorkflows, currentUser } = useCRMData();
+  const { serviceWorkflows, isLoadingWorkflows, addService, updateService, setServiceWorkflows, deleteService, currentUser } = useCRMData();
   const { setIsSmartUploadDialogOpen } = useDialogs();
 
   const [editingServiceId, setEditingServiceId] = useState<string | null>(null);
   const [editableFields, setEditableFields] = useState<{ description: string; clientRequirements: ClientRequirement[], commissions: Commission[] }>({ description: '', clientRequirements: [], commissions: [] });
   const [isPromptNameOpen, setIsPromptNameOpen] = useState(false);
   const [openAccordionItem, setOpenAccordionItem] = useState<string | undefined>(undefined);
+  const [serviceToDelete, setServiceToDelete] = useState<ServiceWorkflow | null>(null);
   
   // State for drag-and-drop
   const [draggedItemId, setDraggedItemId] = useState<string | null>(null);
@@ -206,6 +207,16 @@ export default function ServicesPage() {
     setDragOverId(null);
   };
   
+  const confirmDeleteService = async () => {
+    if (serviceToDelete) {
+        await deleteService(serviceToDelete.id);
+        setServiceToDelete(null);
+        // If the deleted service was the open one, close the accordion
+        if (openAccordionItem === serviceToDelete.id) {
+            setOpenAccordionItem(undefined);
+        }
+    }
+  };
 
   if (isLoadingWorkflows) {
     return (
@@ -376,7 +387,12 @@ export default function ServicesPage() {
                                               <Button variant="outline" onClick={handleCancelEdit}>Cancelar</Button>
                                           </>
                                       ) : (
-                                          <Button variant="outline" onClick={() => handleStartEdit(service)}><Edit className="mr-2 h-4 w-4"/>Editar Descripción, Requisitos y Comisiones</Button>
+                                        <>
+                                          <Button variant="outline" onClick={() => handleStartEdit(service)}><Edit className="mr-2 h-4 w-4"/>Editar</Button>
+                                          <Button variant="destructive" onClick={() => setServiceToDelete(service)}>
+                                                <Trash2 className="mr-2 h-4 w-4"/>Eliminar
+                                          </Button>
+                                        </>
                                       )}
                                       <Button asChild>
                                           <Link href={`/workflows?serviceId=${service.id}`}>
@@ -412,6 +428,22 @@ export default function ServicesPage() {
         label="Nombre del Servicio"
         onSave={handleAddNewService}
       />
+       <AlertDialog open={!!serviceToDelete} onOpenChange={() => setServiceToDelete(null)}>
+        <AlertDialogContent>
+            <AlertDialogHeader>
+                <AlertDialogTitle>¿Está seguro?</AlertDialogTitle>
+                <AlertDialogDescription>
+                    Esta acción no se puede deshacer. Esto eliminará permanentemente el servicio "{serviceToDelete?.name}" y todos sus flujos de trabajo asociados.
+                </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+                <AlertDialogCancel onClick={() => setServiceToDelete(null)}>Cancelar</AlertDialogCancel>
+                <AlertDialogAction onClick={confirmDeleteService} className="bg-destructive hover:bg-destructive/90">
+                    Eliminar
+                </AlertDialogAction>
+            </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 }
