@@ -60,6 +60,10 @@
               "serialNumber"
             ]
           }
+        },
+        "promoterId": {
+          "type": "string",
+          "description": "Optional reference to a promoter who referred this contact."
         }
       },
       "required": [

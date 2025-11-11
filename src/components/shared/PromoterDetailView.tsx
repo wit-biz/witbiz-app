@@ -2,7 +2,7 @@
 "use client";
 
 import React, { useState, useMemo } from "react";
-import { type Promoter, type Document } from "@/lib/types";
+import { type Client, type Promoter, type Document } from "@/lib/types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { X, UserCheck, Users, CircleDollarSign, Mail, Phone, UploadCloud, FileText, Download, Info, CalendarDays } from "lucide-react";
@@ -36,7 +36,7 @@ const DetailItem = ({ icon: Icon, label, value, href }: { icon: React.ElementTyp
 };
 
 export function PromoterDetailView({ promoter, onClose }: PromoterDetailViewProps) {
-    const { getDocumentsByPromoterId } = useCRMData();
+    const { getDocumentsByPromoterId, getClientsByPromoterId } = useCRMData();
     const { setIsSmartUploadDialogOpen } = useDialogs();
     const { toast } = useToast();
     
@@ -51,6 +51,7 @@ export function PromoterDetailView({ promoter, onClose }: PromoterDetailViewProp
     }
     
     const promoterDocuments = getDocumentsByPromoterId(promoter.id);
+    const referredClients = getClientsByPromoterId(promoter.id);
     
     const handleDownload = (doc: Document) => {
         toast({
@@ -100,10 +101,36 @@ export function PromoterDetailView({ promoter, onClose }: PromoterDetailViewProp
                     <Card>
                         <CardHeader><CardTitle>Resumen de Actividad</CardTitle></CardHeader>
                         <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <DetailItem icon={Users} label="Clientes Referidos" value={promoter.referredClients} />
+                            <DetailItem icon={Users} label="Clientes Referidos" value={referredClients.length} />
                             <DetailItem icon={CircleDollarSign} label="Comisiones Totales" value={`$${promoter.totalCommissions.toFixed(2)}`} />
                         </CardContent>
                     </Card>
+
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Clientes Referidos</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                             {referredClients.length > 0 ? (
+                                <ul className="space-y-2">
+                                    {referredClients.map(client => (
+                                        <li key={client.id} className="flex items-center justify-between p-2 rounded-md bg-secondary/30">
+                                            <div className="flex items-center gap-2 min-w-0">
+                                                <Users className="h-4 w-4 text-muted-foreground flex-shrink-0"/>
+                                                <p className="text-sm font-medium truncate" title={client.name}>{client.name}</p>
+                                            </div>
+                                        </li>
+                                    ))}
+                                </ul>
+                            ) : (
+                                <div className="text-center text-muted-foreground py-6">
+                                    <Info className="mx-auto h-8 w-8 mb-2" />
+                                    <p className="text-sm">Este promotor aún no ha referido clientes.</p>
+                                </div>
+                            )}
+                        </CardContent>
+                    </Card>
+
                     <Card>
                         <CardHeader>
                             <CardTitle>Documentos Adjuntos</CardTitle>

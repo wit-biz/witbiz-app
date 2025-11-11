@@ -43,6 +43,7 @@ interface CRMContextType {
   updateClient: (clientId: string, updates: Partial<Client>) => Promise<boolean>;
   deleteClient: (clientId: string) => Promise<boolean>;
   getClientById: (clientId: string) => Client | undefined;
+  getClientsByPromoterId: (promoterId: string) => Client[];
   
   tasks: Task[];
   isLoadingTasks: boolean;
@@ -486,6 +487,7 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
         clients, isLoadingClients, 
         addClient, updateClient, deleteClient,
         getClientById: (id: string) => clients?.find(c => c.id === id),
+        getClientsByPromoterId: (id: string) => clients?.filter(c => c.promoterId === id) || [],
         
         tasks, isLoadingTasks,
         addTask, updateTask, deleteTask,
