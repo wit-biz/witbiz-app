@@ -175,6 +175,7 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
                 await addTask({
                     ...action,
                     clientId: newClient.id,
+                    serviceId: service?.id, // Add serviceId here
                 });
             }
         }
@@ -209,6 +210,13 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
         } else {
             finalDueDate = newTaskData.dueDate;
         }
+        
+        // Find which of the client's subscribed services contains this task's action
+        const serviceId = newTaskData.serviceId || client.subscribedServiceIds.find(subId => {
+            const service = serviceWorkflows.find(s => s.id === subId);
+            if (!service) return false;
+            return getAllStages(service.id).some(stage => stage.actions.some(action => action.title === newTaskData.title));
+        });
 
         const assignedUserId = newTaskData.assignedToId || currentUser.uid;
         const assignedUser = teamMembers.find(m => m.id === assignedUserId);
@@ -218,6 +226,7 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
             dueDate: finalDueDate,
             status: 'Pendiente' as const, 
             clientName: client.name,
+            serviceId: serviceId, // Save the serviceId
             assignedToId: assignedUser?.id || currentUser.uid,
             assignedToName: assignedUser?.name || currentUser.displayName || 'Usuario Actual',
             assignedToPhotoURL: assignedUser?.photoURL || currentUser.photoURL || '',
@@ -251,8 +260,8 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
 
         const clientTasks = tasks.filter(t => t.clientId === clientId);
         
-        const allStages = getAllStages();
-        const currentStage = allStages.find(s => s.id === client.currentWorkflowStageId);
+        const allStagesForClient = getAllStagesForClient(client);
+        const currentStage = allStagesForClient.find(s => s.id === client.currentWorkflowStageId);
         if (!currentStage) return;
 
         const pendingTasksForCurrentStage = clientTasks.filter(task => {
@@ -261,13 +270,15 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
         });
 
         if (pendingTasksForCurrentStage.length === 0) {
-            const nextStage = findNextStage(client.currentWorkflowStageId);
+            const nextStage = findNextStage(client);
             if (nextStage) {
                 await updateClient(clientId, { currentWorkflowStageId: nextStage.id });
                 showNotification('info', 'Cliente Avanzó', `${client.name} ha avanzado a la etapa: ${nextStage.title}.`);
 
+                const serviceForNextStage = serviceWorkflows.find(s => getAllStages(s.id).some(st => st.id === nextStage.id));
+
                 for (const action of nextStage.actions) {
-                    await addTask({ ...action, clientId: clientId });
+                    await addTask({ ...action, clientId: clientId, serviceId: serviceForNextStage?.id });
                 }
             } else {
                  showNotification('success', 'Flujo Completado', `¡${client.name} ha completado el flujo de trabajo!`);
@@ -275,12 +286,13 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
         }
     };
     
-    const getAllStages = useCallback((): AnyStage[] => {
+    const getAllStages = useCallback((serviceId?: string): AnyStage[] => {
       if (!serviceWorkflows) return [];
       
+      const servicesToScan = serviceId ? serviceWorkflows.filter(s => s.id === serviceId) : serviceWorkflows;
       const all: AnyStage[] = [];
       
-      const sortedWorkflows = [...serviceWorkflows].sort((a,b) => (a.order || 0) - (b.order || 0));
+      const sortedWorkflows = [...servicesToScan].sort((a,b) => (a.order || 0) - (b.order || 0));
 
       sortedWorkflows.forEach(service => {
         (service.stages || []).forEach(stage1 => {
@@ -297,11 +309,17 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
       return all.sort((a,b) => a.order - b.order);
     }, [serviceWorkflows]);
 
-    const findNextStage = (currentStageId: string): AnyStage | null => {
-        const allStages = getAllStages();
-        const currentIndex = allStages.findIndex(s => s.id === currentStageId);
-        if (currentIndex !== -1 && currentIndex < allStages.length - 1) {
-            return allStages[currentIndex + 1];
+    const getAllStagesForClient = (client: Client): AnyStage[] => {
+        if (!client || !client.subscribedServiceIds) return [];
+        return client.subscribedServiceIds.flatMap(serviceId => getAllStages(serviceId));
+    };
+
+    const findNextStage = (client: Client): AnyStage | null => {
+        if (!client.currentWorkflowStageId) return null;
+        const allStagesForClient = getAllStagesForClient(client);
+        const currentIndex = allStagesForClient.findIndex(s => s.id === client.currentWorkflowStageId);
+        if (currentIndex !== -1 && currentIndex < allStagesForClient.length - 1) {
+            return allStagesForClient[currentIndex + 1];
         }
         return null;
     };

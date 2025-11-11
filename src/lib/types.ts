@@ -40,6 +40,7 @@ export type Task = {
   status: 'Pendiente' | 'Completada' | 'Pospuesta';
   clientId: string;
   clientName?: string;
+  serviceId?: string; // ID of the service this task belongs to
   assignedToId?: string;
   assignedToName?: string;
   assignedToPhotoURL?: string;
@@ -122,6 +123,7 @@ export type WorkflowAction = {
   requiredDocuments?: { id: string; description: string }[];
   description?: string;
   assignedToId?: string;
+  serviceId?: string;
 };
 
 export type SubAction = {

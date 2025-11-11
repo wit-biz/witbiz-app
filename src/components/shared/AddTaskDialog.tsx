@@ -43,6 +43,7 @@ const baseSchema = z.object({
   requiredDocuments: z.array(requiredDocSchema).optional(),
   subTasks: z.array(subTaskSchema).optional(),
   assignedToId: z.string().optional(),
+  serviceId: z.string().optional(), // Added serviceId here
 });
 
 const taskSchema = baseSchema.extend({

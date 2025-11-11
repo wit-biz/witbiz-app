@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import React, { useState, useMemo } from "react";
@@ -87,32 +88,6 @@ export function ClientDetailView({ client, onClose }: ClientDetailViewProps) {
         return null;
     }, [client.currentWorkflowStageId, serviceWorkflows]);
     
-    const getServiceForTask = (task: Task): string | null => {
-        if (!serviceWorkflows) return null;
-        for (const service of serviceWorkflows) {
-            // Find which service this client is subscribed to that has this task
-            const isClientSubscribed = client.subscribedServiceIds.includes(service.id);
-            if (!isClientSubscribed) continue;
-
-            for (const stage1 of service.stages || []) {
-                 const actionExists = stage1.actions.some(a => a.title === task.title);
-                 if (actionExists) return service.name;
-
-                for (const stage2 of stage1.subStages || []) {
-                    const actionExists = stage2.actions.some(a => a.title === task.title);
-                    if (actionExists) return service.name;
-                    
-                    for (const stage3 of stage2.subSubStages || []) {
-                        const actionExists = stage3.actions.some(a => a.title === task.title);
-                        if (actionExists) return service.name;
-                    }
-                }
-            }
-        }
-        return null;
-    };
-
-
     const handleDownload = (doc: Document) => {
         toast({
             title: "Descarga Simulada",
@@ -189,7 +164,7 @@ export function ClientDetailView({ client, onClose }: ClientDetailViewProps) {
                                 {pendingTasks.length > 0 ? (
                                     <ul className="space-y-3 pl-6">
                                         {pendingTasks.map(task => {
-                                            const serviceName = getServiceForTask(task);
+                                            const serviceName = serviceWorkflows.find(s => s.id === task.serviceId)?.name;
                                             return (
                                                  <li key={task.id} className="flex flex-col text-sm">
                                                     <span className="font-medium text-foreground">{task.title}</span>
