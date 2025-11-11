@@ -193,13 +193,7 @@ export type Commission = {
   rate: number;
 }
 
-// Legacy type, will be phased out
-export interface SubService {
-    id: string;
-    name: string;
-    stages: WorkflowStage[];
-}
-
+// This structure is now stored directly in the `serviceWorkflows` collection
 export interface ServiceWorkflow {
     id: string;
     name: string;
