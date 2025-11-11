@@ -8,7 +8,7 @@ import { useSearchParams, useRouter } from "next/navigation";
 import { Header } from "@/components/header";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { useCRMData, type WorkflowStage, type ServiceWorkflow, type WorkflowAction, type SubStage, type SubSubStage } from "@/contexts/CRMDataContext"; 
-import { Edit, Save, Trash2, Plus, X, Loader2, UploadCloud, ChevronsRight, FileText, ListTodo, Workflow as WorkflowIcon, ArrowLeft, PlusCircle, Layers, FolderCog, Redo, AlertTriangle, GripVertical } from "lucide-react";
+import { Edit, Save, Trash2, Plus, X, Loader2, UploadCloud, ChevronsRight, FileText, ListTodo, Workflow as WorkflowIcon, ArrowLeft, PlusCircle, Layers, FolderCog, Redo, AlertTriangle, GripVertical, ChevronsUpDown } from "lucide-react";
 import { Card, CardHeader, CardTitle, CardContent, CardDescription, CardFooter } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
@@ -25,6 +25,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { DndContext, closestCenter, type DragEndEvent } from "@dnd-kit/core";
 import { arrayMove, SortableContext, useSortable, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
+import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
 
 
 type AnyStage = WorkflowStage | SubStage | SubSubStage;
@@ -230,8 +231,8 @@ const StageCard = ({
 };
 
 
-function SortableServiceItem({ service, onSelect, onDelete, isSelected, hasChanges }: { service: ServiceWorkflow, onSelect: (id: string) => void, onDelete: (service: ServiceWorkflow) => void, isSelected: boolean, hasChanges: boolean }) {
-    const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: service.id, disabled: hasChanges });
+function SortableServiceItem({ service, onSelect, onDelete }: { service: ServiceWorkflow, onSelect: () => void, onDelete: () => void }) {
+    const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: service.id });
     
     const style = {
         transform: CSS.Transform.toString(transform),
@@ -240,24 +241,19 @@ function SortableServiceItem({ service, onSelect, onDelete, isSelected, hasChang
     };
 
     return (
-        <div ref={setNodeRef} style={style}>
-            <Card className={cn("cursor-pointer", isSelected && "ring-2 ring-primary border-primary", hasChanges && isSelected && "cursor-not-allowed opacity-70")}>
-                <div className="flex items-center" onClick={() => !hasChanges && onSelect(service.id)}>
-                    <div {...listeners} {...attributes} className={cn("p-3 cursor-grab touch-none", hasChanges && "cursor-not-allowed")}>
-                        <GripVertical className="h-5 w-5 text-muted-foreground" />
-                    </div>
-                    <div className="flex-grow p-3 pr-2">
-                        <p className="font-semibold text-sm truncate">{service.name}</p>
-                    </div>
-                    <Button variant="ghost" size="icon" className="h-8 w-8 mr-1" onClick={(e) => { e.stopPropagation(); onDelete(service)}}>
-                        <Trash2 className="h-4 w-4 text-destructive" />
-                    </Button>
-                </div>
-            </Card>
+        <div ref={setNodeRef} style={style} className="flex items-center justify-between p-2 rounded-md hover:bg-muted" onClick={onSelect}>
+            <div className="flex items-center flex-grow gap-2 min-w-0">
+                <Button variant="ghost" size="icon" {...listeners} {...attributes} onClick={e => e.stopPropagation()} className="cursor-grab touch-none h-8 w-8">
+                  <GripVertical className="h-4 w-4 text-muted-foreground" />
+                </Button>
+                <p className="font-medium text-sm truncate">{service.name}</p>
+            </div>
+            <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={(e) => {e.stopPropagation(); onDelete();}}>
+                <Trash2 className="h-4 w-4"/>
+            </Button>
         </div>
     );
 }
-
 
 export default function WorkflowConfigurationPage() {
   const { 
@@ -276,6 +272,7 @@ export default function WorkflowConfigurationPage() {
   const [selectedWorkflowId, setSelectedWorkflowId] = useState<string | null>(null);
   const [editableWorkflow, setEditableWorkflow] = useState<ServiceWorkflow | null>(null);
   const [serviceToDelete, setServiceToDelete] = useState<ServiceWorkflow | null>(null);
+  const [isSelectorOpen, setIsSelectorOpen] = useState(false);
   
   const [isPromptNameOpen, setIsPromptNameOpen] = useState(false);
   const [promptNameConfig, setPromptNameConfig] = useState<{
@@ -342,6 +339,7 @@ export default function WorkflowConfigurationPage() {
         if (newService) {
           setSelectedWorkflowId(newService.id);
           router.push(`/workflows?serviceId=${newService.id}`);
+          setIsSelectorOpen(false);
         }
       },
     });
@@ -355,6 +353,7 @@ export default function WorkflowConfigurationPage() {
     }
     setSelectedWorkflowId(id);
     router.push(`/workflows?serviceId=${id}`);
+    setIsSelectorOpen(false);
   }
 
 
@@ -547,42 +546,65 @@ export default function WorkflowConfigurationPage() {
             </div>
         </Header>
       
-        <main className="flex-1 grid grid-cols-1 md:grid-cols-[300px_1fr] gap-6 p-4 md:p-8">
-            <div className="space-y-4">
-                <Card>
-                    <CardHeader>
-                        <CardTitle>Servicios</CardTitle>
-                        <CardDescription>Seleccione o reordene un servicio.</CardDescription>
-                    </CardHeader>
-                    <CardContent className="space-y-2">
-                        <DndContext collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-                            <SortableContext items={orderedWorkflows.map(wf => wf.id)} strategy={verticalListSortingStrategy}>
-                                {orderedWorkflows.map(service => (
-                                    <SortableServiceItem
-                                        key={service.id}
-                                        service={service}
-                                        onSelect={handleSelectService}
-                                        onDelete={setServiceToDelete}
-                                        isSelected={selectedWorkflowId === service.id}
-                                        hasChanges={hasChanges && selectedWorkflowId !== service.id}
-                                    />
-                                ))}
-                            </SortableContext>
-                        </DndContext>
-                        {canEditWorkflow && (
-                            <Button variant="outline" size="sm" className="w-full mt-2" onClick={handleAddNewService}>
-                                <PlusCircle className="mr-2 h-4 w-4"/>Añadir Servicio
+        <main className="flex-1 p-4 md:p-8 space-y-6">
+            <Card>
+                <CardHeader>
+                    <CardTitle>Servicio Seleccionado</CardTitle>
+                    <CardDescription>Seleccione un servicio para configurar o reordenar la lista.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <Popover open={isSelectorOpen} onOpenChange={setIsSelectorOpen}>
+                        <PopoverTrigger asChild>
+                            <Button
+                                variant="outline"
+                                role="combobox"
+                                aria-expanded={isSelectorOpen}
+                                className="w-full max-w-sm justify-between"
+                                disabled={hasChanges}
+                            >
+                                <span className="truncate">{selectedWorkflow?.name || "Seleccione un servicio..."}</span>
+                                <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                             </Button>
-                        )}
-                    </CardContent>
-                </Card>
-                 {hasChanges && (
-                    <div className="p-3 rounded-md bg-amber-100 dark:bg-amber-900/40 text-amber-800 dark:text-amber-200 border border-amber-300 dark:border-amber-700">
-                        <p className="text-xs font-semibold flex items-center gap-2"><AlertTriangle className="h-4 w-4"/>Tiene cambios sin guardar. Guarde o descarte para poder cambiar de servicio.</p>
-                    </div>
-                )}
-            </div>
-            
+                        </PopoverTrigger>
+                        <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
+                            <div className="p-2 space-y-1">
+                                <DndContext collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+                                    <SortableContext items={orderedWorkflows.map(wf => wf.id)} strategy={verticalListSortingStrategy}>
+                                        {orderedWorkflows.map(service => (
+                                            <SortableServiceItem
+                                                key={service.id}
+                                                service={service}
+                                                onSelect={() => handleSelectService(service.id)}
+                                                onDelete={() => setServiceToDelete(service)}
+                                            />
+                                        ))}
+                                    </SortableContext>
+                                </DndContext>
+                            </div>
+                            {canEditWorkflow && (
+                                <>
+                                <div className="border-t p-2">
+                                    <Button variant="outline" size="sm" className="w-full" onClick={handleAddNewService}>
+                                        <PlusCircle className="mr-2 h-4 w-4"/>Añadir Nuevo Servicio
+                                    </Button>
+                                </div>
+                                {hasChanges && (
+                                    <div className="p-2 text-xs text-center text-amber-600 dark:text-amber-500 bg-amber-50 dark:bg-amber-950/50">
+                                        Guarde o descarte cambios para reordenar.
+                                    </div>
+                                )}
+                                </>
+                            )}
+                        </PopoverContent>
+                    </Popover>
+                    {hasChanges && (
+                        <div className="mt-4 p-3 rounded-md bg-amber-100 dark:bg-amber-900/40 text-amber-800 dark:text-amber-200 border border-amber-300 dark:border-amber-700">
+                            <p className="text-sm font-semibold flex items-center gap-2"><AlertTriangle className="h-4 w-4"/>Tiene cambios sin guardar. Guarde o descarte para poder cambiar de servicio.</p>
+                        </div>
+                    )}
+                </CardContent>
+            </Card>
+
             <Card>
               {editableWorkflow ? (
                 <>
@@ -620,7 +642,7 @@ export default function WorkflowConfigurationPage() {
                 </CardContent>
                 </>
               ) : (
-                  <div className="flex flex-col items-center justify-center h-full text-center text-muted-foreground">
+                  <div className="flex flex-col items-center justify-center h-full text-center text-muted-foreground p-12">
                       <Layers className="h-12 w-12 mb-4" />
                       <p>Seleccione un servicio para ver su flujo de trabajo.</p>
                   </div>
