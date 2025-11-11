@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import React, { useState, useMemo, useCallback } from 'react';
@@ -7,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Search, Edit3, Trash2, Loader2 } from "lucide-react";
+import { Search, Edit3, Trash2, Loader2, Truck } from "lucide-react";
 import { Button } from '@/components/ui/button';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { AddSupplierDialog } from './AddSupplierDialog';
@@ -131,7 +130,7 @@ export function SuppliersTab({ suppliers, isLoading, showActions = false, onUpda
                       </TableRow>
                   </TableHeader>
                   <TableBody>
-                      {filteredSuppliers.map((supplier) => (
+                      {filteredSuppliers.length > 0 ? filteredSuppliers.map((supplier) => (
                           <TableRow key={supplier.id}>
                               <TableCell className="font-medium">{supplier.name}</TableCell>
                               <TableCell>
@@ -150,12 +149,18 @@ export function SuppliersTab({ suppliers, isLoading, showActions = false, onUpda
                                 </TableCell>
                               )}
                           </TableRow>
-                      ))}
+                      )) : (
+                        <TableRow>
+                            <TableCell colSpan={showActions ? 5 : 4} className="h-24 text-center">
+                                No se encontraron proveedores.
+                            </TableCell>
+                        </TableRow>
+                      )}
                   </TableBody>
               </Table>
           </div>
           )}
-          {!isLoading && filteredSuppliers.length === 0 && (
+          {!isLoading && filteredSuppliers.length === 0 && (searchTerm || serviceFilter !== 'all') && (
               <div className="text-center py-10 text-muted-foreground">
                   No se encontraron proveedores que coincidan con los filtros.
               </div>

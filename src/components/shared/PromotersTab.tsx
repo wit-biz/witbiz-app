@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import React, { useState, useMemo, useCallback } from 'react';
@@ -194,7 +193,7 @@ export function PromotersTab({ promoters, isLoading, showActions = false, onUpda
                             </Table>
                         </div>
                     )}
-                     {filteredAndSortedPromoters.length === 0 && !isLoading && searchTerm && (
+                     {filteredAndSortedPromoters.length === 0 && !isLoading && (searchTerm || statusFilter !== 'all') && (
                         <div className="text-center py-10 text-muted-foreground">
                             No se encontraron promotores que coincidan con la búsqueda.
                         </div>

@@ -10,7 +10,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ClientsTab } from "@/components/shared/ClientsTab";
 import { PromotersTab } from "@/components/shared/PromotersTab";
 import { SuppliersTab } from "@/components/shared/SuppliersTab";
-import { promoters, suppliers } from "@/lib/data";
 import { useCRMData } from "@/contexts/CRMDataContext";
 import { ClientDetailView } from "@/components/shared/ClientDetailView";
 import type { Client } from "@/lib/types";
@@ -18,7 +17,11 @@ import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 
 export default function DirectoryPage() {
-  const { clients, isLoadingClients, getClientById } = useCRMData();
+  const { 
+    clients, isLoadingClients, getClientById,
+    promoters, isLoadingPromoters,
+    suppliers, isLoadingSuppliers,
+  } = useCRMData();
   const searchParams = useSearchParams();
   const router = useRouter();
 
@@ -82,7 +85,7 @@ export default function DirectoryPage() {
                     </TabsTrigger>
                 </TabsList>
                 <TabsContent value="suppliers">
-                    <SuppliersTab suppliers={suppliers} setSuppliers={() => {}} showActions={false}/>
+                    <SuppliersTab suppliers={suppliers} isLoading={isLoadingSuppliers} showActions={false}/>
                 </TabsContent>
                 <TabsContent value="clients">
                     <ClientsTab 
@@ -94,7 +97,7 @@ export default function DirectoryPage() {
                     />
                 </TabsContent>
                 <TabsContent value="promoters">
-                    <PromotersTab promoters={promoters} setPromoters={() => {}} isLoading={false} showActions={false} />
+                    <PromotersTab promoters={promoters} isLoading={isLoadingPromoters} showActions={false} />
                 </TabsContent>
             </Tabs>
         </main>
