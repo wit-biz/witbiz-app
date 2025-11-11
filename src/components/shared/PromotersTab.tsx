@@ -14,6 +14,7 @@ import { Tooltip, TooltipProvider, TooltipTrigger, TooltipContent } from '@/comp
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { AddPromoterDialog } from './AddPromoterDialog';
 import { useToast } from '@/hooks/use-toast';
+import { cn } from '@/lib/utils';
 
 interface PromotersTabProps {
     promoters: Promoter[];
@@ -21,9 +22,19 @@ interface PromotersTabProps {
     showActions?: boolean;
     onUpdate?: (promoter: Promoter) => Promise<void>;
     onDelete?: (promoterId: string) => Promise<boolean>;
+    onPromoterSelect?: (promoter: Promoter) => void;
+    selectedPromoterId?: string | null;
 }
 
-export function PromotersTab({ promoters, isLoading, showActions = false, onUpdate, onDelete }: PromotersTabProps) {
+export function PromotersTab({ 
+    promoters, 
+    isLoading, 
+    showActions = false, 
+    onUpdate, 
+    onDelete,
+    onPromoterSelect,
+    selectedPromoterId
+}: PromotersTabProps) {
     const { toast } = useToast();
     const [searchTerm, setSearchTerm] = useState('');
     const [statusFilter, setStatusFilter] = useState('all');
@@ -56,11 +67,13 @@ export function PromotersTab({ promoters, isLoading, showActions = false, onUpda
 
     }, [promoters, searchTerm, statusFilter, sortBy]);
 
-    const handleEditClick = useCallback((promoter: Promoter) => {
+    const handleEditClick = useCallback((e: React.MouseEvent, promoter: Promoter) => {
+        e.stopPropagation();
         setEditDialogState({ open: true, promoter });
     }, []);
 
-    const openDeleteConfirmation = useCallback((promoter: Promoter) => {
+    const openDeleteConfirmation = useCallback((e: React.MouseEvent, promoter: Promoter) => {
+        e.stopPropagation();
         setPromoterToDelete(promoter);
     }, []);
 
@@ -87,6 +100,12 @@ export function PromotersTab({ promoters, isLoading, showActions = false, onUpda
         setSearchTerm('');
         setStatusFilter('all');
         setSortBy('name-asc');
+    };
+    
+    const handleRowClick = (promoter: Promoter) => {
+        if (onPromoterSelect) {
+            onPromoterSelect(promoter);
+        }
     };
 
     return (
@@ -159,7 +178,14 @@ export function PromotersTab({ promoters, isLoading, showActions = false, onUpda
                                 </TableHeader>
                                 <TableBody>
                                     {filteredAndSortedPromoters.length > 0 ? filteredAndSortedPromoters.map((promoter) => (
-                                        <TableRow key={promoter.id}>
+                                        <TableRow 
+                                            key={promoter.id}
+                                            onClick={() => handleRowClick(promoter)}
+                                            className={cn(
+                                                onPromoterSelect ? 'cursor-pointer' : 'cursor-default',
+                                                selectedPromoterId === promoter.id && "bg-secondary hover:bg-secondary/90"
+                                            )}
+                                        >
                                             <TableCell className="font-medium">{promoter.name}</TableCell>
                                             <TableCell className="text-center">{promoter.referredClients}</TableCell>
                                             <TableCell>
@@ -173,10 +199,10 @@ export function PromotersTab({ promoters, isLoading, showActions = false, onUpda
                                             </TableCell>
                                             {showActions && (
                                                 <TableCell className="text-right">
-                                                    <Button variant="ghost" size="icon" onClick={() => handleEditClick(promoter)}>
+                                                    <Button variant="ghost" size="icon" onClick={(e) => handleEditClick(e, promoter)}>
                                                         <Edit3 className="h-4 w-4" />
                                                     </Button>
-                                                    <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive" onClick={() => openDeleteConfirmation(promoter)}>
+                                                    <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive" onClick={(e) => openDeleteConfirmation(e, promoter)}>
                                                         <Trash2 className="h-4 w-4" />
                                                     </Button>
                                                 </TableCell>

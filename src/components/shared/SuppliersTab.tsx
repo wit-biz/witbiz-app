@@ -13,6 +13,7 @@ import { AddSupplierDialog } from './AddSupplierDialog';
 import { useToast } from '@/hooks/use-toast';
 import { type Supplier } from '@/lib/types';
 import { Badge } from '../ui/badge';
+import { cn } from '@/lib/utils';
 
 interface SuppliersTabProps {
     suppliers: Supplier[];
@@ -20,9 +21,19 @@ interface SuppliersTabProps {
     showActions?: boolean;
     onUpdate?: (supplier: Supplier) => Promise<void>;
     onDelete?: (supplierId: string) => Promise<boolean>;
+    onSupplierSelect?: (supplier: Supplier) => void;
+    selectedSupplierId?: string | null;
 }
 
-export function SuppliersTab({ suppliers, isLoading, showActions = false, onUpdate, onDelete }: SuppliersTabProps) {
+export function SuppliersTab({ 
+    suppliers, 
+    isLoading, 
+    showActions = false, 
+    onUpdate, 
+    onDelete,
+    onSupplierSelect,
+    selectedSupplierId
+}: SuppliersTabProps) {
   const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState('');
   const [serviceFilter, setServiceFilter] = useState('all');
@@ -56,11 +67,13 @@ export function SuppliersTab({ suppliers, isLoading, showActions = false, onUpda
     return filtered.sort((a, b) => a.name.localeCompare(b.name));
   }, [suppliers, searchTerm, serviceFilter]);
 
-  const handleEditClick = useCallback((supplier: Supplier) => {
+  const handleEditClick = useCallback((e: React.MouseEvent, supplier: Supplier) => {
+    e.stopPropagation();
     setEditDialogState({ open: true, supplier });
   }, []);
 
-  const openDeleteConfirmation = useCallback((supplier: Supplier) => {
+  const openDeleteConfirmation = useCallback((e: React.MouseEvent, supplier: Supplier) => {
+    e.stopPropagation();
     setSupplierToDelete(supplier);
   }, []);
 
@@ -82,6 +95,13 @@ export function SuppliersTab({ suppliers, isLoading, showActions = false, onUpda
     await onUpdate(updatedSupplier);
     setEditDialogState({ open: false, supplier: null });
   };
+  
+  const handleRowClick = (supplier: Supplier) => {
+      if (onSupplierSelect) {
+          onSupplierSelect(supplier);
+      }
+  };
+
 
   return (
     <>
@@ -131,7 +151,14 @@ export function SuppliersTab({ suppliers, isLoading, showActions = false, onUpda
                   </TableHeader>
                   <TableBody>
                       {filteredSuppliers.length > 0 ? filteredSuppliers.map((supplier) => (
-                          <TableRow key={supplier.id}>
+                          <TableRow 
+                            key={supplier.id}
+                            onClick={() => handleRowClick(supplier)}
+                            className={cn(
+                                onSupplierSelect ? 'cursor-pointer' : 'cursor-default',
+                                selectedSupplierId === supplier.id && "bg-secondary hover:bg-secondary/90"
+                            )}
+                          >
                               <TableCell className="font-medium">{supplier.name}</TableCell>
                               <TableCell>
                                   <Badge variant={supplier.status === 'Activo' ? 'default' : 'secondary'}>{supplier.status}</Badge>
@@ -140,10 +167,10 @@ export function SuppliersTab({ suppliers, isLoading, showActions = false, onUpda
                               <TableCell>{supplier.service}</TableCell>
                               {showActions && (
                                 <TableCell className="text-right">
-                                    <Button variant="ghost" size="icon" onClick={() => handleEditClick(supplier)}>
+                                    <Button variant="ghost" size="icon" onClick={(e) => handleEditClick(e, supplier)}>
                                         <Edit3 className="h-4 w-4" />
                                     </Button>
-                                    <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive" onClick={() => openDeleteConfirmation(supplier)}>
+                                    <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive" onClick={(e) => openDeleteConfirmation(e, supplier)}>
                                         <Trash2 className="h-4 w-4" />
                                     </Button>
                                 </TableCell>

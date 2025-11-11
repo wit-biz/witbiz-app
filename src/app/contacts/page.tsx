@@ -12,9 +12,13 @@ import { PromotersTab } from "@/components/shared/PromotersTab";
 import { SuppliersTab } from "@/components/shared/SuppliersTab";
 import { useCRMData } from "@/contexts/CRMDataContext";
 import { ClientDetailView } from "@/components/shared/ClientDetailView";
-import type { Client } from "@/lib/types";
+import type { Client, Promoter, Supplier } from "@/lib/types";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { PromoterDetailView } from "@/components/shared/PromoterDetailView";
+import { SupplierDetailView } from "@/components/shared/SupplierDetailView";
+
+type DetailEntityType = 'client' | 'promoter' | 'supplier';
 
 export default function DirectoryPage() {
   const { 
@@ -25,33 +29,61 @@ export default function DirectoryPage() {
   const searchParams = useSearchParams();
   const router = useRouter();
 
-  const [selectedClient, setSelectedClient] = useState<Client | null>(null);
+  const [selectedEntity, setSelectedEntity] = useState<{type: DetailEntityType, data: any} | null>(null);
   const [isDetailDialogOpen, setIsDetailDialogOpen] = useState(false);
   
   useEffect(() => {
     const openClientId = searchParams.get('openClient');
-    if (openClientId && !selectedClient) {
-      const client = getClientById(openClientId);
+    const openPromoterId = searchParams.get('openPromoter');
+    const openSupplierId = searchParams.get('openSupplier');
+
+    if (openClientId) {
+      const client = clients.find(c => c.id === openClientId);
       if(client) {
-        setSelectedClient(client);
+        setSelectedEntity({ type: 'client', data: client });
+        setIsDetailDialogOpen(true);
+      }
+    } else if (openPromoterId) {
+      const promoter = promoters.find(p => p.id === openPromoterId);
+      if(promoter) {
+        setSelectedEntity({ type: 'promoter', data: promoter });
+        setIsDetailDialogOpen(true);
+      }
+    } else if (openSupplierId) {
+       const supplier = suppliers.find(s => s.id === openSupplierId);
+      if(supplier) {
+        setSelectedEntity({ type: 'supplier', data: supplier });
         setIsDetailDialogOpen(true);
       }
     }
-  }, [searchParams, clients, getClientById, selectedClient]);
+  }, [searchParams, clients, promoters, suppliers]);
   
-  const handleClientSelect = (client: Client) => {
-    setSelectedClient(client);
+  const handleEntitySelect = (entity: any, type: DetailEntityType) => {
+    setSelectedEntity({ type, data: entity });
     setIsDetailDialogOpen(true);
-    router.push(`/contacts?openClient=${client.id}`, { scroll: false });
+    router.push(`/contacts?open${type.charAt(0).toUpperCase() + type.slice(1)}=${entity.id}`, { scroll: false });
   };
   
   const handleCloseDetailView = () => {
     setIsDetailDialogOpen(false);
-    // Allow animation to finish before removing from URL
     setTimeout(() => {
-        setSelectedClient(null);
+        setSelectedEntity(null);
         router.push('/contacts', { scroll: false });
     }, 300);
+  }
+  
+  const renderDetailView = () => {
+    if (!selectedEntity) return null;
+    switch(selectedEntity.type) {
+      case 'client':
+        return <ClientDetailView client={selectedEntity.data} onClose={handleCloseDetailView} />;
+      case 'promoter':
+        return <PromoterDetailView promoter={selectedEntity.data} onClose={handleCloseDetailView} />;
+      case 'supplier':
+        return <SupplierDetailView supplier={selectedEntity.data} onClose={handleCloseDetailView} />;
+      default:
+        return null;
+    }
   }
 
   return (
@@ -85,19 +117,31 @@ export default function DirectoryPage() {
                     </TabsTrigger>
                 </TabsList>
                 <TabsContent value="suppliers">
-                    <SuppliersTab suppliers={suppliers} isLoading={isLoadingSuppliers} showActions={false}/>
+                    <SuppliersTab 
+                      suppliers={suppliers} 
+                      isLoading={isLoadingSuppliers} 
+                      onSupplierSelect={(supplier) => handleEntitySelect(supplier, 'supplier')} 
+                      selectedSupplierId={selectedEntity?.type === 'supplier' ? selectedEntity.data.id : null}
+                      showActions={false}
+                    />
                 </TabsContent>
                 <TabsContent value="clients">
                     <ClientsTab 
                       clients={clients} 
                       isLoading={isLoadingClients}
-                      onClientSelect={handleClientSelect}
-                      selectedClientId={selectedClient?.id || null}
+                      onClientSelect={(client) => handleEntitySelect(client, 'client')}
+                      selectedClientId={selectedEntity?.type === 'client' ? selectedEntity.data.id : null}
                       showActions={false}
                     />
                 </TabsContent>
                 <TabsContent value="promoters">
-                    <PromotersTab promoters={promoters} isLoading={isLoadingPromoters} showActions={false} />
+                    <PromotersTab 
+                      promoters={promoters} 
+                      isLoading={isLoadingPromoters}
+                      onPromoterSelect={(promoter) => handleEntitySelect(promoter, 'promoter')}
+                      selectedPromoterId={selectedEntity?.type === 'promoter' ? selectedEntity.data.id : null}
+                      showActions={false} 
+                    />
                 </TabsContent>
             </Tabs>
         </main>
@@ -105,7 +149,7 @@ export default function DirectoryPage() {
       
       <Dialog open={isDetailDialogOpen} onOpenChange={(open) => !open && handleCloseDetailView()}>
         <DialogContent className="max-w-2xl">
-           <ClientDetailView client={selectedClient} onClose={handleCloseDetailView} />
+           {renderDetailView()}
         </DialogContent>
       </Dialog>
     </>
