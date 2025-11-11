@@ -90,17 +90,20 @@ export function AppSidebar() {
                                 ref={searchInputRef}
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
-                                onBlur={() => setIsSearching(false)}
+                                onBlur={() => {
+                                    if(!hasResults) setIsSearching(false);
+                                }}
                                 placeholder="Buscar..."
                                 className="pl-8 h-9"
                             />
                         </div>
                     </PopoverTrigger>
                     <PopoverContent
-                        className="w-[var(--radix-popover-trigger-width)] p-0"
+                        className="w-[var(--radix-popover-trigger-width)] p-0 bg-card"
                         side="bottom"
                         align="center"
                         onOpenAutoFocus={(e) => e.preventDefault()}
+                        onInteractOutside={() => setIsSearching(false)}
                     >
                         <Command>
                             <CommandList>
@@ -164,7 +167,7 @@ export function AppSidebar() {
                             <span className="sr-only">Nuevo...</span>
                         </Button>
                     </DropdownMenuTrigger>
-                    <DropdownMenuContent side="bottom" align="center" className="mb-2">
+                    <DropdownMenuContent side="bottom" align="center" className="mb-2 bg-card">
                          <DropdownMenuItem onSelect={(e) => { e.preventDefault(); setIsSearching(true); }}>
                            <Search className="mr-2 h-4 w-4" />
                            <span>Buscar</span>
