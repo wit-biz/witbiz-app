@@ -6,7 +6,7 @@ import { type Client, type Document, type Task, type WorkflowAction, type Workfl
 import { useCRMData } from "@/contexts/CRMDataContext";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { X, Edit, Trash2, Plus, Download, FileText, UploadCloud, Info, Users, Target, ListTodo, CheckCircle2, Briefcase, UserCheck, Smartphone, CalendarDays, Percent } from "lucide-react";
+import { Edit, Trash2, Plus, Download, FileText, UploadCloud, Info, Users, Target, ListTodo, CheckCircle2, Briefcase, UserCheck, Smartphone, CalendarDays, Percent } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { SmartDocumentUploadDialog } from "./SmartDocumentUploadDialog";
 import { DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
@@ -191,7 +191,7 @@ export function ClientDetailView({ client, onClose }: ClientDetailViewProps) {
                     </Card>
 
                     <Card>
-                        <CardHeader><CardTitle>Estado</CardTitle></CardHeader>
+                        <CardHeader><CardTitle>Tareas pendientes</CardTitle></CardHeader>
                         <CardContent className="space-y-4">
                             {currentStage && (
                                 <div className="flex items-start gap-2">
