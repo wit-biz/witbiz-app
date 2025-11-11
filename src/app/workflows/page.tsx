@@ -21,6 +21,7 @@ import { PromptNameDialog } from "@/components/shared/PromptNameDialog";
 import { Slider } from "@/components/ui/slider";
 import { AddTaskDialog } from "@/components/shared/AddTaskDialog";
 import { Switch } from "@/components/ui/switch";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 
 type AnyStage = WorkflowStage | SubStage | SubSubStage;
 
@@ -232,12 +233,14 @@ export default function WorkflowConfigurationPage() {
     isLoadingWorkflows,
     addService,
     setServiceWorkflows,
+    deleteService,
   } = useCRMData();
   const searchParams = useSearchParams();
   const { showNotification } = useGlobalNotification();
 
   const [selectedWorkflowId, setSelectedWorkflowId] = useState<string | null>(null);
   const [editableWorkflow, setEditableWorkflow] = useState<ServiceWorkflow | null>(null);
+  const [serviceToDelete, setServiceToDelete] = useState<ServiceWorkflow | null>(null);
   
   const [isPromptNameOpen, setIsPromptNameOpen] = useState(false);
   const [promptNameConfig, setPromptNameConfig] = useState<{
@@ -390,6 +393,17 @@ export default function WorkflowConfigurationPage() {
         return newWorkflow;
     });
 };
+  
+  const confirmDeleteService = async () => {
+    if (serviceToDelete) {
+        await deleteService(serviceToDelete.id);
+        setServiceToDelete(null);
+        if (selectedWorkflowId === serviceToDelete.id) {
+            setSelectedWorkflowId(null);
+        }
+    }
+  };
+
 
   const handleAddStage = () => {
        const newStage: WorkflowStage = { 
@@ -463,9 +477,9 @@ export default function WorkflowConfigurationPage() {
         >
           <div className="flex flex-col sm:flex-row gap-2">
               <Button variant="outline" asChild>
-                  <Link href="/crm">
+                  <Link href="/services">
                       <ArrowLeft className="mr-2 h-4 w-4" />
-                      Volver al CRM
+                      Volver a Servicios
                   </Link>
               </Button>
                <Button onClick={handleSaveChanges} disabled={!hasChanges}>
@@ -481,17 +495,24 @@ export default function WorkflowConfigurationPage() {
               <CardHeader>
                   <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 justify-between">
                       <div className="flex-grow w-full sm:w-auto">
-                          <Label htmlFor="service-selector">Servicio Activo</Label>
-                          <Select value={selectedWorkflowId || ""} onValueChange={(id) => setSelectedWorkflowId(id)} disabled={!serviceWorkflows || serviceWorkflows.length === 0 || hasChanges}>
-                              <SelectTrigger id="service-selector" className="mt-1">
-                                  <SelectValue placeholder="Seleccione un servicio para configurar..." />
-                              </SelectTrigger>
-                              <SelectContent>
-                                  {serviceWorkflows && serviceWorkflows.map(service => (
-                                      <SelectItem key={service.id} value={service.id}>{service.name}</SelectItem>
-                                  ))}
-                              </SelectContent>
-                          </Select>
+                           <Label htmlFor="service-selector">Servicios</Label>
+                            <div className="flex gap-2 mt-1">
+                                <Select value={selectedWorkflowId || ""} onValueChange={(id) => setSelectedWorkflowId(id)} disabled={!serviceWorkflows || serviceWorkflows.length === 0 || hasChanges}>
+                                    <SelectTrigger id="service-selector">
+                                        <SelectValue placeholder="Seleccione un servicio para configurar..." />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {serviceWorkflows && serviceWorkflows.map(service => (
+                                            <SelectItem key={service.id} value={service.id}>{service.name}</SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                                {canEditWorkflow && selectedWorkflow && (
+                                    <Button variant="destructive" size="icon" onClick={() => setServiceToDelete(selectedWorkflow)}>
+                                        <Trash2 className="h-4 w-4"/>
+                                    </Button>
+                                )}
+                            </div>
                           {hasChanges && (
                             <p className="text-xs text-destructive mt-2 flex items-center gap-1"><AlertTriangle className="h-3 w-3"/>Tiene cambios sin guardar. Guarde o descarte para cambiar de servicio.</p>
                           )}
@@ -552,10 +573,24 @@ export default function WorkflowConfigurationPage() {
                 inputPlaceholder={promptNameConfig.inputPlaceholder}
             />
         )}
+        
+        <AlertDialog open={!!serviceToDelete} onOpenChange={() => setServiceToDelete(null)}>
+            <AlertDialogContent>
+                <AlertDialogHeader>
+                    <AlertDialogTitle>¿Está seguro?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                        Esta acción no se puede deshacer. Esto eliminará permanentemente el servicio "{serviceToDelete?.name}" y todos sus flujos de trabajo asociados.
+                    </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                    <AlertDialogCancel onClick={() => setServiceToDelete(null)}>Cancelar</AlertDialogCancel>
+                    <AlertDialogAction onClick={confirmDeleteService} className="bg-destructive hover:bg-destructive/90">
+                        Eliminar
+                    </AlertDialogAction>
+                </AlertDialogFooter>
+            </AlertDialogContent>
+        </AlertDialog>
       </div>
     </>
   );
 }
-
-
-

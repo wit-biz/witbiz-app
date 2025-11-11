@@ -85,15 +85,8 @@ export default function ServicesPage() {
 
   const [editingServiceId, setEditingServiceId] = useState<string | null>(null);
   const [editableFields, setEditableFields] = useState<{ description: string; clientRequirements: ClientRequirement[], commissions: Commission[] }>({ description: '', clientRequirements: [], commissions: [] });
-  const [isPromptNameOpen, setIsPromptNameOpen] = useState(false);
   const [openAccordionItem, setOpenAccordionItem] = useState<string | undefined>(undefined);
-  const [serviceToDelete, setServiceToDelete] = useState<ServiceWorkflow | null>(null);
   
-  // State for drag-and-drop
-  const [draggedItemId, setDraggedItemId] = useState<string | null>(null);
-  const [dragOverId, setDragOverId] = useState<string | null>(null);
-
-
   const canEditWorkflow = currentUser?.permissions.crm_edit ?? true;
 
   const handleStartEdit = (service: ServiceWorkflow) => {
@@ -166,58 +159,6 @@ export default function ServicesPage() {
     setEditableFields(prev => ({ ...prev, commissions: newCommissions }));
   };
   
-  const handleAddNewService = async (name: string) => {
-      const newService = await addService(name);
-      if(newService) {
-        setOpenAccordionItem(newService.id);
-        handleStartEdit(newService);
-      }
-  };
-  
-  // --- Drag and Drop Handlers ---
-  const handleDragStart = (e: React.DragEvent<HTMLDivElement>, id: string) => {
-    setDraggedItemId(id);
-    e.dataTransfer.effectAllowed = 'move';
-  };
-
-  const handleDragOver = (e: React.DragEvent<HTMLDivElement>, id: string) => {
-    e.preventDefault();
-    if(id !== draggedItemId) {
-        setDragOverId(id);
-    }
-  };
-  
-  const handleDragLeave = () => {
-      setDragOverId(null);
-  };
-
-  const handleDrop = (e: React.DragEvent<HTMLDivElement>, dropId: string) => {
-    e.preventDefault();
-    if (!draggedItemId || draggedItemId === dropId) return;
-
-    const newServices = [...serviceWorkflows];
-    const draggedIndex = newServices.findIndex(s => s.id === draggedItemId);
-    const dropIndex = newServices.findIndex(s => s.id === dropId);
-    
-    const [reorderedItem] = newServices.splice(draggedIndex, 1);
-    newServices.splice(dropIndex, 0, reorderedItem);
-
-    setServiceWorkflows(newServices); // Update state in context
-    setDraggedItemId(null);
-    setDragOverId(null);
-  };
-  
-  const confirmDeleteService = async () => {
-    if (serviceToDelete) {
-        await deleteService(serviceToDelete.id);
-        setServiceToDelete(null);
-        // If the deleted service was the open one, close the accordion
-        if (openAccordionItem === serviceToDelete.id) {
-            setOpenAccordionItem(undefined);
-        }
-    }
-  };
-
   if (isLoadingWorkflows) {
     return (
       <div className="flex flex-col min-h-screen">
@@ -226,9 +167,11 @@ export default function ServicesPage() {
           description="Gestione los servicios que ofrece su empresa."
         >
           {canEditWorkflow && (
-            <Button disabled>
-              <PlusCircle className="mr-2 h-4 w-4" />
-              Añadir Nuevo Servicio
+            <Button asChild>
+                <Link href="/workflows">
+                    <WorkflowIcon className="mr-2 h-4 w-4" />
+                    Configurar Flujos de Trabajo
+                </Link>
             </Button>
           )}
         </Header>
@@ -247,9 +190,11 @@ export default function ServicesPage() {
           description="Gestione los servicios y la documentación asociada."
         >
           {canEditWorkflow && (
-            <Button onClick={() => setIsPromptNameOpen(true)}>
-              <PlusCircle className="mr-2 h-4 w-4" />
-              Añadir Nuevo Servicio
+            <Button asChild>
+                <Link href="/workflows">
+                    <WorkflowIcon className="mr-2 h-4 w-4" />
+                    Configurar Flujos de Trabajo
+                </Link>
             </Button>
           )}
         </Header>
@@ -259,22 +204,10 @@ export default function ServicesPage() {
               {serviceWorkflows.map((service) => {
                 const isEditing = editingServiceId === service.id;
                 return (
-                   <div
-                    key={service.id}
-                    draggable={canEditWorkflow}
-                    onDragStart={(e) => handleDragStart(e, service.id)}
-                    onDragOver={(e) => handleDragOver(e, service.id)}
-                    onDragLeave={handleDragLeave}
-                    onDrop={(e) => handleDrop(e, service.id)}
-                    className={cn(
-                        "transition-all",
-                        draggedItemId === service.id ? "opacity-50" : "opacity-100",
-                        dragOverId === service.id && "border-t-2 border-primary"
-                    )}
-                   >
+                   <div key={service.id}>
                     <AccordionItem value={service.id} asChild>
                        <Card>
-                          <AccordionTrigger className="w-full p-0 [&_svg]:ml-auto [&_svg]:mr-4 cursor-grab active:cursor-grabbing">
+                          <AccordionTrigger className="w-full p-0 [&_svg]:ml-auto [&_svg]:mr-4">
                               <CardHeader className="flex-1 text-left">
                                   <CardTitle className="text-lg">
                                       {service.name}
@@ -389,17 +322,8 @@ export default function ServicesPage() {
                                       ) : (
                                         <>
                                           <Button variant="outline" onClick={() => handleStartEdit(service)}><Edit className="mr-2 h-4 w-4"/>Editar</Button>
-                                          <Button variant="destructive" onClick={() => setServiceToDelete(service)}>
-                                                <Trash2 className="mr-2 h-4 w-4"/>Eliminar
-                                          </Button>
                                         </>
                                       )}
-                                      <Button asChild>
-                                          <Link href={`/workflows?serviceId=${service.id}`}>
-                                              <WorkflowIcon className="mr-2 h-4 w-4" />
-                                              Configurar Flujo de Trabajo
-                                          </Link>
-                                      </Button>
                                   </div>
                               </div>
                           </AccordionContent>
@@ -414,36 +338,12 @@ export default function ServicesPage() {
               <Briefcase className="mx-auto h-12 w-12 mb-4" />
               <h3 className="text-lg font-semibold">No hay servicios configurados</h3>
               <p className="text-sm mt-1">
-                Empiece por añadir un nuevo servicio para poder configurar su flujo de trabajo.
+                Vaya a la sección de configuración para añadir un nuevo servicio.
               </p>
             </div>
           )}
         </main>
       </div>
-      <PromptNameDialog
-        isOpen={isPromptNameOpen}
-        onOpenChange={setIsPromptNameOpen}
-        title="Añadir Nuevo Servicio"
-        description="Introduzca un nombre para el nuevo servicio. Podrá configurar los detalles más tarde."
-        label="Nombre del Servicio"
-        onSave={handleAddNewService}
-      />
-       <AlertDialog open={!!serviceToDelete} onOpenChange={() => setServiceToDelete(null)}>
-        <AlertDialogContent>
-            <AlertDialogHeader>
-                <AlertDialogTitle>¿Está seguro?</AlertDialogTitle>
-                <AlertDialogDescription>
-                    Esta acción no se puede deshacer. Esto eliminará permanentemente el servicio "{serviceToDelete?.name}" y todos sus flujos de trabajo asociados.
-                </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-                <AlertDialogCancel onClick={() => setServiceToDelete(null)}>Cancelar</AlertDialogCancel>
-                <AlertDialogAction onClick={confirmDeleteService} className="bg-destructive hover:bg-destructive/90">
-                    Eliminar
-                </AlertDialogAction>
-            </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </>
   );
 }

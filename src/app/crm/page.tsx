@@ -21,7 +21,8 @@ import {
   ListTodo,
   ChevronDown,
   ChevronsRight,
-  ChevronRight
+  ChevronRight,
+  Briefcase
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { Client, WorkflowStage, ServiceWorkflow, SubStage, SubSubStage } from '@/lib/types';
@@ -163,9 +164,9 @@ export default function CrmPage() {
         description="Vista general de todos los clientes en cada etapa del flujo."
       >
         <Button asChild>
-            <Link href="/workflows">
-                <Settings className="mr-2 h-4 w-4" />
-                Configurar Flujos
+            <Link href="/services">
+                <Briefcase className="mr-2 h-4 w-4" />
+                Gestionar Servicios
             </Link>
         </Button>
       </Header>
