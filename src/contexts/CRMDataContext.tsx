@@ -23,9 +23,9 @@ import {
     type Commission,
 } from '@/lib/types';
 import { useUser, useFirestore, useMemoFirebase, useCollection, useDoc, useAuth, addDocumentNonBlocking, setDocumentNonBlocking, deleteDocumentNonBlocking } from '@/firebase';
-import { collection, doc, writeBatch, serverTimestamp, query } from 'firebase/firestore';
+import { collection, doc, writeBatch, serverTimestamp, query, where } from 'firebase/firestore';
 import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
-import { teamMembers as mockTeamMembers, clients as mockClients, serviceWorkflows as mockServiceWorkflows, tasks as mockTasks, documents as mockDocuments } from '@/lib/data';
+import { teamMembers as mockTeamMembers, serviceWorkflows as mockServiceWorkflows } from '@/lib/data';
 import { addDays, format } from 'date-fns';
 
 type AnyStage = WorkflowStage | SubStage | SubSubStage;
@@ -89,46 +89,35 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
     const [isLoadingNotes, setIsLoadingNotes] = useState(false);
     
     const [currentUser, setCurrentUser] = useState<AuthenticatedUser | null>(null);
-    
-    // --- Firestore Data ---
-    const [clients, setClients] = useState<Client[]>(mockClients);
-    const [isLoadingClients, setIsLoadingClients] = useState(false);
-    
-    const [tasks, setTasks] = useState<Task[]>(mockTasks);
-    const [isLoadingTasks, setIsLoadingTasks] = useState(false);
-    
-    const [documents, setDocuments] = useState<Document[]>(mockDocuments);
-    const [isLoadingDocuments, setIsLoadingDocuments] = useState(false);
 
-    const [serviceWorkflows, setServiceWorkflows] = useState<ServiceWorkflow[]>(mockServiceWorkflows);
-    const [isLoadingWorkflows, setIsLoadingWorkflows] = useState(false);
+    // --- Collections ---
+    const clientsCollection = useMemoFirebase(() => user ? collection(firestore, 'users', user.uid, 'clients') : null, [firestore, user]);
+    const tasksCollection = useMemoFirebase(() => user ? collection(firestore, 'users', user.uid, 'tasks') : null, [firestore, user]);
+    const documentsCollection = useMemoFirebase(() => user ? collection(firestore, 'users', user.uid, 'documents') : null, [firestore, user]);
+    const serviceWorkflowsCollection = useMemoFirebase(() => user ? collection(firestore, 'users', user.uid, 'serviceWorkflows') : null, [firestore, user]);
+
+    // --- Firestore Data ---
+    const { data: clients = [], isLoading: isLoadingClients } = useCollection<Client>(clientsCollection);
+    const { data: tasks = [], isLoading: isLoadingTasks } = useCollection<Task>(tasksCollection);
+    const { data: documents = [], isLoading: isLoadingDocuments } = useCollection<Document>(documentsCollection);
+    const { data: serviceWorkflows = [], isLoading: isLoadingWorkflows } = useCollection<ServiceWorkflow>(serviceWorkflowsCollection);
 
 
     useEffect(() => {
         if (user) {
+            // Find user in mock team members to assign permissions. In a real app, this would come from the DB.
             const userInTeam = teamMembers.find(m => m.email === user.email);
             setCurrentUser({
                 uid: user.uid,
                 email: user.email,
                 displayName: user.displayName,
                 photoURL: userInTeam?.photoURL || user.photoURL,
+                // In a real app, permissions would be fetched based on the user's role from the database.
                 permissions: { 
-                  dashboard: true, 
-                  clients_view: true, 
-                  tasks_view: true, 
-                  crm_view: true, 
-                  finances_view: true, 
-                  admin_view: true,
-                  clients_create: true,
-                  clients_edit: true,
-                  clients_delete: true,
-                  tasks_create: true,
-                  tasks_edit: true,
-                  tasks_delete: true,
-                  crm_edit: true,
-                  team_invite: true,
-                  documents_view: true,
-                  services_view: true,
+                  dashboard: true, clients_view: true, tasks_view: true, crm_view: true, finances_view: true, admin_view: true,
+                  clients_create: true, clients_edit: true, clients_delete: true,
+                  tasks_create: true, tasks_edit: true, tasks_delete: true,
+                  crm_edit: true, team_invite: true, documents_view: true, services_view: true,
                 },
             });
         } else {
@@ -165,83 +154,86 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
     // --- Data Handlers ---
 
     const addClient = async (newClientData: Omit<Client, 'id'>): Promise<Client | null> => {
-        // if (!clientsCollection || !serviceWorkflows) return null;
-        if (!serviceWorkflows) return null;
+        if (!clientsCollection || !serviceWorkflows) return null;
         
-        // Find the first stage of the first subscribed service to set the initial state
         const firstServiceId = newClientData.subscribedServiceIds[0];
         const service = serviceWorkflows.find(s => s.id === firstServiceId);
         const initialStage = service?.stages?.[0];
 
-        const payload: Client = {
-            id: `client-${Date.now()}`,
+        const payload = {
             ...newClientData,
             currentWorkflowStageId: initialStage?.id,
-            createdAt: new Date(),
+            createdAt: serverTimestamp(),
         };
+
+        const docRef = await addDocumentNonBlocking(clientsCollection, payload);
         
-        setClients(prev => [...prev, payload]);
-        
-        // Auto-generate tasks for the initial stage
+        const newClient = { id: docRef.id, ...payload } as Client;
+
         if (initialStage?.actions) {
             for (const action of initialStage.actions) {
                 await addTask({
                     ...action,
-                    clientId: payload.id,
+                    clientId: newClient.id,
                 });
             }
         }
         
-        return payload;
+        return newClient;
     };
+
     const updateClient = async (clientId: string, updates: Partial<Client>): Promise<boolean> => {
-        setClients(prev => prev.map(c => c.id === clientId ? {...c, ...updates} : c));
+        if (!user || !firestore) return false;
+        const docRef = doc(firestore, 'users', user.uid, 'clients', clientId);
+        await setDocumentNonBlocking(docRef, updates, { merge: true });
         return true;
     };
+
     const deleteClient = async (clientId: string): Promise<boolean> => {
-        setClients(prev => prev.filter(c => c.id !== clientId));
+        if (!user || !firestore) return false;
+        const docRef = doc(firestore, 'users', user.uid, 'clients', clientId);
+        await deleteDocumentNonBlocking(docRef);
         return true;
     };
     
     const addTask = async (newTaskData: Omit<Task, 'id' | 'status'>): Promise<Task | null> => {
-        if (!currentUser) return null;
+        if (!currentUser || !tasksCollection) return null;
         const client = clients.find(c => c.id === newTaskData.clientId);
         if (!client) return null;
 
         let finalDueDate: string;
-        // If the task comes from a workflow advancement, set it to the next day.
-        // We can detect this by checking if it doesn't have a specific dueDate from the dialog.
         if (newTaskData.dueDate === undefined) {
              finalDueDate = format(addDays(new Date(), 1), 'yyyy-MM-dd');
         } else if (newTaskData.dueDate instanceof Date) {
             finalDueDate = format(newTaskData.dueDate, 'yyyy-MM-dd');
         } else {
-            finalDueDate = newTaskData.dueDate; // Assume it's already a string in the correct format
+            finalDueDate = newTaskData.dueDate;
         }
 
         const assignedUserId = newTaskData.assignedToId || currentUser.uid;
         const assignedUser = teamMembers.find(m => m.id === assignedUserId);
 
-        const newTaskPayload: Task = { 
-            id: `task-${Date.now()}`,
+        const newTaskPayload = { 
             ...newTaskData, 
             dueDate: finalDueDate,
-            status: 'Pendiente', 
+            status: 'Pendiente' as const, 
             clientName: client.name,
             assignedToId: assignedUser?.id || currentUser.uid,
             assignedToName: assignedUser?.name || currentUser.displayName || 'Usuario Actual',
             assignedToPhotoURL: assignedUser?.photoURL || currentUser.photoURL || '',
             createdAt: serverTimestamp()
         };
-        setTasks(prev => [...prev, newTaskPayload]);
+
+        const docRef = await addDocumentNonBlocking(tasksCollection, newTaskPayload);
         showNotification('success', 'Tarea Creada', `La tarea "${newTaskPayload.title}" ha sido creada.`);
-        return newTaskPayload;
+        return { id: docRef.id, ...newTaskPayload } as Task;
     };
     
     const updateTask = async (taskId: string, updates: Partial<Task>): Promise<boolean> => {
-        setTasks(prev => prev.map(t => t.id === taskId ? {...t, ...updates} : t));
-
-        // Check for workflow progression if task is completed
+        if (!user || !firestore) return false;
+        const docRef = doc(firestore, 'users', user.uid, 'tasks', taskId);
+        await setDocumentNonBlocking(docRef, updates, { merge: true });
+        
         if (updates.status === 'Completada') {
             const completedTask = tasks.find(t => t.id === taskId);
             if (completedTask) {
@@ -250,12 +242,11 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
         }
         return true;
     };
-
+    
     const checkAndAdvanceWorkflow = async (clientId: string) => {
         const client = clients.find(c => c.id === clientId);
         if (!client || !client.currentWorkflowStageId) return;
 
-        // Give state a moment to update
         await new Promise(resolve => setTimeout(resolve, 500));
 
         const clientTasks = tasks.filter(t => t.clientId === clientId);
@@ -264,20 +255,17 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
         const currentStage = allStages.find(s => s.id === client.currentWorkflowStageId);
         if (!currentStage) return;
 
-        // Find tasks related to the current stage's actions that are still pending
         const pendingTasksForCurrentStage = clientTasks.filter(task => {
             const isTaskForThisStage = currentStage.actions.some(action => action.title === task.title);
             return isTaskForThisStage && task.status === 'Pendiente';
         });
 
-        // If there are no more pending tasks for the current stage, advance
         if (pendingTasksForCurrentStage.length === 0) {
             const nextStage = findNextStage(client.currentWorkflowStageId);
             if (nextStage) {
                 await updateClient(clientId, { currentWorkflowStageId: nextStage.id });
                 showNotification('info', 'Cliente Avanzó', `${client.name} ha avanzado a la etapa: ${nextStage.title}.`);
 
-                // Create tasks for the new stage for the next day
                 for (const action of nextStage.actions) {
                     await addTask({ ...action, clientId: clientId });
                 }
@@ -317,23 +305,28 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
     };
 
     const deleteTask = async (taskId: string): Promise<boolean> => {
-        setTasks(prev => prev.filter(t => t.id !== taskId));
+        if (!user || !firestore) return false;
+        const docRef = doc(firestore, 'users', user.uid, 'tasks', taskId);
+        await deleteDocumentNonBlocking(docRef);
         return true;
     };
 
     const addDocument = async (newDocumentData: Omit<Document, 'id' | 'uploadedAt' | 'downloadURL'>, file?: File): Promise<Document | null> => {
+        if (!documentsCollection) return null;
+        // In a real app, you'd upload the file to Firebase Storage and get a downloadURL
         const newDoc = { 
-            ...newDocumentData, 
-            id: `doc-${Date.now()}`, 
-            uploadedAt: new Date(), 
-            downloadURL: '#' 
+            ...newDocumentData,
+            uploadedAt: serverTimestamp(),
+            downloadURL: '#' // Placeholder
         };
-        setDocuments(prev => [...prev, newDoc]);
-        return newDoc;
+        const docRef = await addDocumentNonBlocking(documentsCollection, newDoc);
+        return { id: docRef.id, ...newDoc } as Document;
     }
 
     const deleteDocument = async (id: string): Promise<boolean> => {
-        setDocuments(prev => prev.filter(d => d.id !== id));
+        if (!user || !firestore) return false;
+        const docRef = doc(firestore, 'users', user.uid, 'documents', id);
+        await deleteDocumentNonBlocking(docRef);
         return true;
     }
 
@@ -364,6 +357,7 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
     // --- Service / Workflow Handlers ---
 
     const addService = async (name: string): Promise<ServiceWorkflow | null> => {
+        if (!serviceWorkflowsCollection) return null;
         const newServiceData: Omit<ServiceWorkflow, 'id'> = {
             name: name,
             description: "",
@@ -372,25 +366,33 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
             stages: [],
             subServices: [], // legacy
         };
-        const newService = { ...newServiceData, id: `service-${Date.now()}` };
-        setServiceWorkflows(prev => [...prev, newService]);
-        return newService;
+        const docRef = await addDocumentNonBlocking(serviceWorkflowsCollection, newServiceData);
+        return { ...newServiceData, id: docRef.id };
     };
 
     const updateService = async (serviceId: string, updates: Partial<Omit<ServiceWorkflow, 'id' | 'stages' | 'subServices'>>): Promise<boolean> => {
-        setServiceWorkflows(prev => prev.map(s => s.id === serviceId ? { ...s, ...updates } : s));
+        if (!user || !firestore) return false;
+        const docRef = doc(firestore, 'users', user.uid, 'serviceWorkflows', serviceId);
+        await setDocumentNonBlocking(docRef, updates, { merge: true });
         showNotification('success', 'Servicio Guardado', 'Los cambios se han guardado correctamente.');
         return true;
     }
     
     const setServiceWorkflowsAndPersist = (workflows: ServiceWorkflow[]) => {
-      // In mock mode, just update the state
-      setServiceWorkflows(workflows);
+      if (!user || !firestore) return;
+      const batch = writeBatch(firestore);
+      workflows.forEach(wf => {
+          const docRef = doc(firestore, 'users', user.uid, 'serviceWorkflows', wf.id);
+          batch.set(docRef, wf, { merge: true });
+      });
+      batch.commit().catch(err => console.error("Error saving workflow order", err));
     };
 
 
     const deleteService = async (serviceId: string): Promise<boolean> => {
-        setServiceWorkflows(prev => prev.filter(s => s.id !== serviceId));
+        if (!user || !firestore) return false;
+        const docRef = doc(firestore, 'users', user.uid, 'serviceWorkflows', serviceId);
+        await deleteDocumentNonBlocking(docRef);
         showNotification('success', 'Servicio Eliminado', 'El servicio ha sido eliminado.');
         return true;
     }

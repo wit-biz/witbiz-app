@@ -4,23 +4,26 @@ import type { Client, Task, Document, Note, WorkflowStage, NavItem, Promoter, Se
 import { addDays, format, subDays } from 'date-fns';
 
 export const teamMembers: AppUser[] = [
-    // { id: 'user-1', name: 'Admin User', email: 'admin@witbiz.com', role: 'Director', photoURL: 'https://picsum.photos/seed/99/40/40' },
-    // { id: 'user-2', name: 'Carla Collaborator', email: 'carla@witbiz.com', role: 'Colaborador', photoURL: 'https://picsum.photos/seed/2/40/40' },
-    // { id: 'user-3', name: 'Andrea Admin', email: 'andrea@witbiz.com', role: 'Administrador', photoURL: 'https://picsum.photos/seed/1/40/40' },
+    { id: 'user-1', name: 'Admin User', email: 'admin@witbiz.com', role: 'Director', photoURL: 'https://picsum.photos/seed/99/40/40' },
+    { id: 'user-2', name: 'Carla Collaborator', email: 'carla@witbiz.com', role: 'Colaborador', photoURL: 'https://picsum.photos/seed/2/40/40' },
+    { id: 'user-3', name: 'Andrea Admin', email: 'andrea@witbiz.com', role: 'Administrador', photoURL: 'https://picsum.photos/seed/1/40/40' },
 ];
 
+// This will now be fetched from Firestore, so we can keep it empty.
 export const serviceWorkflows: ServiceWorkflow[] = [];
 
-
-export const promoters: Promoter[] = [];
-
+// This will now be fetched from Firestore, so we can keep it empty.
 export const clients: Client[] = [];
 
-
+// This will now be fetched from Firestore, so we can keep it empty.
 export const tasks: Task[] = [];
 
+// This will now be fetched from Firestore, so we can keep it empty.
 export const documents: Document[] = [];
 
+
+// Mock data for entities not yet in Firestore.
+export const promoters: Promoter[] = [];
 export const notes: Note[] = [];
 
 export const navItems: NavItem[] = [
@@ -32,5 +35,3 @@ export const navItems: NavItem[] = [
     { href: '/settings', label: 'Contabilidad', icon: 'DollarSign', requiredPermission: 'admin_view' },
     { href: '/finances', label: 'Finanzas', icon: 'Landmark', requiredPermission: 'finances_view' },
 ];
-
-    
