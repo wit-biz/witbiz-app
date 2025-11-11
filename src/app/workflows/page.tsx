@@ -7,7 +7,7 @@ import Link from "next/link";
 import { useSearchParams, useRouter } from "next/navigation";
 import { Header } from "@/components/header";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import { useCRMData, type WorkflowStage, type ServiceWorkflow, type WorkflowAction, type SubStage, type SubSubStage } from "@/contexts/CRMDataContext"; 
+import { useCRMData, type WorkflowStage, type ServiceWorkflow, type WorkflowAction, type SubStage, type SubSubStage, type Commission } from "@/contexts/CRMDataContext"; 
 import { Edit, Save, Trash2, Plus, X, Loader2, UploadCloud, ChevronsRight, FileText, ListTodo, Workflow as WorkflowIcon, ArrowLeft, PlusCircle, Layers, FolderCog, Redo, AlertTriangle, GripVertical, ChevronsUpDown } from "lucide-react";
 import { Card, CardHeader, CardTitle, CardContent, CardDescription, CardFooter } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
@@ -26,6 +26,9 @@ import { DndContext, closestCenter, type DragEndEvent } from "@dnd-kit/core";
 import { arrayMove, SortableContext, useSortable, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
+import { ServiceDetailsEditor } from "@/components/services/DetailsEditor";
+import { ServiceDocumentsEditor } from "@/components/services/DocumentsEditor";
+import { ServiceCommissionsEditor } from "@/components/services/CommissionsEditor";
 
 
 type AnyStage = WorkflowStage | SubStage | SubSubStage;
@@ -528,7 +531,7 @@ export default function WorkflowConfigurationPage() {
     <>
       <div className="flex flex-col min-h-screen">
         <Header 
-          title="Configuración de Flujos de Trabajo" 
+          title="Configuración de Servicios y Flujos" 
           description="Diseñe las etapas y tareas automáticas para cada servicio."
         >
             <div className="flex flex-col sm:flex-row gap-2">
@@ -550,7 +553,7 @@ export default function WorkflowConfigurationPage() {
         <main className="flex-1 p-4 md:p-8 space-y-6">
             <Card>
                 <CardHeader>
-                    <CardTitle>Servicio Seleccionado</CardTitle>
+                    <CardTitle>Selector de Servicio</CardTitle>
                     <CardDescription>Seleccione un servicio para configurar o reordenar la lista.</CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -605,50 +608,93 @@ export default function WorkflowConfigurationPage() {
                     )}
                 </CardContent>
             </Card>
-
-            <Card>
-              {editableWorkflow ? (
-                <>
-                <CardHeader>
-                  <CardTitle>{editableWorkflow.name}</CardTitle>
-                  <CardDescription>Configure las etapas principales para este servicio.</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-6">
-                    <div className="space-y-4">
-                        {canEditWorkflow && (
-                            <Button size="sm" variant="default" onClick={handleAddStage}>
-                                <Plus className="mr-2 h-4 w-4"/>Añadir Etapa Principal
-                            </Button>
-                        )}
-                        <Accordion type="multiple" className="w-full space-y-4" defaultValue={editableWorkflow.stages?.map(s => s.id) || []}>
-                            {editableWorkflow.stages && editableWorkflow.stages.length > 0 ? (
-                                editableWorkflow.stages.map((stage, i) => (
-                                    <StageCard
-                                        key={stage.id}
-                                        stage={stage}
-                                        level={1}
-                                        index={i}
-                                        path={`stages.${i}`}
-                                        onUpdate={(path, updates) => handleUpdate(path, updates)}
-                                        onDelete={handleDelete}
-                                        onAddSubStage={handleAddSubStage}
-                                        onAddTask={handleAddTask}
+            
+            {editableWorkflow ? (
+                <Accordion type="multiple" defaultValue={["details", "stages"]} className="w-full space-y-4">
+                    <AccordionItem value="details" asChild>
+                        <Card>
+                            <AccordionTrigger className="w-full p-0 [&_svg]:ml-auto [&_svg]:mr-4">
+                                <CardHeader className="flex-1 text-left">
+                                    <CardTitle>Detalles y Documentos del Servicio</CardTitle>
+                                    <CardDescription>Edite la información general, comisiones y recursos descargables.</CardDescription>
+                                </CardHeader>
+                            </AccordionTrigger>
+                            <AccordionContent className="p-6 pt-0">
+                                <div className="grid md:grid-cols-2 gap-6">
+                                    <ServiceDetailsEditor
+                                        description={editableWorkflow.description || ''}
+                                        clientRequirements={editableWorkflow.clientRequirements?.map(r => r.text).join('\n') || ''}
+                                        onUpdate={(field, value) => {
+                                            if (field === 'clientRequirements') {
+                                                const requirements = value.split('\n').map(text => ({ id: `req-${Date.now()}-${Math.random()}`, text }));
+                                                setEditableWorkflow(prev => prev ? { ...prev, [field]: requirements } : null);
+                                            } else {
+                                                setEditableWorkflow(prev => prev ? { ...prev, [field]: value } : null);
+                                            }
+                                        }}
+                                        canEdit={canEditWorkflow}
                                     />
-                                ))
-                            ) : (
-                                <p className="text-sm text-muted-foreground text-center py-8">{canEditWorkflow ? 'Añada una etapa para empezar.' : 'No hay etapas principales definidas.'}</p>
-                            )}
-                        </Accordion>
-                    </div>
-                </CardContent>
-                </>
-              ) : (
-                  <div className="flex flex-col items-center justify-center h-full text-center text-muted-foreground p-12">
+                                    <div className="space-y-4">
+                                        <ServiceCommissionsEditor
+                                            commissions={editableWorkflow.commissions || []}
+                                            onUpdate={(commissions: Commission[]) => setEditableWorkflow(prev => prev ? { ...prev, commissions } : null)}
+                                            canEdit={canEditWorkflow}
+                                        />
+                                        <ServiceDocumentsEditor serviceId={editableWorkflow.id} canEdit={canEditWorkflow} />
+                                    </div>
+                                </div>
+                            </AccordionContent>
+                        </Card>
+                    </AccordionItem>
+
+                    <AccordionItem value="stages" asChild>
+                        <Card>
+                            <AccordionTrigger className="w-full p-0 [&_svg]:ml-auto [&_svg]:mr-4">
+                                <CardHeader className="flex-1 text-left">
+                                  <CardTitle>Etapas del Flujo de Trabajo</CardTitle>
+                                  <CardDescription>Configure las etapas principales para este servicio.</CardDescription>
+                                </CardHeader>
+                            </AccordionTrigger>
+                            <AccordionContent className="p-6 pt-0 space-y-6">
+                                <div className="space-y-4">
+                                    {canEditWorkflow && (
+                                        <Button size="sm" variant="default" onClick={handleAddStage}>
+                                            <Plus className="mr-2 h-4 w-4"/>Añadir Etapa Principal
+                                        </Button>
+                                    )}
+                                    <Accordion type="multiple" className="w-full space-y-4" defaultValue={editableWorkflow.stages?.map(s => s.id) || []}>
+                                        {editableWorkflow.stages && editableWorkflow.stages.length > 0 ? (
+                                            editableWorkflow.stages.map((stage, i) => (
+                                                <StageCard
+                                                    key={stage.id}
+                                                    stage={stage}
+                                                    level={1}
+                                                    index={i}
+                                                    path={`stages.${i}`}
+                                                    onUpdate={(path, updates) => handleUpdate(path, updates)}
+                                                    onDelete={handleDelete}
+                                                    onAddSubStage={handleAddSubStage}
+                                                    onAddTask={handleAddTask}
+                                                />
+                                            ))
+                                        ) : (
+                                            <p className="text-sm text-muted-foreground text-center py-8">{canEditWorkflow ? 'Añada una etapa para empezar.' : 'No hay etapas principales definidas.'}</p>
+                                        )}
+                                    </Accordion>
+                                </div>
+                            </AccordionContent>
+                        </Card>
+                    </AccordionItem>
+                </Accordion>
+            ) : (
+              <Card>
+                  <CardContent className="flex flex-col items-center justify-center h-full text-center text-muted-foreground p-12">
                       <Layers className="h-12 w-12 mb-4" />
                       <p>Seleccione un servicio para ver su flujo de trabajo.</p>
-                  </div>
-              )}
-            </Card>
+                  </CardContent>
+              </Card>
+            )}
+
         </main>
 
         {promptNameConfig && (
