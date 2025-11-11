@@ -297,7 +297,7 @@ export default function WorkflowConfigurationPage() {
         setSelectedWorkflowId(sorted[0].id);
       }
     }
-  }, [initialWorkflows]);
+  }, [initialWorkflows, searchParams, selectedWorkflowId]);
 
   const selectedWorkflow = useMemo(() => {
     if (!orderedWorkflows) return null;
@@ -320,17 +320,13 @@ export default function WorkflowConfigurationPage() {
   const handleDragEnd = (event: DragEndEvent) => {
       const { active, over } = event;
       if (over && active.id !== over.id) {
-          setOrderedWorkflows((items) => {
-              const oldIndex = items.findIndex(item => item.id === active.id);
-              const newIndex = items.findIndex(item => item.id === over.id);
-              const newOrder = arrayMove(items, oldIndex, newIndex);
-              
-              const updatedOrderWithFirestore = newOrder.map((wf, index) => ({...wf, order: index}));
-              setServiceWorkflows(updatedOrderWithFirestore);
-              showNotification('info', 'Orden guardado', 'El nuevo orden de los servicios ha sido guardado.');
-
-              return updatedOrderWithFirestore;
-          });
+          const reorderedItems = arrayMove(orderedWorkflows, orderedWorkflows.findIndex(item => item.id === active.id), orderedWorkflows.findIndex(item => item.id === over.id));
+          const updatedOrderWithFirestore = reorderedItems.map((wf, index) => ({...wf, order: index}));
+          
+          setServiceWorkflows(updatedOrderWithFirestore);
+          setOrderedWorkflows(updatedOrderWithFirestore); // Update local state immediately for smoother UI
+          
+          showNotification('info', 'Orden guardado', 'El nuevo orden de los servicios ha sido guardado.');
       }
   };
 
@@ -362,19 +358,23 @@ export default function WorkflowConfigurationPage() {
   }, [hasChanges, router, showNotification]);
 
 
-  const handleDiscardChanges = () => {
+  const handleDiscardChanges = useCallback(() => {
       if(selectedWorkflow) {
-        setEditableWorkflow(JSON.parse(JSON.stringify(selectedWorkflow)));
-        showNotification('info', 'Cambios Descartados', 'Se han revertido las modificaciones.');
+        Promise.resolve(setEditableWorkflow(JSON.parse(JSON.stringify(selectedWorkflow)))).then(() => {
+          showNotification('info', 'Cambios Descartados', 'Se han revertido las modificaciones.');
+        });
       }
-  }
+  }, [selectedWorkflow, showNotification]);
 
-  const handleSaveChanges = () => {
+  const handleSaveChanges = useCallback(() => {
     if (!editableWorkflow) return;
     const updatedWorkflows = orderedWorkflows.map(wf => wf.id === editableWorkflow.id ? editableWorkflow : wf);
-    setServiceWorkflows(updatedWorkflows);
-    showNotification('success', 'Flujo Guardado', 'Los cambios en el flujo de trabajo han sido guardados.');
-  };
+    
+    // Using a promise to ensure state updates before notification
+    Promise.resolve(setServiceWorkflows(updatedWorkflows)).then(() => {
+      showNotification('success', 'Flujo Guardado', 'Los cambios en el flujo de trabajo han sido guardados.');
+    });
+  }, [editableWorkflow, orderedWorkflows, setServiceWorkflows, showNotification]);
   
 
 
@@ -568,8 +568,8 @@ export default function WorkflowConfigurationPage() {
                             </Button>
                         </PopoverTrigger>
                         <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
-                            <div className="p-2 space-y-1">
-                                <DndContext collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+                            <DndContext collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+                                <div className="p-2 space-y-1">
                                     <SortableContext items={orderedWorkflows.map(wf => wf.id)} strategy={verticalListSortingStrategy}>
                                         {orderedWorkflows.map(service => (
                                             <SortableServiceItem
@@ -580,8 +580,8 @@ export default function WorkflowConfigurationPage() {
                                             />
                                         ))}
                                     </SortableContext>
-                                </DndContext>
-                            </div>
+                                </div>
+                            </DndContext>
                             {canEditWorkflow && (
                                 <>
                                 <div className="border-t p-2">
