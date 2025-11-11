@@ -29,6 +29,8 @@ interface SmartDocumentUploadDialogProps {
   onClientAdded?: (client: Client) => void;
   preselectedClientId?: string;
   preselectedServiceId?: string; 
+  preselectedPromoterId?: string;
+  preselectedSupplierId?: string;
 }
 
 export function SmartDocumentUploadDialog({
@@ -38,34 +40,33 @@ export function SmartDocumentUploadDialog({
   onClientAdded,
   preselectedClientId,
   preselectedServiceId,
+  preselectedPromoterId,
+  preselectedSupplierId,
 }: SmartDocumentUploadDialogProps) {
-  const { clients, serviceWorkflows, addClient, addDocument } = useCRMData();
+  const { clients, serviceWorkflows, promoters, suppliers, addClient, addDocument } = useCRMData();
   const { toast } = useToast();
 
   const [file, setFile] = useState<File | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [associationType, setAssociationType] = useState<'client' | 'service' | 'none'>('client');
-  const [selectedClientId, setSelectedClientId] = useState<string>('');
-  const [selectedServiceId, setSelectedServiceId] = useState<string>('');
+  const [associationType, setAssociationType] = useState<'client' | 'service' | 'promoter' | 'supplier' | 'none'>('client');
+  const [selectedId, setSelectedId] = useState<string>('');
   const [documentType, setDocumentType] = useState<DocumentType | 'Otro' | 'Descargable'>('Otro');
   const [customDocumentType, setCustomDocumentType] = useState('');
   const [isNewClient, setIsNewClient] = useState(false);
   const [newClientName, setNewClientName] = useState('');
   
-  // A new state to determine if we are in the simplified "service resource" upload mode.
   const isServiceResourceMode = !!preselectedServiceId;
 
   const resetState = useCallback(() => {
     setFile(null);
     setIsSubmitting(false);
     setAssociationType(preselectedServiceId ? 'service' : 'client');
-    setSelectedClientId(preselectedClientId || '');
-    setSelectedServiceId(preselectedServiceId || '');
+    setSelectedId(preselectedClientId || preselectedServiceId || preselectedPromoterId || preselectedSupplierId || '');
     setDocumentType(preselectedServiceId ? 'Descargable' : 'Otro');
     setCustomDocumentType('');
     setIsNewClient(false);
     setNewClientName('');
-  }, [preselectedClientId, preselectedServiceId]);
+  }, [preselectedClientId, preselectedServiceId, preselectedPromoterId, preselectedSupplierId]);
 
   const handleDialogChange = (open: boolean) => {
     if (!open) {
@@ -78,16 +79,22 @@ export function SmartDocumentUploadDialog({
       if (isOpen) {
           if (preselectedClientId) {
               setAssociationType('client');
-              setSelectedClientId(preselectedClientId);
+              setSelectedId(preselectedClientId);
           } else if (preselectedServiceId) {
               setAssociationType('service');
-              setSelectedServiceId(preselectedServiceId);
+              setSelectedId(preselectedServiceId);
               setDocumentType('Descargable');
+          } else if (preselectedPromoterId) {
+              setAssociationType('promoter');
+              setSelectedId(preselectedPromoterId);
+          } else if (preselectedSupplierId) {
+              setAssociationType('supplier');
+              setSelectedId(preselectedSupplierId);
           } else {
               setAssociationType('client'); // Default
           }
       }
-  }, [isOpen, preselectedClientId, preselectedServiceId]);
+  }, [isOpen, preselectedClientId, preselectedServiceId, preselectedPromoterId, preselectedSupplierId]);
 
   const onDrop = useCallback(async (acceptedFiles: File[]) => {
     const droppedFile = acceptedFiles[0];
@@ -117,19 +124,33 @@ export function SmartDocumentUploadDialog({
     
     let finalClientId: string | undefined = undefined;
     let finalServiceId: string | undefined = undefined;
+    let finalPromoterId: string | undefined = undefined;
+    let finalSupplierId: string | undefined = undefined;
 
     if (associationType === 'client' && !isServiceResourceMode) {
-        if (!selectedClientId && !isNewClient) {
+        if (!selectedId && !isNewClient) {
             toast({ variant: "destructive", title: 'Faltan datos', description: 'Por favor, asocie el documento a un cliente.' });
             return;
         }
-        finalClientId = selectedClientId;
+        finalClientId = selectedId;
     } else if (associationType === 'service') {
-        if (!selectedServiceId) {
+        if (!selectedId) {
             toast({ variant: "destructive", title: 'Faltan datos', description: 'Por favor, asocie el documento a un servicio.' });
             return;
         }
-        finalServiceId = selectedServiceId;
+        finalServiceId = selectedId;
+    } else if (associationType === 'promoter') {
+        if (!selectedId) {
+             toast({ variant: "destructive", title: 'Faltan datos', description: 'Por favor, asocie el documento a un promotor.' });
+            return;
+        }
+        finalPromoterId = selectedId;
+    } else if (associationType === 'supplier') {
+         if (!selectedId) {
+             toast({ variant: "destructive", title: 'Faltan datos', description: 'Por favor, asocie el documento a un proveedor.' });
+            return;
+        }
+        finalSupplierId = selectedId;
     }
 
     setIsSubmitting(true);
@@ -144,6 +165,8 @@ export function SmartDocumentUploadDialog({
             name: newClientName.trim(),
             owner: '',
             category: 'General',
+            status: 'Activo',
+            subscribedServiceIds: [],
         });
         if (newClient) {
             finalClientId = newClient.id;
@@ -160,6 +183,8 @@ export function SmartDocumentUploadDialog({
         type: finalDocumentType as DocumentType,
         clientId: finalClientId,
         serviceId: finalServiceId,
+        promoterId: finalPromoterId,
+        supplierId: finalSupplierId,
     };
 
     const newDoc = await addDocument(newDocData, file);
@@ -177,10 +202,10 @@ export function SmartDocumentUploadDialog({
   const handleClientSelection = (value: string) => {
       if (value === 'new') {
           setIsNewClient(true);
-          setSelectedClientId('new');
+          setSelectedId('new');
       } else {
           setIsNewClient(false);
-          setSelectedClientId(value);
+          setSelectedId(value);
       }
   };
 
@@ -217,72 +242,62 @@ export function SmartDocumentUploadDialog({
               <div className="space-y-4 pt-4 border-t">
                 <div>
                   <Label htmlFor="association-type">Asociar a</Label>
-                  <Select value={associationType} onValueChange={(v) => setAssociationType(v as any)} required disabled={isSubmitting || !!preselectedClientId || !!preselectedServiceId}>
+                  <Select value={associationType} onValueChange={(v) => setAssociationType(v as any)} required disabled={isSubmitting}>
                       <SelectTrigger id="association-type">
                           <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
                           <SelectItem value="client">Cliente</SelectItem>
                           <SelectItem value="service">Servicio</SelectItem>
+                          <SelectItem value="promoter">Promotor</SelectItem>
+                          <SelectItem value="supplier">Proveedor</SelectItem>
                       </SelectContent>
                   </Select>
                 </div>
 
-                {associationType === 'client' && (
-                  <>
-                    <div className="pl-4 border-l-2 ml-2">
-                      <Label htmlFor="client-selector">Cliente</Label>
-                      <Select value={selectedClientId} onValueChange={handleClientSelection} required disabled={isSubmitting || !!preselectedClientId}>
-                        <SelectTrigger id="client-selector">
-                          <SelectValue placeholder="Seleccione un cliente..." />
-                        </SelectTrigger>
+                <div className="pl-4 border-l-2 ml-2">
+                  <Label htmlFor="entity-selector">Seleccionar Entidad</Label>
+                  {associationType === 'client' && (
+                    <>
+                      <Select value={selectedId} onValueChange={handleClientSelection} required disabled={isSubmitting}>
+                        <SelectTrigger id="entity-selector"><SelectValue placeholder="Seleccione un cliente..." /></SelectTrigger>
                         <SelectContent>
                           <SelectItem value="new">-- Crear Nuevo Cliente --</SelectItem>
-                          {clients.map(client => (
-                            <SelectItem key={client.id} value={client.id}>{client.name}</SelectItem>
-                          ))}
+                          {clients.map(item => <SelectItem key={item.id} value={item.id}>{item.name}</SelectItem>)}
                         </SelectContent>
                       </Select>
-                    </div>
-                    {isNewClient && (
-                      <div className="pl-8 border-l-2 ml-2">
-                        <Label htmlFor="new-client-name">Nombre del Nuevo Cliente</Label>
-                        <Input
-                          id="new-client-name"
-                          value={newClientName}
-                          onChange={(e) => setNewClientName(e.target.value)}
-                          placeholder="Ej. Acme Corp."
-                          required
-                          disabled={isSubmitting}
-                          className="mt-1"
-                        />
-                      </div>
-                    )}
-                  </>
-                )}
-
-                {associationType === 'service' && (
-                  <div className="pl-4 border-l-2 ml-2">
-                    <Label htmlFor="service-selector">Servicio</Label>
-                    <Select value={selectedServiceId} onValueChange={setSelectedServiceId} required disabled={isSubmitting || !!preselectedServiceId}>
-                      <SelectTrigger id="service-selector">
-                        <SelectValue placeholder="Seleccione un servicio..." />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {serviceWorkflows.map(service => (
-                          <SelectItem key={service.id} value={service.id}>{service.name}</SelectItem>
-                        ))}
-                      </SelectContent>
+                      {isNewClient && (
+                        <div className="pt-2">
+                            <Label htmlFor="new-client-name" className="text-xs">Nombre del Nuevo Cliente</Label>
+                            <Input id="new-client-name" value={newClientName} onChange={(e) => setNewClientName(e.target.value)} placeholder="Ej. Acme Corp." required disabled={isSubmitting} className="mt-1"/>
+                        </div>
+                      )}
+                    </>
+                  )}
+                  {associationType === 'service' && (
+                    <Select value={selectedId} onValueChange={setSelectedId} required disabled={isSubmitting}>
+                      <SelectTrigger id="entity-selector"><SelectValue placeholder="Seleccione un servicio..." /></SelectTrigger>
+                      <SelectContent>{serviceWorkflows.map(item => <SelectItem key={item.id} value={item.id}>{item.name}</SelectItem>)}</SelectContent>
                     </Select>
-                  </div>
-                )}
+                  )}
+                  {associationType === 'promoter' && (
+                    <Select value={selectedId} onValueChange={setSelectedId} required disabled={isSubmitting}>
+                      <SelectTrigger id="entity-selector"><SelectValue placeholder="Seleccione un promotor..." /></SelectTrigger>
+                      <SelectContent>{promoters.map(item => <SelectItem key={item.id} value={item.id}>{item.name}</SelectItem>)}</SelectContent>
+                    </Select>
+                  )}
+                  {associationType === 'supplier' && (
+                    <Select value={selectedId} onValueChange={setSelectedId} required disabled={isSubmitting}>
+                      <SelectTrigger id="entity-selector"><SelectValue placeholder="Seleccione un proveedor..." /></SelectTrigger>
+                      <SelectContent>{suppliers.map(item => <SelectItem key={item.id} value={item.id}>{item.name}</SelectItem>)}</SelectContent>
+                    </Select>
+                  )}
+                </div>
                 
                 <div>
                     <Label htmlFor="doc-type-selector">Tipo de Documento</Label>
                     <Select value={documentType} onValueChange={(value) => setDocumentType(value as DocumentType | 'Otro')} required disabled={isSubmitting}>
-                        <SelectTrigger id="doc-type-selector">
-                            <SelectValue placeholder="Seleccione un tipo"/>
-                        </SelectTrigger>
+                        <SelectTrigger id="doc-type-selector"><SelectValue placeholder="Seleccione un tipo"/></SelectTrigger>
                         <SelectContent>
                             {documentTypes.map(type => (
                                 <SelectItem key={type} value={type}>{type}</SelectItem>

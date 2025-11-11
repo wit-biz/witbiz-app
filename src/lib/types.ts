@@ -79,8 +79,10 @@ export type Document = {
   name: string;
   type: DocumentType;
   uploadedAt: any; // Firestore Timestamp o Date
-  clientId?: string; // Optional: can be linked to a client
-  serviceId?: string; // Optional: can be linked to a service
+  clientId?: string;
+  serviceId?: string;
+  promoterId?: string;
+  supplierId?: string;
   downloadURL?: string;
   uploadDate?: string; // ISO String YYYY-MM-DD
 };

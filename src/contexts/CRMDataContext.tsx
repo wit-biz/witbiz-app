@@ -58,6 +58,8 @@ interface CRMContextType {
   deleteDocument: (documentId: string) => Promise<boolean>;
   getDocumentsByClientId: (clientId: string) => Document[];
   getDocumentsByServiceId: (serviceId: string) => Document[];
+  getDocumentsByPromoterId: (promoterId: string) => Document[];
+  getDocumentsBySupplierId: (supplierId: string) => Document[];
 
   notes: Note[];
   isLoadingNotes: boolean;
@@ -495,6 +497,8 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
         deleteDocument: deleteDocument,
         getDocumentsByClientId: (id) => documents.filter(d => d.clientId === id),
         getDocumentsByServiceId: (id) => documents.filter(d => d.serviceId === id),
+        getDocumentsByPromoterId: (id) => documents.filter(d => d.promoterId === id),
+        getDocumentsBySupplierId: (id) => documents.filter(d => d.supplierId === id),
 
         notes, isLoadingNotes,
         addNote: (clientId, text) => placeholderPromise(null),

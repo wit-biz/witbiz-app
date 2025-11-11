@@ -1,14 +1,16 @@
 
 "use client";
 
-import React, { useMemo } from "react";
-import { type Supplier } from "@/lib/types";
+import React, { useMemo, useState } from "react";
+import { type Supplier, type Document } from "@/lib/types";
 import { useCRMData } from "@/contexts/CRMDataContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { X, Truck, UserCheck, Briefcase, Phone, Mail } from "lucide-react";
+import { X, Truck, UserCheck, Briefcase, Phone, Mail, UploadCloud, FileText, Download, Info } from "lucide-react";
 import { DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Badge } from "../ui/badge";
+import { useDialogs } from "@/contexts/DialogsContext";
+import { useToast } from "@/hooks/use-toast";
 
 interface SupplierDetailViewProps {
   supplier: Supplier | null;
@@ -33,7 +35,8 @@ const DetailItem = ({ icon: Icon, label, value, href }: { icon: React.ElementTyp
 };
 
 export function SupplierDetailView({ supplier, onClose }: SupplierDetailViewProps) {
-    const { promoters } = useCRMData();
+    const { promoters, getDocumentsBySupplierId } = useCRMData();
+    const { toast } = useToast();
 
     const promoterName = useMemo(() => {
         if (!supplier?.promoterId) return undefined;
@@ -49,11 +52,27 @@ export function SupplierDetailView({ supplier, onClose }: SupplierDetailViewProp
             </div>
         );
     }
+    
+    const supplierDocuments = getDocumentsBySupplierId(supplier.id);
+
+    const handleDownload = (doc: Document) => {
+        toast({
+            title: "Descarga Simulada",
+            description: `Se ha iniciado la descarga de "${doc.name}".`
+        });
+    };
+
+     const handleOpenUpload = () => {
+        // This functionality is not fully implemented yet in the dialogs context for suppliers
+        toast({
+            title: "Próximamente",
+            description: "La carga de documentos para proveedores estará disponible pronto."
+        })
+    }
 
     return (
         <>
             <div className="relative bg-background max-h-[80vh] overflow-y-auto p-1">
-                
                 <DialogHeader>
                     <DialogTitle className="text-2xl font-bold">{supplier.name}</DialogTitle>
                     <div className="pt-1">
@@ -62,6 +81,9 @@ export function SupplierDetailView({ supplier, onClose }: SupplierDetailViewProp
                 </DialogHeader>
 
                 <div className="space-y-6 pt-4">
+                     <div className="flex items-center gap-2">
+                        <Button variant="outline" onClick={handleOpenUpload}><UploadCloud className="mr-2 h-4 w-4"/>Subir Documento</Button>
+                    </div>
                     <Card>
                         <CardHeader><CardTitle>Información del Proveedor</CardTitle></CardHeader>
                         <CardContent className="grid grid-cols-1 gap-4">
@@ -69,6 +91,37 @@ export function SupplierDetailView({ supplier, onClose }: SupplierDetailViewProp
                             <DetailItem icon={Phone} label="Teléfono de Contacto" value={supplier.phone} href={`tel:${supplier.phone}`} />
                             <DetailItem icon={Briefcase} label="Servicio / Producto" value={supplier.service} />
                             <DetailItem icon={UserCheck} label="Referido por (Promotor)" value={promoterName} />
+                        </CardContent>
+                    </Card>
+
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Documentos Adjuntos</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            {supplierDocuments.length > 0 ? (
+                                <ul className="space-y-2">
+                                    {supplierDocuments.map(doc => (
+                                        <li key={doc.id} className="flex items-center justify-between p-2 rounded-md bg-secondary/30">
+                                            <div className="flex items-center gap-2 min-w-0">
+                                                <FileText className="h-4 w-4 text-muted-foreground flex-shrink-0"/>
+                                                <div className="truncate">
+                                                    <p className="text-sm font-medium truncate" title={doc.name}>{doc.name}</p>
+                                                    <p className="text-xs text-muted-foreground">{doc.type}</p>
+                                                </div>
+                                            </div>
+                                            <Button variant="ghost" size="icon" onClick={() => handleDownload(doc)}>
+                                                <Download className="h-4 w-4" />
+                                            </Button>
+                                        </li>
+                                    ))}
+                                </ul>
+                            ) : (
+                                <div className="text-center text-muted-foreground py-6">
+                                    <Info className="mx-auto h-8 w-8 mb-2" />
+                                    <p className="text-sm">No hay documentos para este proveedor.</p>
+                                </div>
+                            )}
                         </CardContent>
                     </Card>
                 </div>

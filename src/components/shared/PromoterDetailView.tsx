@@ -1,13 +1,16 @@
 
 "use client";
 
-import React from "react";
-import { type Promoter } from "@/lib/types";
+import React, { useState, useMemo } from "react";
+import { type Promoter, type Document } from "@/lib/types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { X, UserCheck, Users, CircleDollarSign, Mail, Phone } from "lucide-react";
+import { X, UserCheck, Users, CircleDollarSign, Mail, Phone, UploadCloud, FileText, Download, Info } from "lucide-react";
 import { DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Badge } from "../ui/badge";
+import { useCRMData } from "@/contexts/CRMDataContext";
+import { useDialogs } from "@/contexts/DialogsContext";
+import { useToast } from "@/hooks/use-toast";
 
 interface PromoterDetailViewProps {
   promoter: Promoter | null;
@@ -32,6 +35,10 @@ const DetailItem = ({ icon: Icon, label, value, href }: { icon: React.ElementTyp
 };
 
 export function PromoterDetailView({ promoter, onClose }: PromoterDetailViewProps) {
+    const { getDocumentsByPromoterId } = useCRMData();
+    const { setIsSmartUploadDialogOpen } = useDialogs();
+    const { toast } = useToast();
+    
     if (!promoter) {
         return (
             <div className="h-full flex flex-col items-center justify-center text-center p-8 bg-background">
@@ -41,11 +48,27 @@ export function PromoterDetailView({ promoter, onClose }: PromoterDetailViewProp
             </div>
         );
     }
+    
+    const promoterDocuments = getDocumentsByPromoterId(promoter.id);
+    
+    const handleDownload = (doc: Document) => {
+        toast({
+            title: "Descarga Simulada",
+            description: `Se ha iniciado la descarga de "${doc.name}".`
+        });
+    };
+    
+    const handleOpenUpload = () => {
+        // This functionality is not fully implemented yet in the dialogs context for promoters
+        toast({
+            title: "Próximamente",
+            description: "La carga de documentos para promotores estará disponible pronto."
+        })
+    }
 
     return (
         <>
             <div className="relative bg-background max-h-[80vh] overflow-y-auto p-1">
-                
                 <DialogHeader>
                     <DialogTitle className="text-2xl font-bold">{promoter.name}</DialogTitle>
                     <div className="pt-1">
@@ -54,6 +77,9 @@ export function PromoterDetailView({ promoter, onClose }: PromoterDetailViewProp
                 </DialogHeader>
 
                 <div className="space-y-6 pt-4">
+                     <div className="flex items-center gap-2">
+                        <Button variant="outline" onClick={handleOpenUpload}><UploadCloud className="mr-2 h-4 w-4"/>Subir Documento</Button>
+                    </div>
                     <Card>
                         <CardHeader><CardTitle>Información de Contacto</CardTitle></CardHeader>
                         <CardContent className="grid grid-cols-1 gap-4">
@@ -66,6 +92,36 @@ export function PromoterDetailView({ promoter, onClose }: PromoterDetailViewProp
                         <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <DetailItem icon={Users} label="Clientes Referidos" value={promoter.referredClients} />
                             <DetailItem icon={CircleDollarSign} label="Comisiones Totales" value={`$${promoter.totalCommissions.toFixed(2)}`} />
+                        </CardContent>
+                    </Card>
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Documentos Adjuntos</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            {promoterDocuments.length > 0 ? (
+                                <ul className="space-y-2">
+                                    {promoterDocuments.map(doc => (
+                                        <li key={doc.id} className="flex items-center justify-between p-2 rounded-md bg-secondary/30">
+                                            <div className="flex items-center gap-2 min-w-0">
+                                                <FileText className="h-4 w-4 text-muted-foreground flex-shrink-0"/>
+                                                <div className="truncate">
+                                                    <p className="text-sm font-medium truncate" title={doc.name}>{doc.name}</p>
+                                                    <p className="text-xs text-muted-foreground">{doc.type}</p>
+                                                </div>
+                                            </div>
+                                            <Button variant="ghost" size="icon" onClick={() => handleDownload(doc)}>
+                                                <Download className="h-4 w-4" />
+                                            </Button>
+                                        </li>
+                                    ))}
+                                </ul>
+                            ) : (
+                                <div className="text-center text-muted-foreground py-6">
+                                    <Info className="mx-auto h-8 w-8 mb-2" />
+                                    <p className="text-sm">No hay documentos para este promotor.</p>
+                                </div>
+                            )}
                         </CardContent>
                     </Card>
                 </div>

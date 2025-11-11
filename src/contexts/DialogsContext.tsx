@@ -60,7 +60,6 @@ export function DialogsProvider({ children }: { children: ReactNode }) {
       <SmartDocumentUploadDialog
             isOpen={isSmartUploadDialogOpen}
             onOpenChange={handleSmartUploadClose}
-            preselectedServiceId={preselectedServiceId || undefined}
             onClientAdded={(client) => {
                 router.push(`/contacts?openClient=${client.id}`);
             }}
