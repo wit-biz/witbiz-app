@@ -90,12 +90,21 @@ export function ClientDetailView({ client, onClose }: ClientDetailViewProps) {
     const getServiceForTask = (task: Task): string | null => {
         if (!serviceWorkflows) return null;
         for (const service of serviceWorkflows) {
+            // Find which service this client is subscribed to that has this task
+            const isClientSubscribed = client.subscribedServiceIds.includes(service.id);
+            if (!isClientSubscribed) continue;
+
             for (const stage1 of service.stages || []) {
-                if (stage1.actions.some(a => a.title === task.title)) return service.name;
+                 const actionExists = stage1.actions.some(a => a.title === task.title);
+                 if (actionExists) return service.name;
+
                 for (const stage2 of stage1.subStages || []) {
-                    if (stage2.actions.some(a => a.title === task.title)) return service.name;
+                    const actionExists = stage2.actions.some(a => a.title === task.title);
+                    if (actionExists) return service.name;
+                    
                     for (const stage3 of stage2.subSubStages || []) {
-                        if (stage3.actions.some(a => a.title === task.title)) return service.name;
+                        const actionExists = stage3.actions.some(a => a.title === task.title);
+                        if (actionExists) return service.name;
                     }
                 }
             }
@@ -165,7 +174,10 @@ export function ClientDetailView({ client, onClose }: ClientDetailViewProps) {
                             {currentStage && (
                                 <div className="flex items-start gap-2">
                                     <Target className="h-4 w-4 text-blue-500 mt-1 flex-shrink-0" />
-                                    <DetailItem label="Etapa Actual" value={currentStage.title} />
+                                    <div>
+                                        <p className="text-sm text-muted-foreground">Etapa Actual</p>
+                                        <p className="text-sm font-medium">{currentStage.title}</p>
+                                    </div>
                                 </div>
                             )}
 
@@ -175,14 +187,16 @@ export function ClientDetailView({ client, onClose }: ClientDetailViewProps) {
                                     Tareas Pendientes
                                 </h4>
                                 {pendingTasks.length > 0 ? (
-                                    <ul className="space-y-2">
+                                    <ul className="space-y-3 pl-6">
                                         {pendingTasks.map(task => {
                                             const serviceName = getServiceForTask(task);
                                             return (
-                                                <li key={task.id} className="text-sm text-muted-foreground pl-6">
-                                                    {task.title}
-                                                    {serviceName && <span className="text-xs text-blue-500 ml-2">({serviceName})</span>}
-                                                    (Vence: {formatDateString(task.dueDate)})
+                                                 <li key={task.id} className="flex flex-col text-sm">
+                                                    <span className="font-medium text-foreground">{task.title}</span>
+                                                    <div className="text-xs text-muted-foreground mt-0.5">
+                                                        {serviceName && <span className="text-blue-500">Servicio: {serviceName}</span>}
+                                                        <span className={serviceName ? "ml-2" : ""}>Vence: {formatDateString(task.dueDate)}</span>
+                                                    </div>
                                                 </li>
                                             )
                                         })}
