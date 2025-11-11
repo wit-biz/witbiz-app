@@ -4,11 +4,11 @@
 
 import React, { useState, useMemo, useEffect, useCallback, type ReactNode } from "react";
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation";
 import { Header } from "@/components/header";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { useCRMData, type WorkflowStage, type ServiceWorkflow, type WorkflowAction, type SubStage, type SubSubStage } from "@/contexts/CRMDataContext"; 
-import { Edit, Save, Trash2, Plus, X, Loader2, UploadCloud, ChevronsRight, FileText, ListTodo, Workflow as WorkflowIcon, ArrowLeft, PlusCircle, Layers, FolderCog, Redo, AlertTriangle } from "lucide-react";
+import { Edit, Save, Trash2, Plus, X, Loader2, UploadCloud, ChevronsRight, FileText, ListTodo, Workflow as WorkflowIcon, ArrowLeft, PlusCircle, Layers, FolderCog, Redo, AlertTriangle, GripVertical } from "lucide-react";
 import { Card, CardHeader, CardTitle, CardContent, CardDescription, CardFooter } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
@@ -22,6 +22,10 @@ import { Slider } from "@/components/ui/slider";
 import { AddTaskDialog } from "@/components/shared/AddTaskDialog";
 import { Switch } from "@/components/ui/switch";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { DndContext, closestCenter, type DragEndEvent } from "@dnd-kit/core";
+import { arrayMove, SortableContext, useSortable, verticalListSortingStrategy } from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
+
 
 type AnyStage = WorkflowStage | SubStage | SubSubStage;
 
@@ -226,18 +230,49 @@ const StageCard = ({
 };
 
 
+function SortableServiceItem({ service, onSelect, onDelete, isSelected, hasChanges }: { service: ServiceWorkflow, onSelect: (id: string) => void, onDelete: (service: ServiceWorkflow) => void, isSelected: boolean, hasChanges: boolean }) {
+    const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: service.id, disabled: hasChanges });
+    
+    const style = {
+        transform: CSS.Transform.toString(transform),
+        transition,
+        zIndex: isDragging ? 10 : 'auto',
+    };
+
+    return (
+        <div ref={setNodeRef} style={style}>
+            <Card className={cn("cursor-pointer", isSelected && "ring-2 ring-primary border-primary", hasChanges && isSelected && "cursor-not-allowed opacity-70")}>
+                <div className="flex items-center" onClick={() => !hasChanges && onSelect(service.id)}>
+                    <div {...listeners} {...attributes} className={cn("p-3 cursor-grab touch-none", hasChanges && "cursor-not-allowed")}>
+                        <GripVertical className="h-5 w-5 text-muted-foreground" />
+                    </div>
+                    <div className="flex-grow p-3 pr-2">
+                        <p className="font-semibold text-sm truncate">{service.name}</p>
+                    </div>
+                    <Button variant="ghost" size="icon" className="h-8 w-8 mr-1" onClick={(e) => { e.stopPropagation(); onDelete(service)}}>
+                        <Trash2 className="h-4 w-4 text-destructive" />
+                    </Button>
+                </div>
+            </Card>
+        </div>
+    );
+}
+
+
 export default function WorkflowConfigurationPage() {
   const { 
     currentUser,
-    serviceWorkflows,
+    serviceWorkflows: initialWorkflows,
     isLoadingWorkflows,
     addService,
     setServiceWorkflows,
     deleteService,
   } = useCRMData();
+  const router = useRouter();
   const searchParams = useSearchParams();
   const { showNotification } = useGlobalNotification();
 
+  const [orderedWorkflows, setOrderedWorkflows] = useState<ServiceWorkflow[]>([]);
   const [selectedWorkflowId, setSelectedWorkflowId] = useState<string | null>(null);
   const [editableWorkflow, setEditableWorkflow] = useState<ServiceWorkflow | null>(null);
   const [serviceToDelete, setServiceToDelete] = useState<ServiceWorkflow | null>(null);
@@ -252,7 +287,51 @@ export default function WorkflowConfigurationPage() {
   } | null>(null);
   
   const canEditWorkflow = currentUser?.permissions.crm_edit ?? true;
+
+  useEffect(() => {
+    if (initialWorkflows) {
+      const sorted = [...initialWorkflows].sort((a,b) => (a.order || 0) - (b.order || 0));
+      setOrderedWorkflows(sorted);
+
+      const serviceIdFromUrl = searchParams.get('serviceId');
+      if (serviceIdFromUrl && sorted.some(s => s.id === serviceIdFromUrl)) {
+        setSelectedWorkflowId(serviceIdFromUrl);
+      } else if (!selectedWorkflowId && sorted.length > 0) {
+        setSelectedWorkflowId(sorted[0].id);
+      }
+    }
+  }, [initialWorkflows]);
+
+  const selectedWorkflow = useMemo(() => {
+    if (!orderedWorkflows) return null;
+    return orderedWorkflows.find(wf => wf.id === selectedWorkflowId) || null;
+  }, [selectedWorkflowId, orderedWorkflows]);
   
+  useEffect(() => {
+    if (selectedWorkflow) {
+        setEditableWorkflow(JSON.parse(JSON.stringify(selectedWorkflow)));
+    } else {
+        setEditableWorkflow(null);
+    }
+  }, [selectedWorkflow]);
+
+  const handleDragEnd = (event: DragEndEvent) => {
+      const { active, over } = event;
+      if (over && active.id !== over.id) {
+          setOrderedWorkflows((items) => {
+              const oldIndex = items.findIndex(item => item.id === active.id);
+              const newIndex = items.findIndex(item => item.id === over.id);
+              const newOrder = arrayMove(items, oldIndex, newIndex);
+              
+              const updatedOrderWithFirestore = newOrder.map((wf, index) => ({...wf, order: index}));
+              setServiceWorkflows(updatedOrderWithFirestore);
+              showNotification('info', 'Orden guardado', 'El nuevo orden de los servicios ha sido guardado.');
+
+              return updatedOrderWithFirestore;
+          });
+      }
+  };
+
   const handleAddNewService = () => {
     setPromptNameConfig({
       title: "Añadir Nuevo Servicio",
@@ -262,34 +341,21 @@ export default function WorkflowConfigurationPage() {
         const newService = await addService(name);
         if (newService) {
           setSelectedWorkflowId(newService.id);
+          router.push(`/workflows?serviceId=${newService.id}`);
         }
       },
     });
     setIsPromptNameOpen(true);
   };
-
-  useEffect(() => {
-    if (!serviceWorkflows) return;
-    const serviceIdFromUrl = searchParams.get('serviceId');
-    if (serviceIdFromUrl && serviceWorkflows.some(s => s.id === serviceIdFromUrl)) {
-      setSelectedWorkflowId(serviceIdFromUrl);
-    } else if (!selectedWorkflowId && serviceWorkflows.length > 0) {
-      setSelectedWorkflowId(serviceWorkflows[0].id);
-    }
-  }, [searchParams, serviceWorkflows, selectedWorkflowId]);
-
-  const selectedWorkflow = useMemo(() => {
-    if (!serviceWorkflows) return null;
-    return serviceWorkflows.find(wf => wf.id === selectedWorkflowId) || null;
-  }, [selectedWorkflowId, serviceWorkflows]);
   
-  useEffect(() => {
-    if (selectedWorkflow) {
-        setEditableWorkflow(JSON.parse(JSON.stringify(selectedWorkflow)));
-    } else {
-        setEditableWorkflow(null);
+  const handleSelectService = (id: string) => {
+    if (hasChanges) {
+        showNotification('warning', 'Cambios sin guardar', 'Guarde o descarte sus cambios antes de seleccionar otro servicio.');
+        return;
     }
-  }, [selectedWorkflow]);
+    setSelectedWorkflowId(id);
+    router.push(`/workflows?serviceId=${id}`);
+  }
 
 
   const handleDiscardChanges = () => {
@@ -301,7 +367,7 @@ export default function WorkflowConfigurationPage() {
 
   const handleSaveChanges = () => {
     if (!editableWorkflow) return;
-    const updatedWorkflows = serviceWorkflows.map(wf => wf.id === editableWorkflow.id ? editableWorkflow : wf);
+    const updatedWorkflows = orderedWorkflows.map(wf => wf.id === editableWorkflow.id ? editableWorkflow : wf);
     setServiceWorkflows(updatedWorkflows);
     showNotification('success', 'Flujo Guardado', 'Los cambios en el flujo de trabajo han sido guardados.');
   };
@@ -450,81 +516,81 @@ export default function WorkflowConfigurationPage() {
       updateNestedState(`${path}.actions`, newTask, 'add');
   };
 
-  // --- Loading / Empty States ---
-
   if (isLoadingWorkflows) {
     return (
-        <div className="flex flex-col min-h-screen">
-            <Header 
-                title="Configuración de Flujos de Trabajo" 
-                description="Gestione las etapas y acciones de sus servicios."
-            />
-            <div className="flex-1 flex items-center justify-center">
-                <Loader2 className="h-8 w-8 animate-spin text-primary" />
-            </div>
-        </div>
+      <div className="flex-1 flex items-center justify-center h-screen">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
     )
   }
-
-  // --- Main Render ---
 
   return (
     <>
       <div className="flex flex-col min-h-screen">
         <Header 
           title="Configuración de Flujos de Trabajo" 
-          description="Gestione las etapas y acciones de sus servicios."
+          description="Diseñe las etapas y tareas automáticas para cada servicio."
         >
-          <div className="flex flex-col sm:flex-row gap-2">
-              <Button variant="outline" asChild>
-                  <Link href="/services">
-                      <ArrowLeft className="mr-2 h-4 w-4" />
-                      Volver a Servicios
-                  </Link>
-              </Button>
-               <Button onClick={handleSaveChanges} disabled={!hasChanges}>
-                  <Save className="mr-2 h-4 w-4"/>
-                  Guardar Cambios
-              </Button>
-              <Button variant="ghost" onClick={handleDiscardChanges} disabled={!hasChanges}>Descartar</Button>
+            <div className="flex flex-col sm:flex-row gap-2">
+                <Button variant="outline" asChild>
+                    <Link href="/services">
+                        <ArrowLeft className="mr-2 h-4 w-4" />
+                        Volver a Servicios
+                    </Link>
+                </Button>
+                {canEditWorkflow && hasChanges && (
+                    <>
+                        <Button onClick={handleSaveChanges}><Save className="mr-2 h-4 w-4"/>Guardar Cambios</Button>
+                        <Button variant="ghost" onClick={handleDiscardChanges}>Descartar</Button>
+                    </>
+                )}
             </div>
         </Header>
       
-        <main className="p-4 md:p-8 space-y-6">
-          <Card>
-              <CardHeader>
-                  <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 justify-between">
-                      <div className="flex-grow w-full sm:w-auto">
-                           <Label htmlFor="service-selector">Servicios</Label>
-                            <div className="flex gap-2 mt-1">
-                                <Select value={selectedWorkflowId || ""} onValueChange={(id) => setSelectedWorkflowId(id)} disabled={!serviceWorkflows || serviceWorkflows.length === 0 || hasChanges}>
-                                    <SelectTrigger id="service-selector">
-                                        <SelectValue placeholder="Seleccione un servicio para configurar..." />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        {serviceWorkflows && serviceWorkflows.map(service => (
-                                            <SelectItem key={service.id} value={service.id}>{service.name}</SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
-                                {canEditWorkflow && selectedWorkflow && (
-                                    <Button variant="destructive" size="icon" onClick={() => setServiceToDelete(selectedWorkflow)}>
-                                        <Trash2 className="h-4 w-4"/>
-                                    </Button>
-                                )}
-                            </div>
-                          {hasChanges && (
-                            <p className="text-xs text-destructive mt-2 flex items-center gap-1"><AlertTriangle className="h-3 w-3"/>Tiene cambios sin guardar. Guarde o descarte para cambiar de servicio.</p>
-                          )}
-                      </div>
-                      {canEditWorkflow && (
-                         <Button variant="default" size="sm" onClick={handleAddNewService}><PlusCircle className="mr-2 h-4 w-4"/>Añadir Servicio</Button>
-                      )}
-                  </div>
-              </CardHeader>
-
+        <main className="flex-1 grid grid-cols-1 md:grid-cols-[300px_1fr] gap-6 p-4 md:p-8">
+            <div className="space-y-4">
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Servicios</CardTitle>
+                        <CardDescription>Seleccione o reordene un servicio.</CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-2">
+                        <DndContext collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+                            <SortableContext items={orderedWorkflows.map(wf => wf.id)} strategy={verticalListSortingStrategy}>
+                                {orderedWorkflows.map(service => (
+                                    <SortableServiceItem
+                                        key={service.id}
+                                        service={service}
+                                        onSelect={handleSelectService}
+                                        onDelete={setServiceToDelete}
+                                        isSelected={selectedWorkflowId === service.id}
+                                        hasChanges={hasChanges && selectedWorkflowId !== service.id}
+                                    />
+                                ))}
+                            </SortableContext>
+                        </DndContext>
+                        {canEditWorkflow && (
+                            <Button variant="outline" size="sm" className="w-full mt-2" onClick={handleAddNewService}>
+                                <PlusCircle className="mr-2 h-4 w-4"/>Añadir Servicio
+                            </Button>
+                        )}
+                    </CardContent>
+                </Card>
+                 {hasChanges && (
+                    <div className="p-3 rounded-md bg-amber-100 dark:bg-amber-900/40 text-amber-800 dark:text-amber-200 border border-amber-300 dark:border-amber-700">
+                        <p className="text-xs font-semibold flex items-center gap-2"><AlertTriangle className="h-4 w-4"/>Tiene cambios sin guardar. Guarde o descarte para poder cambiar de servicio.</p>
+                    </div>
+                )}
+            </div>
+            
+            <Card>
               {editableWorkflow ? (
-                <CardContent className="border-t pt-6 space-y-6">
+                <>
+                <CardHeader>
+                  <CardTitle>{editableWorkflow.name}</CardTitle>
+                  <CardDescription>Configure las etapas principales para este servicio.</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-6">
                     <div className="space-y-4">
                         {canEditWorkflow && (
                             <Button size="sm" variant="default" onClick={handleAddStage}>
@@ -552,14 +618,14 @@ export default function WorkflowConfigurationPage() {
                         </Accordion>
                     </div>
                 </CardContent>
+                </>
               ) : (
-                  <CardContent className="border-t">
-                      <div className="text-center text-muted-foreground py-16">
-                          <p>No ha seleccionado un servicio o no hay servicios creados.</p>
-                      </div>
-                  </CardContent>
+                  <div className="flex flex-col items-center justify-center h-full text-center text-muted-foreground">
+                      <Layers className="h-12 w-12 mb-4" />
+                      <p>Seleccione un servicio para ver su flujo de trabajo.</p>
+                  </div>
               )}
-          </Card>
+            </Card>
         </main>
 
         {promptNameConfig && (
