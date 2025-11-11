@@ -72,11 +72,6 @@ export function AppSidebar() {
     setIsSearching(false);
   };
 
-  const handleSearchClick = (e: React.MouseEvent) => {
-    e.preventDefault();
-    setIsSearching(true);
-  };
-
 
   return (
     <Sidebar>
@@ -103,8 +98,8 @@ export function AppSidebar() {
                     </PopoverTrigger>
                     <PopoverContent
                         className="w-[var(--radix-popover-trigger-width)] p-0"
-                        side="right"
-                        align="start"
+                        side="bottom"
+                        align="center"
                         onOpenAutoFocus={(e) => e.preventDefault()}
                     >
                         <Command>
@@ -169,7 +164,7 @@ export function AppSidebar() {
                             <span className="sr-only">Nuevo...</span>
                         </Button>
                     </DropdownMenuTrigger>
-                    <DropdownMenuContent side="right" align="start" className="mb-2">
+                    <DropdownMenuContent side="bottom" align="center" className="mb-2">
                          <DropdownMenuItem onSelect={(e) => { e.preventDefault(); setIsSearching(true); }}>
                            <Search className="mr-2 h-4 w-4" />
                            <span>Buscar</span>
