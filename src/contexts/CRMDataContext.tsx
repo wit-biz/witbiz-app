@@ -408,7 +408,7 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
         currentUser, isLoadingCurrentUser: isUserLoading, teamMembers,
         clients, isLoadingClients, 
         addClient, updateClient, deleteClient,
-        getClientById: (id: string) => clients.find(c => c.id === id),
+        getClientById: (id: string) => clients?.find(c => c.id === id),
         
         tasks, isLoadingTasks,
         addTask, updateTask, deleteTask,
