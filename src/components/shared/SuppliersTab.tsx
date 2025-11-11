@@ -15,6 +15,7 @@ import { useToast } from '@/hooks/use-toast';
 import { type Supplier } from '@/lib/types';
 import { Badge } from '../ui/badge';
 import { cn } from '@/lib/utils';
+import { formatDateString } from '@/lib/utils';
 
 interface SuppliersTabProps {
     suppliers: Supplier[];
@@ -144,8 +145,8 @@ export function SuppliersTab({
                   <TableHeader>
                       <TableRow>
                           <TableHead>Nombre del Proveedor</TableHead>
+                          <TableHead>Fecha de Inicio</TableHead>
                           <TableHead>Estado</TableHead>
-                          <TableHead>Contacto (Email)</TableHead>
                           <TableHead>Servicio/Producto</TableHead>
                           {showActions && <TableHead className="text-right">Acciones</TableHead>}
                       </TableRow>
@@ -161,10 +162,10 @@ export function SuppliersTab({
                             )}
                           >
                               <TableCell className="font-medium">{supplier.name}</TableCell>
+                               <TableCell>{supplier.createdAt ? formatDateString(supplier.createdAt.toDate()) : 'N/A'}</TableCell>
                               <TableCell>
                                   <Badge variant={supplier.status === 'Activo' ? 'default' : 'secondary'}>{supplier.status}</Badge>
                               </TableCell>
-                              <TableCell>{supplier.email}</TableCell>
                               <TableCell>{supplier.service}</TableCell>
                               {showActions && (
                                 <TableCell className="text-right">
@@ -224,5 +225,3 @@ export function SuppliersTab({
     </>
   );
 }
-
-    

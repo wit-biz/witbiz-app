@@ -6,11 +6,12 @@ import { type Supplier, type Document } from "@/lib/types";
 import { useCRMData } from "@/contexts/CRMDataContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { X, Truck, UserCheck, Briefcase, Phone, Mail, UploadCloud, FileText, Download, Info } from "lucide-react";
+import { X, Truck, UserCheck, Briefcase, Phone, Mail, UploadCloud, FileText, Download, Info, CalendarDays } from "lucide-react";
 import { DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Badge } from "../ui/badge";
 import { useDialogs } from "@/contexts/DialogsContext";
 import { useToast } from "@/hooks/use-toast";
+import { formatDateString } from "@/lib/utils";
 
 interface SupplierDetailViewProps {
   supplier: Supplier | null;
@@ -91,6 +92,15 @@ export function SupplierDetailView({ supplier, onClose }: SupplierDetailViewProp
                             <DetailItem icon={Phone} label="Teléfono de Contacto" value={supplier.phone} href={`tel:${supplier.phone}`} />
                             <DetailItem icon={Briefcase} label="Servicio / Producto" value={supplier.service} />
                             <DetailItem icon={UserCheck} label="Referido por (Promotor)" value={promoterName} />
+                             {supplier.createdAt && (
+                                <div className="flex items-start gap-3">
+                                    <CalendarDays className="h-5 w-5 text-muted-foreground mt-0.5" />
+                                    <div className="flex flex-col">
+                                        <span className="text-sm text-muted-foreground">Fecha de Inicio</span>
+                                        <p className="text-sm font-medium">{formatDateString(supplier.createdAt.toDate())}</p>
+                                    </div>
+                                </div>
+                            )}
                         </CardContent>
                     </Card>
 

@@ -29,6 +29,7 @@ import {
 } from "@/components/ui/form";
 import { type Promoter } from '@/lib/types';
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '../ui/select';
+import { serverTimestamp } from 'firebase/firestore';
 
 const promoterSchema = z.object({
   id: z.string().optional(),
@@ -153,29 +154,29 @@ export function AddPromoterDialog({ isOpen, onClose, promoter, onAdd, onSave }: 
                             </FormItem>
                         )}
                     />
-                    {isEditMode && (
-                        <FormField
-                            control={form.control}
-                            name="status"
-                            render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel>Estado</FormLabel>
-                                    <Select onValueChange={field.onChange} value={field.value}>
-                                        <FormControl>
-                                            <SelectTrigger>
-                                                <SelectValue />
-                                            </SelectTrigger>
-                                        </FormControl>
-                                        <SelectContent>
-                                            <SelectItem value="Activo">Activo</SelectItem>
-                                            <SelectItem value="Inactivo">Inactivo</SelectItem>
-                                        </SelectContent>
-                                    </Select>
-                                    <FormMessage />
-                                </FormItem>
-                            )}
-                        />
-                    )}
+                    
+                    <FormField
+                        control={form.control}
+                        name="status"
+                        render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>Estado</FormLabel>
+                                <Select onValueChange={field.onChange} value={field.value}>
+                                    <FormControl>
+                                        <SelectTrigger>
+                                            <SelectValue />
+                                        </SelectTrigger>
+                                    </FormControl>
+                                    <SelectContent>
+                                        <SelectItem value="Activo">Activo</SelectItem>
+                                        <SelectItem value="Inactivo">Inactivo</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                                <FormMessage />
+                            </FormItem>
+                        )}
+                    />
+                    
                 </div>
 
                 <DialogFooter>
@@ -195,5 +196,3 @@ export function AddPromoterDialog({ isOpen, onClose, promoter, onAdd, onSave }: 
     </Dialog>
   );
 }
-
-    

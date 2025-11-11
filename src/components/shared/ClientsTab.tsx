@@ -15,6 +15,7 @@ import { AddEditClientDialog } from "@/components/shared/AddEditClientDialog";
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { formatDateString } from "@/lib/utils";
 
 interface ClientsTabProps {
     clients: Client[];
@@ -105,7 +106,7 @@ export function ClientsTab({ clients, isLoading, onClientSelect, selectedClientI
                     <TableRow>
                       <TableHead>Nombre</TableHead>
                       <TableHead>Estado</TableHead>
-                      <TableHead className="hidden sm:table-cell">Propietario</TableHead>
+                      <TableHead className="hidden sm:table-cell">Fecha de Inicio</TableHead>
                       <TableHead className="hidden md:table-cell">Categoría</TableHead>
                       {showActions && <TableHead className="text-right">Acciones</TableHead>}
                     </TableRow>
@@ -121,7 +122,7 @@ export function ClientsTab({ clients, isLoading, onClientSelect, selectedClientI
                         <TableCell>
                           <Badge variant={client.status === 'Activo' ? 'default' : 'secondary'}>{client.status}</Badge>
                         </TableCell>
-                        <TableCell className="hidden sm:table-cell">{client.owner || 'N/A'}</TableCell>
+                        <TableCell className="hidden sm:table-cell">{client.createdAt ? formatDateString(client.createdAt.toDate()) : 'N/A'}</TableCell>
                         <TableCell className="hidden md:table-cell">{client.category || 'N/A'}</TableCell>
                         {showActions && (
                           <TableCell className="text-right">

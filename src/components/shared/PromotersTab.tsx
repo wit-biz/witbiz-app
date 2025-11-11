@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import React, { useState, useMemo, useCallback } from 'react';
@@ -15,6 +16,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { AddPromoterDialog } from './AddPromoterDialog';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
+import { formatDateString } from '@/lib/utils';
 
 interface PromotersTabProps {
     promoters: Promoter[];
@@ -170,8 +172,7 @@ export function PromotersTab({
                                 <TableHeader>
                                     <TableRow>
                                         <TableHead>Nombre del Promotor</TableHead>
-                                        <TableHead className="text-center">Clientes Referidos</TableHead>
-                                        <TableHead>Comisiones Generadas</TableHead>
+                                        <TableHead>Fecha de Inicio</TableHead>
                                         <TableHead>Estado</TableHead>
                                         {showActions && <TableHead className="text-right">Acciones</TableHead>}
                                     </TableRow>
@@ -187,13 +188,7 @@ export function PromotersTab({
                                             )}
                                         >
                                             <TableCell className="font-medium">{promoter.name}</TableCell>
-                                            <TableCell className="text-center">{promoter.referredClients}</TableCell>
-                                            <TableCell>
-                                                <div className="flex items-center">
-                                                    <CircleDollarSign className="h-4 w-4 mr-2 text-green-500"/>
-                                                    <span>${promoter.totalCommissions.toFixed(2)}</span>
-                                                </div>
-                                            </TableCell>
+                                            <TableCell>{promoter.createdAt ? formatDateString(promoter.createdAt.toDate()) : 'N/A'}</TableCell>
                                             <TableCell>
                                                 <Badge variant={promoter.status === 'Activo' ? 'default' : 'secondary'}>{promoter.status}</Badge>
                                             </TableCell>
@@ -210,7 +205,7 @@ export function PromotersTab({
                                         </TableRow>
                                     )) : (
                                         <TableRow>
-                                            <TableCell colSpan={showActions ? 5 : 4} className="text-center h-24">
+                                            <TableCell colSpan={showActions ? 4 : 3} className="text-center h-24">
                                                 No hay promotores que mostrar.
                                             </TableCell>
                                         </TableRow>

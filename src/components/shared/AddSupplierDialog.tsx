@@ -245,5 +245,3 @@ export function AddSupplierDialog({ isOpen, onClose, supplier, onAdd, onSave }: 
     </Dialog>
   );
 }
-
-    

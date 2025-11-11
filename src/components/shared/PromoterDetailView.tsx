@@ -5,12 +5,13 @@ import React, { useState, useMemo } from "react";
 import { type Promoter, type Document } from "@/lib/types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { X, UserCheck, Users, CircleDollarSign, Mail, Phone, UploadCloud, FileText, Download, Info } from "lucide-react";
+import { X, UserCheck, Users, CircleDollarSign, Mail, Phone, UploadCloud, FileText, Download, Info, CalendarDays } from "lucide-react";
 import { DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Badge } from "../ui/badge";
 import { useCRMData } from "@/contexts/CRMDataContext";
 import { useDialogs } from "@/contexts/DialogsContext";
 import { useToast } from "@/hooks/use-toast";
+import { formatDateString } from "@/lib/utils";
 
 interface PromoterDetailViewProps {
   promoter: Promoter | null;
@@ -85,6 +86,15 @@ export function PromoterDetailView({ promoter, onClose }: PromoterDetailViewProp
                         <CardContent className="grid grid-cols-1 gap-4">
                             <DetailItem icon={Mail} label="Email" value={promoter.email} href={`mailto:${promoter.email}`} />
                             <DetailItem icon={Phone} label="Teléfono" value={promoter.phone} href={`tel:${promoter.phone}`} />
+                            {promoter.createdAt && (
+                                <div className="flex items-start gap-3">
+                                    <CalendarDays className="h-5 w-5 text-muted-foreground mt-0.5" />
+                                    <div className="flex flex-col">
+                                        <span className="text-sm text-muted-foreground">Fecha de Inicio</span>
+                                        <p className="text-sm font-medium">{formatDateString(promoter.createdAt.toDate())}</p>
+                                    </div>
+                                </div>
+                            )}
                         </CardContent>
                     </Card>
                     <Card>

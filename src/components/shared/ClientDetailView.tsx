@@ -6,7 +6,7 @@ import { type Client, type Document, type Task, type WorkflowAction, type Workfl
 import { useCRMData } from "@/contexts/CRMDataContext";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { X, Edit, Trash2, Plus, Download, FileText, UploadCloud, Info, Users, Target, ListTodo, CheckCircle2, Briefcase, UserCheck, Smartphone } from "lucide-react";
+import { X, Edit, Trash2, Plus, Download, FileText, UploadCloud, Info, Users, Target, ListTodo, CheckCircle2, Briefcase, UserCheck, Smartphone, CalendarDays } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { SmartDocumentUploadDialog } from "./SmartDocumentUploadDialog";
 import { DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
@@ -114,6 +114,15 @@ export function ClientDetailView({ client, onClose }: ClientDetailViewProps) {
                             <DetailItem label="Teléfono" value={client.contactPhone} href={`tel:${client.contactPhone}`} />
                             <DetailItem label="Sitio Web" value={client.website} href={client.website} />
                             <DetailItem label="Referido por (Promotor)" value={promoterName} />
+                             {client.createdAt && (
+                                <div className="flex items-start gap-3">
+                                    <CalendarDays className="h-5 w-5 text-muted-foreground mt-0.5" />
+                                    <div className="flex flex-col">
+                                        <span className="text-sm text-muted-foreground">Fecha de Inicio</span>
+                                        <p className="text-sm font-medium">{formatDateString(client.createdAt.toDate())}</p>
+                                    </div>
+                                </div>
+                            )}
                         </CardContent>
                     </Card>
 

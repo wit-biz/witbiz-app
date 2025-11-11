@@ -33,6 +33,7 @@ export type Promoter = {
   referredClients: number;
   totalCommissions: number;
   status: 'Activo' | 'Inactivo';
+  createdAt?: any;
 };
 
 export type Supplier = {
@@ -43,6 +44,7 @@ export type Supplier = {
   service?: string;
   promoterId?: string;
   status: 'Activo' | 'Inactivo';
+  createdAt?: any;
 }
 
 export type SubTask = {
@@ -232,5 +234,3 @@ export interface NavItem {
   exactMatch?: boolean;
   requiredPermission?: keyof AppPermissions;
 }
-
-    
