@@ -36,7 +36,7 @@ const DetailItem = ({ label, value, href }: { label: string; value?: string; hre
 };
 
 export function ClientDetailView({ client, onClose }: ClientDetailViewProps) {
-    const { getDocumentsByClientId, serviceWorkflows } = useCRMData();
+    const { getDocumentsByClientId, serviceWorkflows, getTasksByClientId } = useCRMData();
     const { toast } = useToast();
     
     const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
@@ -65,6 +65,11 @@ export function ClientDetailView({ client, onClose }: ClientDetailViewProps) {
     }, [client.promoterId]);
 
     const clientDocuments = getDocumentsByClientId(client.id);
+    const clientTasks = getTasksByClientId(client.id);
+
+    const pendingTasks = useMemo(() => {
+        return clientTasks.filter(task => task.status === 'Pendiente');
+    }, [clientTasks]);
     
     const currentStage = useMemo((): AnyStage | null => {
         if (!client.currentWorkflowStageId || !serviceWorkflows) return null;
@@ -138,20 +143,34 @@ export function ClientDetailView({ client, onClose }: ClientDetailViewProps) {
                         </CardContent>
                     </Card>
 
-                    {currentStage && (
-                        <Card>
-                            <CardHeader>
-                                <CardTitle>Estado Actual en el Flujo</CardTitle>
-                            </CardHeader>
-                            <CardContent>
+                    <Card>
+                        <CardHeader><CardTitle>Estado</CardTitle></CardHeader>
+                        <CardContent className="space-y-4">
+                            {currentStage && (
                                 <div className="flex items-start gap-2">
                                     <Target className="h-4 w-4 text-blue-500 mt-1 flex-shrink-0" />
                                     <DetailItem label="Etapa Actual" value={currentStage.title} />
                                 </div>
-                            </CardContent>
-                        </Card>
-                    )}
+                            )}
 
+                            <div>
+                                <h4 className="flex items-center gap-2 text-sm font-semibold mb-2">
+                                    <ListTodo className="h-4 w-4 text-accent"/>
+                                    Tareas Pendientes
+                                </h4>
+                                {pendingTasks.length > 0 ? (
+                                    <ul className="space-y-2">
+                                        {pendingTasks.map(task => (
+                                            <li key={task.id} className="text-sm text-muted-foreground pl-6">{task.title} (Vence: {formatDateString(task.dueDate)})</li>
+                                        ))}
+                                    </ul>
+                                ) : (
+                                    <p className="text-sm text-muted-foreground pl-6">No hay tareas pendientes para este cliente.</p>
+                                )}
+                            </div>
+                        </CardContent>
+                    </Card>
+                    
                     <Card>
                         <CardHeader>
                             <CardTitle>Documentos Adjuntos</CardTitle>
