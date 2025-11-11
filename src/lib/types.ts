@@ -204,7 +204,7 @@ export interface ServiceWorkflow {
     clientRequirements?: ClientRequirement[];
     commissions?: Commission[];
     stages: WorkflowStage[];
-    subServices: SubService[]; // Legacy, will be phased out
+    order: number;
 }
 
 export interface NavItem {

@@ -66,7 +66,7 @@ interface CRMContextType {
   setServiceWorkflows: (workflows: ServiceWorkflow[]) => void;
   isLoadingWorkflows: boolean;
   addService: (name: string) => Promise<ServiceWorkflow | null>;
-  updateService: (serviceId: string, updates: Partial<Omit<ServiceWorkflow, 'id' | 'stages' | 'subServices'>>) => Promise<boolean>;
+  updateService: (serviceId: string, updates: Partial<Omit<ServiceWorkflow, 'id' | 'stages' | 'subServices' | 'order'>>) => Promise<boolean>;
   deleteService: (serviceId: string) => Promise<boolean>;
   getActionById: (actionId: string) => WorkflowAction | null;
   
@@ -82,7 +82,7 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
     const { user, isUserLoading } = useUser();
 
     // MOCK DATA STATES (for data not yet in firestore)
-    const [teamMembers, setTeamMembers] = useState<AppUser[]>(mockTeamMembers);
+    const [teamMembers, setTeamMembers] = useState<AppUser[]>([]);
     const [notes, setNotes] = useState<Note[]>([]); // Will be fetched if needed
     
     // LOADING STATES
@@ -280,7 +280,9 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
       
       const all: AnyStage[] = [];
       
-      serviceWorkflows.forEach(service => {
+      const sortedWorkflows = [...serviceWorkflows].sort((a,b) => (a.order || 0) - (b.order || 0));
+
+      sortedWorkflows.forEach(service => {
         (service.stages || []).forEach(stage1 => {
           all.push(stage1);
           (stage1.subStages || []).forEach(stage2 => {
@@ -364,13 +366,13 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
             clientRequirements: [],
             commissions: [],
             stages: [],
-            subServices: [], // legacy
+            order: (serviceWorkflows || []).length,
         };
         const docRef = await addDocumentNonBlocking(serviceWorkflowsCollection, newServiceData);
         return { ...newServiceData, id: docRef.id };
     };
 
-    const updateService = async (serviceId: string, updates: Partial<Omit<ServiceWorkflow, 'id' | 'stages' | 'subServices'>>): Promise<boolean> => {
+    const updateService = async (serviceId: string, updates: Partial<Omit<ServiceWorkflow, 'id' | 'stages' | 'subServices' | 'order'>>): Promise<boolean> => {
         if (!user || !firestore) return false;
         const docRef = doc(firestore, 'users', user.uid, 'serviceWorkflows', serviceId);
         await setDocumentNonBlocking(docRef, updates, { merge: true });
