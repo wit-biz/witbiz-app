@@ -36,7 +36,7 @@ export function ClientsTab({ clients, isLoading, onClientSelect, selectedClientI
 
   const filteredClients = useMemo(() => {
     if (!clients) return [];
-    let filtered = [...clients];
+    let filtered = clients.filter(client => client.status !== 'Archivado');
     if (searchTerm) {
       const lowerSearchTerm = searchTerm.toLowerCase();
       filtered = filtered.filter(client =>
@@ -63,7 +63,7 @@ export function ClientsTab({ clients, isLoading, onClientSelect, selectedClientI
     setIsDeleting(true);
     const success = await deleteClient(clientToDelete.id);
     if (success) {
-        toast({ title: "Cliente eliminado", description: `El cliente "${clientToDelete.name}" ha sido eliminado.` });
+        toast({ title: "Cliente enviado a la papelera", description: `El cliente "${clientToDelete.name}" ha sido archivado.` });
     }
     setIsDeleting(false);
     setClientToDelete(null);
@@ -166,9 +166,9 @@ export function ClientsTab({ clients, isLoading, onClientSelect, selectedClientI
       <AlertDialog open={!!clientToDelete} onOpenChange={(open) => !open && setClientToDelete(null)}>
           <AlertDialogContent>
             <AlertDialogHeader>
-              <AlertDialogTitle>¿Confirmar Eliminación?</AlertDialogTitle>
+              <AlertDialogTitle>¿Enviar a la papelera?</AlertDialogTitle>
               <AlertDialogDescription>
-                Esta acción no se puede deshacer. ¿Está seguro de que desea eliminar al cliente "{clientToDelete?.name}"?
+                Esta acción enviará al cliente "{clientToDelete?.name}" a la papelera de reciclaje. Podrá restaurarlo o eliminarlo permanentemente desde allí.
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
@@ -177,9 +177,9 @@ export function ClientsTab({ clients, isLoading, onClientSelect, selectedClientI
                 {isDeleting ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Eliminando...
+                    Enviando...
                   </>
-                ) : "Eliminar"}
+                ) : "Enviar a la papelera"}
               </AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>

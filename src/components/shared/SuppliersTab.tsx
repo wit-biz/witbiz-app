@@ -52,7 +52,7 @@ export function SuppliersTab({
 
   const filteredSuppliers = useMemo(() => {
     if (!suppliers) return [];
-    let filtered = suppliers;
+    let filtered = suppliers.filter(s => s.status !== 'Archivado');
 
     if (searchTerm) {
       const lowerSearchTerm = searchTerm.toLowerCase();
@@ -84,9 +84,9 @@ export function SuppliersTab({
     setIsDeleting(true);
     const success = await onDelete(supplierToDelete.id);
      if (success) {
-        toast({ title: "Proveedor eliminado", description: `El proveedor "${supplierToDelete.name}" ha sido eliminado.` });
+        toast({ title: "Proveedor enviado a la papelera", description: `El proveedor "${supplierToDelete.name}" ha sido archivado.` });
     } else {
-        toast({ variant: 'destructive', title: 'Error', description: 'No se pudo eliminar al proveedor.' });
+        toast({ variant: 'destructive', title: 'Error', description: 'No se pudo archivar el proveedor.' });
     }
     setIsDeleting(false);
     setSupplierToDelete(null);
@@ -209,15 +209,15 @@ export function SuppliersTab({
       <AlertDialog open={!!supplierToDelete} onOpenChange={(open) => !open && setSupplierToDelete(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>¿Confirmar Eliminación?</AlertDialogTitle>
+            <AlertDialogTitle>¿Enviar a la papelera?</AlertDialogTitle>
             <AlertDialogDescription>
-              Esta acción no se puede deshacer. ¿Está seguro de que desea eliminar al proveedor "{supplierToDelete?.name}"?
+              Esta acción enviará al proveedor "{supplierToDelete?.name}" a la papelera de reciclaje. Podrá restaurarlo o eliminarlo permanentemente desde allí.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel onClick={() => setSupplierToDelete(null)} disabled={isDeleting}>Cancelar</AlertDialogCancel>
             <AlertDialogAction onClick={confirmDelete} disabled={isDeleting} className="bg-destructive hover:bg-destructive/90">
-              {isDeleting ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Eliminando...</> : "Eliminar"}
+              {isDeleting ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Enviando...</> : "Enviar a la papelera"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

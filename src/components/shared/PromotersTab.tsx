@@ -47,7 +47,7 @@ export function PromotersTab({
     const [isDeleting, setIsDeleting] = useState(false);
 
     const filteredAndSortedPromoters = useMemo(() => {
-        let filtered = promoters;
+        let filtered = promoters.filter(p => p.status !== 'Archivado');
 
         if (searchTerm) {
             filtered = filtered.filter(p => p.name.toLowerCase().includes(searchTerm.toLowerCase()));
@@ -84,9 +84,9 @@ export function PromotersTab({
         setIsDeleting(true);
         const success = await onDelete(promoterToDelete.id);
         if (success) {
-            toast({ title: "Promotor eliminado", description: `El promotor "${promoterToDelete.name}" ha sido eliminado.` });
+            toast({ title: "Promotor enviado a la papelera", description: `El promotor "${promoterToDelete.name}" ha sido archivado.` });
         } else {
-            toast({ variant: 'destructive', title: 'Error', description: 'No se pudo eliminar al promotor.' });
+            toast({ variant: 'destructive', title: 'Error', description: 'No se pudo archivar al promotor.' });
         }
         setIsDeleting(false);
         setPromoterToDelete(null);
@@ -234,15 +234,15 @@ export function PromotersTab({
             <AlertDialog open={!!promoterToDelete} onOpenChange={(open) => !open && setPromoterToDelete(null)}>
                 <AlertDialogContent>
                     <AlertDialogHeader>
-                        <AlertDialogTitle>¿Confirmar Eliminación?</AlertDialogTitle>
+                        <AlertDialogTitle>¿Enviar a la papelera?</AlertDialogTitle>
                         <AlertDialogDescription>
-                            Esta acción no se puede deshacer. ¿Está seguro de que desea eliminar al promotor "{promoterToDelete?.name}"?
+                           Esta acción enviará al promotor "{promoterToDelete?.name}" a la papelera de reciclaje. Podrá restaurarlo o eliminarlo permanentemente desde allí.
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
                         <AlertDialogCancel onClick={() => setPromoterToDelete(null)} disabled={isDeleting}>Cancelar</AlertDialogCancel>
                         <AlertDialogAction onClick={confirmDelete} disabled={isDeleting} className="bg-destructive hover:bg-destructive/90">
-                            {isDeleting ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Eliminando...</> : "Eliminar"}
+                            {isDeleting ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Enviando...</> : "Enviar a la papelera"}
                         </AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>

@@ -34,6 +34,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '../ui/form';
 import { Checkbox } from '../ui/checkbox';
 import { Progress } from '../ui/progress';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '../ui/alert-dialog';
+
 
 const taskEditSchema = z.object({
   title: z.string().min(3, "El título debe tener al menos 3 caracteres."),
@@ -55,7 +57,7 @@ interface TaskDetailDialogProps {
   onOpenChange: (open: boolean) => void;
   task: Task | null;
   onUpdateTask?: (taskId: string, updates: Partial<Task>) => Promise<boolean>;
-  onDeleteTask?: (taskId: string) => Promise<boolean>;
+  onDeleteTask?: (taskId: string, permanent?: boolean) => Promise<boolean>;
 }
 
 export function TaskDetailDialog({
@@ -73,6 +75,7 @@ export function TaskDetailDialog({
   const [isEditing, setIsEditing] = useState(false);
   const [isPostponing, setIsPostponing] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isConfirmingDelete, setIsConfirmingDelete] = useState(false);
   
   const form = useForm<z.infer<typeof taskEditSchema>>({
     resolver: zodResolver(taskEditSchema),
@@ -167,16 +170,17 @@ export function TaskDetailDialog({
     setIsSubmitting(true);
     const success = await onDeleteTask(task.id);
     if (success) {
-      toast({ title: 'Éxito', description: 'Tarea eliminada.' });
+      toast({ title: 'Éxito', description: 'Tarea enviada a la papelera.' });
       onOpenChange(false);
     } else {
       toast({
         variant: 'destructive',
         title: 'Error',
-        description: 'No se pudo eliminar la tarea.',
+        description: 'No se pudo archivar la tarea.',
       });
     }
     setIsSubmitting(false);
+    setIsConfirmingDelete(false);
   };
   
   const handleEditSubmit = async (data: z.infer<typeof taskEditSchema>) => {
@@ -249,6 +253,7 @@ export function TaskDetailDialog({
   };
 
   return (
+    <>
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent>
         <TooltipProvider>
@@ -512,13 +517,13 @@ export function TaskDetailDialog({
                                     <Button
                                         variant="destructive"
                                         size="icon"
-                                        onClick={handleDelete}
+                                        onClick={() => setIsConfirmingDelete(true)}
                                         disabled={isSubmitting || !onDeleteTask}
                                     >
-                                        {isSubmitting && onDeleteTask ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash className="h-4 w-4" />}
+                                        <Trash className="h-4 w-4" />
                                     </Button>
                                 </TooltipTrigger>
-                                <TooltipContent><p>Eliminar</p></TooltipContent>
+                                <TooltipContent><p>Enviar a papelera</p></TooltipContent>
                             </Tooltip>
                         </div>
                         <div className="flex gap-2">
@@ -549,5 +554,20 @@ export function TaskDetailDialog({
         </TooltipProvider>
       </DialogContent>
     </Dialog>
+    <AlertDialog open={isConfirmingDelete} onOpenChange={setIsConfirmingDelete}>
+        <AlertDialogContent>
+            <AlertDialogHeader>
+                <AlertDialogTitle>Enviar a la papelera</AlertDialogTitle>
+                <AlertDialogDescription>
+                    ¿Estás seguro de que quieres enviar esta tarea a la papelera de reciclaje? Podrás restaurarla más tarde.
+                </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+                <AlertDialogCancel onClick={() => setIsConfirmingDelete(false)}>Cancelar</AlertDialogCancel>
+                <AlertDialogAction onClick={handleDelete} className="bg-destructive hover:bg-destructive/90">Confirmar</AlertDialogAction>
+            </AlertDialogFooter>
+        </AlertDialogContent>
+    </AlertDialog>
+    </>
   );
 }

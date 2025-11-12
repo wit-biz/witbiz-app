@@ -22,6 +22,7 @@ import {
   Briefcase,
   Database,
   Landmark,
+  Trash2,
   type LucideIcon,
 } from "lucide-react";
 import {
@@ -53,7 +54,8 @@ const icons: { [key: string]: LucideIcon } = {
     DollarSign,
     Briefcase,
     Database,
-    Landmark
+    Landmark,
+    Trash2
 };
 
 export function SidebarNav() {

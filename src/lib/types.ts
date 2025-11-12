@@ -1,5 +1,4 @@
 
-
 import { type LucideIcon } from "lucide-react";
 
 export type PosTerminal = {
@@ -18,7 +17,7 @@ export type Client = {
   owner: string;
   category: string;
   stage?: string; // Opcional, legado
-  status: 'Activo' | 'Inactivo';
+  status: 'Activo' | 'Inactivo' | 'Archivado';
   currentActionId?: string;
   contactEmail?: string;
   contactPhone?: string;
@@ -28,6 +27,7 @@ export type Client = {
   createdAt?: any;
   promoters?: PromoterRef[];
   posTerminals?: PosTerminal[];
+  archivedAt?: any;
 };
 
 export type Promoter = {
@@ -37,8 +37,9 @@ export type Promoter = {
   phone?: string;
   referredClients: number;
   totalCommissions: number;
-  status: 'Activo' | 'Inactivo';
+  status: 'Activo' | 'Inactivo' | 'Archivado';
   createdAt?: any;
+  archivedAt?: any;
 };
 
 export type Supplier = {
@@ -47,8 +48,9 @@ export type Supplier = {
   email?: string;
   phone?: string;
   service?: string;
-  status: 'Activo' | 'Inactivo';
+  status: 'Activo' | 'Inactivo' | 'Archivado';
   createdAt?: any;
+  archivedAt?: any;
 }
 
 export type SubTask = {
@@ -62,7 +64,7 @@ export type Task = {
   title: string;
   dueDate: string; // ISO String YYYY-MM-DD
   dueTime?: string; // HH:MM
-  status: 'Pendiente' | 'Completada' | 'Pospuesta';
+  status: 'Pendiente' | 'Completada' | 'Pospuesta' | 'Archivado';
   clientId: string;
   clientName?: string;
   serviceId?: string; // ID of the service this task belongs to
@@ -78,6 +80,7 @@ export type Task = {
   postponedAt?: string; // ISO String YYYY-MM-DD
   reactivationDate?: string; // ISO String YYYY-MM-DD
   subTasks?: SubTask[];
+  archivedAt?: any;
 };
 
 export type Document = {
@@ -91,6 +94,8 @@ export type Document = {
   supplierId?: string;
   downloadURL?: string;
   uploadDate?: string; // ISO String YYYY-MM-DD
+  status?: 'Activo' | 'Archivado';
+  archivedAt?: any;
 };
 
 export type Transaction = {
@@ -238,5 +243,3 @@ export interface NavItem {
   exactMatch?: boolean;
   requiredPermission?: keyof AppPermissions;
 }
-
-    

@@ -263,7 +263,7 @@ export function SmartDocumentUploadDialog({
                         <SelectTrigger id="entity-selector"><SelectValue placeholder="Seleccione un cliente..." /></SelectTrigger>
                         <SelectContent>
                           <SelectItem value="new">-- Crear Nuevo Cliente --</SelectItem>
-                          {clients.map(item => <SelectItem key={item.id} value={item.id}>{item.name}</SelectItem>)}
+                          {clients.filter(c => c.status !== 'Archivado').map(item => <SelectItem key={item.id} value={item.id}>{item.name}</SelectItem>)}
                         </SelectContent>
                       </Select>
                       {isNewClient && (
@@ -283,13 +283,13 @@ export function SmartDocumentUploadDialog({
                   {associationType === 'promoter' && (
                     <Select value={selectedId} onValueChange={setSelectedId} required disabled={isSubmitting}>
                       <SelectTrigger id="entity-selector"><SelectValue placeholder="Seleccione un promotor..." /></SelectTrigger>
-                      <SelectContent>{promoters.map(item => <SelectItem key={item.id} value={item.id}>{item.name}</SelectItem>)}</SelectContent>
+                      <SelectContent>{promoters.filter(p => p.status !== 'Archivado').map(item => <SelectItem key={item.id} value={item.id}>{item.name}</SelectItem>)}</SelectContent>
                     </Select>
                   )}
                   {associationType === 'supplier' && (
                     <Select value={selectedId} onValueChange={setSelectedId} required disabled={isSubmitting}>
                       <SelectTrigger id="entity-selector"><SelectValue placeholder="Seleccione un proveedor..." /></SelectTrigger>
-                      <SelectContent>{suppliers.map(item => <SelectItem key={item.id} value={item.id}>{item.name}</SelectItem>)}</SelectContent>
+                      <SelectContent>{suppliers.filter(s => s.status !== 'Archivado').map(item => <SelectItem key={item.id} value={item.id}>{item.name}</SelectItem>)}</SelectContent>
                     </Select>
                   )}
                 </div>
