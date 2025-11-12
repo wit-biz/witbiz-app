@@ -20,7 +20,7 @@ export type CustomCommission = {
 
 export type SubmittedRequirement = {
   text: string;
-  submittedAt: any; // Firestore Timestamp
+  submittedAt: Date; 
 };
 
 export type Client = {
@@ -262,10 +262,17 @@ export type ClientRequirement = {
   text: string;
 }
 
+export type SubCommission = {
+  id: string;
+  name: string;
+  rate: number;
+}
+
 export type Commission = {
   id: string;
   name: string;
   rate: number;
+  subCommissions?: SubCommission[];
 }
 
 // This structure is now stored directly in the `serviceWorkflows` collection
