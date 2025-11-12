@@ -76,9 +76,9 @@ const StageCard = ({
     const [addTaskDialogState, setAddTaskDialogState] = useState<{isOpen: boolean, path: string | null}>({isOpen: false, path: null});
 
     const levelStyles = {
-        1: { card: "bg-card", trigger: "text-lg", subStageContainer: "", subStageButton: "default", subSubStageButton: "secondary" },
-        2: { card: "bg-muted/40", trigger: "text-md", subStageContainer: "pl-4", subStageButton: "secondary", subSubStageButton: "outline" },
-        3: { card: "bg-muted/20", trigger: "text-base", subStageContainer: "pl-8", subStageButton: "outline", subSubStageButton: "ghost" }
+        1: { card: "bg-card", trigger: "text-lg", subStageContainer: "", subStageButton: "default", subSubStageButton: "default" },
+        2: { card: "bg-muted/40", trigger: "text-md", subStageContainer: "pl-4", subStageButton: "default", subSubStageButton: "default" },
+        3: { card: "bg-muted/20", trigger: "text-base", subStageContainer: "pl-8", subStageButton: "default", subSubStageButton: "default" }
     }
 
     const handleUpdateAction = (actionId: string, updates: Partial<WorkflowAction>) => {
@@ -715,3 +715,5 @@ export default function WorkflowConfigurationPage() {
     </>
   );
 }
+
+    
