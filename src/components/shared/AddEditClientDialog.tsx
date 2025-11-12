@@ -151,7 +151,7 @@ export function AddEditClientDialog({ client, isOpen, onClose }: AddEditClientDi
     // Filtrar comisiones personalizadas que realmente tienen un valor
     const finalValues = {
         ...values,
-        customCommissions: values.customCommissions?.filter(cc => cc.rate !== undefined && cc.rate !== null && cc.rate !== '')
+        customCommissions: values.customCommissions?.filter(cc => cc.rate !== undefined && cc.rate !== null)
     };
 
     if (isEditMode && client) {
@@ -295,8 +295,9 @@ export function AddEditClientDialog({ client, isOpen, onClose }: AddEditClientDi
                                                         <FormControl>
                                                             <Input 
                                                                 type="number" 
-                                                                placeholder="Tasa personalizada" 
-                                                                {...field} 
+                                                                placeholder="Tasa personalizada"
+                                                                {...field}
+                                                                value={field.value ?? ''} // FIX: Ensure value is not undefined
                                                                 onChange={e => field.onChange(e.target.value === '' ? undefined : parseFloat(e.target.value))}
                                                             />
                                                         </FormControl>
