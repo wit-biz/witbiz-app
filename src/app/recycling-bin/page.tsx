@@ -8,13 +8,15 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/com
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { Loader2, Trash2, Users, ListTodo, FileText, UserCheck, Truck, History } from 'lucide-react';
+import { Loader2, Trash2, Users, ListTodo, FileText, UserCheck, Truck, History, Briefcase, StickyNote } from 'lucide-react';
 import { useCRMData } from '@/contexts/CRMDataContext';
 import { formatDateString } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import { subDays, isBefore } from 'date-fns';
+import { Task, ServiceWorkflow, Note } from '@/lib/types';
 
-type EntityType = 'client' | 'task' | 'document' | 'promoter' | 'supplier';
+
+type EntityType = 'client' | 'task' | 'document' | 'promoter' | 'supplier' | 'service' | 'note';
 
 type EntityToDelete = {
   id: string;
@@ -30,6 +32,8 @@ export default function RecyclingBinPage() {
     documents, isLoadingDocuments, restoreDocument, deleteDocument,
     promoters, isLoadingPromoters, restorePromoter, deletePromoter,
     suppliers, isLoadingSuppliers, restoreSupplier, deleteSupplier,
+    serviceWorkflows, isLoadingWorkflows, restoreService, deleteService,
+    notes, isLoadingNotes, restoreNote, deleteNote,
   } = useCRMData();
 
   const [entityToDelete, setEntityToDelete] = useState<EntityToDelete | null>(null);
@@ -40,6 +44,8 @@ export default function RecyclingBinPage() {
   const archivedDocuments = useMemo(() => (documents || []).filter(d => d.status === 'Archivado'), [documents]);
   const archivedPromoters = useMemo(() => (promoters || []).filter(p => p.status === 'Archivado'), [promoters]);
   const archivedSuppliers = useMemo(() => (suppliers || []).filter(s => s.status === 'Archivado'), [suppliers]);
+  const archivedServices = useMemo(() => (serviceWorkflows || []).filter(s => s.status === 'Archivado'), [serviceWorkflows]);
+  const archivedNotes = useMemo(() => (notes || []).filter(n => n.status === 'Archivado'), [notes]);
   
   const oneMonthAgo = subDays(new Date(), 30);
 
@@ -51,6 +57,8 @@ export default function RecyclingBinPage() {
     else if (type === 'document') success = await restoreDocument(id);
     else if (type === 'promoter') success = await restorePromoter(id);
     else if (type === 'supplier') success = await restoreSupplier(id);
+    else if (type === 'service') success = await restoreService(id);
+    else if (type === 'note') success = await restoreNote(id);
     
     if (success) {
         toast({ title: "Elemento Restaurado", description: "El elemento ha vuelto a su estado activo." });
@@ -71,6 +79,9 @@ export default function RecyclingBinPage() {
     else if (type === 'document') success = await deleteDocument(id, true);
     else if (type === 'promoter') success = await deletePromoter(id, true);
     else if (type === 'supplier') success = await deleteSupplier(id, true);
+    else if (type === 'service') success = await deleteService(id, true);
+    else if (type === 'note') success = await deleteNote(id, true);
+
 
     if (success) {
       toast({ title: "Elemento Eliminado", description: "El elemento ha sido eliminado permanentemente." });
@@ -87,7 +98,16 @@ export default function RecyclingBinPage() {
     { type: 'supplier' as EntityType, icon: Truck, label: 'Proveedores', data: archivedSuppliers, isLoading: isLoadingSuppliers },
     { type: 'task' as EntityType, icon: ListTodo, label: 'Tareas', data: archivedTasks, isLoading: isLoadingTasks },
     { type: 'document' as EntityType, icon: FileText, label: 'Documentos', data: archivedDocuments, isLoading: isLoadingDocuments },
+    { type: 'service' as EntityType, icon: Briefcase, label: 'Servicios', data: archivedServices, isLoading: isLoadingWorkflows },
+    { type: 'note' as EntityType, icon: StickyNote, label: 'Notas', data: archivedNotes, isLoading: isLoadingNotes },
   ];
+  
+  const getItemName = (item: any, type: EntityType) => {
+    if (type === 'task') return (item as Task).title;
+    if (type === 'note') return (item as Note).text.substring(0, 50) + '...';
+    return item.name;
+  }
+
 
   return (
     <>
@@ -106,7 +126,7 @@ export default function RecyclingBinPage() {
                 </CardHeader>
                 <CardContent>
                     <Tabs defaultValue="client" className="w-full">
-                        <TabsList className="grid w-full grid-cols-5 mb-6">
+                        <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 mb-6">
                             {tabs.map(tab => (
                                 <TabsTrigger key={tab.type} value={tab.type}>
                                     <tab.icon className="mr-2 h-4 w-4"/>
@@ -123,24 +143,25 @@ export default function RecyclingBinPage() {
                                     <Table>
                                         <TableHeader>
                                             <TableRow>
-                                                <TableHead>Nombre / Título</TableHead>
+                                                <TableHead>Nombre / Título / Contenido</TableHead>
                                                 <TableHead>Fecha de Archivado</TableHead>
                                                 <TableHead className="text-right">Acciones</TableHead>
                                             </TableRow>
                                         </TableHeader>
                                         <TableBody>
-                                            {tab.data.length > 0 ? tab.data.map(item => {
+                                            {tab.data && tab.data.length > 0 ? tab.data.map(item => {
                                                 const archivedDate = item.archivedAt?.toDate();
                                                 const isExpired = archivedDate ? isBefore(archivedDate, oneMonthAgo) : false;
+                                                const name = getItemName(item, tab.type);
                                                 return (
                                                 <TableRow key={item.id} className={isExpired ? 'bg-destructive/10' : ''}>
-                                                    <TableCell className="font-medium">{item.name || (item as Task).title}</TableCell>
+                                                    <TableCell className="font-medium">{name}</TableCell>
                                                     <TableCell>{archivedDate ? formatDateString(archivedDate) : 'N/A'}</TableCell>
                                                     <TableCell className="text-right">
                                                         <Button variant="ghost" size="sm" onClick={() => handleRestore(item.id, tab.type)} disabled={isProcessing}>
                                                           <History className="mr-2 h-4 w-4"/> Restaurar
                                                         </Button>
-                                                        <Button variant="ghost" size="sm" className="text-destructive" onClick={() => setEntityToDelete({ id: item.id, name: item.name || (item as Task).title, type: tab.type })} disabled={isProcessing}>
+                                                        <Button variant="ghost" size="sm" className="text-destructive" onClick={() => setEntityToDelete({ id: item.id, name: name, type: tab.type })} disabled={isProcessing}>
                                                           <Trash2 className="mr-2 h-4 w-4"/> Borrar
                                                         </Button>
                                                     </TableCell>

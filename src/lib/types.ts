@@ -1,4 +1,5 @@
 
+
 import { type LucideIcon } from "lucide-react";
 
 export type PosTerminal = {
@@ -120,6 +121,8 @@ export type Note = {
   clientId: string;
   authorName?: string;
   updatedAt?: any; // Firestore Timestamp o Date
+  status?: 'Activo' | 'Archivado';
+  archivedAt?: any;
 };
 
 // New 3-level structure
@@ -234,6 +237,8 @@ export interface ServiceWorkflow {
     commissions?: Commission[];
     stages: WorkflowStage[];
     order: number;
+    status?: 'Activo' | 'Archivado';
+    archivedAt?: any;
 }
 
 export interface NavItem {
@@ -243,3 +248,4 @@ export interface NavItem {
   exactMatch?: boolean;
   requiredPermission?: keyof AppPermissions;
 }
+
