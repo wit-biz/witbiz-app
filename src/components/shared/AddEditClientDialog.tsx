@@ -142,12 +142,12 @@ export function AddEditClientDialog({ client, isOpen, onClose }: AddEditClientDi
   const subscribedServicesWatch = useWatch({
       control: form.control,
       name: 'subscribedServiceIds'
-  });
+  }) || [];
   
   const customCommissionServicesWatch = useWatch({
       control: form.control,
       name: 'customCommissionServiceIds'
-  });
+  }) || [];
 
    const hasPosTerminalsWatch = useWatch({
     control: form.control,
