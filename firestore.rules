@@ -62,6 +62,14 @@ service cloud.firestore {
     }
     
     /**
+     * @description Rules for the /users/{userId}/notes/{noteId} subcollection. Users can only access notes they own.
+     * @path /users/{userId}/notes/{noteId}
+     */
+    match /users/{userId}/notes/{noteId} {
+      allow read, write: if isSignedIn() && isOwner(userId);
+    }
+    
+    /**
      * @description Rules for listing and accessing the /users/{userId}/serviceWorkflows collection and its documents.
      * This recursive match ensures list, get, and write operations are allowed for the owner.
      * @path /users/{userId}/serviceWorkflows/{workflowId=**}
