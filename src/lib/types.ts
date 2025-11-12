@@ -99,6 +99,25 @@ export type Document = {
   archivedAt?: any;
 };
 
+export type Company = {
+    id: string;
+    name: string;
+}
+
+export type BankAccount = {
+    id: string;
+    companyId: string;
+    bankName: string;
+    balance: number;
+    currency: 'MXN' | 'USD' | 'EUR';
+}
+
+export type Category = {
+    id: string;
+    name: string;
+    type: 'Ingreso' | 'Egreso';
+}
+
 export type Transaction = {
   id: string;
   date: string; // ISO String YYYY-MM-DD
