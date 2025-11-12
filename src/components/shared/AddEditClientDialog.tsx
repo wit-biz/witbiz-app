@@ -65,6 +65,7 @@ const clientSchema = z.object({
   subscribedServiceIds: z.array(z.string()).min(1, { message: "Debe seleccionar al menos un servicio." }),
   customCommissionServiceIds: z.array(z.string()).optional(), // Tracks services with custom commissions ON
   status: z.enum(['Activo', 'Inactivo']),
+  hasPosTerminals: z.boolean().default(false),
   posTerminals: z.array(posTerminalSchema).optional(),
   customCommissions: z.array(customCommissionSchema).optional(),
 }).refine(data => {
@@ -101,12 +102,13 @@ export function AddEditClientDialog({ client, isOpen, onClose }: AddEditClientDi
       subscribedServiceIds: [],
       customCommissionServiceIds: [],
       promoters: [],
+      hasPosTerminals: false,
       posTerminals: [],
       customCommissions: [],
     },
   });
   
-   const { fields: terminalFields, append: appendTerminal, remove: removeTerminal } = useFieldArray({
+   const { fields: terminalFields, append: appendTerminal, remove: removeTerminal, replace: replaceTerminals } = useFieldArray({
     control: form.control,
     name: "posTerminals",
   });
@@ -129,6 +131,7 @@ export function AddEditClientDialog({ client, isOpen, onClose }: AddEditClientDi
             subscribedServiceIds: client?.subscribedServiceIds || [],
             customCommissionServiceIds: client?.customCommissionServiceIds || [],
             status: client?.status || 'Activo',
+            hasPosTerminals: !!client?.posTerminals && client.posTerminals.length > 0,
             posTerminals: client?.posTerminals || [],
             customCommissions: client?.customCommissions || [],
         };
@@ -146,6 +149,17 @@ export function AddEditClientDialog({ client, isOpen, onClose }: AddEditClientDi
       name: 'customCommissionServiceIds'
   });
 
+   const hasPosTerminalsWatch = useWatch({
+    control: form.control,
+    name: 'hasPosTerminals',
+  });
+
+  useEffect(() => {
+    if (!hasPosTerminalsWatch) {
+      replaceTerminals([]);
+    }
+  }, [hasPosTerminalsWatch, replaceTerminals]);
+
   const commissionsForSelectedServices = useMemo(() => {
     if (!subscribedServicesWatch || !serviceWorkflows || !customCommissionServicesWatch) return [];
     return serviceWorkflows
@@ -157,10 +171,10 @@ export function AddEditClientDialog({ client, isOpen, onClose }: AddEditClientDi
     setIsSubmitting(true);
     let success = false;
     
-    // Clean up custom commissions for services where the switch is off
     const finalValues = {
         ...values,
         customCommissions: values.customCommissions?.filter(cc => values.customCommissionServiceIds?.includes(cc.serviceId)),
+        posTerminals: values.hasPosTerminals ? values.posTerminals : [],
     };
     
     if (isEditMode && client) {
@@ -307,7 +321,6 @@ export function AddEditClientDialog({ client, isOpen, onClose }: AddEditClientDi
                             <p className="text-xs text-muted-foreground">Deje en blanco para usar la tasa estándar del servicio.</p>
                             <div className="space-y-3 mt-2 max-h-40 overflow-y-auto">
                                 {commissionsForSelectedServices.map((commission, index) => {
-                                    // Find the actual index in the form array for this serviceId/commissionId pair
                                     const customCommissionIndex = form.getValues('customCommissions')?.findIndex(cc => cc.serviceId === commission.serviceId && cc.commissionId === commission.id) ?? -1;
                                     const fieldIndex = customCommissionIndex !== -1 ? customCommissionIndex : (form.getValues('customCommissions')?.length || 0) + index;
                                     
@@ -337,7 +350,6 @@ export function AddEditClientDialog({ client, isOpen, onClose }: AddEditClientDi
                                                     </FormItem>
                                                 )}
                                             />
-                                            {/* Hidden fields to store serviceId and commissionId */}
                                             <input type="hidden" {...form.register(`customCommissions.${fieldIndex}.serviceId`)} value={commission.serviceId} />
                                             <input type="hidden" {...form.register(`customCommissions.${fieldIndex}.commissionId`)} value={commission.id} />
                                         </div>
@@ -479,10 +491,27 @@ export function AddEditClientDialog({ client, isOpen, onClose }: AddEditClientDi
                         )}
                     />
                     <Separator />
-
-                     <div>
-                        <Label>Terminales Punto de Venta (TPV)</Label>
-                        <div className="space-y-2 mt-2">
+                    
+                    <FormField
+                        control={form.control}
+                        name="hasPosTerminals"
+                        render={({ field }) => (
+                            <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
+                                <div className="space-y-0.5">
+                                    <FormLabel>¿Tiene Terminales Punto de Venta (TPV)?</FormLabel>
+                                </div>
+                                <FormControl>
+                                    <Switch
+                                        checked={field.value}
+                                        onCheckedChange={field.onChange}
+                                    />
+                                </FormControl>
+                            </FormItem>
+                        )}
+                    />
+                     
+                    {hasPosTerminalsWatch && (
+                        <div className="space-y-2 mt-2 pl-4 border-l-2">
                           {terminalFields.map((field, index) => (
                             <div key={field.id} className="flex items-center gap-2">
                                <FormField
@@ -512,7 +541,7 @@ export function AddEditClientDialog({ client, isOpen, onClose }: AddEditClientDi
                             Añadir Terminal
                           </Button>
                         </div>
-                    </div>
+                    )}
                 </div>
 
                 <DialogFooter>
@@ -536,3 +565,6 @@ export function AddEditClientDialog({ client, isOpen, onClose }: AddEditClientDi
     </Dialog>
   );
 }
+
+
+    
