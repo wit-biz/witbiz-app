@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import React, { useMemo, useState, ReactNode } from "react";
@@ -164,9 +163,9 @@ export default function CrmPage() {
         description="Vista general de todos los clientes en cada etapa del flujo."
       >
         <Button asChild>
-            <Link href="/services">
-                <Briefcase className="mr-2 h-4 w-4" />
-                Gestionar Servicios
+            <Link href="/workflows">
+                <Workflow className="mr-2 h-4 w-4" />
+                Configurar Flujos de Trabajo
             </Link>
         </Button>
       </Header>
