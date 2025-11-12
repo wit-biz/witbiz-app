@@ -121,7 +121,7 @@ export function AddEditClientDialog({ client, isOpen, onClose }: AddEditClientDi
   React.useEffect(() => {
     if (isOpen && serviceWorkflows) {
         // Filter out any stale service IDs that might be stored on the client
-        const availableServiceIds = new Set(serviceWorkflows.map(s => s.id));
+        const availableServiceIds = new Set((serviceWorkflows || []).map(s => s.id));
         
         const validSubscribedServiceIds = (client?.subscribedServiceIds || []).filter(id => availableServiceIds.has(id));
         const validCustomCommissionServiceIds = (client?.customCommissionServiceIds || []).filter(id => availableServiceIds.has(id));
@@ -276,7 +276,7 @@ export function AddEditClientDialog({ client, isOpen, onClose }: AddEditClientDi
                                     <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
                                        <div className="p-2 space-y-1">
                                         {(serviceWorkflows || []).map((service) => {
-                                            const isChecked = selectedServiceIds?.includes(service.id);
+                                            const isChecked = (selectedServiceIds || []).includes(service.id);
                                             return (
                                                 <div
                                                     key={service.id}
@@ -301,7 +301,7 @@ export function AddEditClientDialog({ client, isOpen, onClose }: AddEditClientDi
                                                         <Switch
                                                             id={`custom-comm-${service.id}`}
                                                             disabled={!isChecked}
-                                                            checked={customCommissionServicesWatch?.includes(service.id)}
+                                                            checked={(customCommissionServicesWatch || []).includes(service.id)}
                                                             onCheckedChange={(checked) => {
                                                                 const currentCustomIds = form.getValues("customCommissionServiceIds") || [];
                                                                 const newCustomIds = checked
@@ -390,7 +390,7 @@ export function AddEditClientDialog({ client, isOpen, onClose }: AddEditClientDi
                                                         </SelectTrigger>
                                                     </FormControl>
                                                     <SelectContent>
-                                                        {promoters.map(p => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}
+                                                        {(promoters || []).map(p => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}
                                                     </SelectContent>
                                                 </Select>
                                                 <FormMessage />
