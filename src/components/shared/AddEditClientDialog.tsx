@@ -195,6 +195,8 @@ export function AddEditClientDialog({ client, isOpen, onClose }: AddEditClientDi
     }
   };
 
+  const selectedServiceIds = form.watch('subscribedServiceIds') || [];
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-lg">
@@ -254,11 +256,11 @@ export function AddEditClientDialog({ client, isOpen, onClose }: AddEditClientDi
                                             <Button
                                                 variant="outline"
                                                 role="combobox"
-                                                className={cn("w-full justify-between", !field.value?.length && "text-muted-foreground")}
+                                                className={cn("w-full justify-between", !selectedServiceIds.length && "text-muted-foreground")}
                                             >
                                                 <span className="truncate">
-                                                   {field.value?.length > 0
-                                                     ? `${field.value.length} servicio(s) seleccionado(s)`
+                                                   {selectedServiceIds.length > 0
+                                                     ? `${selectedServiceIds.length} servicio(s) seleccionado(s)`
                                                      : "Seleccione servicios..."}
                                                 </span>
                                                 <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
@@ -268,7 +270,7 @@ export function AddEditClientDialog({ client, isOpen, onClose }: AddEditClientDi
                                     <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
                                        <div className="p-2 space-y-1">
                                         {(serviceWorkflows || []).map((service) => {
-                                            const isChecked = field.value?.includes(service.id);
+                                            const isChecked = selectedServiceIds?.includes(service.id);
                                             return (
                                                 <div
                                                     key={service.id}
@@ -277,11 +279,11 @@ export function AddEditClientDialog({ client, isOpen, onClose }: AddEditClientDi
                                                     <div
                                                         className="flex items-center gap-2 flex-grow cursor-pointer"
                                                         onClick={() => {
-                                                            const currentIds = field.value || [];
+                                                            const currentIds = form.getValues("subscribedServiceIds") || [];
                                                             const newIds = isChecked
                                                                 ? currentIds.filter(id => id !== service.id)
                                                                 : [...currentIds, service.id];
-                                                            field.onChange(newIds);
+                                                            form.setValue("subscribedServiceIds", newIds, { shouldValidate: true });
                                                         }}
                                                     >
                                                         <Checkbox checked={isChecked} />
