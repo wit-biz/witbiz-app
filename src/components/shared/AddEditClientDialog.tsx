@@ -290,14 +290,16 @@ export function AddEditClientDialog({ client, isOpen, onClose }: AddEditClientDi
                                                 name={`customCommissions.${index}.rate`}
                                                 render={({ field }) => (
                                                     <FormItem>
-                                                        <FormLabel className="text-xs">{commission.serviceName}: {commission.name} (Estándar: {commission.rate}%)</FormLabel>
+                                                        <FormLabel className="text-xs">
+                                                            <span className="text-green-600 font-semibold">{commission.serviceName}:</span> {commission.name} (Estándar: {commission.rate}%)
+                                                        </FormLabel>
                                                         <div className="relative">
                                                         <FormControl>
                                                             <Input 
                                                                 type="number" 
                                                                 placeholder="Tasa personalizada"
                                                                 {...field}
-                                                                value={field.value ?? ''} // FIX: Ensure value is not undefined
+                                                                value={field.value ?? ''}
                                                                 onChange={e => field.onChange(e.target.value === '' ? undefined : parseFloat(e.target.value))}
                                                             />
                                                         </FormControl>
