@@ -1,8 +1,9 @@
 
+
 "use client";
 
-import React from 'react';
-import { useForm, useFieldArray } from 'react-hook-form';
+import React, { useEffect, useMemo, useState } from 'react';
+import { useForm, useFieldArray, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import {
@@ -20,7 +21,7 @@ import { Label } from '@/components/ui/label';
 import { Loader2, Save, Check, ChevronsUpDown, PlusCircle, Trash2, Percent } from 'lucide-react';
 import { useCRMData } from '@/contexts/CRMDataContext';
 import { useToast } from '@/hooks/use-toast';
-import type { Client } from '@/lib/types';
+import type { Client, CustomCommission, ServiceWorkflow } from '@/lib/types';
 import {
   Form,
   FormControl,
@@ -46,6 +47,12 @@ const promoterRefSchema = z.object({
   percentage: z.coerce.number().min(0, "El porcentaje no puede ser negativo.").max(100, "El porcentaje no puede ser mayor a 100."),
 });
 
+const customCommissionSchema = z.object({
+    serviceId: z.string(),
+    commissionId: z.string(),
+    rate: z.coerce.number().optional(), // Opcional para que se pueda dejar vacío
+});
+
 const clientSchema = z.object({
   name: z.string().min(2, { message: "El nombre debe tener al menos 2 caracteres." }),
   owner: z.string().optional(),
@@ -57,6 +64,7 @@ const clientSchema = z.object({
   subscribedServiceIds: z.array(z.string()).min(1, { message: "Debe seleccionar al menos un servicio." }),
   status: z.enum(['Activo', 'Inactivo']),
   posTerminals: z.array(posTerminalSchema).optional(),
+  customCommissions: z.array(customCommissionSchema).optional(),
 }).refine(data => {
     if (data.promoters && data.promoters.length > 0) {
         const totalPercentage = data.promoters.reduce((sum, p) => sum + p.percentage, 0);
@@ -86,16 +94,12 @@ export function AddEditClientDialog({ client, isOpen, onClose }: AddEditClientDi
   const form = useForm<z.infer<typeof clientSchema>>({
     resolver: zodResolver(clientSchema),
     defaultValues: {
-      name: client?.name || '',
-      owner: client?.owner || '',
-      category: client?.category || '',
-      contactEmail: client?.contactEmail || '',
-      contactPhone: client?.contactPhone || '',
-      website: client?.website || '',
-      promoters: client?.promoters || [],
-      subscribedServiceIds: client?.subscribedServiceIds || [],
-      status: client?.status || 'Activo',
-      posTerminals: client?.posTerminals || [],
+      name: '',
+      status: 'Activo',
+      subscribedServiceIds: [],
+      promoters: [],
+      posTerminals: [],
+      customCommissions: [],
     },
   });
   
@@ -122,19 +126,38 @@ export function AddEditClientDialog({ client, isOpen, onClose }: AddEditClientDi
             subscribedServiceIds: client?.subscribedServiceIds || [],
             status: client?.status || 'Activo',
             posTerminals: client?.posTerminals || [],
+            customCommissions: client?.customCommissions || [],
         });
     }
   }, [isOpen, client, form]);
+
+  const subscribedServicesWatch = useWatch({
+      control: form.control,
+      name: 'subscribedServiceIds'
+  });
+
+  const commissionsForSelectedServices = useMemo(() => {
+    if (!subscribedServicesWatch || !serviceWorkflows) return [];
+    return serviceWorkflows
+        .filter(sw => subscribedServicesWatch.includes(sw.id) && sw.commissions && sw.commissions.length > 0)
+        .flatMap(sw => sw.commissions!.map(c => ({ ...c, serviceId: sw.id, serviceName: sw.name })));
+  }, [subscribedServicesWatch, serviceWorkflows]);
 
 
   const onSubmit = async (values: z.infer<typeof clientSchema>) => {
     setIsSubmitting(true);
     let success = false;
     
+    // Filtrar comisiones personalizadas que realmente tienen un valor
+    const finalValues = {
+        ...values,
+        customCommissions: values.customCommissions?.filter(cc => cc.rate !== undefined && cc.rate !== null && cc.rate !== '')
+    };
+
     if (isEditMode && client) {
-        success = await updateClient(client.id, values);
+        success = await updateClient(client.id, finalValues);
     } else {
-        const newClient = await addClient(values as Omit<Client, 'id'>);
+        const newClient = await addClient(finalValues as Omit<Client, 'id'>);
         success = !!newClient;
     }
     
@@ -251,6 +274,50 @@ export function AddEditClientDialog({ client, isOpen, onClose }: AddEditClientDi
                         )}
                     />
                     
+                     {commissionsForSelectedServices.length > 0 && (
+                        <>
+                        <Separator />
+                        <div>
+                            <Label>Comisiones Personalizadas (Opcional)</Label>
+                            <p className="text-xs text-muted-foreground">Deje en blanco para usar la tasa estándar del servicio.</p>
+                            <div className="space-y-3 mt-2">
+                                {commissionsForSelectedServices.map((commission, index) => {
+                                    const fieldName = `customCommissions.${index}.rate` as const;
+                                    return (
+                                        <div key={`${commission.serviceId}-${commission.id}`} className="p-2 border rounded-md">
+                                             <FormField
+                                                control={form.control}
+                                                name={`customCommissions.${index}.rate`}
+                                                render={({ field }) => (
+                                                    <FormItem>
+                                                        <FormLabel className="text-xs">{commission.serviceName}: {commission.name} (Estándar: {commission.rate}%)</FormLabel>
+                                                        <div className="relative">
+                                                        <FormControl>
+                                                            <Input 
+                                                                type="number" 
+                                                                placeholder="Tasa personalizada" 
+                                                                {...field} 
+                                                                onChange={e => field.onChange(e.target.value === '' ? undefined : parseFloat(e.target.value))}
+                                                            />
+                                                        </FormControl>
+                                                        <Percent className="absolute right-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                                                        </div>
+                                                        <FormMessage />
+                                                    </FormItem>
+                                                )}
+                                            />
+                                            {/* Hidden fields to store serviceId and commissionId */}
+                                            <input type="hidden" {...form.register(`customCommissions.${index}.serviceId`)} value={commission.serviceId} />
+                                            <input type="hidden" {...form.register(`customCommissions.${index}.commissionId`)} value={commission.id} />
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        </div>
+                        </>
+                    )}
+
+
                     <Separator />
                     
                     <div>

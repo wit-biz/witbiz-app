@@ -12,6 +12,12 @@ export type PromoterRef = {
   percentage: number;
 }
 
+export type CustomCommission = {
+    serviceId: string;
+    commissionId: string;
+    rate: number;
+}
+
 export type Client = {
   id: string;
   name: string;
@@ -28,6 +34,7 @@ export type Client = {
   createdAt?: any;
   promoters?: PromoterRef[];
   posTerminals?: PosTerminal[];
+  customCommissions?: CustomCommission[];
   archivedAt?: any;
 };
 
@@ -275,5 +282,6 @@ export interface NavItem {
   exactMatch?: boolean;
   requiredPermission?: keyof AppPermissions;
 }
+
 
 

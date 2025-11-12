@@ -1,12 +1,13 @@
 
+
 "use client";
 
 import React, { useState, useMemo } from "react";
-import { type Client, type Document, type Task, type WorkflowAction, type WorkflowStage, type SubStage, type SubSubStage } from "@/lib/types";
+import { type Client, type Document, type Task, type WorkflowAction, type WorkflowStage, type SubStage, type SubSubStage, type Commission } from "@/lib/types";
 import { useCRMData } from "@/contexts/CRMDataContext";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Edit, Trash2, Plus, Download, FileText, UploadCloud, Info, Users, Target, ListTodo, CheckCircle2, Briefcase, UserCheck, Smartphone, CalendarDays, Percent } from "lucide-react";
+import { Edit, Trash2, Plus, Download, FileText, UploadCloud, Info, Users, Target, ListTodo, CheckCircle2, Briefcase, UserCheck, Smartphone, CalendarDays, Percent, Tag } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { SmartDocumentUploadDialog } from "./SmartDocumentUploadDialog";
 import { DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
@@ -67,6 +68,11 @@ export function ClientDetailView({ client, onClose }: ClientDetailViewProps) {
             }
         });
     }, [client.promoters, allPromoters]);
+
+    const getCommissionRate = (serviceId: string, commission: Commission): number => {
+        const customRate = client.customCommissions?.find(cc => cc.serviceId === serviceId && cc.commissionId === commission.id);
+        return customRate ? customRate.rate : commission.rate;
+    };
 
 
     const clientDocuments = getDocumentsByClientId(client.id);
@@ -132,15 +138,33 @@ export function ClientDetailView({ client, onClose }: ClientDetailViewProps) {
                         </CardContent>
                     </Card>
 
-                     <Card>
-                        <CardHeader><CardTitle>Servicios Contratados</CardTitle></CardHeader>
+                    <Card>
+                        <CardHeader><CardTitle>Servicios y Comisiones</CardTitle></CardHeader>
                         <CardContent>
                             {subscribedServices.length > 0 ? (
-                                <ul className="space-y-2">
+                                <ul className="space-y-4">
                                     {subscribedServices.map(service => (
-                                        <li key={service.id} className="flex items-center gap-2 text-sm font-medium">
-                                            <Briefcase className="h-4 w-4 text-accent" />
-                                            <span>{service.name}</span>
+                                        <li key={service.id}>
+                                            <div className="flex items-center gap-2 text-sm font-semibold">
+                                                <Briefcase className="h-4 w-4 text-accent" />
+                                                <span>{service.name}</span>
+                                            </div>
+                                            {service.commissions && service.commissions.length > 0 && (
+                                                <ul className="pl-6 pt-2 space-y-1">
+                                                    {service.commissions.map(commission => {
+                                                         const rate = getCommissionRate(service.id, commission);
+                                                         const isCustom = client.customCommissions?.some(cc => cc.serviceId === service.id && cc.commissionId === commission.id);
+                                                         return (
+                                                            <li key={commission.id} className="flex items-center text-xs">
+                                                                <Percent className="h-3 w-3 mr-2 text-muted-foreground" />
+                                                                <span className="text-muted-foreground">{commission.name}:</span>
+                                                                <span className="font-medium ml-1.5">{rate}%</span>
+                                                                {isCustom && <Tag className="h-3 w-3 ml-2 text-primary" title="Tasa personalizada"/>}
+                                                            </li>
+                                                         )
+                                                    })}
+                                                </ul>
+                                            )}
                                         </li>
                                     ))}
                                 </ul>
