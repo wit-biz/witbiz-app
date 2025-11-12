@@ -104,12 +104,20 @@ export type Company = {
     name: string;
 }
 
+export type CreditDetails = {
+    hasCredit: boolean;
+    status: 'No Ofrecido' | 'Pendiente' | 'Aceptado' | 'Rechazado';
+    creditAmount?: number;
+    paymentPlan?: string;
+}
+
 export type BankAccount = {
     id: string;
     companyId: string;
     bankName: string;
     balance: number;
     currency: 'MXN' | 'USD' | 'EUR';
+    creditDetails?: CreditDetails;
 }
 
 export type Category = {
@@ -267,4 +275,5 @@ export interface NavItem {
   exactMatch?: boolean;
   requiredPermission?: keyof AppPermissions;
 }
+
 

@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import React, { useState } from "react";
@@ -8,15 +9,19 @@ import { ArrowLeft, Building, Landmark, ListPlus, PlusCircle, Trash2 } from "luc
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useForm, useFieldArray } from "react-hook-form";
+import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
-import type { Company, BankAccount, Category } from "@/lib/types";
+import type { Company, BankAccount, Category, CreditDetails } from "@/lib/types";
+import { Switch } from "@/components/ui/switch";
+import { Textarea } from "@/components/ui/textarea";
+import { Badge } from "@/components/ui/badge";
+import { cn } from "@/lib/utils";
 
 
 // --- Mock Data ---
@@ -29,12 +34,29 @@ const companySchema = z.object({
   name: z.string().min(2, "El nombre de la empresa es requerido."),
 });
 
+const creditDetailsSchema = z.object({
+    hasCredit: z.boolean().default(false),
+    status: z.enum(['No Ofrecido', 'Pendiente', 'Aceptado', 'Rechazado']).default('No Ofrecido'),
+    creditAmount: z.coerce.number().optional(),
+    paymentPlan: z.string().optional(),
+});
+
 const bankAccountSchema = z.object({
   companyId: z.string().min(1, "Debe seleccionar una empresa."),
   bankName: z.string().min(2, "El nombre del banco es requerido."),
   currency: z.enum(['MXN', 'USD', 'EUR'], { required_error: "La divisa es requerida." }),
   initialBalance: z.coerce.number().default(0),
+  creditDetails: creditDetailsSchema.optional(),
+}).refine(data => {
+    if (data.creditDetails?.hasCredit && data.creditDetails.status !== 'No Ofrecido') {
+        return data.creditDetails.creditAmount !== undefined && data.creditDetails.creditAmount > 0;
+    }
+    return true;
+}, {
+    message: "El monto del crédito es requerido si el crédito está aceptado o pendiente.",
+    path: ["creditDetails.creditAmount"],
 });
+
 
 const categorySchema = z.object({
   name: z.string().min(2, "El nombre de la categoría es requerido."),
@@ -71,8 +93,21 @@ function CompanyForm({ onAddCompany }: { onAddCompany: (data: Company) => void }
 }
 
 function BankAccountForm({ companies, onAddAccount }: { companies: Company[], onAddAccount: (data: BankAccount) => void }) {
-  const form = useForm({ resolver: zodResolver(bankAccountSchema), defaultValues: { companyId: '', bankName: '', currency: undefined, initialBalance: 0 } });
+  const form = useForm<z.infer<typeof bankAccountSchema>>({ 
+      resolver: zodResolver(bankAccountSchema), 
+      defaultValues: { 
+          companyId: '', 
+          bankName: '', 
+          currency: undefined, 
+          initialBalance: 0,
+          creditDetails: {
+              hasCredit: false,
+              status: 'No Ofrecido',
+          }
+      } 
+  });
   const { toast } = useToast();
+  const hasCredit = form.watch("creditDetails.hasCredit");
 
   const onSubmit = (data: z.infer<typeof bankAccountSchema>) => {
     onAddAccount({ 
@@ -80,7 +115,8 @@ function BankAccountForm({ companies, onAddAccount }: { companies: Company[], on
         companyId: data.companyId, 
         bankName: data.bankName, 
         currency: data.currency,
-        balance: data.initialBalance
+        balance: data.initialBalance,
+        creditDetails: data.creditDetails
     });
     toast({ title: "Cuenta Añadida", description: `Se ha añadido la cuenta en ${data.bankName}.` });
     form.reset();
@@ -135,6 +171,58 @@ function BankAccountForm({ companies, onAddAccount }: { companies: Company[], on
             <FormMessage />
           </FormItem>
         )} />
+        
+        <FormField
+            control={form.control}
+            name="creditDetails.hasCredit"
+            render={({ field }) => (
+                <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
+                    <div className="space-y-0.5">
+                        <FormLabel>¿Se ofreció un crédito?</FormLabel>
+                    </div>
+                    <FormControl>
+                        <Switch checked={field.value} onCheckedChange={field.onChange} />
+                    </FormControl>
+                </FormItem>
+            )}
+        />
+        {hasCredit && (
+            <div className="space-y-4 rounded-md border p-4">
+                 <FormField
+                    control={form.control}
+                    name="creditDetails.status"
+                    render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>Estado del Crédito</FormLabel>
+                             <Select onValueChange={field.onChange} value={field.value}>
+                                <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
+                                <SelectContent>
+                                    <SelectItem value="Pendiente">Pendiente</SelectItem>
+                                    <SelectItem value="Aceptado">Aceptado</SelectItem>
+                                    <SelectItem value="Rechazado">Rechazado</SelectItem>
+                                </SelectContent>
+                            </Select>
+                            <FormMessage />
+                        </FormItem>
+                    )}
+                />
+                 <FormField control={form.control} name="creditDetails.creditAmount" render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Monto del Crédito</FormLabel>
+                    <FormControl><Input type="number" {...field} placeholder="50000" /></FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )} />
+                 <FormField control={form.control} name="creditDetails.paymentPlan" render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Plan de Pago</FormLabel>
+                    <FormControl><Textarea {...field} placeholder="Describa cómo se pagará el crédito..." /></FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )} />
+            </div>
+        )}
+
         <Button type="submit"><PlusCircle className="mr-2 h-4 w-4" />Añadir Cuenta</Button>
       </form>
     </Form>
@@ -179,6 +267,20 @@ function CategoryForm({ onAddCategory }: { onAddCategory: (data: Category) => vo
     </Form>
   );
 }
+
+const CreditStatusBadge = ({ status }: { status: CreditDetails['status'] | undefined }) => {
+    if (!status || status === 'No Ofrecido') {
+        return <span className="text-muted-foreground">N/A</span>;
+    }
+    const variants = {
+        'Pendiente': 'secondary',
+        'Aceptado': 'default',
+        'Rechazado': 'destructive',
+    } as const;
+
+    return <Badge variant={variants[status]}>{status}</Badge>;
+}
+
 
 export default function AccountingConfigPage() {
   const [companies, setCompanies] = useState<Company[]>(initialCompanies);
@@ -234,17 +336,20 @@ export default function AccountingConfigPage() {
                     <CardHeader><CardTitle>Cuentas Registradas</CardTitle><CardDescription>Listado de sus cuentas bancarias.</CardDescription></CardHeader>
                     <CardContent>
                         <Table>
-                            <TableHeader><TableRow><TableHead>Banco</TableHead><TableHead>Empresa</TableHead><TableHead>Divisa</TableHead><TableHead className="text-right">Saldo Inicial</TableHead><TableHead className="text-right">Acciones</TableHead></TableRow></TableHeader>
+                            <TableHeader><TableRow><TableHead>Banco</TableHead><TableHead>Empresa</TableHead><TableHead>Divisa</TableHead><TableHead>Crédito</TableHead><TableHead className="text-right">Saldo</TableHead><TableHead className="text-right">Acciones</TableHead></TableRow></TableHeader>
                             <TableBody>
                                 {bankAccounts.length > 0 ? bankAccounts.map(a => (
                                     <TableRow key={a.id}>
                                         <TableCell>{a.bankName}</TableCell>
                                         <TableCell>{companies.find(c => c.id === a.companyId)?.name}</TableCell>
                                         <TableCell>{a.currency}</TableCell>
+                                        <TableCell>
+                                            <CreditStatusBadge status={a.creditDetails?.status} />
+                                        </TableCell>
                                         <TableCell className="text-right">{a.balance.toLocaleString('en-US', { style: 'currency', currency: a.currency })}</TableCell>
                                         <TableCell className="text-right"><Button variant="ghost" size="icon" onClick={() => deleteAccount(a.id)}><Trash2 className="h-4 w-4 text-destructive" /></Button></TableCell>
                                     </TableRow>
-                                )) : <TableRow><TableCell colSpan={5} className="text-center h-24">No hay cuentas registradas.</TableCell></TableRow>}
+                                )) : <TableRow><TableCell colSpan={6} className="text-center h-24">No hay cuentas registradas.</TableCell></TableRow>}
                             </TableBody>
                         </Table>
                     </CardContent>
@@ -275,3 +380,4 @@ export default function AccountingConfigPage() {
     </div>
   );
 }
+
