@@ -76,9 +76,9 @@ const StageCard = ({
     const [addTaskDialogState, setAddTaskDialogState] = useState<{isOpen: boolean, path: string | null}>({isOpen: false, path: null});
 
     const levelStyles = {
-        1: { card: "bg-card", trigger: "text-lg", subStageContainer: "", subStageButton: "secondary", subSubStageButton: "outline" },
-        2: { card: "bg-muted/40", trigger: "text-md", subStageContainer: "pl-4", subStageButton: "outline", subSubStageButton: "ghost" },
-        3: { card: "bg-muted/20", trigger: "text-base", subStageContainer: "pl-8", subStageButton: "ghost", subSubStageButton: "ghost" }
+        1: { card: "bg-card", trigger: "text-lg", subStageContainer: "", subStageButton: "default", subSubStageButton: "secondary" },
+        2: { card: "bg-muted/40", trigger: "text-md", subStageContainer: "pl-4", subStageButton: "secondary", subSubStageButton: "outline" },
+        3: { card: "bg-muted/20", trigger: "text-base", subStageContainer: "pl-8", subStageButton: "outline", subSubStageButton: "ghost" }
     }
 
     const handleUpdateAction = (actionId: string, updates: Partial<WorkflowAction>) => {
@@ -162,7 +162,7 @@ const StageCard = ({
                             </div>
                         ) : <p className="text-xs text-muted-foreground">No hay tareas definidas.</p>}
                          {canEditWorkflow && (
-                          <Button variant="outline" size="sm" onClick={() => setAddTaskDialogState({isOpen: true, path: path})}>
+                          <Button variant="outline" size="sm" onClick={() => setAddTaskDialogState({isOpen: true, path: path})} className="bg-blue-600 hover:bg-blue-700 text-white border-blue-700">
                             <Plus className="h-4 w-4 mr-2"/>Añadir Tarea
                           </Button>
                         )}
@@ -352,16 +352,10 @@ export default function WorkflowConfigurationPage() {
   };
   
   const handleSelectService = useCallback((id: string) => {
-    if (hasChanges) {
-        // Find a way to prompt user or auto-save, for now we just block.
-        // For this user request, we will allow switching.
-        // showNotification('warning', 'Cambios sin guardar', 'Guarde o descarte sus cambios antes de seleccionar otro servicio.');
-        // return;
-    }
     setSelectedWorkflowId(id);
     router.push(`/workflows?serviceId=${id}`);
     setIsSelectorOpen(false);
-  }, [hasChanges, router, showNotification]);
+  }, [router]);
 
 
   const handleDiscardChanges = useCallback(() => {
