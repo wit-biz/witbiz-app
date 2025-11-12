@@ -145,41 +145,35 @@ export function AddEditClientDialog({ client, isOpen, onClose }: AddEditClientDi
     }
   }, [isOpen, client, form, serviceWorkflows]);
 
-  const subscribedServicesWatch = useWatch({
+  const { subscribedServiceIds, customCommissionServiceIds, hasPosTerminals } = useWatch({
       control: form.control,
-      name: 'subscribedServiceIds'
-  }) || [];
-  
-  const customCommissionServicesWatch = useWatch({
-      control: form.control,
-      name: 'customCommissionServiceIds'
-  }) || [];
-
-   const hasPosTerminalsWatch = useWatch({
-    control: form.control,
-    name: 'hasPosTerminals',
   });
 
   useEffect(() => {
-    if (!hasPosTerminalsWatch) {
+    if (!hasPosTerminals) {
       replaceTerminals([]);
     }
-  }, [hasPosTerminalsWatch, replaceTerminals]);
+  }, [hasPosTerminals, replaceTerminals]);
 
   const commissionsForSelectedServices = useMemo(() => {
-    if (!subscribedServicesWatch || !serviceWorkflows || !customCommissionServicesWatch) return [];
+    if (!subscribedServiceIds || !serviceWorkflows || !customCommissionServiceIds) return [];
     return serviceWorkflows
-        .filter(sw => customCommissionServicesWatch.includes(sw.id) && sw.commissions && sw.commissions.length > 0)
+        .filter(sw => customCommissionServiceIds.includes(sw.id) && sw.commissions && sw.commissions.length > 0)
         .flatMap(sw => sw.commissions!.map(c => ({ ...c, serviceId: sw.id, serviceName: sw.name })));
-  }, [subscribedServicesWatch, serviceWorkflows, customCommissionServicesWatch]);
+  }, [subscribedServiceIds, serviceWorkflows, customCommissionServiceIds]);
 
   const onSubmit = async (values: z.infer<typeof clientSchema>) => {
     setIsSubmitting(true);
     let success = false;
     
+    // Filter out custom commissions for services where the switch is off
+    const finalCustomCommissions = values.customCommissions?.filter(
+        cc => values.customCommissionServiceIds?.includes(cc.serviceId)
+    );
+
     const finalValues = {
         ...values,
-        customCommissions: values.customCommissions?.filter(cc => values.customCommissionServiceIds?.includes(cc.serviceId)),
+        customCommissions: finalCustomCommissions,
         posTerminals: values.hasPosTerminals ? values.posTerminals : [],
     };
     
@@ -200,8 +194,6 @@ export function AddEditClientDialog({ client, isOpen, onClose }: AddEditClientDi
       onClose();
     }
   };
-
-  const selectedServiceIds = form.watch('subscribedServiceIds') || [];
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -262,11 +254,11 @@ export function AddEditClientDialog({ client, isOpen, onClose }: AddEditClientDi
                                             <Button
                                                 variant="outline"
                                                 role="combobox"
-                                                className={cn("w-full justify-between", !selectedServiceIds.length && "text-muted-foreground")}
+                                                className={cn("w-full justify-between", !(subscribedServiceIds && subscribedServiceIds.length > 0) && "text-muted-foreground")}
                                             >
                                                 <span className="truncate">
-                                                   {selectedServiceIds.length > 0
-                                                     ? `${selectedServiceIds.length} servicio(s) seleccionado(s)`
+                                                   {subscribedServiceIds && subscribedServiceIds.length > 0
+                                                     ? `${subscribedServiceIds.length} servicio(s) seleccionado(s)`
                                                      : "Seleccione servicios..."}
                                                 </span>
                                                 <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
@@ -276,7 +268,7 @@ export function AddEditClientDialog({ client, isOpen, onClose }: AddEditClientDi
                                     <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
                                        <div className="p-2 space-y-1">
                                         {(serviceWorkflows || []).map((service) => {
-                                            const isChecked = (selectedServiceIds || []).includes(service.id);
+                                            const isChecked = (field.value || []).includes(service.id);
                                             return (
                                                 <div
                                                     key={service.id}
@@ -301,7 +293,7 @@ export function AddEditClientDialog({ client, isOpen, onClose }: AddEditClientDi
                                                         <Switch
                                                             id={`custom-comm-${service.id}`}
                                                             disabled={!isChecked}
-                                                            checked={(customCommissionServicesWatch || []).includes(service.id)}
+                                                            checked={(customCommissionServiceIds || []).includes(service.id)}
                                                             onCheckedChange={(checked) => {
                                                                 const currentCustomIds = form.getValues("customCommissionServiceIds") || [];
                                                                 const newCustomIds = checked
@@ -519,7 +511,7 @@ export function AddEditClientDialog({ client, isOpen, onClose }: AddEditClientDi
                         )}
                     />
                      
-                    {hasPosTerminalsWatch && (
+                    {hasPosTerminals && (
                         <div className="space-y-2 mt-2 pl-4 border-l-2">
                           {terminalFields.map((field, index) => (
                             <div key={field.id} className="flex items-center gap-2">
