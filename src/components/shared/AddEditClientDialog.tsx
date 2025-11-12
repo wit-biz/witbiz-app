@@ -3,7 +3,7 @@
 "use client";
 
 import React, { useEffect, useMemo, useState } from 'react';
-import { useForm, useWatch, useFieldArray } from 'react-hook-form';
+import { useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import {
@@ -36,6 +36,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { cn } from '@/lib/utils';
 import { Separator } from '../ui/separator';
 import { Switch } from '../ui/switch';
+import { useFieldArray } from 'react-hook-form';
 
 
 const posTerminalSchema = z.object({
@@ -278,7 +279,8 @@ export function AddEditClientDialog({ client, isOpen, onClose }: AddEditClientDi
                                                 >
                                                     <div
                                                         className="flex items-center gap-2 flex-grow cursor-pointer"
-                                                        onClick={() => {
+                                                        onClick={(e) => {
+                                                            e.preventDefault();
                                                             const currentIds = form.getValues("subscribedServiceIds") || [];
                                                             const newIds = isChecked
                                                                 ? currentIds.filter(id => id !== service.id)
@@ -567,6 +569,3 @@ export function AddEditClientDialog({ client, isOpen, onClose }: AddEditClientDi
     </Dialog>
   );
 }
-
-
-    
