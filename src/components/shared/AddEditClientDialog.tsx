@@ -3,7 +3,7 @@
 "use client";
 
 import React, { useEffect, useMemo, useState } from 'react';
-import { useForm, useFieldArray, useWatch } from 'react-hook-form';
+import { useForm, useWatch, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import {
@@ -18,10 +18,10 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Loader2, Save, Check, ChevronsUpDown, PlusCircle, Trash2, Percent } from 'lucide-react';
+import { Loader2, Save, ChevronsUpDown, PlusCircle, Trash2, Percent } from 'lucide-react';
 import { useCRMData } from '@/contexts/CRMDataContext';
 import { useToast } from '@/hooks/use-toast';
-import type { Client, CustomCommission, ServiceWorkflow } from '@/lib/types';
+import type { Client, ServiceWorkflow } from '@/lib/types';
 import {
   Form,
   FormControl,
@@ -35,6 +35,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Checkbox } from '@/components/ui/checkbox';
 import { cn } from '@/lib/utils';
 import { Separator } from '../ui/separator';
+import { Switch } from '../ui/switch';
 
 
 const posTerminalSchema = z.object({
@@ -62,6 +63,7 @@ const clientSchema = z.object({
   website: z.string().url({ message: "Por favor, introduzca una URL válida." }).optional().or(z.literal('')),
   promoters: z.array(promoterRefSchema).optional(),
   subscribedServiceIds: z.array(z.string()).min(1, { message: "Debe seleccionar al menos un servicio." }),
+  customCommissionServiceIds: z.array(z.string()).optional(), // Tracks services with custom commissions ON
   status: z.enum(['Activo', 'Inactivo']),
   posTerminals: z.array(posTerminalSchema).optional(),
   customCommissions: z.array(customCommissionSchema).optional(),
@@ -97,6 +99,7 @@ export function AddEditClientDialog({ client, isOpen, onClose }: AddEditClientDi
       name: '',
       status: 'Activo',
       subscribedServiceIds: [],
+      customCommissionServiceIds: [],
       promoters: [],
       posTerminals: [],
       customCommissions: [],
@@ -115,7 +118,7 @@ export function AddEditClientDialog({ client, isOpen, onClose }: AddEditClientDi
   
   React.useEffect(() => {
     if (isOpen) {
-        form.reset({
+        const defaultValues = {
             name: client?.name || '',
             owner: client?.owner || '',
             category: client?.category || '',
@@ -124,10 +127,12 @@ export function AddEditClientDialog({ client, isOpen, onClose }: AddEditClientDi
             website: client?.website || '',
             promoters: client?.promoters || [],
             subscribedServiceIds: client?.subscribedServiceIds || [],
+            customCommissionServiceIds: client?.customCommissionServiceIds || [],
             status: client?.status || 'Activo',
             posTerminals: client?.posTerminals || [],
             customCommissions: client?.customCommissions || [],
-        });
+        };
+        form.reset(defaultValues);
     }
   }, [isOpen, client, form]);
 
@@ -135,25 +140,29 @@ export function AddEditClientDialog({ client, isOpen, onClose }: AddEditClientDi
       control: form.control,
       name: 'subscribedServiceIds'
   });
+  
+  const customCommissionServicesWatch = useWatch({
+      control: form.control,
+      name: 'customCommissionServiceIds'
+  });
 
   const commissionsForSelectedServices = useMemo(() => {
-    if (!subscribedServicesWatch || !serviceWorkflows) return [];
+    if (!subscribedServicesWatch || !serviceWorkflows || !customCommissionServicesWatch) return [];
     return serviceWorkflows
-        .filter(sw => subscribedServicesWatch.includes(sw.id) && sw.commissions && sw.commissions.length > 0)
+        .filter(sw => customCommissionServicesWatch.includes(sw.id) && sw.commissions && sw.commissions.length > 0)
         .flatMap(sw => sw.commissions!.map(c => ({ ...c, serviceId: sw.id, serviceName: sw.name })));
-  }, [subscribedServicesWatch, serviceWorkflows]);
-
+  }, [subscribedServicesWatch, serviceWorkflows, customCommissionServicesWatch]);
 
   const onSubmit = async (values: z.infer<typeof clientSchema>) => {
     setIsSubmitting(true);
     let success = false;
     
-    // Filtrar comisiones personalizadas que realmente tienen un valor
+    // Clean up custom commissions for services where the switch is off
     const finalValues = {
         ...values,
-        customCommissions: values.customCommissions?.filter(cc => cc.rate !== undefined && cc.rate !== null)
+        customCommissions: values.customCommissions?.filter(cc => values.customCommissionServiceIds?.includes(cc.serviceId)),
     };
-
+    
     if (isEditMode && client) {
         success = await updateClient(client.id, finalValues);
     } else {
@@ -234,7 +243,9 @@ export function AddEditClientDialog({ client, isOpen, onClose }: AddEditClientDi
                                                 className={cn("w-full justify-between", !field.value?.length && "text-muted-foreground")}
                                             >
                                                 <span className="truncate">
-                                                   Seleccione servicios...
+                                                   {field.value?.length > 0
+                                                     ? `${field.value.length} servicio(s) seleccionado(s)`
+                                                     : "Seleccione servicios..."}
                                                 </span>
                                                 <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                                             </Button>
@@ -242,30 +253,44 @@ export function AddEditClientDialog({ client, isOpen, onClose }: AddEditClientDi
                                     </PopoverTrigger>
                                     <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
                                        <div className="p-2 space-y-1">
-                                        {serviceWorkflows.map((service) => (
-                                            <div
-                                                key={service.id}
-                                                className="flex items-center gap-2 p-2 rounded-md hover:bg-accent cursor-pointer"
-                                                onClick={() => {
-                                                    const currentIds = field.value || [];
-                                                    const newIds = currentIds.includes(service.id)
-                                                        ? currentIds.filter(id => id !== service.id)
-                                                        : [...currentIds, service.id];
-                                                    field.onChange(newIds);
-                                                }}
-                                            >
-                                                <Checkbox
-                                                    checked={field.value?.includes(service.id)}
-                                                    onCheckedChange={(checked) => {
-                                                        const currentIds = field.value || [];
-                                                        return checked
-                                                            ? field.onChange([...currentIds, service.id])
-                                                            : field.onChange(currentIds.filter(id => id !== service.id));
-                                                    }}
-                                                />
-                                                <span className="text-sm">{service.name}</span>
-                                            </div>
-                                        ))}
+                                        {(serviceWorkflows || []).map((service) => {
+                                            const isChecked = field.value?.includes(service.id);
+                                            return (
+                                                <div
+                                                    key={service.id}
+                                                    className="flex items-center justify-between gap-2 p-2 rounded-md hover:bg-muted"
+                                                >
+                                                    <div
+                                                        className="flex items-center gap-2 flex-grow cursor-pointer"
+                                                        onClick={() => {
+                                                            const currentIds = field.value || [];
+                                                            const newIds = isChecked
+                                                                ? currentIds.filter(id => id !== service.id)
+                                                                : [...currentIds, service.id];
+                                                            field.onChange(newIds);
+                                                        }}
+                                                    >
+                                                        <Checkbox checked={isChecked} />
+                                                        <span className="text-sm font-medium">{service.name}</span>
+                                                    </div>
+                                                    <div className="flex items-center space-x-2">
+                                                        <Label htmlFor={`custom-comm-${service.id}`} className="text-xs text-muted-foreground">Personalizar</Label>
+                                                        <Switch
+                                                            id={`custom-comm-${service.id}`}
+                                                            disabled={!isChecked}
+                                                            checked={customCommissionServicesWatch?.includes(service.id)}
+                                                            onCheckedChange={(checked) => {
+                                                                const currentCustomIds = form.getValues("customCommissionServiceIds") || [];
+                                                                const newCustomIds = checked
+                                                                    ? [...currentCustomIds, service.id]
+                                                                    : currentCustomIds.filter(id => id !== service.id);
+                                                                form.setValue("customCommissionServiceIds", newCustomIds);
+                                                            }}
+                                                        />
+                                                    </div>
+                                                </div>
+                                            )
+                                        })}
                                        </div>
                                     </PopoverContent>
                                 </Popover>
@@ -278,16 +303,19 @@ export function AddEditClientDialog({ client, isOpen, onClose }: AddEditClientDi
                         <>
                         <Separator />
                         <div>
-                            <Label>Comisiones Personalizadas (Opcional)</Label>
+                            <Label>Comisiones Personalizadas</Label>
                             <p className="text-xs text-muted-foreground">Deje en blanco para usar la tasa estándar del servicio.</p>
-                            <div className="space-y-3 mt-2">
+                            <div className="space-y-3 mt-2 max-h-40 overflow-y-auto">
                                 {commissionsForSelectedServices.map((commission, index) => {
-                                    const fieldName = `customCommissions.${index}.rate` as const;
+                                    // Find the actual index in the form array for this serviceId/commissionId pair
+                                    const customCommissionIndex = form.getValues('customCommissions')?.findIndex(cc => cc.serviceId === commission.serviceId && cc.commissionId === commission.id) ?? -1;
+                                    const fieldIndex = customCommissionIndex !== -1 ? customCommissionIndex : (form.getValues('customCommissions')?.length || 0) + index;
+                                    
                                     return (
                                         <div key={`${commission.serviceId}-${commission.id}`} className="p-2 border rounded-md">
                                              <FormField
                                                 control={form.control}
-                                                name={`customCommissions.${index}.rate`}
+                                                name={`customCommissions.${fieldIndex}.rate`}
                                                 render={({ field }) => (
                                                     <FormItem>
                                                         <FormLabel className="text-xs">
@@ -310,8 +338,8 @@ export function AddEditClientDialog({ client, isOpen, onClose }: AddEditClientDi
                                                 )}
                                             />
                                             {/* Hidden fields to store serviceId and commissionId */}
-                                            <input type="hidden" {...form.register(`customCommissions.${index}.serviceId`)} value={commission.serviceId} />
-                                            <input type="hidden" {...form.register(`customCommissions.${index}.commissionId`)} value={commission.id} />
+                                            <input type="hidden" {...form.register(`customCommissions.${fieldIndex}.serviceId`)} value={commission.serviceId} />
+                                            <input type="hidden" {...form.register(`customCommissions.${fieldIndex}.commissionId`)} value={commission.id} />
                                         </div>
                                     );
                                 })}
