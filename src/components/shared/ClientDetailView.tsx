@@ -104,7 +104,7 @@ export function ClientDetailView({ client, onClose }: ClientDetailViewProps) {
 
         if (isSubmitted) {
             // Add to submitted list
-            updatedSubmitted = [...currentSubmitted, { text: requirementText, submittedAt: serverTimestamp() }];
+            updatedSubmitted = [...currentSubmitted, { text: requirementText, submittedAt: new Date() }];
         } else {
             // Remove from submitted list
             updatedSubmitted = currentSubmitted.filter(sr => sr.text !== requirementText);
@@ -366,3 +366,4 @@ export function ClientDetailView({ client, onClose }: ClientDetailViewProps) {
     );
 }
     
+
