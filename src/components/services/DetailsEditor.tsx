@@ -1,13 +1,14 @@
 
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { ServiceWorkflow, type ClientRequirement } from '@/lib/types';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { PlusCircle, Trash2 } from 'lucide-react';
+import { useCRMData } from '@/contexts/CRMDataContext';
 
 interface ServiceDetailsEditorProps {
     service: ServiceWorkflow;
@@ -16,6 +17,7 @@ interface ServiceDetailsEditorProps {
 }
 
 export function ServiceDetailsEditor({ service, onUpdate, canEdit }: ServiceDetailsEditorProps) {
+    const { serviceWorkflows } = useCRMData();
     const [description, setDescription] = useState(service.description || '');
     const [localRequirements, setLocalRequirements] = useState<ClientRequirement[]>(service.clientRequirements || []);
 
@@ -23,6 +25,14 @@ export function ServiceDetailsEditor({ service, onUpdate, canEdit }: ServiceDeta
         setDescription(service.description || '');
         setLocalRequirements(service.clientRequirements || []);
     }, [service]);
+    
+    const allRequirementTexts = useMemo(() => {
+        const texts = new Set<string>();
+        serviceWorkflows.forEach(wf => {
+            wf.clientRequirements?.forEach(req => texts.add(req.text));
+        });
+        return Array.from(texts);
+    }, [serviceWorkflows]);
 
     const handleDescriptionChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
         setDescription(e.target.value);
@@ -76,6 +86,7 @@ export function ServiceDetailsEditor({ service, onUpdate, canEdit }: ServiceDeta
                                 onChange={(e) => handleRequirementChange(index, e.target.value)}
                                 placeholder={`Requisito #${index + 1}`}
                                 disabled={!canEdit}
+                                list="requirement-suggestions"
                             />
                             {canEdit && (
                                 <Button
@@ -89,6 +100,9 @@ export function ServiceDetailsEditor({ service, onUpdate, canEdit }: ServiceDeta
                             )}
                         </div>
                     ))}
+                     <datalist id="requirement-suggestions">
+                        {allRequirementTexts.map(text => <option key={text} value={text} />)}
+                    </datalist>
                     {canEdit && (
                         <Button
                             type="button"

@@ -18,6 +18,11 @@ export type CustomCommission = {
     rate: number;
 }
 
+export type SubmittedRequirement = {
+  text: string;
+  submittedAt: any; // Firestore Timestamp
+};
+
 export type Client = {
   id: string;
   name: string;
@@ -35,6 +40,7 @@ export type Client = {
   promoters?: PromoterRef[];
   posTerminals?: PosTerminal[];
   customCommissions?: CustomCommission[];
+  submittedRequirements?: SubmittedRequirement[];
   archivedAt?: any;
 };
 
@@ -282,6 +288,7 @@ export interface NavItem {
   exactMatch?: boolean;
   requiredPermission?: keyof AppPermissions;
 }
+
 
 
 

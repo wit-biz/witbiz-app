@@ -3,15 +3,18 @@
 "use client";
 
 import React, { useState, useMemo } from "react";
-import { type Client, type Document, type Task, type WorkflowAction, type WorkflowStage, type SubStage, type SubSubStage, type Commission } from "@/lib/types";
+import { type Client, type Document, type Task, type WorkflowAction, type WorkflowStage, type SubStage, type SubSubStage, type Commission, type SubmittedRequirement } from "@/lib/types";
 import { useCRMData } from "@/contexts/CRMDataContext";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Edit, Trash2, Plus, Download, FileText, UploadCloud, Info, Users, Target, ListTodo, CheckCircle2, Briefcase, UserCheck, Smartphone, CalendarDays, Percent, Tag } from "lucide-react";
+import { Edit, Trash2, Plus, Download, FileText, UploadCloud, Info, Users, Target, ListTodo, CheckCircle2, Briefcase, UserCheck, Smartphone, CalendarDays, Percent, Tag, FileCheck2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { SmartDocumentUploadDialog } from "./SmartDocumentUploadDialog";
 import { DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { formatDateString } from "@/lib/utils";
+import { Checkbox } from "../ui/checkbox";
+import { Label } from "../ui/label";
+import { serverTimestamp } from "firebase/firestore";
 
 
 type AnyStage = WorkflowStage | SubStage | SubSubStage;
@@ -36,7 +39,7 @@ const DetailItem = ({ label, value, href }: { label: string; value?: string; hre
 };
 
 export function ClientDetailView({ client, onClose }: ClientDetailViewProps) {
-    const { getDocumentsByClientId, serviceWorkflows, getTasksByClientId, promoters: allPromoters } = useCRMData();
+    const { getDocumentsByClientId, serviceWorkflows, getTasksByClientId, promoters: allPromoters, updateClient } = useCRMData();
     const { toast } = useToast();
     
     const [isUploadDialogOpen, setIsUploadDialogOpen] = useState(false);
@@ -82,6 +85,42 @@ export function ClientDetailView({ client, onClose }: ClientDetailViewProps) {
         return clientTasks.filter(task => task.status === 'Pendiente');
     }, [clientTasks]);
     
+    const allUniqueRequirements = useMemo(() => {
+        const requirements = new Set<string>();
+        subscribedServices.forEach(service => {
+            service.clientRequirements?.forEach(req => requirements.add(req.text));
+        });
+        return Array.from(requirements);
+    }, [subscribedServices]);
+
+    const pendingRequirements = useMemo(() => {
+        const submittedTexts = new Set(client.submittedRequirements?.map(sr => sr.text) || []);
+        return allUniqueRequirements.filter(reqText => !submittedTexts.has(reqText));
+    }, [allUniqueRequirements, client.submittedRequirements]);
+
+     const handleRequirementToggle = async (requirementText: string, isSubmitted: boolean) => {
+        const currentSubmitted = client.submittedRequirements || [];
+        let updatedSubmitted: SubmittedRequirement[];
+
+        if (isSubmitted) {
+            // Add to submitted list
+            updatedSubmitted = [...currentSubmitted, { text: requirementText, submittedAt: serverTimestamp() }];
+        } else {
+            // Remove from submitted list
+            updatedSubmitted = currentSubmitted.filter(sr => sr.text !== requirementText);
+        }
+
+        const success = await updateClient(client.id, { submittedRequirements: updatedSubmitted });
+
+        if (!success) {
+            toast({
+                variant: "destructive",
+                title: "Error",
+                description: "No se pudo actualizar el requisito."
+            });
+        }
+    };
+
     const currentStage = useMemo((): AnyStage | null => {
         if (!client.currentWorkflowStageId || !serviceWorkflows) return null;
         for (const service of serviceWorkflows) {
@@ -137,6 +176,37 @@ export function ClientDetailView({ client, onClose }: ClientDetailViewProps) {
                             )}
                         </CardContent>
                     </Card>
+                    
+                    <Card>
+                        <CardHeader><CardTitle>Requisitos Pendientes</CardTitle></CardHeader>
+                        <CardContent>
+                            {allUniqueRequirements.length > 0 ? (
+                                <div className="space-y-2">
+                                    {allUniqueRequirements.map(reqText => {
+                                        const isSubmitted = client.submittedRequirements?.some(sr => sr.text === reqText) ?? false;
+                                        return (
+                                            <div key={reqText} className="flex items-center space-x-2">
+                                                <Checkbox
+                                                    id={`req-${reqText}`}
+                                                    checked={isSubmitted}
+                                                    onCheckedChange={(checked) => handleRequirementToggle(reqText, !!checked)}
+                                                />
+                                                <Label
+                                                    htmlFor={`req-${reqText}`}
+                                                    className={`text-sm ${isSubmitted ? 'line-through text-muted-foreground' : ''}`}
+                                                >
+                                                    {reqText}
+                                                </Label>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            ) : (
+                                <p className="text-sm text-muted-foreground">No hay requisitos definidos para los servicios de este cliente.</p>
+                            )}
+                        </CardContent>
+                    </Card>
+
 
                     <Card>
                         <CardHeader><CardTitle>Servicios y Comisiones</CardTitle></CardHeader>
