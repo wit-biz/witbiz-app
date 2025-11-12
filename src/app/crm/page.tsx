@@ -165,7 +165,7 @@ export default function CrmPage() {
         <Button asChild>
             <Link href="/workflows">
                 <Workflow className="mr-2 h-4 w-4" />
-                Configurar Flujos de Trabajo
+                Configurar Flujo y Servicio
             </Link>
         </Button>
       </Header>
