@@ -35,11 +35,11 @@ export default function RecyclingBinPage() {
   const [entityToDelete, setEntityToDelete] = useState<EntityToDelete | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
 
-  const archivedClients = useMemo(() => clients.filter(c => c.status === 'Archivado'), [clients]);
-  const archivedTasks = useMemo(() => tasks.filter(t => t.status === 'Archivado'), [tasks]);
-  const archivedDocuments = useMemo(() => documents.filter(d => d.status === 'Archivado'), [documents]);
-  const archivedPromoters = useMemo(() => promoters.filter(p => p.status === 'Archivado'), [promoters]);
-  const archivedSuppliers = useMemo(() => suppliers.filter(s => s.status === 'Archivado'), [suppliers]);
+  const archivedClients = useMemo(() => (clients || []).filter(c => c.status === 'Archivado'), [clients]);
+  const archivedTasks = useMemo(() => (tasks || []).filter(t => t.status === 'Archivado'), [tasks]);
+  const archivedDocuments = useMemo(() => (documents || []).filter(d => d.status === 'Archivado'), [documents]);
+  const archivedPromoters = useMemo(() => (promoters || []).filter(p => p.status === 'Archivado'), [promoters]);
+  const archivedSuppliers = useMemo(() => (suppliers || []).filter(s => s.status === 'Archivado'), [suppliers]);
   
   const oneMonthAgo = subDays(new Date(), 30);
 
