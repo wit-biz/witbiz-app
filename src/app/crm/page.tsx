@@ -163,7 +163,7 @@ export default function CrmPage() {
         description="Vista general de todos los clientes en cada etapa del flujo."
       >
         <Button asChild>
-            <Link href="/workflows">
+            <Link href="/workflows?from=crm">
                 <Workflow className="mr-2 h-4 w-4" />
                 Configurar Flujo y Servicio
             </Link>

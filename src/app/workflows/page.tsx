@@ -186,7 +186,7 @@ const StageCard = ({
                                 />
                             ))}
                              {canEditWorkflow && (
-                                <Button variant={levelStyles[level].subStageButton as any} size="sm" onClick={() => onAddSubStage(path)}>
+                                <Button variant={'default'} size="sm" onClick={() => onAddSubStage(path)} className="bg-primary hover:bg-primary/90">
                                     <Plus className="mr-2 h-4 w-4"/>Añadir Sub-Etapa
                                 </Button>
                             )}
@@ -210,7 +210,7 @@ const StageCard = ({
                             ))}
                              {canEditWorkflow && (
                                 <div className="pl-6">
-                                    <Button variant={levelStyles[level].subSubStageButton as any} size="sm" onClick={() => onAddSubStage(path)}>
+                                    <Button variant={'default'} size="sm" onClick={() => onAddSubStage(path)} className="bg-primary hover:bg-primary/90">
                                         <Plus className="mr-2 h-4 w-4"/>Añadir Sub-Sub-Etapa
                                     </Button>
                                 </div>
@@ -287,6 +287,10 @@ export default function WorkflowConfigurationPage() {
   
   const canEditWorkflow = currentUser?.permissions.crm_edit ?? true;
 
+  const fromPage = searchParams.get('from') || 'services';
+  const backLink = fromPage === 'crm' ? '/crm' : '/services';
+  const backLabel = fromPage === 'crm' ? 'Volver a CRM' : 'Volver a Servicios';
+
   useEffect(() => {
     if (initialWorkflows) {
       const sorted = [...initialWorkflows].sort((a,b) => (a.order || 0) - (b.order || 0));
@@ -298,10 +302,10 @@ export default function WorkflowConfigurationPage() {
       } else if (!selectedWorkflowId && sorted.length > 0) {
         const firstId = sorted[0].id;
         setSelectedWorkflowId(firstId);
-        router.replace(`/workflows?serviceId=${firstId}`, { scroll: false });
+        router.replace(`/workflows?serviceId=${firstId}&from=${fromPage}`, { scroll: false });
       }
     }
-  }, [initialWorkflows, searchParams, router, selectedWorkflowId]);
+  }, [initialWorkflows, searchParams, router, selectedWorkflowId, fromPage]);
 
   const selectedWorkflow = useMemo(() => {
     if (!orderedWorkflows) return null;
@@ -343,7 +347,7 @@ export default function WorkflowConfigurationPage() {
         const newService = await addService(name);
         if (newService) {
           setSelectedWorkflowId(newService.id);
-          router.push(`/workflows?serviceId=${newService.id}`);
+          router.push(`/workflows?serviceId=${newService.id}&from=${fromPage}`);
           setIsSelectorOpen(false);
         }
       },
@@ -353,9 +357,9 @@ export default function WorkflowConfigurationPage() {
   
   const handleSelectService = useCallback((id: string) => {
     setSelectedWorkflowId(id);
-    router.push(`/workflows?serviceId=${id}`);
+    router.push(`/workflows?serviceId=${id}&from=${fromPage}`);
     setIsSelectorOpen(false);
-  }, [router]);
+  }, [router, fromPage]);
 
 
   const handleDiscardChanges = useCallback(() => {
@@ -534,9 +538,9 @@ export default function WorkflowConfigurationPage() {
         >
             <div className="flex flex-col sm:flex-row gap-2">
                 <Button variant="outline" asChild>
-                    <Link href="/services">
+                    <Link href={backLink}>
                         <ArrowLeft className="mr-2 h-4 w-4" />
-                        Volver a Servicios
+                        {backLabel}
                     </Link>
                 </Button>
                 {canEditWorkflow && hasChanges && (
@@ -644,7 +648,7 @@ export default function WorkflowConfigurationPage() {
                             <AccordionContent className="p-6 pt-0 space-y-6">
                                 <div className="space-y-4">
                                     {canEditWorkflow && (
-                                        <Button size="sm" variant="default" onClick={handleAddStage}>
+                                        <Button size="sm" variant="default" onClick={handleAddStage} className="bg-primary hover:bg-primary/90">
                                             <Plus className="mr-2 h-4 w-4"/>Añadir Etapa Principal
                                         </Button>
                                     )}
@@ -715,5 +719,3 @@ export default function WorkflowConfigurationPage() {
     </>
   );
 }
-
-    

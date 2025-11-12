@@ -64,7 +64,7 @@ export default function ServicesPage() {
       <div className="flex flex-col min-h-screen">
         <Header title="Servicios" description="Consulte los servicios y la documentación asociada.">
             <Button asChild>
-                <Link href="/workflows"><WorkflowIcon className="mr-2 h-4 w-4" />Configurar Flujo y Servicio</Link>
+                <Link href="/workflows?from=services"><WorkflowIcon className="mr-2 h-4 w-4" />Configurar Flujo y Servicio</Link>
             </Button>
         </Header>
         <div className="flex-1 flex items-center justify-center">
@@ -78,7 +78,7 @@ export default function ServicesPage() {
     <div className="flex flex-col min-h-screen">
       <Header title="Servicios" description="Consulte los servicios y la documentación asociada.">
         <Button asChild>
-            <Link href="/workflows"><WorkflowIcon className="mr-2 h-4 w-4" />Configurar Flujo y Servicio</Link>
+            <Link href="/workflows?from=services"><WorkflowIcon className="mr-2 h-4 w-4" />Configurar Flujo y Servicio</Link>
         </Button>
       </Header>
       <main className="flex-1 p-4 md:p-8">
