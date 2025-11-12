@@ -1,7 +1,7 @@
 
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { type Commission } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,13 +9,17 @@ import { Label } from "@/components/ui/label";
 import { PlusCircle, Trash2, Percent } from "lucide-react";
 
 interface ServiceCommissionsEditorProps {
-    commissions: Commission[];
+    initialCommissions: Commission[];
     onUpdate: (commissions: Commission[]) => void;
     canEdit: boolean;
 }
 
-export function ServiceCommissionsEditor({ commissions, onUpdate, canEdit }: ServiceCommissionsEditorProps) {
-    const [localCommissions, setLocalCommissions] = useState(commissions);
+export function ServiceCommissionsEditor({ initialCommissions, onUpdate, canEdit }: ServiceCommissionsEditorProps) {
+    const [localCommissions, setLocalCommissions] = useState(initialCommissions);
+
+    useEffect(() => {
+        setLocalCommissions(initialCommissions);
+    }, [initialCommissions]);
 
     const handleAddCommission = () => {
         const newCommission: Commission = {

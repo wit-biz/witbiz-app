@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import React, { useState, useMemo, useEffect, useCallback, type ReactNode } from "react";
@@ -297,10 +296,12 @@ export default function WorkflowConfigurationPage() {
       if (serviceIdFromUrl && sorted.some(s => s.id === serviceIdFromUrl)) {
         setSelectedWorkflowId(serviceIdFromUrl);
       } else if (!selectedWorkflowId && sorted.length > 0) {
-        setSelectedWorkflowId(sorted[0].id);
+        const firstId = sorted[0].id;
+        setSelectedWorkflowId(firstId);
+        router.replace(`/workflows?serviceId=${firstId}`, { scroll: false });
       }
     }
-  }, [initialWorkflows, searchParams, selectedWorkflowId]);
+  }, [initialWorkflows, searchParams, router, selectedWorkflowId]);
 
   const selectedWorkflow = useMemo(() => {
     if (!orderedWorkflows) return null;
@@ -352,8 +353,10 @@ export default function WorkflowConfigurationPage() {
   
   const handleSelectService = useCallback((id: string) => {
     if (hasChanges) {
-        showNotification('warning', 'Cambios sin guardar', 'Guarde o descarte sus cambios antes de seleccionar otro servicio.');
-        return;
+        // Find a way to prompt user or auto-save, for now we just block.
+        // For this user request, we will allow switching.
+        // showNotification('warning', 'Cambios sin guardar', 'Guarde o descarte sus cambios antes de seleccionar otro servicio.');
+        // return;
     }
     setSelectedWorkflowId(id);
     router.push(`/workflows?serviceId=${id}`);
@@ -469,6 +472,7 @@ export default function WorkflowConfigurationPage() {
         setServiceToDelete(null);
         if (selectedWorkflowId === serviceToDelete.id) {
             setSelectedWorkflowId(null);
+            router.push('/workflows');
         }
     }
   };
@@ -564,7 +568,6 @@ export default function WorkflowConfigurationPage() {
                                 role="combobox"
                                 aria-expanded={isSelectorOpen}
                                 className="w-full max-w-sm justify-between"
-                                disabled={hasChanges}
                             >
                                 <span className="truncate">{selectedWorkflow?.name || "Seleccione un servicio..."}</span>
                                 <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
@@ -592,11 +595,6 @@ export default function WorkflowConfigurationPage() {
                                         <PlusCircle className="mr-2 h-4 w-4"/>Añadir Nuevo Servicio
                                     </Button>
                                 </div>
-                                {hasChanges && (
-                                    <div className="p-2 text-xs text-center text-amber-600 dark:text-amber-500 bg-amber-50 dark:bg-amber-950/50">
-                                        Guarde o descarte cambios para reordenar.
-                                    </div>
-                                )}
                                 </>
                             )}
                         </PopoverContent>
@@ -622,22 +620,16 @@ export default function WorkflowConfigurationPage() {
                             <AccordionContent className="p-6 pt-0">
                                 <div className="grid md:grid-cols-2 gap-6">
                                     <ServiceDetailsEditor
-                                        description={editableWorkflow.description || ''}
-                                        clientRequirements={editableWorkflow.clientRequirements?.map(r => r.text).join('\n') || ''}
-                                        onUpdate={(field, value) => {
-                                            if (field === 'clientRequirements') {
-                                                const requirements = value.split('\n').map(text => ({ id: `req-${Date.now()}-${Math.random()}`, text }));
-                                                setEditableWorkflow(prev => prev ? { ...prev, [field]: requirements } : null);
-                                            } else {
-                                                setEditableWorkflow(prev => prev ? { ...prev, [field]: value } : null);
-                                            }
-                                        }}
+                                        key={editableWorkflow.id} // Re-mount when service changes
+                                        service={editableWorkflow}
+                                        onUpdate={(updates) => setEditableWorkflow(prev => prev ? { ...prev, ...updates } : null)}
                                         canEdit={canEditWorkflow}
                                     />
                                     <div className="space-y-4">
                                         <ServiceCommissionsEditor
-                                            commissions={editableWorkflow.commissions || []}
-                                            onUpdate={(commissions: Commission[]) => setEditableWorkflow(prev => prev ? { ...prev, commissions } : null)}
+                                            key={`${editableWorkflow.id}-commissions`} // Re-mount when service changes
+                                            initialCommissions={editableWorkflow.commissions || []}
+                                            onUpdate={(commissions) => setEditableWorkflow(prev => prev ? { ...prev, commissions } : null)}
                                             canEdit={canEditWorkflow}
                                         />
                                         <ServiceDocumentsEditor serviceId={editableWorkflow.id} canEdit={canEditWorkflow} />
