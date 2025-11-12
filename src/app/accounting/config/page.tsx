@@ -41,11 +41,7 @@ const categorySchema = z.object({
   type: z.enum(['Ingreso', 'Egreso'], { required_error: "El tipo es requerido." }),
 });
 
-const currencyFlags: Record<BankAccount['currency'], string> = {
-    MXN: '🇲🇽',
-    USD: '🇺🇸',
-    EUR: '🇪🇺',
-};
+const currencies = ['MXN', 'USD', 'EUR'];
 
 // --- Form Components ---
 function CompanyForm({ onAddCompany }: { onAddCompany: (data: Company) => void }) {
@@ -122,9 +118,9 @@ function BankAccountForm({ companies, onAddAccount }: { companies: Company[], on
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent>
-                  {Object.entries(currencyFlags).map(([code, flag]) => (
-                    <SelectItem key={code} value={code}>
-                      <span className="flex items-center gap-2">{flag} {code}</span>
+                  {currencies.map((currencyCode) => (
+                    <SelectItem key={currencyCode} value={currencyCode}>
+                      {currencyCode}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -244,7 +240,7 @@ export default function AccountingConfigPage() {
                                     <TableRow key={a.id}>
                                         <TableCell>{a.bankName}</TableCell>
                                         <TableCell>{companies.find(c => c.id === a.companyId)?.name}</TableCell>
-                                        <TableCell><span className="flex items-center gap-2">{currencyFlags[a.currency]} {a.currency}</span></TableCell>
+                                        <TableCell>{a.currency}</TableCell>
                                         <TableCell className="text-right">{a.balance.toLocaleString('en-US', { style: 'currency', currency: a.currency })}</TableCell>
                                         <TableCell className="text-right"><Button variant="ghost" size="icon" onClick={() => deleteAccount(a.id)}><Trash2 className="h-4 w-4 text-destructive" /></Button></TableCell>
                                     </TableRow>
