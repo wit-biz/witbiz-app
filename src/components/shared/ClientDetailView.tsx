@@ -3,11 +3,11 @@
 "use client";
 
 import React, { useState, useMemo } from "react";
-import { type Client, type Document, type Task, type WorkflowAction, type WorkflowStage, type SubStage, type SubSubStage, type Commission, type SubmittedRequirement } from "@/lib/types";
+import { type Client, type Document, type Task, type WorkflowAction, type WorkflowStage, type SubStage, type SubSubStage, type Commission, type SubmittedRequirement, type Note } from "@/lib/types";
 import { useCRMData } from "@/contexts/CRMDataContext";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Edit, Trash2, Plus, Download, FileText, UploadCloud, Info, Users, Target, ListTodo, CheckCircle2, Briefcase, UserCheck, Smartphone, CalendarDays, Percent, Tag, FileCheck2 } from "lucide-react";
+import { Edit, Trash2, Plus, Download, FileText, UploadCloud, Info, Users, Target, ListTodo, CheckCircle2, Briefcase, UserCheck, Smartphone, CalendarDays, Percent, Tag, FileCheck2, Save, MessageSquare } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { SmartDocumentUploadDialog } from "./SmartDocumentUploadDialog";
 import { DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
@@ -15,6 +15,7 @@ import { formatDateString } from "@/lib/utils";
 import { Checkbox } from "../ui/checkbox";
 import { Label } from "../ui/label";
 import { serverTimestamp } from "firebase/firestore";
+import { Textarea } from "../ui/textarea";
 
 
 type AnyStage = WorkflowStage | SubStage | SubSubStage;
@@ -39,10 +40,12 @@ const DetailItem = ({ label, value, href }: { label: string; value?: string; hre
 };
 
 export function ClientDetailView({ client, onClose }: ClientDetailViewProps) {
-    const { getDocumentsByClientId, serviceWorkflows, getTasksByClientId, promoters: allPromoters, updateClient } = useCRMData();
+    const { getDocumentsByClientId, serviceWorkflows, getTasksByClientId, promoters: allPromoters, updateClient, addNote, notes: allNotes } = useCRMData();
     const { toast } = useToast();
     
     const [isUploadDialogOpen, setIsUploadDialogOpen] = useState(false);
+    const [newNote, setNewNote] = useState('');
+    const [isSavingNote, setIsSavingNote] = useState(false);
     
     if (!client) {
         return (
@@ -74,12 +77,20 @@ export function ClientDetailView({ client, onClose }: ClientDetailViewProps) {
 
     const getCommissionRate = (serviceId: string, commission: Commission): number => {
         const customRate = client.customCommissions?.find(cc => cc.serviceId === serviceId && cc.commissionId === commission.id);
-        return customRate ? customRate.rate : commission.rate;
+        // Use a fallback for rate in case it's undefined
+        return customRate?.rate ?? commission.rate;
     };
 
 
     const clientDocuments = getDocumentsByClientId(client.id);
     const clientTasks = getTasksByClientId(client.id);
+    
+    const clientNotes = useMemo(() => {
+        return (allNotes || [])
+            .filter(note => note.clientId === client.id && note.status !== 'Archivado')
+            .sort((a, b) => (b.createdAt?.toMillis() || 0) - (a.createdAt?.toMillis() || 0));
+    }, [allNotes, client.id]);
+
 
     const pendingTasks = useMemo(() => {
         return clientTasks.filter(task => task.status === 'Pendiente');
@@ -143,6 +154,20 @@ export function ClientDetailView({ client, onClose }: ClientDetailViewProps) {
             description: `Se ha iniciado la descarga de "${doc.name}".`
         });
     };
+    
+    const handleSaveNote = async () => {
+        if (!newNote.trim()) return;
+        setIsSavingNote(true);
+        const result = await addNote(client.id, newNote.trim());
+        if (result) {
+            toast({ title: "Nota guardada" });
+            setNewNote('');
+        } else {
+            toast({ variant: 'destructive', title: 'Error', description: 'No se pudo guardar la nota.' });
+        }
+        setIsSavingNote(false);
+    };
+
     
     return (
         <>
@@ -354,6 +379,45 @@ export function ClientDetailView({ client, onClose }: ClientDetailViewProps) {
                             )}
                         </CardContent>
                     </Card>
+
+                    <Card>
+                        <CardHeader>
+                            <CardTitle className="flex items-center gap-2">
+                                <MessageSquare className="h-5 w-5 text-accent"/>
+                                Notas y Acuerdos
+                            </CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                             <div>
+                                <Textarea
+                                    value={newNote}
+                                    onChange={(e) => setNewNote(e.target.value)}
+                                    placeholder="Escriba una nueva nota o acuerdo aquí..."
+                                    disabled={isSavingNote}
+                                />
+                                <Button onClick={handleSaveNote} disabled={isSavingNote || !newNote.trim()} className="mt-2">
+                                    <Save className="mr-2 h-4 w-4" />
+                                    Guardar Nota
+                                </Button>
+                            </div>
+
+                             {clientNotes.length > 0 && (
+                                <div className="space-y-3">
+                                    <h4 className="text-sm font-semibold">Historial de Notas</h4>
+                                    <div className="max-h-48 overflow-y-auto space-y-3 pr-2">
+                                        {clientNotes.map(note => (
+                                            <div key={note.id} className="text-sm p-3 border rounded-md bg-secondary/30">
+                                                <p className="whitespace-pre-wrap">{note.text}</p>
+                                                <p className="text-xs text-muted-foreground mt-2">
+                                                    {note.authorName} - {note.createdAt ? formatDateString(note.createdAt.toDate(), { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'Fecha desconocida'}
+                                                </p>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+                        </CardContent>
+                    </Card>
                 </div>
             </div>
             
@@ -366,4 +430,3 @@ export function ClientDetailView({ client, onClose }: ClientDetailViewProps) {
     );
 }
     
-

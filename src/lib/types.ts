@@ -288,7 +288,3 @@ export interface NavItem {
   exactMatch?: boolean;
   requiredPermission?: keyof AppPermissions;
 }
-
-
-
-
