@@ -18,6 +18,7 @@ import {
   LogIn,
   Users,
   Shield,
+  Trash2,
 } from "lucide-react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
@@ -104,12 +105,20 @@ export function UserNav() {
                 </Link>
               </DropdownMenuItem>
                {canViewAdmin && (
-                <DropdownMenuItem asChild>
-                    <Link href="/team">
-                        <Users className="mr-2 h-4 w-4" />
-                        <span>Equipo y Permisos</span>
+                <>
+                  <DropdownMenuItem asChild>
+                      <Link href="/team">
+                          <Users className="mr-2 h-4 w-4" />
+                          <span>Equipo y Permisos</span>
+                      </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link href="/recycling-bin">
+                        <Trash2 className="mr-2 h-4 w-4" />
+                        <span>Papelera de Reciclaje</span>
                     </Link>
                 </DropdownMenuItem>
+                </>
                )}
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={() => initiateSignOut(auth)}>

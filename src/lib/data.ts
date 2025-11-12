@@ -32,5 +32,4 @@ export const navItems: NavItem[] = [
     { href: '/services', label: 'Servicios', icon: 'Briefcase', requiredPermission: 'services_view' },
     { href: '/settings', label: 'Contabilidad', icon: 'DollarSign', requiredPermission: 'admin_view' },
     { href: '/finances', label: 'Finanzas', icon: 'Landmark', requiredPermission: 'finances_view' },
-    { href: '/recycling-bin', label: 'Papelera', icon: 'Trash2', requiredPermission: 'admin_view' },
 ];
