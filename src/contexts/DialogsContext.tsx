@@ -101,6 +101,7 @@ export function DialogsProvider({ children }: { children: ReactNode }) {
             onClientAdded={(client) => {
                 router.push(`/contacts?openClient=${client.id}`);
             }}
+            preselectedServiceId={preselectedServiceId || undefined}
         />
        <AddTaskDialog
           isOpen={isAddTaskDialogOpen}
