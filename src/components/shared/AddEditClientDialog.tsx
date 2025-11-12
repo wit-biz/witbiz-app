@@ -3,7 +3,7 @@
 "use client";
 
 import React, { useEffect, useMemo, useState } from 'react';
-import { useForm, useWatch } from 'react-hook-form';
+import { useForm, useWatch, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import {
@@ -36,7 +36,6 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { cn } from '@/lib/utils';
 import { Separator } from '../ui/separator';
 import { Switch } from '../ui/switch';
-import { useFieldArray } from 'react-hook-form';
 
 
 const posTerminalSchema = z.object({
@@ -89,7 +88,7 @@ type AddEditClientDialogProps = {
 };
 
 export function AddEditClientDialog({ client, isOpen, onClose }: AddEditClientDialogProps) {
-  const { addClient, updateClient, serviceWorkflows, promoters } = useCRMData();
+  const { addClient, updateClient, serviceWorkflows = [], promoters } = useCRMData();
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = React.useState(false);
 
@@ -120,7 +119,13 @@ export function AddEditClientDialog({ client, isOpen, onClose }: AddEditClientDi
   });
   
   React.useEffect(() => {
-    if (isOpen) {
+    if (isOpen && serviceWorkflows) {
+        // Filter out any stale service IDs that might be stored on the client
+        const availableServiceIds = new Set(serviceWorkflows.map(s => s.id));
+        
+        const validSubscribedServiceIds = (client?.subscribedServiceIds || []).filter(id => availableServiceIds.has(id));
+        const validCustomCommissionServiceIds = (client?.customCommissionServiceIds || []).filter(id => availableServiceIds.has(id));
+
         const defaultValues = {
             name: client?.name || '',
             owner: client?.owner || '',
@@ -129,8 +134,8 @@ export function AddEditClientDialog({ client, isOpen, onClose }: AddEditClientDi
             contactPhone: client?.contactPhone || '',
             website: client?.website || '',
             promoters: client?.promoters || [],
-            subscribedServiceIds: client?.subscribedServiceIds || [],
-            customCommissionServiceIds: client?.customCommissionServiceIds || [],
+            subscribedServiceIds: validSubscribedServiceIds,
+            customCommissionServiceIds: validCustomCommissionServiceIds,
             status: client?.status || 'Activo',
             hasPosTerminals: !!client?.posTerminals && client.posTerminals.length > 0,
             posTerminals: client?.posTerminals || [],
@@ -138,7 +143,7 @@ export function AddEditClientDialog({ client, isOpen, onClose }: AddEditClientDi
         };
         form.reset(defaultValues);
     }
-  }, [isOpen, client, form]);
+  }, [isOpen, client, form, serviceWorkflows]);
 
   const subscribedServicesWatch = useWatch({
       control: form.control,
@@ -285,7 +290,7 @@ export function AddEditClientDialog({ client, isOpen, onClose }: AddEditClientDi
                                                             const newIds = isChecked
                                                                 ? currentIds.filter(id => id !== service.id)
                                                                 : [...currentIds, service.id];
-                                                            form.setValue("subscribedServiceIds", newIds, { shouldValidate: true });
+                                                            form.setValue("subscribedServiceIds", newIds, { shouldValidate: true, shouldDirty: true });
                                                         }}
                                                     >
                                                         <Checkbox checked={isChecked} />
@@ -302,7 +307,7 @@ export function AddEditClientDialog({ client, isOpen, onClose }: AddEditClientDi
                                                                 const newCustomIds = checked
                                                                     ? [...currentCustomIds, service.id]
                                                                     : currentCustomIds.filter(id => id !== service.id);
-                                                                form.setValue("customCommissionServiceIds", newCustomIds);
+                                                                form.setValue("customCommissionServiceIds", newCustomIds, { shouldDirty: true });
                                                             }}
                                                         />
                                                     </div>
