@@ -119,7 +119,7 @@ export default function DirectoryConfigPage() {
                 </TabsList>
                 <TabsContent value="suppliers">
                     <SuppliersTab 
-                      suppliers={suppliers} 
+                      suppliers={suppliers || []} 
                       isLoading={isLoadingSuppliers}
                       onUpdate={handleUpdateSupplier}
                       onDelete={deleteSupplier}
@@ -128,7 +128,7 @@ export default function DirectoryConfigPage() {
                 </TabsContent>
                 <TabsContent value="clients">
                     <ClientsTab 
-                      clients={clients} 
+                      clients={clients || []} 
                       isLoading={isLoadingClients}
                       onClientSelect={() => {}} // No detail view from config page
                       selectedClientId={null}
@@ -137,7 +137,7 @@ export default function DirectoryConfigPage() {
                 </TabsContent>
                 <TabsContent value="promoters">
                     <PromotersTab 
-                      promoters={promoters} 
+                      promoters={promoters || []} 
                       isLoading={isLoadingPromoters} 
                       onUpdate={handleUpdatePromoter}
                       onDelete={deletePromoter}

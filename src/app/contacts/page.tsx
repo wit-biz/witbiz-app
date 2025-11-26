@@ -118,7 +118,7 @@ export default function DirectoryPage() {
                 </TabsList>
                 <TabsContent value="suppliers">
                     <SuppliersTab 
-                      suppliers={suppliers} 
+                      suppliers={suppliers || []} 
                       isLoading={isLoadingSuppliers} 
                       onSupplierSelect={(supplier) => handleEntitySelect(supplier, 'supplier')} 
                       selectedSupplierId={selectedEntity?.type === 'supplier' ? selectedEntity.data.id : null}
@@ -127,7 +127,7 @@ export default function DirectoryPage() {
                 </TabsContent>
                 <TabsContent value="clients">
                     <ClientsTab 
-                      clients={clients} 
+                      clients={clients || []} 
                       isLoading={isLoadingClients}
                       onClientSelect={(client) => handleEntitySelect(client, 'client')}
                       selectedClientId={selectedEntity?.type === 'client' ? selectedEntity.data.id : null}
@@ -136,7 +136,7 @@ export default function DirectoryPage() {
                 </TabsContent>
                 <TabsContent value="promoters">
                     <PromotersTab 
-                      promoters={promoters} 
+                      promoters={promoters || []} 
                       isLoading={isLoadingPromoters}
                       onPromoterSelect={(promoter) => handleEntitySelect(promoter, 'promoter')}
                       selectedPromoterId={selectedEntity?.type === 'promoter' ? selectedEntity.data.id : null}

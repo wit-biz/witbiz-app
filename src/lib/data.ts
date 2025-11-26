@@ -4,7 +4,10 @@ import type { Client, Task, Document, Note, WorkflowStage, NavItem, Promoter, Se
 import { addDays, format, subDays } from 'date-fns';
 import { Trash2 } from 'lucide-react';
 
-export const teamMembers: AppUser[] = [];
+export const teamMembers: AppUser[] = [
+    { id: '1', name: 'Andrea Admin', email: 'admin@witbiz.com', role: 'Administrador', photoURL: 'https://picsum.photos/seed/1/40/40' },
+    { id: '2', name: 'Carla Collaborator', email: 'carla@witbiz.com', role: 'Colaborador', photoURL: 'https://picsum.photos/seed/2/40/40' },
+];
 
 // This will now be fetched from Firestore, so we can keep it empty.
 export const serviceWorkflows: ServiceWorkflow[] = [];
