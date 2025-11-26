@@ -19,7 +19,7 @@
  *   data scraping and enumeration of all application users.
  * - Path-Based Security: Ownership is derived from the `{userId}` wildcard in the path,
  *   which is the most performant and secure way to handle user-owned data.
- * - Relational Integrity: On document creation, key identifiers (like `userId`, `contactId`)
+ * - Relational Integrity: On document creation, key identifiers (like `userId`, `clientId`)
  *   are validated to ensure they match the document's path, preventing data from being
  *   misfiled. These identifiers are immutable once created.
  */
@@ -166,28 +166,28 @@ service cloud.firestore {
        */
       match /clients/{clientId} {
         allow get, list, create, update, delete: if isOwner(userId);
-      }
-      
-      /**
-       * @description Manages leads associated with a specific contact.
-       * @path /users/{userId}/leads/{leadId}
-       * @allow (create, list) A user can create and list leads for their own contacts.
-       * @deny (get) A user cannot read another user's leads.
-       * @principle Enforces document ownership, inheriting access control from the parent user path.
-       */
-      match /leads/{leadId} {
-        allow get, list, create, update, delete: if isOwner(userId);
-      }
-      
-      /**
-       * @description Manages tasks associated with a specific user.
-       * @path /users/{userId}/tasks/{taskId}
-       * @allow (create) A user can create a task.
-       * @deny (delete) A user cannot delete tasks belonging to another user.
-       * @principle Validates relational integrity by ensuring the task's internal `userId` matches the path.
-       */
-      match /tasks/{taskId} {
-        allow get, list, create, update, delete: if isOwner(userId);
+
+        /**
+         * @description Manages leads associated with a specific contact.
+         * @path /users/{userId}/clients/{clientId}/leads/{leadId}
+         * @allow (create, list) A user can create and list leads for their own contacts.
+         * @deny (get) A user cannot read another user's leads.
+         * @principle Enforces document ownership, inheriting access control from the parent user path.
+         */
+        match /leads/{leadId} {
+          allow get, list, create, update, delete: if isOwner(userId);
+
+          /**
+           * @description Manages tasks associated with a specific lead.
+           * @path /users/{userId}/clients/{clientId}/leads/{leadId}/tasks/{taskId}
+           * @allow (create) A user can create a task.
+           * @deny (delete) A user cannot delete tasks belonging to another user.
+           * @principle Validates relational integrity by ensuring the task's internal `userId` matches the path.
+           */
+          match /tasks/{taskId} {
+            allow get, list, create, update, delete: if isOwner(userId);
+          }
+        }
       }
       
       /**
