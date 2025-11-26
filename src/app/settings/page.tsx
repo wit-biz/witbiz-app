@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import React, { useState, useMemo } from "react";
@@ -21,13 +22,13 @@ import { useToast } from '@/hooks/use-toast';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useCRMData } from "@/contexts/CRMDataContext";
 import { Label } from "@/components/ui/label";
-import { type Transaction } from '@/lib/types';
+import { type Transaction, type Company } from '@/lib/types';
 import { Tooltip, TooltipProvider, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 
 
 // --- Mock Data ---
 
-const initialCompanies: { id: string; name: string; totalBalance: number }[] = [];
+const initialCompanies: (Company & { totalBalance: number })[] = [];
 
 const initialBankAccounts: { id: string; companyId: string; companyName: string; bankName: string; balance: number; type: string; }[] = [];
 
@@ -164,9 +165,14 @@ export default function SettingsPage() {
           }, {} as Record<string, number>);
 
       const totalExpenses = Object.values(expensesByCategory).reduce((sum, amount) => sum + amount, 0);
-      const grossProfit = totalRevenue;
-      const operatingIncome = grossProfit - totalExpenses;
-      const netIncome = operatingIncome;
+      const grossProfit = totalRevenue; // Simplified for now
+      const incomeBeforeTax = grossProfit - totalExpenses;
+
+      const selectedCompany = mockCompanies.find(c => c.id === selectedCompanyId);
+      const taxRate = (selectedCompany?.hasTaxes && selectedCompany.taxRate > 0) ? selectedCompany.taxRate / 100 : 0;
+      const taxes = incomeBeforeTax > 0 ? incomeBeforeTax * taxRate : 0;
+
+      const netIncome = incomeBeforeTax - taxes;
 
       return {
           revenueByCategory,
@@ -174,10 +180,13 @@ export default function SettingsPage() {
           grossProfit,
           expensesByCategory,
           totalExpenses,
-          operatingIncome,
+          incomeBeforeTax,
+          taxRate: selectedCompany?.taxRate || 0,
+          taxes,
           netIncome,
+          isTaxable: selectedCompany?.hasTaxes
       };
-  }, [filteredTransactions]);
+  }, [filteredTransactions, selectedCompanyId, mockCompanies]);
   
    const periodSummary = useMemo(() => {
     return {
@@ -548,10 +557,19 @@ export default function SettingsPage() {
                                         )) : <TableRow><TableCell className="pl-8 text-muted-foreground">No hay gastos registrados</TableCell><TableCell></TableCell></TableRow>}
                                         <TableRow className="font-semibold border-t"><TableCell>Total de Gastos Operativos</TableCell><TableCell className="text-right text-red-600">({incomeStatementData.totalExpenses.toLocaleString('en-US', { style: 'currency', currency: 'USD' })})</TableCell></TableRow>
                                         
-                                        <TableRow className="font-bold text-lg bg-muted"><TableCell>Utilidad Operativa</TableCell><TableCell className={cn("text-right", incomeStatementData.operatingIncome >= 0 ? "text-blue-600" : "text-orange-600")}>{incomeStatementData.operatingIncome.toLocaleString('en-US', { style: 'currency', currency: 'USD' })}</TableCell></TableRow>
+                                        <TableRow className="font-bold text-lg bg-muted/50"><TableCell>Utilidad antes de Impuestos</TableCell><TableCell className={cn("text-right", incomeStatementData.incomeBeforeTax >= 0 ? "text-blue-600" : "text-orange-600")}>{incomeStatementData.incomeBeforeTax.toLocaleString('en-US', { style: 'currency', currency: 'USD' })}</TableCell></TableRow>
+                                        
+                                        {selectedCompanyId !== 'all' && incomeStatementData.isTaxable && (
+                                            <TableRow>
+                                                <TableCell className="pl-8">Impuesto sobre la Renta (ISR) ({incomeStatementData.taxRate}%)</TableCell>
+                                                <TableCell className="text-right text-red-600">({incomeStatementData.taxes.toLocaleString('en-US', { style: 'currency', currency: 'USD' })})</TableCell>
+                                            </TableRow>
+                                        )}
+                                        {selectedCompanyId === 'all' && <TableRow><TableCell colSpan={2} className="text-center text-xs text-muted-foreground">Seleccione una empresa específica para ver el cálculo de impuestos.</TableCell></TableRow>}
+
                                     </TableBody>
                                     <TableFooter>
-                                        <TableRow className="font-bold text-xl bg-muted/80">
+                                        <TableRow className="font-bold text-xl bg-muted">
                                             <TableCell>Utilidad Neta</TableCell>
                                             <TableCell className={cn("text-right", incomeStatementData.netIncome >= 0 ? "text-blue-600" : "text-orange-600")}>
                                                 {incomeStatementData.netIncome.toLocaleString('en-US', { style: 'currency', currency: 'USD' })}

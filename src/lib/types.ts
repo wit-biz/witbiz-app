@@ -115,6 +115,8 @@ export type Document = {
 export type Company = {
     id: string;
     name: string;
+    hasTaxes: boolean;
+    taxRate: number;
 }
 
 export type CreditDetails = {

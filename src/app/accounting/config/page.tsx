@@ -5,7 +5,7 @@
 import React, { useState } from "react";
 import Link from "next/link";
 import { Header } from "@/components/header";
-import { ArrowLeft, Building, Landmark, ListPlus, PlusCircle, Trash2 } from "lucide-react";
+import { ArrowLeft, Building, Landmark, ListPlus, PlusCircle, Trash2, Percent, CheckCircle, XCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -32,7 +32,18 @@ const initialCategories: Category[] = [];
 // --- Zod Schemas ---
 const companySchema = z.object({
   name: z.string().min(2, "El nombre de la empresa es requerido."),
+  hasTaxes: z.boolean().default(false),
+  taxRate: z.coerce.number().min(0, "La tasa debe ser positiva").max(100, "La tasa no puede exceder 100").optional(),
+}).refine(data => {
+    if (data.hasTaxes) {
+        return data.taxRate !== undefined && data.taxRate > 0;
+    }
+    return true;
+}, {
+    message: "La tasa de impuesto es requerida si los impuestos están activados.",
+    path: ["taxRate"],
 });
+
 
 const creditDetailsSchema = z.object({
     hasCredit: z.boolean().default(false),
@@ -67,11 +78,20 @@ const currencies = ['MXN', 'USD', 'EUR'];
 
 // --- Form Components ---
 function CompanyForm({ onAddCompany }: { onAddCompany: (data: Company) => void }) {
-  const form = useForm({ resolver: zodResolver(companySchema), defaultValues: { name: '' } });
+  const form = useForm<z.infer<typeof companySchema>>({ 
+      resolver: zodResolver(companySchema), 
+      defaultValues: { name: '', hasTaxes: false } 
+  });
   const { toast } = useToast();
+  const hasTaxes = form.watch("hasTaxes");
 
   const onSubmit = (data: z.infer<typeof companySchema>) => {
-    onAddCompany({ id: `comp-${Date.now()}`, name: data.name });
+    onAddCompany({ 
+        id: `comp-${Date.now()}`, 
+        name: data.name,
+        hasTaxes: data.hasTaxes,
+        taxRate: data.hasTaxes ? data.taxRate || 0 : 0
+    });
     toast({ title: "Empresa Añadida", description: `Se ha añadido la empresa "${data.name}".` });
     form.reset();
   };
@@ -86,6 +106,35 @@ function CompanyForm({ onAddCompany }: { onAddCompany: (data: Company) => void }
             <FormMessage />
           </FormItem>
         )} />
+        <FormField
+            control={form.control}
+            name="hasTaxes"
+            render={({ field }) => (
+                <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
+                    <div className="space-y-0.5">
+                        <FormLabel>¿Paga Impuestos?</FormLabel>
+                        <FormDescription className="text-xs">
+                            Active si esta empresa debe calcular impuestos sobre la renta.
+                        </FormDescription>
+                    </div>
+                    <FormControl>
+                        <Switch checked={field.value} onCheckedChange={field.onChange} />
+                    </FormControl>
+                </FormItem>
+            )}
+        />
+        {hasTaxes && (
+             <FormField control={form.control} name="taxRate" render={({ field }) => (
+              <FormItem>
+                <FormLabel>Tasa de Impuesto</FormLabel>
+                <div className="relative">
+                    <FormControl><Input type="number" {...field} placeholder="30" /></FormControl>
+                    <Percent className="absolute right-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                </div>
+                <FormMessage />
+              </FormItem>
+            )} />
+        )}
         <Button type="submit"><PlusCircle className="mr-2 h-4 w-4" />Añadir Empresa</Button>
       </form>
     </Form>
@@ -317,11 +366,31 @@ export default function AccountingConfigPage() {
                 <CardHeader><CardTitle>Empresas Registradas</CardTitle><CardDescription>Listado de todas sus entidades fiscales.</CardDescription></CardHeader>
                 <CardContent>
                   <Table>
-                    <TableHeader><TableRow><TableHead>Nombre</TableHead><TableHead className="text-right">Acciones</TableHead></TableRow></TableHeader>
+                    <TableHeader>
+                        <TableRow>
+                            <TableHead>Nombre</TableHead>
+                            <TableHead>Paga Impuestos</TableHead>
+                            <TableHead>Tasa</TableHead>
+                            <TableHead className="text-right">Acciones</TableHead>
+                        </TableRow>
+                    </TableHeader>
                     <TableBody>
                       {companies.length > 0 ? companies.map(c => (
-                        <TableRow key={c.id}><TableCell>{c.name}</TableCell><TableCell className="text-right"><Button variant="ghost" size="icon" onClick={() => deleteCompany(c.id)}><Trash2 className="h-4 w-4 text-destructive" /></Button></TableCell></TableRow>
-                      )) : <TableRow><TableCell colSpan={2} className="text-center h-24">No hay empresas registradas.</TableCell></TableRow>}
+                        <TableRow key={c.id}>
+                            <TableCell>{c.name}</TableCell>
+                            <TableCell>
+                                {c.hasTaxes ? <CheckCircle className="h-5 w-5 text-green-500" /> : <XCircle className="h-5 w-5 text-muted-foreground" />}
+                            </TableCell>
+                            <TableCell>
+                                {c.hasTaxes ? `${c.taxRate}%` : 'N/A'}
+                            </TableCell>
+                            <TableCell className="text-right">
+                                <Button variant="ghost" size="icon" onClick={() => deleteCompany(c.id)}>
+                                    <Trash2 className="h-4 w-4 text-destructive" />
+                                </Button>
+                            </TableCell>
+                        </TableRow>
+                      )) : <TableRow><TableCell colSpan={4} className="text-center h-24">No hay empresas registradas.</TableCell></TableRow>}
                     </TableBody>
                   </Table>
                 </CardContent>
@@ -380,4 +449,3 @@ export default function AccountingConfigPage() {
     </div>
   );
 }
-
