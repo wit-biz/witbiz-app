@@ -14,7 +14,7 @@
  * can be determined directly from the document path without needing extra database reads.
  *
  * Key Security Decisions:
- * - User Isolation: All rules are scoped to the authenticated user's ID (`request.auth.uid`).
+ * - User Isolation: All rules are scoped to the authenticated user's UID (`request.auth.uid`).
  * - No User Listing: It is forbidden to list the top-level `/users` collection to prevent
  *   data scraping and enumeration of all application users.
  * - Path-Based Security: Ownership is derived from the `{userId}` wildcard in the path,
@@ -65,18 +65,18 @@ service cloud.firestore {
     }
 
     /**
-     * Validates that the new Contact document's `id` matches the document ID.
+     * Validates that the new Client document's `id` matches the document ID.
      */
-    function hasValidContactDataForCreate(contactId) {
-      return request.resource.data.id == contactId;
+    function hasValidClientDataForCreate(clientId) {
+      return request.resource.data.id == clientId;
     }
 
     /**
      * Validates that the new Lead document's IDs match their respective path segments.
      */
-    function hasValidLeadDataForCreate(contactId, leadId) {
+    function hasValidLeadDataForCreate(clientId, leadId) {
       return request.resource.data.id == leadId
-          && request.resource.data.contactId == contactId;
+          && request.resource.data.clientId == clientId;
     }
 
     /**
@@ -106,9 +106,9 @@ service cloud.firestore {
     }
 
     /**
-     * Enforces immutability for the Contact's unique ID.
+     * Enforces immutability for the Client's unique ID.
      */
-    function hasImmutableContactFields() {
+    function hasImmutableClientFields() {
       return request.resource.data.id == resource.data.id;
     }
 
@@ -117,7 +117,7 @@ service cloud.firestore {
      */
     function hasImmutableLeadFields() {
       return request.resource.data.id == resource.data.id
-          && request.resource.data.contactId == resource.data.contactId;
+          && request.resource.data.clientId == resource.data.clientId;
     }
 
     /**
@@ -158,18 +158,14 @@ service cloud.firestore {
       allow delete: if isExistingOwner(userId);
 
       /**
-       * @description Manages a user's contacts.
-       * @path /users/{userId}/contacts/{contactId}
-       * @allow (create, list) A user can create and list their own contacts.
-       * @deny (get) A user cannot read another user's contacts.
+       * @description Manages a user's clients.
+       * @path /users/{userId}/clients/{clientId}
+       * @allow (create, list) A user can create and list their own clients.
+       * @deny (get) A user cannot read another user's clients.
        * @principle Enforces document ownership for all operations within a user's private subcollection.
        */
-      match /contacts/{contactId} {
-        allow get: if isOwner(userId);
-        allow list: if isOwner(userId);
-        allow create: if isOwner(userId) && hasValidContactDataForCreate(contactId);
-        allow update: if isExistingOwner(userId) && hasImmutableContactFields();
-        allow delete: if isExistingOwner(userId);
+      match /clients/{clientId} {
+        allow get, list, create, update, delete: if isOwner(userId);
       }
       
       /**
@@ -180,11 +176,7 @@ service cloud.firestore {
        * @principle Enforces document ownership, inheriting access control from the parent user path.
        */
       match /leads/{leadId} {
-        allow get: if isOwner(userId);
-        allow list: if isOwner(userId);
-        allow create: if isOwner(userId); // Simplified for now
-        allow update: if isExistingOwner(userId); // Simplified
-        allow delete: if isExistingOwner(userId);
+        allow get, list, create, update, delete: if isOwner(userId);
       }
       
       /**
@@ -195,11 +187,7 @@ service cloud.firestore {
        * @principle Validates relational integrity by ensuring the task's internal `userId` matches the path.
        */
       match /tasks/{taskId} {
-        allow get: if isOwner(userId);
-        allow list: if isOwner(userId);
-        allow create: if isOwner(userId); // Simplified
-        allow update: if isExistingOwner(userId); // Simplified
-        allow delete: if isExistingOwner(userId);
+        allow get, list, create, update, delete: if isOwner(userId);
       }
       
       /**

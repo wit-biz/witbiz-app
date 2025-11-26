@@ -169,41 +169,41 @@
         }
       },
       {
-        "path": "/users/{userId}/contacts/{contactId}",
+        "path": "/users/{userId}/clients/{clientId}",
         "definition": {
-          "entityName": "Contact",
+          "entityName": "Client",
           "schema": {
             "$ref": "#/backend/entities/Contact"
           },
-          "description": "Stores contacts associated with a specific user.  Owned by the user.",
+          "description": "Stores clients associated with a specific user.  Owned by the user.",
           "params": [
             {
               "name": "userId",
               "description": "The unique identifier for the user."
             },
             {
-              "name": "contactId",
-              "description": "The unique identifier for the contact."
+              "name": "clientId",
+              "description": "The unique identifier for the client."
             }
           ]
         }
       },
       {
-        "path": "/users/{userId}/contacts/{contactId}/leads/{leadId}",
+        "path": "/users/{userId}/clients/{clientId}/leads/{leadId}",
         "definition": {
           "entityName": "Lead",
           "schema": {
             "$ref": "#/backend/entities/Lead"
           },
-          "description": "Stores leads associated with a specific contact. Owned by the user.",
+          "description": "Stores leads associated with a specific client. Owned by the user.",
           "params": [
             {
               "name": "userId",
               "description": "The unique identifier for the user."
             },
             {
-              "name": "contactId",
-              "description": "The unique identifier for the contact."
+              "name": "clientId",
+              "description": "The unique identifier for the client."
             },
             {
               "name": "leadId",
@@ -213,7 +213,7 @@
         }
       },
       {
-        "path": "/users/{userId}/contacts/{contactId}/leads/{leadId}/tasks/{taskId}",
+        "path": "/users/{userId}/clients/{clientId}/leads/{leadId}/tasks/{taskId}",
         "definition": {
           "entityName": "Task",
           "schema": {
@@ -226,8 +226,8 @@
               "description": "The unique identifier for the user."
             },
             {
-              "name": "contactId",
-              "description": "The unique identifier for the contact."
+              "name": "clientId",
+              "description": "The unique identifier for the client."
             },
             {
               "name": "leadId",
