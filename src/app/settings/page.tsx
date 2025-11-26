@@ -22,7 +22,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useCRMData } from "@/contexts/CRMDataContext";
 import { Label } from "@/components/ui/label";
-import { type Transaction, type Company } from '@/lib/types';
+import { type Transaction, type Company, type Tax } from '@/lib/types';
 import { Tooltip, TooltipProvider, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 
 
@@ -169,10 +169,18 @@ export default function SettingsPage() {
       const incomeBeforeTax = grossProfit - totalExpenses;
 
       const selectedCompany = mockCompanies.find(c => c.id === selectedCompanyId);
-      const taxRate = (selectedCompany?.hasTaxes && selectedCompany.taxRate > 0) ? selectedCompany.taxRate / 100 : 0;
-      const taxes = incomeBeforeTax > 0 ? incomeBeforeTax * taxRate : 0;
+      let calculatedTaxes: { name: string; rate: number; amount: number }[] = [];
+      let totalTaxes = 0;
 
-      const netIncome = incomeBeforeTax - taxes;
+      if (selectedCompany && selectedCompany.taxes && incomeBeforeTax > 0) {
+          calculatedTaxes = selectedCompany.taxes.map(tax => {
+              const taxAmount = incomeBeforeTax * (tax.rate / 100);
+              return { name: tax.name, rate: tax.rate, amount: taxAmount };
+          });
+          totalTaxes = calculatedTaxes.reduce((sum, tax) => sum + tax.amount, 0);
+      }
+
+      const netIncome = incomeBeforeTax - totalTaxes;
 
       return {
           revenueByCategory,
@@ -181,10 +189,10 @@ export default function SettingsPage() {
           expensesByCategory,
           totalExpenses,
           incomeBeforeTax,
-          taxRate: selectedCompany?.taxRate || 0,
-          taxes,
+          calculatedTaxes,
+          totalTaxes,
           netIncome,
-          isTaxable: selectedCompany?.hasTaxes
+          isTaxable: !!selectedCompany?.taxes?.length
       };
   }, [filteredTransactions, selectedCompanyId, mockCompanies]);
   
@@ -559,12 +567,12 @@ export default function SettingsPage() {
                                         
                                         <TableRow className="font-bold text-lg bg-muted/50"><TableCell>Utilidad antes de Impuestos</TableCell><TableCell className={cn("text-right", incomeStatementData.incomeBeforeTax >= 0 ? "text-blue-600" : "text-orange-600")}>{incomeStatementData.incomeBeforeTax.toLocaleString('en-US', { style: 'currency', currency: 'USD' })}</TableCell></TableRow>
                                         
-                                        {selectedCompanyId !== 'all' && incomeStatementData.isTaxable && (
-                                            <TableRow>
-                                                <TableCell className="pl-8">Impuesto sobre la Renta (ISR) ({incomeStatementData.taxRate}%)</TableCell>
-                                                <TableCell className="text-right text-red-600">({incomeStatementData.taxes.toLocaleString('en-US', { style: 'currency', currency: 'USD' })})</TableCell>
+                                        {selectedCompanyId !== 'all' && incomeStatementData.isTaxable && incomeStatementData.calculatedTaxes.map(tax => (
+                                            <TableRow key={tax.name}>
+                                                <TableCell className="pl-8">Impuesto: {tax.name} ({tax.rate}%)</TableCell>
+                                                <TableCell className="text-right text-red-600">({tax.amount.toLocaleString('en-US', { style: 'currency', currency: 'USD' })})</TableCell>
                                             </TableRow>
-                                        )}
+                                        ))}
                                         {selectedCompanyId === 'all' && <TableRow><TableCell colSpan={2} className="text-center text-xs text-muted-foreground">Seleccione una empresa específica para ver el cálculo de impuestos.</TableCell></TableRow>}
 
                                     </TableBody>

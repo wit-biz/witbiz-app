@@ -112,11 +112,16 @@ export type Document = {
   archivedAt?: any;
 };
 
+export type Tax = {
+  id: string;
+  name: string;
+  rate: number;
+}
+
 export type Company = {
     id: string;
     name: string;
-    hasTaxes: boolean;
-    taxRate: number;
+    taxes: Tax[];
 }
 
 export type CreditDetails = {

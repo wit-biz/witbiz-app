@@ -5,11 +5,11 @@
 import React, { useState } from "react";
 import Link from "next/link";
 import { Header } from "@/components/header";
-import { ArrowLeft, Building, Landmark, ListPlus, PlusCircle, Trash2, Percent, CheckCircle, XCircle } from "lucide-react";
+import { ArrowLeft, Building, Landmark, ListPlus, PlusCircle, Trash2, Percent } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useForm } from "react-hook-form";
+import { useForm, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
@@ -17,11 +17,10 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
-import type { Company, BankAccount, Category, CreditDetails } from "@/lib/types";
-import { Switch } from "@/components/ui/switch";
+import type { Company, BankAccount, Category, CreditDetails, Tax } from "@/lib/types";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { cn } from "@/lib/utils";
+import { Switch } from "@/components/ui/switch";
 
 
 // --- Mock Data ---
@@ -30,18 +29,15 @@ const initialBankAccounts: BankAccount[] = [];
 const initialCategories: Category[] = [];
 
 // --- Zod Schemas ---
+const taxSchema = z.object({
+  id: z.string().optional(),
+  name: z.string().min(1, "El nombre del impuesto es requerido."),
+  rate: z.coerce.number().min(0, "La tasa debe ser positiva.").max(100, "La tasa no puede exceder 100."),
+});
+
 const companySchema = z.object({
   name: z.string().min(2, "El nombre de la empresa es requerido."),
-  hasTaxes: z.boolean().default(false),
-  taxRate: z.coerce.number().min(0, "La tasa debe ser positiva").max(100, "La tasa no puede exceder 100").optional(),
-}).refine(data => {
-    if (data.hasTaxes) {
-        return data.taxRate !== undefined && data.taxRate > 0;
-    }
-    return true;
-}, {
-    message: "La tasa de impuesto es requerida si los impuestos están activados.",
-    path: ["taxRate"],
+  taxes: z.array(taxSchema).optional(),
 });
 
 
@@ -80,17 +76,20 @@ const currencies = ['MXN', 'USD', 'EUR'];
 function CompanyForm({ onAddCompany }: { onAddCompany: (data: Company) => void }) {
   const form = useForm<z.infer<typeof companySchema>>({ 
       resolver: zodResolver(companySchema), 
-      defaultValues: { name: '', hasTaxes: false } 
+      defaultValues: { name: '', taxes: [] } 
   });
   const { toast } = useToast();
-  const hasTaxes = form.watch("hasTaxes");
+
+  const { fields: taxFields, append: appendTax, remove: removeTax } = useFieldArray({
+    control: form.control,
+    name: "taxes",
+  });
 
   const onSubmit = (data: z.infer<typeof companySchema>) => {
     onAddCompany({ 
         id: `comp-${Date.now()}`, 
         name: data.name,
-        hasTaxes: data.hasTaxes,
-        taxRate: data.hasTaxes ? data.taxRate || 0 : 0
+        taxes: data.taxes || [],
     });
     toast({ title: "Empresa Añadida", description: `Se ha añadido la empresa "${data.name}".` });
     form.reset();
@@ -106,35 +105,52 @@ function CompanyForm({ onAddCompany }: { onAddCompany: (data: Company) => void }
             <FormMessage />
           </FormItem>
         )} />
-        <FormField
-            control={form.control}
-            name="hasTaxes"
-            render={({ field }) => (
-                <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
-                    <div className="space-y-0.5">
-                        <FormLabel>¿Paga Impuestos?</FormLabel>
-                        <FormDescription className="text-xs">
-                            Active si esta empresa debe calcular impuestos sobre la renta.
-                        </FormDescription>
-                    </div>
-                    <FormControl>
-                        <Switch checked={field.value} onCheckedChange={field.onChange} />
-                    </FormControl>
-                </FormItem>
-            )}
-        />
-        {hasTaxes && (
-             <FormField control={form.control} name="taxRate" render={({ field }) => (
-              <FormItem>
-                <FormLabel>Tasa de Impuesto</FormLabel>
-                <div className="relative">
-                    <FormControl><Input type="number" {...field} placeholder="30" /></FormControl>
-                    <Percent className="absolute right-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+        
+        <div>
+            <FormLabel>Impuestos Aplicables</FormLabel>
+            <FormDescription className="text-xs mb-2">Añada los impuestos que esta empresa debe pagar.</FormDescription>
+            <div className="space-y-3">
+              {taxFields.map((field, index) => (
+                <div key={field.id} className="flex items-end gap-2 p-2 border rounded-md">
+                    <FormField
+                        control={form.control}
+                        name={`taxes.${index}.name`}
+                        render={({ field }) => (
+                            <FormItem className="flex-grow">
+                                <FormLabel className="text-xs">Nombre</FormLabel>
+                                <FormControl><Input placeholder="Ej. ISR" {...field} /></FormControl>
+                                <FormMessage />
+                            </FormItem>
+                        )}
+                    />
+                    <FormField
+                        control={form.control}
+                        name={`taxes.${index}.rate`}
+                        render={({ field }) => (
+                           <FormItem>
+                               <FormLabel className="text-xs">Tasa (%)</FormLabel>
+                               <FormControl><Input type="number" placeholder="30" {...field} /></FormControl>
+                               <FormMessage />
+                           </FormItem>
+                        )}
+                    />
+                    <Button type="button" variant="ghost" size="icon" onClick={() => removeTax(index)}>
+                        <Trash2 className="h-4 w-4 text-destructive" />
+                    </Button>
                 </div>
-                <FormMessage />
-              </FormItem>
-            )} />
-        )}
+              ))}
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => appendTax({ id: `tax-${Date.now()}`, name: '', rate: 0 })}
+              >
+                <PlusCircle className="mr-2 h-4 w-4" />
+                Añadir Impuesto
+              </Button>
+            </div>
+        </div>
+
         <Button type="submit"><PlusCircle className="mr-2 h-4 w-4" />Añadir Empresa</Button>
       </form>
     </Form>
@@ -369,20 +385,19 @@ export default function AccountingConfigPage() {
                     <TableHeader>
                         <TableRow>
                             <TableHead>Nombre</TableHead>
-                            <TableHead>Paga Impuestos</TableHead>
-                            <TableHead>Tasa</TableHead>
+                            <TableHead>Impuestos</TableHead>
                             <TableHead className="text-right">Acciones</TableHead>
                         </TableRow>
                     </TableHeader>
                     <TableBody>
                       {companies.length > 0 ? companies.map(c => (
                         <TableRow key={c.id}>
-                            <TableCell>{c.name}</TableCell>
+                            <TableCell className="font-medium">{c.name}</TableCell>
                             <TableCell>
-                                {c.hasTaxes ? <CheckCircle className="h-5 w-5 text-green-500" /> : <XCircle className="h-5 w-5 text-muted-foreground" />}
-                            </TableCell>
-                            <TableCell>
-                                {c.hasTaxes ? `${c.taxRate}%` : 'N/A'}
+                                {c.taxes && c.taxes.length > 0
+                                    ? c.taxes.map(t => `${t.name} (${t.rate}%)`).join(', ')
+                                    : 'N/A'
+                                }
                             </TableCell>
                             <TableCell className="text-right">
                                 <Button variant="ghost" size="icon" onClick={() => deleteCompany(c.id)}>
@@ -390,7 +405,7 @@ export default function AccountingConfigPage() {
                                 </Button>
                             </TableCell>
                         </TableRow>
-                      )) : <TableRow><TableCell colSpan={4} className="text-center h-24">No hay empresas registradas.</TableCell></TableRow>}
+                      )) : <TableRow><TableCell colSpan={3} className="text-center h-24">No hay empresas registradas.</TableCell></TableRow>}
                     </TableBody>
                   </Table>
                 </CardContent>
