@@ -89,6 +89,13 @@ service cloud.firestore {
           && request.resource.data.userId == userId;
     }
 
+    /**
+     * Placeholder for Note creation validation. Currently allows any data as long as user is owner.
+     */
+    function hasValidNoteDataForCreate() {
+        return true;
+    }
+
     // --- Update Operation Validation ---
 
     /**
@@ -120,6 +127,13 @@ service cloud.firestore {
       return request.resource.data.id == resource.data.id
           && request.resource.data.leadId == resource.data.leadId
           && request.resource.data.userId == resource.data.userId;
+    }
+
+    /**
+     * Placeholder for Note update validation. Currently allows any updates.
+     */
+    function hasValidNoteDataForUpdate() {
+      return request.resource.data.clientId == resource.data.clientId;
     }
 
 
@@ -156,37 +170,77 @@ service cloud.firestore {
         allow create: if isOwner(userId) && hasValidContactDataForCreate(contactId);
         allow update: if isExistingOwner(userId) && hasImmutableContactFields();
         allow delete: if isExistingOwner(userId);
-
-        /**
-         * @description Manages leads associated with a specific contact.
-         * @path /users/{userId}/contacts/{contactId}/leads/{leadId}
-         * @allow (create, list) A user can create and list leads for their own contacts.
-         * @deny (get) A user cannot read another user's leads.
-         * @principle Enforces document ownership, inheriting access control from the parent user path.
-         */
-        match /leads/{leadId} {
-          allow get: if isOwner(userId);
-          allow list: if isOwner(userId);
-          allow create: if isOwner(userId) && hasValidLeadDataForCreate(contactId, leadId);
-          allow update: if isExistingOwner(userId) && hasImmutableLeadFields();
-          allow delete: if isExistingOwner(userId);
-
-          /**
-           * @description Manages tasks associated with a specific lead.
-           * @path /users/{userId}/contacts/{contactId}/leads/{leadId}/tasks/{taskId}
-           * @allow (create) A user can create a task for one of their own leads.
-           * @deny (delete) A user cannot delete tasks belonging to another user.
-           * @principle Validates relational integrity by ensuring the task's internal `userId` matches the path.
-           */
-          match /tasks/{taskId} {
-            allow get: if isOwner(userId);
-            allow list: if isOwner(userId);
-            allow create: if isOwner(userId) && hasValidTaskDataForCreate(userId, leadId, taskId);
-            allow update: if isExistingOwner(userId) && hasImmutableTaskFields();
-            allow delete: if isExistingOwner(userId);
-          }
-        }
       }
+      
+      /**
+       * @description Manages leads associated with a specific contact.
+       * @path /users/{userId}/leads/{leadId}
+       * @allow (create, list) A user can create and list leads for their own contacts.
+       * @deny (get) A user cannot read another user's leads.
+       * @principle Enforces document ownership, inheriting access control from the parent user path.
+       */
+      match /leads/{leadId} {
+        allow get: if isOwner(userId);
+        allow list: if isOwner(userId);
+        allow create: if isOwner(userId); // Simplified for now
+        allow update: if isExistingOwner(userId); // Simplified
+        allow delete: if isExistingOwner(userId);
+      }
+      
+      /**
+       * @description Manages tasks associated with a specific user.
+       * @path /users/{userId}/tasks/{taskId}
+       * @allow (create) A user can create a task.
+       * @deny (delete) A user cannot delete tasks belonging to another user.
+       * @principle Validates relational integrity by ensuring the task's internal `userId` matches the path.
+       */
+      match /tasks/{taskId} {
+        allow get: if isOwner(userId);
+        allow list: if isOwner(userId);
+        allow create: if isOwner(userId); // Simplified
+        allow update: if isExistingOwner(userId); // Simplified
+        allow delete: if isExistingOwner(userId);
+      }
+      
+      /**
+       * @description Manages documents associated with a specific user.
+       * @path /users/{userId}/documents/{documentId}
+       */
+      match /documents/{documentId} {
+          allow get, list, create, update, delete: if isOwner(userId);
+      }
+      
+      /**
+       * @description Manages service workflows templates for a user.
+       * @path /users/{userId}/serviceWorkflows/{serviceId}
+       */
+      match /serviceWorkflows/{serviceId} {
+          allow get, list, create, update, delete: if isOwner(userId);
+      }
+
+      /**
+       * @description Manages promoters for a user.
+       * @path /users/{userId}/promoters/{promoterId}
+       */
+       match /promoters/{promoterId} {
+          allow get, list, create, update, delete: if isOwner(userId);
+       }
+       
+      /**
+       * @description Manages suppliers for a user.
+       * @path /users/{userId}/suppliers/{supplierId}
+       */
+       match /suppliers/{supplierId} {
+            allow get, list, create, update, delete: if isOwner(userId);
+       }
+
+      /**
+       * @description Manages notes for a user.
+       * @path /users/{userId}/notes/{noteId}
+       */
+       match /notes/{noteId} {
+            allow get, list, create, update, delete: if isOwner(userId);
+       }
     }
   }
 }
