@@ -4,7 +4,7 @@
 
 import React, { useState, useMemo } from "react";
 import Link from "next/link";
-import { Landmark, Briefcase, PlusCircle, ArrowRightLeft, DollarSign, BarChart as BarChartIcon, Settings, Edit, Trash2, KeyRound, Filter, ChevronsUpDown, Building, Loader2, Save, Calendar as CalendarIcon, ArrowUpCircle, ArrowDownCircle, TrendingUp, BookText, Users as UsersIcon, FilterX, Download } from "lucide-react";
+import { Landmark, Briefcase, PlusCircle, ArrowRightLeft, DollarSign, BarChart as BarChartIcon, Settings, Edit, Trash2, KeyRound, Filter, ChevronsUpDown, Building, Loader2, Save, Calendar as CalendarIcon, ArrowUpCircle, ArrowDownCircle, TrendingUp, BookText, Users as UsersIcon, FilterX, Download, Handshake } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableFooter } from "@/components/ui/table";
@@ -22,19 +22,97 @@ import { useToast } from '@/hooks/use-toast';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useCRMData } from "@/contexts/CRMDataContext";
 import { Label } from "@/components/ui/label";
-import { type Transaction, type Company, type Tax } from '@/lib/types';
+import { type Transaction, type Company, type Tax, type InterCompanyLoan } from '@/lib/types';
 import { Tooltip, TooltipProvider, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
+import { Textarea } from "@/components/ui/textarea";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from "zod";
+import { Form, FormControl, FormField, FormItem, FormMessage } from "@/components/ui/form";
 
 
 // --- Mock Data ---
 
 const initialCompanies: (Company & { totalBalance: number })[] = [];
-
 const initialBankAccounts: { id: string; companyId: string; companyName: string; bankName: string; balance: number; type: string; }[] = [];
-
 const initialTransactions: Transaction[] = [];
-
 const initialCategoryGroups: { id: string; name: string; type: string; categories: { id: string; name: string; }[]; }[] = [];
+const initialLoans: InterCompanyLoan[] = [];
+
+
+// --- Inter-Company Loan Components ---
+
+const loanSchema = z.object({
+  lenderCompanyId: z.string().min(1, "Debe seleccionar la empresa prestamista."),
+  borrowerCompanyId: z.string().min(1, "Debe seleccionar la empresa prestataria."),
+  amount: z.coerce.number().positive("El monto debe ser mayor a cero."),
+  terms: z.string().optional(),
+}).refine(data => data.lenderCompanyId !== data.borrowerCompanyId, {
+    message: "La empresa prestamista y prestataria no pueden ser la misma.",
+    path: ["borrowerCompanyId"],
+});
+
+
+function LoanForm({ companies, onAddLoan }: { companies: Company[], onAddLoan: (data: Omit<InterCompanyLoan, 'id' | 'date' | 'status'>) => void }) {
+    const form = useForm<z.infer<typeof loanSchema>>({
+        resolver: zodResolver(loanSchema),
+        defaultValues: { lenderCompanyId: '', borrowerCompanyId: '', amount: 0, terms: '' },
+    });
+    const { toast } = useToast();
+
+    const onSubmit = (data: z.infer<typeof loanSchema>) => {
+        onAddLoan(data);
+        toast({ title: "Préstamo Registrado", description: `Se ha registrado el préstamo.` });
+        form.reset();
+    };
+
+    return (
+        <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                 <div className="grid sm:grid-cols-2 gap-4">
+                     <FormField control={form.control} name="lenderCompanyId" render={({ field }) => (
+                      <FormItem>
+                        <Label>Empresa que Presta</Label>
+                        <Select onValueChange={field.onChange} value={field.value}>
+                          <FormControl><SelectTrigger><SelectValue placeholder="Seleccione..." /></SelectTrigger></FormControl>
+                          <SelectContent>{companies.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )} />
+                     <FormField control={form.control} name="borrowerCompanyId" render={({ field }) => (
+                      <FormItem>
+                        <Label>Empresa que Recibe</Label>
+                        <Select onValueChange={field.onChange} value={field.value}>
+                          <FormControl><SelectTrigger><SelectValue placeholder="Seleccione..." /></SelectTrigger></FormControl>
+                          <SelectContent>{companies.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )} />
+                </div>
+                 <FormField control={form.control} name="amount" render={({ field }) => (
+                  <FormItem>
+                    <Label>Monto del Préstamo</Label>
+                    <FormControl><Input type="number" {...field} /></FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )} />
+                 <FormField control={form.control} name="terms" render={({ field }) => (
+                  <FormItem>
+                    <Label>Términos y Acuerdo de Pago (Opcional)</Label>
+                    <FormControl><Textarea {...field} placeholder="Describa cómo y cuándo se pagará el préstamo..." /></FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )} />
+
+                <Button type="submit"><PlusCircle className="mr-2 h-4 w-4" />Registrar Préstamo</Button>
+            </form>
+        </Form>
+    );
+}
+
+
 
 export default function SettingsPage() {
   const { toast } = useToast();
@@ -45,6 +123,7 @@ export default function SettingsPage() {
   const [mockAccounts, setMockAccounts] = useState(initialBankAccounts);
   const [categoryGroups, setCategoryGroups] = useState(initialCategoryGroups);
   const [transactions, setTransactions] = useState(initialTransactions);
+  const [loans, setLoans] = useState<InterCompanyLoan[]>(initialLoans);
 
   // State for dialogs
   const [isTransactionDialogOpen, setIsTransactionDialogOpen] = useState(false);
@@ -265,6 +344,18 @@ export default function SettingsPage() {
 
     setTransactions(prev => [...prev, newTransaction].sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
   };
+
+  const handleAddLoan = (data: Omit<InterCompanyLoan, 'id' | 'date' | 'status'>) => {
+    const newLoan: InterCompanyLoan = {
+      id: `loan-${Date.now()}`,
+      ...data,
+      date: new Date(),
+      status: 'En Curso',
+    };
+    setLoans(prev => [...prev, newLoan]);
+  };
+  
+  const getCompanyName = (id: string) => mockCompanies.find(c => c.id === id)?.name || 'Desconocido';
   
   return (
     <TooltipProvider>
@@ -372,9 +463,10 @@ export default function SettingsPage() {
             </Card>
 
             <Tabs defaultValue="ledger">
-                <TabsList className="grid w-full grid-cols-2">
-                    <TabsTrigger value="ledger"><BookText className="mr-2 h-4 w-4"/>Libros y Registros Contables</TabsTrigger>
+                <TabsList className="grid w-full grid-cols-3">
+                    <TabsTrigger value="ledger"><BookText className="mr-2 h-4 w-4"/>Libros Contables</TabsTrigger>
                     <TabsTrigger value="pnl"><BarChartIcon className="mr-2 h-4 w-4"/>Estados Financieros</TabsTrigger>
+                    <TabsTrigger value="loans"><Handshake className="mr-2 h-4 w-4"/>Préstamos entre Empresas</TabsTrigger>
                 </TabsList>
                 <TabsContent value="ledger" className="mt-4">
                      <Card>
@@ -679,6 +771,53 @@ export default function SettingsPage() {
                             </TabsContent>
                         </Tabs>
                     </Card>
+                </TabsContent>
+                 <TabsContent value="loans" className="mt-4">
+                    <div className="grid md:grid-cols-3 gap-6">
+                        <Card className="md:col-span-1">
+                            <CardHeader>
+                                <CardTitle>Registrar Nuevo Préstamo</CardTitle>
+                                <CardDescription>Cree un registro de un préstamo entre dos de sus empresas.</CardDescription>
+                            </CardHeader>
+                            <CardContent>
+                                <LoanForm companies={mockCompanies} onAddLoan={handleAddLoan} />
+                            </CardContent>
+                        </Card>
+                         <Card className="md:col-span-2">
+                             <CardHeader>
+                                <CardTitle>Historial de Préstamos</CardTitle>
+                                <CardDescription>Listado de todos los préstamos internos registrados.</CardDescription>
+                            </CardHeader>
+                            <CardContent>
+                               <Table>
+                                    <TableHeader>
+                                        <TableRow>
+                                            <TableHead>Prestamista</TableHead>
+                                            <TableHead>Prestatario</TableHead>
+                                            <TableHead>Fecha</TableHead>
+                                            <TableHead>Estado</TableHead>
+                                            <TableHead className="text-right">Monto</TableHead>
+                                        </TableRow>
+                                    </TableHeader>
+                                    <TableBody>
+                                    {loans.length > 0 ? loans.map(loan => (
+                                        <TableRow key={loan.id}>
+                                            <TableCell className="font-medium">{getCompanyName(loan.lenderCompanyId)}</TableCell>
+                                            <TableCell className="font-medium">{getCompanyName(loan.borrowerCompanyId)}</TableCell>
+                                            <TableCell>{format(loan.date, 'dd/MM/yyyy')}</TableCell>
+                                            <TableCell><Badge variant={loan.status === 'Pagado' ? 'default' : 'secondary'}>{loan.status}</Badge></TableCell>
+                                            <TableCell className="text-right font-semibold">{loan.amount.toLocaleString('en-US', {style: 'currency', currency: 'USD'})}</TableCell>
+                                        </TableRow>
+                                    )) : (
+                                        <TableRow>
+                                            <TableCell colSpan={5} className="text-center h-24">No hay préstamos registrados.</TableCell>
+                                        </TableRow>
+                                    )}
+                                    </TableBody>
+                               </Table>
+                            </CardContent>
+                         </Card>
+                    </div>
                 </TabsContent>
             </Tabs>
         </main>

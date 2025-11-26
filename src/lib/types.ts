@@ -160,6 +160,16 @@ export type Transaction = {
   attachmentUrl?: string; // URL al comprobante
 }
 
+export type InterCompanyLoan = {
+    id: string;
+    lenderCompanyId: string;
+    borrowerCompanyId: string;
+    amount: number;
+    date: any; // Firestore Timestamp
+    status: 'En Curso' | 'Pagado' | 'Pendiente';
+    terms?: string;
+}
+
 export type Note = {
   id: string;
   content: string; // Legado o para visualización
