@@ -4,121 +4,71 @@
       "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "Contact",
       "type": "object",
-      "description": "Represents a customer contact within the CRM.",
+      "description": "Represents a customer contact.",
       "properties": {
         "id": {
           "type": "string",
           "description": "Unique identifier for the Contact entity."
         },
-        "name": {
+        "firstName": {
           "type": "string",
-          "description": "Full name of the contact or company."
+          "description": "The contact's first name."
+        },
+        "lastName": {
+          "type": "string",
+          "description": "The contact's last name."
         },
         "email": {
           "type": "string",
-          "description": "Email address of the contact.",
+          "description": "The contact's email address.",
           "format": "email"
         },
         "phone": {
           "type": "string",
-          "description": "Phone number of the contact."
+          "description": "The contact's phone number."
         },
         "company": {
           "type": "string",
-          "description": "Company the contact is associated with."
-        },
-        "status": {
-          "type": "string",
-          "enum": [
-            "Activo",
-            "Inactivo"
-          ],
-          "description": "Current status of the contact."
-        },
-        "createdAt": {
-          "type": "string",
-          "format": "date-time",
-          "description": "The date and time when the contact was created."
-        },
-        "posTerminals": {
-          "type": "array",
-          "description": "List of Point of Sale terminals assigned to the client.",
-          "items": {
-            "type": "object",
-            "properties": {
-              "id": {
-                "type": "string",
-                "description": "Unique identifier for the terminal entry."
-              },
-              "serialNumber": {
-                "type": "string",
-                "description": "The serial number of the POS terminal."
-              }
-            },
-            "required": [
-              "id",
-              "serialNumber"
-            ]
-          }
-        },
-        "promoters": {
-          "type": "array",
-          "description": "List of promoters who referred this contact, with their respective commission percentages.",
-          "items": {
-            "type": "object",
-            "properties": {
-              "promoterId": {
-                "type": "string",
-                "description": "The unique ID of the promoter."
-              },
-              "percentage": {
-                "type": "number",
-                "description": "The commission percentage for this promoter for this client."
-              }
-            },
-            "required": [
-              "promoterId",
-              "percentage"
-            ]
-          }
+          "description": "The contact's company."
         }
       },
       "required": [
         "id",
-        "name",
-        "status"
+        "firstName",
+        "lastName",
+        "email"
       ]
     },
     "Lead": {
       "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "Lead",
       "type": "object",
-      "description": "Represents a lead and its progress through the sales pipeline.",
+      "description": "Represents a sales lead.",
       "properties": {
         "id": {
           "type": "string",
           "description": "Unique identifier for the Lead entity."
         },
-        "name": {
+        "contactId": {
           "type": "string",
-          "description": "Name of the lead."
+          "description": "Reference to Contact. (Relationship: Contact 1:N Lead)"
         },
         "status": {
           "type": "string",
-          "description": "Current status of the lead (e.g., New, Contacted, Qualified, Opportunity, Customer)."
+          "description": "The current status of the lead (e.g., New, Qualified, Contacted)."
         },
         "source": {
           "type": "string",
-          "description": "Source of the lead (e.g., Website, Referral, Advertisement)."
+          "description": "The source of the lead (e.g., Website, Referral, Advertisement)."
         },
-        "assignedTo": {
-          "type": "string",
-          "description": "Reference to User. User assigned to the lead. (Relationship: User 1:N Lead)"
+        "value": {
+          "type": "number",
+          "description": "The potential value of the lead."
         }
       },
       "required": [
         "id",
-        "name",
+        "contactId",
         "status"
       ]
     },
@@ -132,210 +82,65 @@
           "type": "string",
           "description": "Unique identifier for the Task entity."
         },
-        "title": {
+        "userId": {
           "type": "string",
-          "description": "Title of the task."
-        },
-        "description": {
-          "type": "string",
-          "description": "Description of the task."
-        },
-        "dueDate": {
-          "type": "string",
-          "description": "Due date of the task.",
-          "format": "date-time"
-        },
-        "status": {
-          "type": "string",
-          "description": "Status of the task (e.g., Open, In Progress, Completed)."
-        },
-        "assignedTo": {
-          "type": "string",
-          "description": "Reference to User. User assigned to the task. (Relationship: User 1:N Task)"
+          "description": "Reference to User. (Relationship: User 1:N Task)"
         },
         "leadId": {
           "type": "string",
           "description": "Reference to Lead. (Relationship: Lead 1:N Task)"
+        },
+        "description": {
+          "type": "string",
+          "description": "A description of the task."
+        },
+        "dueDate": {
+          "type": "string",
+          "description": "The date the task is due.",
+          "format": "date-time"
+        },
+        "completed": {
+          "type": "boolean",
+          "description": "Indicates whether the task has been completed."
         }
       },
       "required": [
         "id",
-        "title",
+        "userId",
+        "description",
         "dueDate",
-        "status",
-        "assignedTo"
+        "completed"
       ]
     },
     "User": {
       "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "User",
       "type": "object",
-      "description": "Represents a user of the CRM system.",
+      "description": "Represents a user of the WitCRM system.  Note: Authentication information is not stored here.",
       "properties": {
         "id": {
           "type": "string",
           "description": "Unique identifier for the User entity."
         },
-        "email": {
-          "type": "string",
-          "description": "Email address of the user.",
-          "format": "email"
-        },
         "firstName": {
           "type": "string",
-          "description": "First name of the user."
+          "description": "User's first name."
         },
         "lastName": {
           "type": "string",
-          "description": "Last name of the user."
+          "description": "User's last name."
+        },
+        "email": {
+          "type": "string",
+          "description": "User's email address.",
+          "format": "email"
         }
       },
       "required": [
         "id",
+        "firstName",
+        "lastName",
         "email"
-      ]
-    },
-    "Promoter": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "Promoter",
-      "type": "object",
-      "description": "Represents a promoter who refers clients.",
-      "properties": {
-        "id": {
-          "type": "string",
-          "description": "Unique identifier for the Promoter entity."
-        },
-        "name": {
-          "type": "string",
-          "description": "Name of the promoter."
-        },
-        "email": {
-          "type": "string",
-          "description": "Email address of the promoter.",
-          "format": "email"
-        },
-        "phone": {
-          "type": "string",
-          "description": "Phone number of the promoter."
-        },
-        "status": {
-          "type": "string",
-          "enum": [
-            "Activo",
-            "Inactivo"
-          ],
-          "description": "Current status of the promoter."
-        },
-        "referredClients": {
-          "type": "number",
-          "description": "Number of clients referred by the promoter."
-        },
-        "totalCommissions": {
-          "type": "number",
-          "description": "Total commissions earned by the promoter."
-        },
-        "createdAt": {
-          "type": "string",
-          "format": "date-time",
-          "description": "The date and time when the promoter was created."
-        }
-      },
-      "required": [
-        "id",
-        "name",
-        "status"
-      ]
-    },
-    "Supplier": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "Supplier",
-      "type": "object",
-      "description": "Represents a supplier of goods or services.",
-      "properties": {
-        "id": {
-          "type": "string",
-          "description": "Unique identifier for the Supplier entity."
-        },
-        "name": {
-          "type": "string",
-          "description": "Name of the supplier."
-        },
-        "email": {
-          "type": "string",
-          "description": "Contact email for the supplier.",
-          "format": "email"
-        },
-        "phone": {
-          "type": "string",
-          "description": "Contact phone for the supplier."
-        },
-        "service": {
-          "type": "string",
-          "description": "The service or product provided by the supplier."
-        },
-        "status": {
-          "type": "string",
-          "enum": [
-            "Activo",
-            "Inactivo"
-          ],
-          "description": "Current status of the supplier."
-        },
-        "createdAt": {
-          "type": "string",
-          "format": "date-time",
-          "description": "The date and time when the supplier was created."
-        }
-      },
-      "required": [
-        "id",
-        "name",
-        "status"
-      ]
-    },
-    "Note": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "Note",
-      "type": "object",
-      "description": "Represents a note or comment associated with a client.",
-      "properties": {
-        "id": {
-          "type": "string",
-          "description": "Unique identifier for the Note entity."
-        },
-        "clientId": {
-          "type": "string",
-          "description": "The ID of the client this note is associated with."
-        },
-        "text": {
-          "type": "string",
-          "description": "The content of the note."
-        },
-        "authorName": {
-          "type": "string",
-          "description": "The name of the user who created the note."
-        },
-        "createdAt": {
-          "type": "string",
-          "format": "date-time",
-          "description": "The date and time when the note was created."
-        },
-        "updatedAt": {
-          "type": "string",
-          "format": "date-time",
-          "description": "The date and time when the note was last updated."
-        },
-        "status": {
-          "type": "string",
-          "enum": ["Activo", "Archivado"],
-          "description": "Status of the note."
-        }
-      },
-      "required": [
-        "id",
-        "clientId",
-        "text",
-        "createdAt"
       ]
     }
   },
@@ -354,31 +159,11 @@
           "schema": {
             "$ref": "#/backend/entities/User"
           },
-          "description": "Collection to store user profiles.  'userId' corresponds to the Firebase Auth UID.",
+          "description": "Stores user profiles.  Tasks and Contacts are owned by the user and accessible only to them.",
           "params": [
             {
               "name": "userId",
-              "description": "The Firebase Auth UID of the user."
-            }
-          ]
-        }
-      },
-      {
-        "path": "/users/{userId}/leads/{leadId}",
-        "definition": {
-          "entityName": "Lead",
-          "schema": {
-            "$ref": "#/backend/entities/Lead"
-          },
-          "description": "Subcollection to store leads owned by a specific user.",
-          "params": [
-            {
-              "name": "userId",
-              "description": "The Firebase Auth UID of the user who owns the lead."
-            },
-            {
-              "name": "leadId",
-              "description": "The unique identifier of the lead."
+              "description": "The unique identifier for the user."
             }
           ]
         }
@@ -390,100 +175,72 @@
           "schema": {
             "$ref": "#/backend/entities/Contact"
           },
-          "description": "Subcollection to store contacts owned by a specific user.",
+          "description": "Stores contacts associated with a specific user.  Owned by the user.",
           "params": [
             {
               "name": "userId",
-              "description": "The Firebase Auth UID of the user who owns the contact."
+              "description": "The unique identifier for the user."
             },
             {
               "name": "contactId",
-              "description": "The unique identifier of the contact."
+              "description": "The unique identifier for the contact."
             }
           ]
         }
       },
       {
-        "path": "/users/{userId}/tasks/{taskId}",
+        "path": "/users/{userId}/contacts/{contactId}/leads/{leadId}",
+        "definition": {
+          "entityName": "Lead",
+          "schema": {
+            "$ref": "#/backend/entities/Lead"
+          },
+          "description": "Stores leads associated with a specific contact. Owned by the user.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier for the user."
+            },
+            {
+              "name": "contactId",
+              "description": "The unique identifier for the contact."
+            },
+            {
+              "name": "leadId",
+              "description": "The unique identifier for the lead."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/contacts/{contactId}/leads/{leadId}/tasks/{taskId}",
         "definition": {
           "entityName": "Task",
           "schema": {
             "$ref": "#/backend/entities/Task"
           },
-          "description": "Subcollection to store tasks assigned to a specific user.",
+          "description": "Stores tasks associated with a specific lead. Owned by the user.",
           "params": [
             {
               "name": "userId",
-              "description": "The Firebase Auth UID of the user to whom the task is assigned."
+              "description": "The unique identifier for the user."
+            },
+            {
+              "name": "contactId",
+              "description": "The unique identifier for the contact."
+            },
+            {
+              "name": "leadId",
+              "description": "The unique identifier for the lead."
             },
             {
               "name": "taskId",
-              "description": "The unique identifier of the task."
-            }
-          ]
-        }
-      },
-       {
-        "path": "/users/{userId}/notes/{noteId}",
-        "definition": {
-          "entityName": "Note",
-          "schema": {
-            "$ref": "#/backend/entities/Note"
-          },
-          "description": "Subcollection to store notes owned by a specific user.",
-          "params": [
-            {
-              "name": "userId",
-              "description": "The Firebase Auth UID of the user who owns the note."
-            },
-            {
-              "name": "noteId",
-              "description": "The unique identifier of the note."
-            }
-          ]
-        }
-      },
-      {
-        "path": "/users/{userId}/promoters/{promoterId}",
-        "definition": {
-          "entityName": "Promoter",
-          "schema": {
-            "$ref": "#/backend/entities/Promoter"
-          },
-          "description": "Subcollection to store promoters managed by a specific user.",
-          "params": [
-            {
-              "name": "userId",
-              "description": "The Firebase Auth UID of the user who manages the promoter."
-            },
-            {
-              "name": "promoterId",
-              "description": "The unique identifier of the promoter."
-            }
-          ]
-        }
-      },
-      {
-        "path": "/users/{userId}/suppliers/{supplierId}",
-        "definition": {
-          "entityName": "Supplier",
-          "schema": {
-            "$ref": "#/backend/entities/Supplier"
-          },
-          "description": "Subcollection to store suppliers managed by a specific user.",
-          "params": [
-            {
-              "name": "userId",
-              "description": "The Firebase Auth UID of the user who manages the supplier."
-            },
-            {
-              "name": "supplierId",
-              "description": "The unique identifier of the supplier."
+              "description": "The unique identifier for the task."
             }
           ]
         }
       }
     ],
-    "reasoning": "The Firestore data structure is designed to address the reported permission error and ensure secure and scalable data management for the WitCRM application. The primary principle is Authorization Independence, achieved through denormalization and structural segregation.  The error `Missing or insufficient permissions` on the path `/databases/(default)/documents/users/lbz7nN49aERC4AwnsGSruB6spQJ3/notes` indicates the security rules are not allowing the user to `list` notes.  This structure uses path-based ownership for notes and other user-owned data, resolving the immediate issue and preventing future authorization problems.  \n\n**Authorization Independence:** User-owned entities like `Leads`, `Tasks`, and `Contacts` are stored under user-specific subcollections (e.g., `/users/{userId}/leads/{leadId}`). This structure inherently enforces ownership and eliminates the need for complex `get()` calls in security rules. This avoids hierarchical authorization dependencies, crucial for atomic operations and debuggability.  The security rules can simply check `request.auth.uid == userId`.\n\n**Structural Segregation:**  Data with different access requirements is stored in separate collections. All documents within a collection share the same security posture, simplifying rule definitions. For example, `Leads`, `Tasks`, and `Contacts` are stored under their respective user subcollections, ensuring that only the assigned user can access them.\n\n**QAPs (Rules are not Filters):**  The path-based ownership model enables secure `list` operations. A user can only list the documents within their own `/users/{userId}` subcollections. This directly addresses the error reported, allowing users to list their notes (after the appropriate rules are added, which this data structure facilitates).  \n\n**Invariants:**  The structure supports the integrity of ownership. The `assignedTo` field in `Lead` and `Task` documents is used for relationship purposes, but the actual ownership and access control are enforced by the path structure."
+    "reasoning": "The Firestore structure is designed to support WitCRM's core features: Contact Management, Lead Tracking, and Task Management. The structure prioritizes authorization independence, clarity, and scalability. User-owned data is stored under `/users/{userId}`. Contacts are also stored under each user to keep the application clear. Leads are nested under Contacts, and Tasks are nested under Leads to facilitate easy querying and management. This structure also provides clear ownership and simplifies security rules.\n\n**Authorization Independence:**  Authorization is enforced at each level using path-based rules and explicit ownership. This avoids relying on `get()` calls in security rules, ensuring atomic operations and easier debugging.\n\n**QAPs Support:**  The structure supports secure list operations by segregating data based on ownership. Each user's data is stored under their respective `/users/{userId}` path, ensuring that only the user can access their contacts, leads, and tasks. The nested structure further simplifies querying and ensures that listing operations are scoped to the correct user and resource (e.g., listing all leads for a specific contact).\n\nHomogeneous security posture for Tasks and Leads is achieved by nesting them under their respective owners."
   }
 }
