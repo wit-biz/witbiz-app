@@ -55,7 +55,7 @@ const bankAccountSchema = z.object({
   initialBalance: z.coerce.number().default(0),
   creditDetails: creditDetailsSchema.optional(),
 }).refine(data => {
-    if (data.creditDetails?.hasCredit && data.creditDetails.status !== 'No Ofrecido') {
+    if (data.creditDetails?.hasCredit && (data.creditDetails.status === 'Aceptado' || data.creditDetails.status === 'Pendiente')) {
         return data.creditDetails.creditAmount !== undefined && data.creditDetails.creditAmount > 0;
     }
     return true;
