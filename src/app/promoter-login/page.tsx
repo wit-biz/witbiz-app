@@ -33,10 +33,14 @@ export default function PromoterLoginPage() {
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    // The button's disabled state prevents this from being called while loading.
-    // If for some edge case it still gets called, we guard it here.
-    if (isLoadingPromoters || !promoters) {
-        return;
+    
+    if (!isClient || isLoadingPromoters || !promoters) {
+      toast({
+        variant: "destructive",
+        title: 'Por favor espere',
+        description: 'Los datos de los promotores aún se están cargando. Inténtelo de nuevo en un momento.',
+      });
+      return;
     }
 
     setIsSubmitting(true);
@@ -46,11 +50,12 @@ export default function PromoterLoginPage() {
     if (validPromoter) {
       toast({
         title: 'Acceso concedido',
-        description: `Bienvenido, ${validPromoter.name}.`,
+        description: `Bienvenido, ${validPromoter.name}. Redirigiendo...`,
       });
       // Here you would typically set some session state
       // For now, we'll just redirect
       router.push(`/promoters?promoterId=${validPromoter.id}`);
+      // No need to set isSubmitting to false here as we are navigating away
     } else {
       toast({
         variant: 'destructive',
