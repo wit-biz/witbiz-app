@@ -138,6 +138,7 @@ export type BankAccount = {
     balance: number;
     currency: 'MXN' | 'USD' | 'EUR';
     creditDetails?: CreditDetails;
+    initialBalance?: number;
 }
 
 export type Category = {
@@ -150,14 +151,15 @@ export type Transaction = {
   id: string;
   date: string; // ISO String YYYY-MM-DD
   description: string;
-  type: 'income' | 'expense' | 'transfer_in' | 'transfer_out';
-  category: string;
+  type: 'income' | 'expense' | 'transfer';
+  categoryId: string;
   amount: number;
   companyId: string;
   accountId: string;
   clientId?: string;
   clientName?: string;
   attachmentUrl?: string; // URL al comprobante
+  destinationAccountId?: string;
 }
 
 export type InterCompanyLoan = {

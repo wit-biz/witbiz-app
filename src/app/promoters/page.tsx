@@ -11,7 +11,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Calendar } from '@/components/ui/calendar';
 import { Badge } from '@/components/ui/badge';
-import { LogOut, Users, CircleDollarSign, BookText, Download, BarChart, User, Save, Lock, Mail, UserCircle, PanelLeft } from 'lucide-react';
+import { LogOut, Users, CircleDollarSign, BookText, Download, BarChart, User, Save, Lock, Mail, UserCircle, PanelLeft, Loader2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { Logo } from '@/components/shared/logo';
 import { cn } from '@/lib/utils';
@@ -27,16 +27,18 @@ import {
   SheetTrigger,
   SheetTitle,
 } from "@/components/ui/sheet";
-
-// --- Mock Data ---
-const referredClients: any[] = [];
-const commissions: any[] = [];
-const resources: any[] = [];
+import { useCRMData } from '@/contexts/CRMDataContext';
+import { type Document } from '@/lib/types';
 
 // --- Components for each view ---
 
 function ClientsView() {
+    const { getClientsByPromoterId, promoters } = useCRMData();
     const [isClient, setIsClient] = useState(false);
+    
+    // Assuming the logged-in promoter is the first one for this demo
+    const currentPromoter = promoters?.[0];
+    const referredClients = currentPromoter ? getClientsByPromoterId(currentPromoter.id) : [];
 
     useEffect(() => {
         setIsClient(true);
@@ -62,7 +64,7 @@ function ClientsView() {
                             {referredClients.length > 0 ? referredClients.map(client => (
                                 <TableRow key={client.id}>
                                     <TableCell className="font-medium">{client.name}</TableCell>
-                                    <TableCell>{isClient ? format(new Date(client.joinDate), 'dd/MM/yyyy') : '-'}</TableCell>
+                                    <TableCell>{isClient && client.createdAt ? format(client.createdAt.toDate(), 'dd/MM/yyyy') : '-'}</TableCell>
                                     <TableCell>
                                         <Badge variant={client.status === 'Activo' ? 'default' : 'secondary'}>{client.status}</Badge>
                                     </TableCell>
@@ -81,9 +83,13 @@ function ClientsView() {
 }
 
 function CommissionsView() {
+    const { transactions, promoters } = useCRMData();
     const [isClient, setIsClient] = useState(false);
     const [dateRange, setDateRange] = useState<DateRange | undefined>();
     const [selectedDay, setSelectedDay] = useState<Date | undefined>();
+
+    // This is a placeholder for real commission data structure.
+    const commissions: any[] = []; 
 
     useEffect(() => {
         setIsClient(true);
@@ -101,7 +107,7 @@ function CommissionsView() {
             }
         });
         return { paid: paidDays, pending: pendingDays };
-    }, []);
+    }, [commissions]);
 
     const dayModifiersClassNames = {
         paid: 'day-paid',
@@ -121,7 +127,7 @@ function CommissionsView() {
             return true;
         };
         return commissions.filter(filterByDate);
-    }, [dateRange, selectedDay]);
+    }, [dateRange, selectedDay, commissions]);
 
     const handleDayClick = (day: Date) => {
         setSelectedDay(day);
@@ -262,13 +268,22 @@ function CommissionsView() {
 }
 
 function ResourcesView() {
+    const { getDocumentsByPromoterId, promoters } = useCRMData();
     const { toast } = useToast();
 
-    const handleDownload = (resourceTitle: string) => {
-        toast({
-            title: "Descarga Simulada",
-            description: `Se ha iniciado la descarga de "${resourceTitle}".`
-        });
+    const currentPromoter = promoters?.[0];
+    const resources = currentPromoter ? getDocumentsByPromoterId(currentPromoter.id) : [];
+
+    const handleDownload = (doc: Document) => {
+        if (doc.downloadURL) {
+            window.open(doc.downloadURL, '_blank');
+        } else {
+             toast({
+                variant: "destructive",
+                title: "Error",
+                description: "Este documento no tiene una URL de descarga válida."
+            });
+        }
     };
 
     return (
@@ -283,11 +298,11 @@ function ResourcesView() {
                         {resources.map(resource => (
                             <Card key={resource.id}>
                                 <CardHeader>
-                                    <CardTitle className="flex items-center gap-2"><BookText className="h-5 w-5 text-accent"/>{resource.title}</CardTitle>
-                                    <CardDescription>{resource.description}</CardDescription>
+                                    <CardTitle className="flex items-center gap-2"><BookText className="h-5 w-5 text-accent"/>{resource.name}</CardTitle>
+                                    <CardDescription>{resource.type}</CardDescription>
                                 </CardHeader>
                                 <CardContent>
-                                    <Button className="w-full" onClick={() => handleDownload(resource.title)}>
+                                    <Button className="w-full" onClick={() => handleDownload(resource)}>
                                         <Download className="mr-2 h-4 w-4" />
                                         Descargar
                                     </Button>
@@ -307,6 +322,8 @@ function ResourcesView() {
 
 function ProfileView() {
     const { toast } = useToast();
+    const { promoters } = useCRMData();
+    const currentPromoter = promoters?.[0];
 
     const handlePasswordChange = (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
@@ -315,6 +332,17 @@ function ProfileView() {
             description: "Tu contraseña ha sido cambiada exitosamente (simulación).",
         });
     };
+
+    if (!currentPromoter) {
+        return (
+            <Card className="max-w-2xl mx-auto">
+                <CardHeader><CardTitle>Mi Perfil de Promotor</CardTitle></CardHeader>
+                <CardContent className='flex items-center justify-center p-12'>
+                    <Loader2 className='h-8 w-8 animate-spin'/>
+                </CardContent>
+            </Card>
+        )
+    }
 
     return (
         <Card className="max-w-2xl mx-auto">
@@ -327,7 +355,7 @@ function ProfileView() {
             <CardContent className="space-y-4">
                  <div className="space-y-2">
                     <Label>Nombre Completo</Label>
-                    <Input value="Mariana Fernandez" disabled />
+                    <Input value={currentPromoter.name} disabled />
                 </div>
                  <div className="space-y-2">
                     <Label>Rol</Label>
@@ -335,7 +363,7 @@ function ProfileView() {
                 </div>
                  <div className="space-y-2">
                     <Label>Correo Electrónico</Label>
-                    <Input value="mariana.f@email.com" disabled />
+                    <Input value={currentPromoter.email || 'N/A'} disabled />
                 </div>
             </CardContent>
             <Separator />
@@ -461,7 +489,3 @@ export default function PromoterPage() {
         </div>
     );
 }
-
-    
-
-    

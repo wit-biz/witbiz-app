@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import React, { useState, useMemo } from "react";
@@ -22,7 +21,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useCRMData } from "@/contexts/CRMDataContext";
 import { Label } from "@/components/ui/label";
-import { type Transaction, type Company, type Tax, type InterCompanyLoan } from '@/lib/types';
+import { type Transaction, type Company, type Tax, type InterCompanyLoan, BankAccount } from '@/lib/types';
 import { Tooltip, TooltipProvider, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 import { Textarea } from "@/components/ui/textarea";
 import { useForm } from "react-hook-form";
@@ -30,15 +29,6 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { Form, FormControl, FormField, FormItem, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-
-
-// --- Mock Data ---
-
-const initialCompanies: (Company & { totalBalance: number })[] = [];
-const initialBankAccounts: { id: string; companyId: string; companyName: string; bankName: string; balance: number; type: string; }[] = [];
-const initialTransactions: Transaction[] = [];
-const initialCategoryGroups: { id: string; name: string; type: string; categories: { id: string; name: string; }[]; }[] = [];
-const initialLoans: InterCompanyLoan[] = [];
 
 
 // --- Inter-Company Loan Components ---
@@ -54,17 +44,18 @@ const loanSchema = z.object({
 });
 
 
-function LoanForm({ companies, onAddLoan }: { companies: Company[], onAddLoan: (data: Omit<InterCompanyLoan, 'id' | 'date' | 'status'>) => void }) {
+function LoanForm({ companies, onAddLoan }: { companies: Company[], onAddLoan: (data: Omit<InterCompanyLoan, 'id' | 'date' | 'status'>) => Promise<void> }) {
     const form = useForm<z.infer<typeof loanSchema>>({
         resolver: zodResolver(loanSchema),
         defaultValues: { lenderCompanyId: '', borrowerCompanyId: '', amount: 0, terms: '' },
     });
-    const { toast } = useToast();
+    const [isSubmitting, setIsSubmitting] = React.useState(false);
 
-    const onSubmit = (data: z.infer<typeof loanSchema>) => {
-        onAddLoan(data);
-        toast({ title: "Préstamo Registrado", description: `Se ha registrado el préstamo.` });
+    const onSubmit = async (data: z.infer<typeof loanSchema>) => {
+        setIsSubmitting(true);
+        await onAddLoan(data);
         form.reset();
+        setIsSubmitting(false);
     };
 
     return (
@@ -74,7 +65,7 @@ function LoanForm({ companies, onAddLoan }: { companies: Company[], onAddLoan: (
                      <FormField control={form.control} name="lenderCompanyId" render={({ field }) => (
                       <FormItem>
                         <Label>Empresa que Presta</Label>
-                        <Select onValueChange={field.onChange} value={field.value}>
+                        <Select onValueChange={field.onChange} value={field.value} disabled={isSubmitting}>
                           <FormControl><SelectTrigger><SelectValue placeholder="Seleccione..." /></SelectTrigger></FormControl>
                           <SelectContent>{companies.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent>
                         </Select>
@@ -84,7 +75,7 @@ function LoanForm({ companies, onAddLoan }: { companies: Company[], onAddLoan: (
                      <FormField control={form.control} name="borrowerCompanyId" render={({ field }) => (
                       <FormItem>
                         <Label>Empresa que Recibe</Label>
-                        <Select onValueChange={field.onChange} value={field.value}>
+                        <Select onValueChange={field.onChange} value={field.value} disabled={isSubmitting}>
                           <FormControl><SelectTrigger><SelectValue placeholder="Seleccione..." /></SelectTrigger></FormControl>
                           <SelectContent>{companies.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent>
                         </Select>
@@ -95,19 +86,22 @@ function LoanForm({ companies, onAddLoan }: { companies: Company[], onAddLoan: (
                  <FormField control={form.control} name="amount" render={({ field }) => (
                   <FormItem>
                     <Label>Monto del Préstamo</Label>
-                    <FormControl><Input type="number" {...field} /></FormControl>
+                    <FormControl><Input type="number" {...field} disabled={isSubmitting}/></FormControl>
                     <FormMessage />
                   </FormItem>
                 )} />
                  <FormField control={form.control} name="terms" render={({ field }) => (
                   <FormItem>
                     <Label>Términos y Acuerdo de Pago (Opcional)</Label>
-                    <FormControl><Textarea {...field} placeholder="Describa cómo y cuándo se pagará el préstamo..." /></FormControl>
+                    <FormControl><Textarea {...field} placeholder="Describa cómo y cuándo se pagará el préstamo..." disabled={isSubmitting}/></FormControl>
                     <FormMessage />
                   </FormItem>
                 )} />
 
-                <Button type="submit"><PlusCircle className="mr-2 h-4 w-4" />Registrar Préstamo</Button>
+                <Button type="submit" disabled={isSubmitting}>
+                    {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <PlusCircle className="mr-2 h-4 w-4" />}
+                    Registrar Préstamo
+                </Button>
             </form>
         </Form>
     );
@@ -117,19 +111,15 @@ function LoanForm({ companies, onAddLoan }: { companies: Company[], onAddLoan: (
 
 export default function SettingsPage() {
   const { toast } = useToast();
-  const { clients } = useCRMData();
+  const { 
+      clients, 
+      companies, bankAccounts, categories, transactions, loans, 
+      isLoadingCompanies, isLoadingBankAccounts, isLoadingCategories, isLoadingTransactions, isLoadingLoans,
+      addTransaction, addLoan
+  } = useCRMData();
   
-  // State for mock data
-  const [mockCompanies, setMockCompanies] = useState(initialCompanies);
-  const [mockAccounts, setMockAccounts] = useState(initialBankAccounts);
-  const [categoryGroups, setCategoryGroups] = useState(initialCategoryGroups);
-  const [transactions, setTransactions] = useState(initialTransactions);
-  const [loans, setLoans] = useState<InterCompanyLoan[]>(initialLoans);
-
-  // State for dialogs
   const [isTransactionDialogOpen, setIsTransactionDialogOpen] = useState(false);
   
-  // -- General Filter States --
   const [date, setDate] = useState<DateRange | undefined>({
     from: startOfMonth(subDays(new Date(), 30)),
     to: new Date()
@@ -138,10 +128,8 @@ export default function SettingsPage() {
   const [selectedCategoryId, setSelectedCategoryId] = useState<string>("all");
   const [selectedType, setSelectedType] = useState<string>("all");
   
-  // --- State for Auxiliaries ---
   const [auxiliaryType, setAuxiliaryType] = useState('clients');
   const [selectedAuxiliaryId, setSelectedAuxiliaryId] = useState('all');
-
 
   const handleDownloadReport = (reportName: string) => {
     toast({
@@ -150,16 +138,16 @@ export default function SettingsPage() {
     })
   }
 
-  const allCategories = useMemo(() => categoryGroups.flatMap(g => g.categories.map(c => ({...c, groupName: g.name, type: g.type}))), [categoryGroups]);
+  const allCategories = useMemo(() => categories.map(c => ({...c, groupName: c.type})), [categories]);
 
   const filteredTransactions = useMemo(() => {
+    if (isLoadingTransactions) return [];
     return transactions.filter(item => {
         const itemDate = new Date(item.date);
         const isDateInRange = date?.from && date.to ? isWithinInterval(itemDate, { start: startOfDay(date.from), end: endOfDay(date.to) }) : true;
         const isCompanyMatch = selectedCompanyId === 'all' || item.companyId === selectedCompanyId;
         
-        // Find category object by name to get its ID for filtering
-        const categoryObject = allCategories.find(c => c.name === item.category);
+        const categoryObject = allCategories.find(c => c.id === item.categoryId);
         const isCategoryMatch = selectedCategoryId === 'all' || (categoryObject && categoryObject.id === selectedCategoryId);
         
         let typeMatch = false;
@@ -175,7 +163,7 @@ export default function SettingsPage() {
         
         return isDateInRange && isCompanyMatch && isCategoryMatch && typeMatch;
     });
-  }, [date, selectedCompanyId, selectedCategoryId, selectedType, allCategories, transactions]);
+  }, [date, selectedCompanyId, selectedCategoryId, selectedType, allCategories, transactions, isLoadingTransactions]);
   
   const generalLedgerData = useMemo(() => {
     if (selectedAuxiliaryId === 'all') return [];
@@ -195,7 +183,7 @@ export default function SettingsPage() {
     const balances = allCategories.reduce((acc, category) => {
         if(category.type === 'Transferencia') return acc; // Ignore internal transfers for trial balance
         const total = filteredTransactions
-            .filter(t => t.category === category.name)
+            .filter(t => t.categoryId === category.id)
             .reduce((sum, t) => sum + Math.abs(t.amount), 0);
         
         if (total > 0) {
@@ -219,36 +207,38 @@ export default function SettingsPage() {
   }, [trialBalanceData]);
   
   const generalSummary = useMemo(() => {
-    const totalBalance = mockAccounts.reduce((sum, acc) => sum + acc.balance, 0);
+    const totalBalance = bankAccounts.reduce((sum, acc) => sum + acc.balance, 0);
     return {
       totalBalance,
-      companyCount: mockCompanies.length,
-      accountCount: mockAccounts.length,
+      companyCount: companies.length,
+      accountCount: bankAccounts.length,
     }
-  }, [mockAccounts, mockCompanies]);
+  }, [bankAccounts, companies]);
 
   const incomeStatementData = useMemo(() => {
       const revenueByCategory = filteredTransactions
           .filter(t => t.type === 'income')
           .reduce((acc, t) => {
-              acc[t.category] = (acc[t.category] || 0) + t.amount;
+              const categoryName = categories.find(c => c.id === t.categoryId)?.name || 'Desconocido';
+              acc[categoryName] = (acc[categoryName] || 0) + t.amount;
               return acc;
           }, {} as Record<string, number>);
       
       const totalRevenue = Object.values(revenueByCategory).reduce((sum, amount) => sum + amount, 0);
 
       const expensesByCategory = filteredTransactions
-          .filter(t => t.type === 'expense' && !t.category.includes('Transferencia'))
+          .filter(t => t.type === 'expense' && categories.find(c => c.id === t.categoryId)?.type !== 'Transferencia')
           .reduce((acc, t) => {
-              acc[t.category] = (acc[t.category] || 0) + Math.abs(t.amount);
+              const categoryName = categories.find(c => c.id === t.categoryId)?.name || 'Desconocido';
+              acc[categoryName] = (acc[categoryName] || 0) + Math.abs(t.amount);
               return acc;
           }, {} as Record<string, number>);
 
       const totalExpenses = Object.values(expensesByCategory).reduce((sum, amount) => sum + amount, 0);
-      const grossProfit = totalRevenue; // Simplified for now
+      const grossProfit = totalRevenue; 
       const incomeBeforeTax = grossProfit - totalExpenses;
 
-      const selectedCompany = mockCompanies.find(c => c.id === selectedCompanyId);
+      const selectedCompany = companies.find(c => c.id === selectedCompanyId);
       let calculatedTaxes: { name: string; rate: number; amount: number }[] = [];
       let totalTaxes = 0;
 
@@ -274,7 +264,7 @@ export default function SettingsPage() {
           netIncome,
           isTaxable: !!selectedCompany?.taxes?.length
       };
-  }, [filteredTransactions, selectedCompanyId, mockCompanies]);
+  }, [filteredTransactions, selectedCompanyId, companies, categories]);
   
    const periodSummary = useMemo(() => {
     return {
@@ -286,15 +276,13 @@ export default function SettingsPage() {
   const { balanceSheetData, cashFlowData } = useMemo(() => {
     const fromDate = date?.from ? startOfDay(date.from) : new Date(0);
     
-    // Calculate initial state before the selected period
     const priorTransactions = transactions.filter(t => new Date(t.date) < fromDate);
     const initialRetainedEarnings = priorTransactions
       .filter(t => t.type === 'income' || t.type === 'expense')
       .reduce((sum, t) => sum + t.amount, 0);
     
-    const initialCash = initialBankAccounts.reduce((sum, acc) => sum + acc.balance, 0) - priorTransactions.reduce((sum, t) => sum + t.amount, 0);
+    const initialCash = bankAccounts.reduce((sum, acc) => sum + (acc.initialBalance || 0), 0) + priorTransactions.reduce((sum, t) => sum + t.amount, 0);
 
-    // Cash flow during the period
     const cashFromOperations = filteredTransactions
         .filter(t => t.type === 'income' || t.type === 'expense')
         .reduce((sum, t) => sum + t.amount, 0);
@@ -327,36 +315,9 @@ export default function SettingsPage() {
     };
 
     return { balanceSheetData: bsData, cashFlowData: cfData };
-  }, [date, incomeStatementData.netIncome, initialBankAccounts, transactions, filteredTransactions]);
+  }, [date, incomeStatementData.netIncome, bankAccounts, transactions, filteredTransactions]);
 
-  const handleAddTransaction = (data: any) => {
-    const { amount, ...rest } = data;
-    const finalAmount = data.type === 'expense' ? -Math.abs(amount) : Math.abs(amount);
-    
-    const clientName = data.clientId && clients ? clients.find(c => c.id === data.clientId)?.name : undefined;
-
-    const newTransaction: Transaction = {
-        id: `trx-${Date.now()}`,
-        date: format(data.date, 'yyyy-MM-dd'),
-        amount: finalAmount,
-        ...rest,
-        clientName,
-    };
-
-    setTransactions(prev => [...prev, newTransaction].sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
-  };
-
-  const handleAddLoan = (data: Omit<InterCompanyLoan, 'id' | 'date' | 'status'>) => {
-    const newLoan: InterCompanyLoan = {
-      id: `loan-${Date.now()}`,
-      ...data,
-      date: new Date(),
-      status: 'En Curso',
-    };
-    setLoans(prev => [...prev, newLoan]);
-  };
-  
-  const getCompanyName = (id: string) => mockCompanies.find(c => c.id === id)?.name || 'Desconocido';
+  const getCompanyName = (id: string) => companies.find(c => c.id === id)?.name || 'Desconocido';
   
   return (
     <TooltipProvider>
@@ -430,7 +391,7 @@ export default function SettingsPage() {
                         <SelectTrigger className="w-full sm:w-[200px]"><SelectValue placeholder="Filtrar por empresa..." /></SelectTrigger>
                         <SelectContent>
                             <SelectItem value="all">Todas las Empresas</SelectItem>
-                            {mockCompanies.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+                            {companies.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
                         </SelectContent>
                         </Select>
                         <Select value={selectedCategoryId} onValueChange={setSelectedCategoryId}>
@@ -499,11 +460,12 @@ export default function SettingsPage() {
                                         </TableRow>
                                     </TableHeader>
                                     <TableBody>
-                                        {filteredTransactions.length > 0 ? filteredTransactions.map((trx) => (
+                                        {isLoadingTransactions ? <TableRow><TableCell colSpan={5} className="text-center h-24"><Loader2 className="mx-auto h-6 w-6 animate-spin"/></TableCell></TableRow> :
+                                        filteredTransactions.length > 0 ? filteredTransactions.map((trx) => (
                                             <TableRow key={trx.id}>
                                                 <TableCell>{format(new Date(trx.date), "dd/MM/yyyy")}</TableCell>
                                                 <TableCell className="font-medium">{trx.description}</TableCell>
-                                                <TableCell>{trx.category}</TableCell>
+                                                <TableCell>{categories.find(c => c.id === trx.categoryId)?.name || 'N/A'}</TableCell>
                                                 <TableCell>
                                                     <Badge variant={trx.type === 'income' ? 'default' : trx.type === 'expense' ? 'destructive' : 'secondary'}>
                                                         {trx.type === 'income' ? 'Ingreso' : trx.type.startsWith('transfer') ? 'Transferencia' : 'Egreso'}
@@ -585,7 +547,7 @@ export default function SettingsPage() {
                                                 <SelectItem value="all">Todos</SelectItem>
                                                 {auxiliaryType === 'clients' ? 
                                                     (clients && clients.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)) : 
-                                                    (mockAccounts.map(a => <SelectItem key={a.id} value={a.id}>{a.bankName} - {a.companyName}</SelectItem>))
+                                                    (bankAccounts.map(a => <SelectItem key={a.id} value={a.id}>{a.bankName} - {companies.find(c=>c.id === a.companyId)?.name}</SelectItem>))
                                                 }
                                             </SelectContent>
                                         </Select>
@@ -781,7 +743,7 @@ export default function SettingsPage() {
                                 <CardDescription>Cree un registro de un préstamo entre dos de sus empresas.</CardDescription>
                             </CardHeader>
                             <CardContent>
-                                <LoanForm companies={mockCompanies} onAddLoan={handleAddLoan} />
+                                <LoanForm companies={companies} onAddLoan={addLoan} />
                             </CardContent>
                         </Card>
                          <Card className="md:col-span-2">
@@ -801,11 +763,12 @@ export default function SettingsPage() {
                                         </TableRow>
                                     </TableHeader>
                                     <TableBody>
-                                    {loans.length > 0 ? loans.map(loan => (
+                                    {isLoadingLoans ? <TableRow><TableCell colSpan={5} className="text-center h-24"><Loader2 className="mx-auto h-6 w-6 animate-spin"/></TableCell></TableRow> :
+                                    loans.length > 0 ? loans.map(loan => (
                                         <TableRow key={loan.id}>
                                             <TableCell className="font-medium">{getCompanyName(loan.lenderCompanyId)}</TableCell>
                                             <TableCell className="font-medium">{getCompanyName(loan.borrowerCompanyId)}</TableCell>
-                                            <TableCell>{format(loan.date, 'dd/MM/yyyy')}</TableCell>
+                                            <TableCell>{format(loan.date.toDate(), 'dd/MM/yyyy')}</TableCell>
                                             <TableCell><Badge variant={loan.status === 'Pagado' ? 'default' : 'secondary'}>{loan.status}</Badge></TableCell>
                                             <TableCell className="text-right font-semibold">{loan.amount.toLocaleString('en-US', {style: 'currency', currency: 'USD'})}</TableCell>
                                         </TableRow>
@@ -826,11 +789,11 @@ export default function SettingsPage() {
       <AddTransactionDialog 
         isOpen={isTransactionDialogOpen}
         onOpenChange={setIsTransactionDialogOpen}
-        companies={mockCompanies}
-        accounts={mockAccounts}
+        companies={companies}
+        accounts={bankAccounts}
         categories={allCategories}
         clients={clients}
-        onTransactionAdd={handleAddTransaction}
+        onTransactionAdd={addTransaction}
       />
     </TooltipProvider>
   );
