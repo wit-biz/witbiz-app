@@ -5,11 +5,12 @@ import React, { useState, useMemo } from "react";
 import Link from "next/link";
 import { Header } from "@/components/header";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import { useCRMData, type ServiceWorkflow, type ClientRequirement, type Commission } from "@/contexts/CRMDataContext";
-import { Loader2, FileText, Workflow as WorkflowIcon, Download, Briefcase } from "lucide-react";
-import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/ui/card";
+import { useCRMData } from "@/contexts/CRMDataContext";
+import { Loader2, FileText, Download, Briefcase, Workflow as WorkflowIcon } from "lucide-react";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
+import { type Document } from "@/lib/types";
 
 function ServiceDocuments({ serviceId }: { serviceId: string }) {
   const { getDocumentsByServiceId } = useCRMData();
@@ -55,7 +56,10 @@ export default function ServicesPage() {
 
   const sortedWorkflows = useMemo(() => {
     if (!serviceWorkflows) return [];
-    return [...serviceWorkflows].sort((a,b) => (a.order || 0) - (b.order || 0));
+    // Filter out archived services before sorting
+    return [...serviceWorkflows]
+      .filter(s => s.status !== 'Archivado')
+      .sort((a,b) => (a.order || 0) - (b.order || 0));
   }, [serviceWorkflows]);
 
 
