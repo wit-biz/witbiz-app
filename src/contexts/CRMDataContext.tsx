@@ -178,21 +178,30 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
     useEffect(() => {
         if (user && !isLoadingUserProfile) {
             if (userProfile) {
-                // This is where you would fetch role permissions in a real app.
-                // For now, we'll assign full permissions for the "Director" role.
-                const rolePermissions: Partial<AppPermissions> = userProfile.role === 'Director' 
-                    ? {
+                let rolePermissions: Partial<AppPermissions> = {}; // Start with no permissions
+                
+                if (userProfile.role === 'Director') {
+                    rolePermissions = {
                         dashboard: true, clients_view: true, clients_create: true, clients_edit: true, clients_delete: true,
                         tasks_view: true, tasks_create: true, tasks_edit: true, tasks_delete: true,
                         crm_view: true, crm_edit: true, finances_view: true, admin_view: true, team_invite: true,
                         documents_view: true, services_view: true,
-                    }
-                    : { // Default "Colaborador" permissions
+                    };
+                } else if (userProfile.role === 'Administrador') {
+                    rolePermissions = {
+                        dashboard: true, clients_view: true, clients_create: true, clients_edit: true, clients_delete: false,
+                        tasks_view: true, tasks_create: true, tasks_edit: true, tasks_delete: false,
+                        crm_view: true, crm_edit: true, finances_view: false, admin_view: true, team_invite: true,
+                        documents_view: true, services_view: true,
+                    };
+                } else { // Default to 'Colaborador' or any other role
+                    rolePermissions = {
                         dashboard: true, clients_view: true, clients_create: true, clients_edit: false, clients_delete: false,
                         tasks_view: true, tasks_create: true, tasks_edit: true, tasks_delete: false,
                         crm_view: true, crm_edit: false, finances_view: false, admin_view: false, team_invite: false,
                         documents_view: true, services_view: true,
                     };
+                }
     
                 setCurrentUser({
                     uid: user.uid,
@@ -205,13 +214,12 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
     
             } else if (user) {
                 // First time user, profile doesn't exist yet. Create it.
-                // Only assign Director role to specific founding users.
-                const isDirector = ['witbiz.mx@gmail.com', 'saidsaigar@gmail.com'].includes(user.email || '');
+                const isFounder = ['witbiz.mx@gmail.com', 'saidsaigar@gmail.com'].includes(user.email || '');
                 const newUserProfile: AppUser = {
                     id: user.uid,
                     name: user.displayName || 'Nuevo Usuario',
                     email: user.email || '',
-                    role: isDirector ? 'Director' : 'Colaborador', // Default to Collaborator
+                    role: isFounder ? 'Director' : 'Colaborador',
                 };
                 setDocumentNonBlocking(doc(firestore, 'users', user.uid), newUserProfile, { merge: true });
             }
