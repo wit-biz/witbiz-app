@@ -146,13 +146,13 @@ service cloud.firestore {
      * @path /users/{userId}
      * @allow (get) A user can read their own profile.
      * @allow (create) An authenticated user can create their own profile document.
-     * @deny (list) No one can list all users in the system.
+     * @allow (list) An authenticated user can list all users to see team members.
      * @deny (update) An authenticated user cannot update another user's profile.
      * @principle Restricts access to a user's own data tree and prevents user enumeration.
      */
     match /users/{userId} {
       allow get: if isOwner(userId);
-      allow list: if false;
+      allow list: if isSignedIn();
       allow create: if isOwner(userId) && hasValidUserDataForCreate(userId);
       allow update: if isExistingOwner(userId) && hasImmutableUserFields();
       allow delete: if isExistingOwner(userId);
