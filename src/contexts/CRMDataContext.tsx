@@ -144,8 +144,8 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
     const userProfileRef = useMemoFirebase(() => user ? doc(firestore, 'users', user.uid) : null, [firestore, user]);
     const { data: userProfile, isLoading: isLoadingUserProfile } = useDoc<AppUser>(userProfileRef);
 
-    const usersCollection = useMemoFirebase(() => user ? collection(firestore, 'users') : null, [firestore, user]);
-    const { data: teamMembers = [], isLoading: isLoadingTeamMembers } = useCollection<AppUser>(usersCollection);
+    const usersCollectionQuery = useMemoFirebase(() => user ? query(collection(firestore, 'users')) : null, [firestore, user]);
+    const { data: teamMembers = [], isLoading: isLoadingTeamMembers } = useCollection<AppUser>(usersCollectionQuery);
 
 
     // --- Collections ---
@@ -181,23 +181,29 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
         if (user && !isLoadingUserProfile) {
             if (userProfile) {
                 let rolePermissions: Partial<AppPermissions> = {};
+                let userRole = userProfile.role || 'Colaborador';
+
+                // Special override for founders
+                if (['witbiz.mx@gmail.com', 'saidsaigar@gmail.com'].includes(user.email || '')) {
+                    userRole = 'Director';
+                }
                 
-                if (userProfile.role === 'Director') {
+                if (userRole === 'Director') {
                     rolePermissions = {
                         dashboard: true, clients_view: true, clients_create: true, clients_edit: true, clients_delete: true,
                         tasks_view: true, tasks_create: true, tasks_edit: true, tasks_delete: true,
                         crm_view: true, crm_edit: true, finances_view: true, admin_view: true, team_invite: true,
                         documents_view: true, services_view: true,
                     };
-                } else if (userProfile.role === 'Administrador') {
+                } else if (userRole === 'Administrador') {
                     rolePermissions = {
-                        dashboard: true, clients_view: true, clients_create: true, clients_edit: true, clients_delete: false,
-                        tasks_view: true, tasks_create: true, tasks_edit: true, tasks_delete: false,
+                        dashboard: true, clients_view: true, clients_create: true, clients_edit: true, clients_delete: true,
+                        tasks_view: true, tasks_create: true, tasks_edit: true, tasks_delete: true,
                         crm_view: true, crm_edit: true, finances_view: true, admin_view: true, team_invite: true,
                         documents_view: true, services_view: true,
                     };
-                } else if (userProfile.role === 'Colaborador') {
-                    rolePermissions = {
+                } else { // Default to 'Colaborador'
+                     rolePermissions = {
                         dashboard: true, clients_view: true, clients_create: true, clients_edit: false, clients_delete: false,
                         tasks_view: true, tasks_create: true, tasks_edit: true, tasks_delete: false,
                         crm_view: true, crm_edit: false, finances_view: false, admin_view: false, team_invite: false,
@@ -210,7 +216,7 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
                     email: user.email,
                     displayName: userProfile.name || user.displayName,
                     photoURL: userProfile.photoURL || user.photoURL,
-                    role: userProfile.role,
+                    role: userRole,
                     permissions: rolePermissions,
                 });
     
@@ -285,7 +291,7 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
     const restoreUser = async (userId: string): Promise<boolean> => {
         if (!firestore) return false;
         const docRef = doc(firestore, 'users', userId);
-        await setDocumentNonBlocking(docRef, { status: 'Activo', archivedAt: null }, { merge: true });
+        await setDocumentNonBlocking(docRef, { status: 'Activo', archivedAt: undefined }, { merge: true });
         return true;
     };
 
@@ -344,7 +350,7 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
     const restoreClient = async (clientId: string): Promise<boolean> => {
         if (!user || !firestore) return false;
         const docRef = doc(firestore, 'users', user.uid, 'clients', clientId);
-        await setDocumentNonBlocking(docRef, { status: 'Activo', archivedAt: null }, { merge: true });
+        await setDocumentNonBlocking(docRef, { status: 'Activo', archivedAt: undefined }, { merge: true });
         return true;
     };
     
@@ -395,7 +401,7 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
         await setDocumentNonBlocking(docRef, updates, { merge: true });
         
         if (updates.status === 'Completada') {
-            const completedTask = tasks.find(t => t.id === taskId);
+            const completedTask = { ...tasks.find(t => t.id === taskId), ...updates } as Task | undefined;
             if (completedTask) {
                 await checkAndAdvanceWorkflow(completedTask.clientId);
             }
@@ -407,7 +413,8 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
         const client = clients.find(c => c.id === clientId);
         if (!client || !client.currentWorkflowStageId) return;
 
-        await new Promise(resolve => setTimeout(resolve, 500));
+        // Give Firestore a moment to update the task list after completion
+        await new Promise(resolve => setTimeout(resolve, 1000));
 
         const clientTasks = tasks.filter(t => t.clientId === clientId);
         
@@ -415,22 +422,26 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
         const currentStage = allStagesForClient.find(s => s.id === client.currentWorkflowStageId);
         if (!currentStage) return;
 
-        const pendingTasksForCurrentStage = clientTasks.filter(task => {
-            const isTaskForThisStage = currentStage.actions.some(action => action.title === task.title);
-            return isTaskForThisStage && task.status === 'Pendiente';
+        // Check against the *latest* task list state
+        const updatedTasks = (await (useCollection(tasksCollection)).data) || tasks;
+        const pendingTasksForCurrentStage = (currentStage.actions || []).filter(action => {
+            return updatedTasks.some(task => task.title === action.title && task.clientId === clientId && task.status === 'Pendiente');
         });
-
+        
         if (pendingTasksForCurrentStage.length === 0) {
             const nextStage = findNextStage(client);
             if (nextStage) {
                 await updateClient(clientId, { currentWorkflowStageId: nextStage.id });
                 showNotification('info', 'Cliente Avanzó', `${client.name} ha avanzado a la etapa: ${nextStage.title}.`);
-
+                
                 const serviceForNextStage = serviceWorkflows.find(s => getAllStages(s.id).some(st => st.id === nextStage.id));
 
-                for (const action of nextStage.actions) {
-                    await addTask({ ...action, clientId: clientId, serviceId: serviceForNextStage?.id });
+                if (nextStage.actions) {
+                    for (const action of nextStage.actions) {
+                        await addTask({ ...action, clientId: clientId, serviceId: serviceForNextStage?.id });
+                    }
                 }
+
             } else {
                  showNotification('success', 'Flujo Completado', `¡${client.name} ha completado el flujo de trabajo!`);
             }
@@ -489,7 +500,7 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
     const restoreTask = async (taskId: string): Promise<boolean> => {
         if (!user || !firestore) return false;
         const docRef = doc(firestore, 'users', user.uid, 'tasks', taskId);
-        await setDocumentNonBlocking(docRef, { status: 'Pendiente', archivedAt: null }, { merge: true });
+        await setDocumentNonBlocking(docRef, { status: 'Pendiente', archivedAt: undefined }, { merge: true });
         return true;
     };
 
@@ -532,7 +543,7 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
     const restoreDocument = async (documentId: string): Promise<boolean> => {
         if (!user || !firestore) return false;
         const docRef = doc(firestore, 'users', user.uid, 'documents', documentId);
-        await setDocumentNonBlocking(docRef, { status: 'Activo', archivedAt: null }, { merge: true });
+        await setDocumentNonBlocking(docRef, { status: 'Activo', archivedAt: undefined }, { merge: true });
         return true;
     };
 
@@ -571,7 +582,7 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
     const restoreNote = async (noteId: string): Promise<boolean> => {
         if (!user || !firestore) return false;
         const docRef = doc(firestore, 'users', user.uid, 'notes', noteId);
-        await setDocumentNonBlocking(docRef, { status: 'Activo', archivedAt: null }, { merge: true });
+        await setDocumentNonBlocking(docRef, { status: 'Activo', archivedAt: undefined }, { merge: true });
         return true;
     };
 
@@ -650,7 +661,7 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
     const restoreService = async (serviceId: string): Promise<boolean> => {
         if (!user || !firestore) return false;
         const docRef = doc(firestore, 'users', user.uid, 'serviceWorkflows', serviceId);
-        await setDocumentNonBlocking(docRef, { status: 'Activo', archivedAt: null }, { merge: true });
+        await setDocumentNonBlocking(docRef, { status: 'Activo', archivedAt: undefined }, { merge: true });
         return true;
     };
 
@@ -680,7 +691,7 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
     const restorePromoter = async (promoterId: string): Promise<boolean> => {
         if (!user || !firestore) return false;
         const docRef = doc(firestore, 'users', user.uid, 'promoters', promoterId);
-        await setDocumentNonBlocking(docRef, { status: 'Activo', archivedAt: null }, { merge: true });
+        await setDocumentNonBlocking(docRef, { status: 'Activo', archivedAt: undefined }, { merge: true });
         return true;
     };
 
@@ -710,7 +721,7 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
     const restoreSupplier = async (supplierId: string): Promise<boolean> => {
         if (!user || !firestore) return false;
         const docRef = doc(firestore, 'users', user.uid, 'suppliers', supplierId);
-        await setDocumentNonBlocking(docRef, { status: 'Activo', archivedAt: null }, { merge: true });
+        await setDocumentNonBlocking(docRef, { status: 'Activo', archivedAt: undefined }, { merge: true });
         return true;
     };
 
