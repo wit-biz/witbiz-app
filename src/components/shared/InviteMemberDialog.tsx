@@ -68,12 +68,12 @@ export function InviteMemberDialog({ isOpen, onOpenChange, roles, onInvite }: In
       form.reset();
       toast({
         title: "Miembro Agregado",
-        description: `Se ha enviado una invitación a ${values.email}.`,
+        description: `Se ha creado el usuario para ${values.email}. Por favor, comparta la contraseña por defecto.`,
       });
     } catch (error: any) {
         toast({
             variant: "destructive",
-            title: "Error al invitar",
+            title: "Error al agregar miembro",
             description: error.message || "No se pudo agregar al miembro del equipo."
         });
     } finally {
@@ -92,7 +92,8 @@ export function InviteMemberDialog({ isOpen, onOpenChange, roles, onInvite }: In
             <DialogHeader>
               <DialogTitle>Agregar Nuevo Miembro</DialogTitle>
               <DialogDescription>
-                El nuevo usuario será registrado en la plataforma. La contraseña por defecto será: <br/>
+                Esto creará una cuenta para el usuario. Deberás proporcionarle la contraseña por defecto para su primer inicio de sesión:
+                <br/>
                 <span className="font-semibold text-foreground">WitBiz!123</span>
               </DialogDescription>
             </DialogHeader>
