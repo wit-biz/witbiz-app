@@ -30,11 +30,46 @@ import { PasswordInput } from "@/components/shared/PasswordInput";
 import { useUser, useAuth } from "@/firebase";
 import { initiateSignOut } from "@/firebase/non-blocking-login";
 import { useCRMData } from "@/contexts/CRMDataContext";
+import React, { useState, useEffect } from "react";
+import { useToast } from "@/hooks/use-toast";
 
 export default function ProfilePage() {
   const { user, isUserLoading } = useUser();
-  const { currentUser } = useCRMData();
+  const { currentUser, updateUser } = useCRMData();
   const auth = useAuth();
+  const { toast } = useToast();
+
+  const [isSavingName, setIsSavingName] = useState(false);
+  const [fullName, setFullName] = useState('');
+
+  useEffect(() => {
+    if (currentUser?.displayName) {
+      setFullName(currentUser.displayName);
+    } else if (user?.displayName) {
+      setFullName(user.displayName);
+    }
+  }, [currentUser, user]);
+
+  const handleSaveName = async () => {
+    if (!currentUser || !fullName.trim() || fullName.trim() === currentUser.displayName) return;
+
+    setIsSavingName(true);
+    const success = await updateUser(currentUser.uid, { name: fullName.trim() });
+    if (success) {
+      toast({
+        title: "Nombre Actualizado",
+        description: "Tu nombre de perfil ha sido guardado.",
+      });
+    } else {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "No se pudo actualizar tu nombre.",
+      });
+    }
+    setIsSavingName(false);
+  };
+
 
   if (isUserLoading || !user) {
     return (
@@ -126,9 +161,17 @@ export default function ProfilePage() {
                         <CardContent className="space-y-4">
                             <div>
                                 <Label htmlFor="fullName">Nombre Completo</Label>
-                                <Input id="fullName" defaultValue={currentUser?.displayName || user.displayName || ''} />
+                                <Input 
+                                  id="fullName" 
+                                  value={fullName}
+                                  onChange={(e) => setFullName(e.target.value)}
+                                  disabled={isSavingName}
+                                />
                             </div>
-                             <Button><Save className="mr-2 h-4 w-4" />Guardar Nombre</Button>
+                             <Button onClick={handleSaveName} disabled={isSavingName}>
+                                {isSavingName ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Save className="mr-2 h-4 w-4" />}
+                                Guardar Nombre
+                             </Button>
                         </CardContent>
                     </Card>
                     <Card>
