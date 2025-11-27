@@ -113,6 +113,7 @@ export default function TeamPage() {
     const canInvite = currentUser?.permissions?.team_invite ?? false;
 
     const sortedTeamMembers = useMemo(() => {
+        if (!teamMembers) return [];
         const roleOrder = {
             'Director': 1,
             'Administrador': 2,
