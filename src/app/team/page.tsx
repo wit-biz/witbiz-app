@@ -29,6 +29,7 @@ import {
 } from "@/components/ui/accordion";
 import { useCRMData } from "@/contexts/CRMDataContext";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { useToast } from "@/hooks/use-toast";
 
 const allPermissions: { key: keyof AppPermissions; label: string; section: string }[] = [
     // Dashboard
@@ -109,6 +110,7 @@ export default function TeamPage() {
     const [isInviteDialogOpen, setIsInviteDialogOpen] = useState(false);
     const [roles, setRoles] = useState(initialRoles);
     const { currentUser, teamMembers, registerUser } = useCRMData();
+    const { toast } = useToast();
 
     const canInvite = currentUser?.permissions?.team_invite ?? false;
 
@@ -137,6 +139,10 @@ export default function TeamPage() {
                     : role
             )
         );
+        toast({
+            title: "Permiso Actualizado",
+            description: `Se ha actualizado un permiso para el rol ${roleId}.`,
+        });
     };
     
     const permissionsBySection = useMemo(() => {
@@ -226,13 +232,18 @@ export default function TeamPage() {
           </TabsContent>
           <TabsContent value="permissions" className="mt-6">
              <Accordion type="single" collapsible className="w-full space-y-4">
-                {roles.filter(r => r.id !== 'director' && r.id !== 'promoter').map((role) => (
+                {roles.filter(r => r.id !== 'promoter').map((role) => (
                     <AccordionItem value={role.id} key={role.id} asChild>
                         <Card>
-                            <AccordionTrigger className="w-full p-0 [&_svg]:ml-auto [&_svg]:mr-4">
+                            <AccordionTrigger className="w-full p-0 [&_svg]:ml-auto [&_svg]:mr-4" disabled={role.id === 'director'}>
                                 <CardHeader className="flex-1">
                                     <CardTitle className="flex items-center gap-2 text-left"><KeyRound className="h-5 w-5 text-accent"/>{role.name}</CardTitle>
-                                    <CardDescription className="text-left">Configure los permisos para el rol de {role.name}.</CardDescription>
+                                    <CardDescription className="text-left">
+                                        {role.id === 'director' 
+                                            ? 'Rol con acceso total. No se puede modificar.'
+                                            : `Configure los permisos para el rol de ${role.name}.`
+                                        }
+                                    </CardDescription>
                                 </CardHeader>
                             </AccordionTrigger>
                             <AccordionContent>
@@ -248,6 +259,7 @@ export default function TeamPage() {
                                                         id={`perm-${role.id}-${permission.key}`}
                                                         checked={role.permissions[permission.key] || false}
                                                         onCheckedChange={(value) => handlePermissionChange(role.id, permission.key, value)}
+                                                        disabled={role.id === 'director'}
                                                     />
                                                 </div>
                                             ))}
@@ -267,7 +279,7 @@ export default function TeamPage() {
     <InviteMemberDialog
         isOpen={isInviteDialogOpen}
         onOpenChange={setIsInviteDialogOpen}
-        roles={roles.map(r => r.name).filter(name => name !== 'Director' && name !== 'Promotor')}
+        roles={roles.map(r => r.name).filter(name => name !== 'Director' && name !== 'Promoter')}
         onInvite={handleInvite}
     />
     </>
