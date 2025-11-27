@@ -6,7 +6,8 @@
  *
  * Core Philosophy:
  * A user has complete control over their own data, and no access to anyone else's.
- * All operations require a user to be authenticated. There is no public data.
+ * All operations require a user to be authenticated. There is no public data,
+ * with the explicit exception of the `promoters` collection for login purposes.
  *
  * Data Structure:
  * All application data is hierarchically nested under a user-specific path:
@@ -166,6 +167,16 @@ service cloud.firestore {
     //-------------------------------------------------------------------------
     //  Collection Rules
     //-------------------------------------------------------------------------
+    
+    /**
+     * @description Public read access for the promoter login page.
+     *              Write access is restricted to admins/directors.
+     */
+    match /promoters/{promoterId} {
+        allow get, list: if true;
+        allow create, update, delete: if isDirector() || isAdmin();
+    }
+
 
     /**
      * @description Manages user profile documents.
@@ -222,13 +233,6 @@ service cloud.firestore {
           allow get, list, create, update, delete: if isOwner(userId);
       }
 
-      /**
-       * @description Manages promoters for a user.
-       * @path /users/{userId}/promoters/{promoterId}
-       */
-       match /promoters/{promoterId} {
-          allow get, list, create, update, delete: if isOwner(userId);
-       }
        
       /**
        * @description Manages suppliers for a user.
