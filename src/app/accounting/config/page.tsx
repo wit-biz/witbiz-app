@@ -1,11 +1,10 @@
 
-
 "use client";
 
 import React, { useState } from "react";
 import Link from "next/link";
 import { Header } from "@/components/header";
-import { ArrowLeft, Building, Landmark, ListPlus, PlusCircle, Trash2, Percent } from "lucide-react";
+import { ArrowLeft, Building, Landmark, ListPlus, PlusCircle, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";

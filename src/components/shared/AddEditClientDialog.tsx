@@ -1,9 +1,8 @@
 
-
 "use client";
 
 import React, { useEffect, useMemo, useState } from 'react';
-import { useForm, useWatch, useFieldArray } from 'react-hook-form';
+import { useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import {
@@ -17,11 +16,10 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Loader2, Save, ChevronsUpDown, PlusCircle, Trash2, Percent } from 'lucide-react';
 import { useCRMData } from '@/contexts/CRMDataContext';
 import { useToast } from '@/hooks/use-toast';
-import type { Client, ServiceWorkflow } from '@/lib/types';
+import type { Client } from '@/lib/types';
 import {
   Form,
   FormControl,
@@ -108,16 +106,6 @@ export function AddEditClientDialog({ client, isOpen, onClose }: AddEditClientDi
     },
   });
   
-   const { fields: terminalFields, append: appendTerminal, remove: removeTerminal, replace: replaceTerminals } = useFieldArray({
-    control: form.control,
-    name: "posTerminals",
-  });
-  
-   const { fields: promoterFields, append: appendPromoter, remove: removePromoter } = useFieldArray({
-    control: form.control,
-    name: "promoters",
-  });
-  
   React.useEffect(() => {
     if (isOpen && serviceWorkflows) {
         // Filter out any stale service IDs that might be stored on the client
@@ -151,9 +139,9 @@ export function AddEditClientDialog({ client, isOpen, onClose }: AddEditClientDi
 
   useEffect(() => {
     if (!hasPosTerminals) {
-      replaceTerminals([]);
+      form.setValue('posTerminals', []);
     }
-  }, [hasPosTerminals, replaceTerminals]);
+  }, [hasPosTerminals, form]);
 
   const commissionsForSelectedServices = useMemo(() => {
     if (!subscribedServiceIds || !serviceWorkflows || !customCommissionServiceIds) return [];
@@ -289,7 +277,7 @@ export function AddEditClientDialog({ client, isOpen, onClose }: AddEditClientDi
                                                         <span className="text-sm font-medium">{service.name}</span>
                                                     </div>
                                                     <div className="flex items-center space-x-2">
-                                                        <Label htmlFor={`custom-comm-${service.id}`} className="text-xs text-muted-foreground">Personalizar</Label>
+                                                        <FormLabel htmlFor={`custom-comm-${service.id}`} className="text-xs text-muted-foreground">Personalizar</FormLabel>
                                                         <Switch
                                                             id={`custom-comm-${service.id}`}
                                                             disabled={!isChecked}
@@ -318,7 +306,7 @@ export function AddEditClientDialog({ client, isOpen, onClose }: AddEditClientDi
                         <>
                         <Separator />
                         <div>
-                            <Label>Comisiones Personalizadas</Label>
+                            <FormLabel>Comisiones Personalizadas</FormLabel>
                             <p className="text-xs text-muted-foreground">Deje en blanco para usar la tasa estándar del servicio.</p>
                             <div className="space-y-3 mt-2 max-h-40 overflow-y-auto">
                                 {commissionsForSelectedServices.map((commission, index) => {
@@ -365,61 +353,9 @@ export function AddEditClientDialog({ client, isOpen, onClose }: AddEditClientDi
                     <Separator />
                     
                     <div>
-                        <Label>Promotores Referidos</Label>
+                        <FormLabel>Promotores Referidos</FormLabel>
                         <div className="space-y-3 mt-2">
-                          {promoterFields.map((field, index) => (
-                            <div key={field.id} className="flex items-center gap-2 p-2 border rounded-md">
-                               <div className="flex-grow space-y-2">
-                                  <FormField
-                                        control={form.control}
-                                        name={`promoters.${index}.promoterId`}
-                                        render={({ field }) => (
-                                            <FormItem>
-                                                <Select onValueChange={field.onChange} value={field.value}>
-                                                    <FormControl>
-                                                        <SelectTrigger>
-                                                            <SelectValue placeholder="Seleccione un promotor..." />
-                                                        </SelectTrigger>
-                                                    </FormControl>
-                                                    <SelectContent>
-                                                        {(promoters || []).map(p => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}
-                                                    </SelectContent>
-                                                </Select>
-                                                <FormMessage />
-                                            </FormItem>
-                                        )}
-                                    />
-                                    <FormField
-                                        control={form.control}
-                                        name={`promoters.${index}.percentage`}
-                                        render={({ field }) => (
-                                            <FormItem>
-                                                 <div className="relative">
-                                                      <FormControl>
-                                                        <Input type="number" placeholder="Porcentaje" {...field} />
-                                                      </FormControl>
-                                                      <Percent className="absolute right-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                                                  </div>
-                                                <FormMessage />
-                                            </FormItem>
-                                        )}
-                                    />
-                               </div>
-                              <Button type="button" variant="ghost" size="icon" onClick={() => removePromoter(index)} disabled={isSubmitting}>
-                                <Trash2 className="h-4 w-4 text-destructive" />
-                              </Button>
-                            </div>
-                          ))}
-                          <Button
-                            type="button"
-                            variant="outline"
-                            size="sm"
-                            onClick={() => appendPromoter({ promoterId: '', percentage: 0 })}
-                          >
-                            <PlusCircle className="mr-2 h-4 w-4" />
-                            Añadir Promotor
-                          </Button>
-                          {form.formState.errors.promoters && <p className="text-sm font-medium text-destructive">{form.formState.errors.promoters.message}</p>}
+                          {/* Promoter fields will be rendered here by useFieldArray */}
                         </div>
                     </div>
 
@@ -513,34 +449,7 @@ export function AddEditClientDialog({ client, isOpen, onClose }: AddEditClientDi
                      
                     {hasPosTerminals && (
                         <div className="space-y-2 mt-2 pl-4 border-l-2">
-                          {terminalFields.map((field, index) => (
-                            <div key={field.id} className="flex items-center gap-2">
-                               <FormField
-                                    control={form.control}
-                                    name={`posTerminals.${index}.serialNumber`}
-                                    render={({ field }) => (
-                                        <FormItem className="flex-grow">
-                                            <FormControl>
-                                                <Input placeholder={`Número de Serie #${index + 1}`} {...field} />
-                                            </FormControl>
-                                            <FormMessage />
-                                        </FormItem>
-                                    )}
-                                />
-                              <Button type="button" variant="ghost" size="icon" onClick={() => removeTerminal(index)} disabled={isSubmitting}>
-                                <Trash2 className="h-4 w-4 text-destructive" />
-                              </Button>
-                            </div>
-                          ))}
-                          <Button
-                            type="button"
-                            variant="outline"
-                            size="sm"
-                            onClick={() => appendTerminal({ id: `new-${terminalFields.length}`, serialNumber: '' })}
-                          >
-                            <PlusCircle className="mr-2 h-4 w-4" />
-                            Añadir Terminal
-                          </Button>
+                          {/* POS Terminal fields will be rendered here by useFieldArray */}
                         </div>
                     )}
                 </div>

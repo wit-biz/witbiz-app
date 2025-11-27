@@ -1,21 +1,18 @@
 
-
 "use client";
 
-import React, { useState, useEffect, useMemo, type ChangeEvent, useCallback } from "react";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { Header } from "@/components/header";
 import { Button } from "@/components/ui/button"; 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import { PlusCircle, AlertTriangle, CalendarClock, Loader2, Briefcase, Clock, CalendarDays, Info, CheckCircle2, ListTodo, History, BellRing } from "lucide-react";
+import { PlusCircle, AlertTriangle, Loader2, Briefcase, Clock, CalendarDays, Info, CheckCircle2, ListTodo, History } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Calendar } from "@/components/ui/calendar";
 import { format, differenceInDays } from "date-fns";
 import { es } from "date-fns/locale";
-import type { DayModifiers } from "react-day-picker";
-import { cn, parseDateString, formatDateString, formatTimeString } from "@/lib/utils"; 
+import { cn, parseDateString, formatTimeString } from "@/lib/utils"; 
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { useToast } from "@/hooks/use-toast";
 import { TaskDetailDialog } from "@/components/shared/TaskDetailDialog";
 import { useCRMData } from "@/contexts/CRMDataContext";
 import { useTasksContext } from "@/contexts/TasksContext";
@@ -24,7 +21,7 @@ import { AddTaskDialog } from "@/components/shared/AddTaskDialog";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 
-const MemoizedTaskItemDisplay = React.memo(function TaskItemDisplay({ task, icon: Icon, iconColor = "text-gray-500", showDate = true, isClient, onClickHandler, showReminder = false }: { task: Task; icon?: React.ElementType; iconColor?: string, showDate?: boolean, isClient: boolean, onClickHandler: (task: Task) => void, showReminder?: boolean }) {
+const MemoizedTaskItemDisplay = React.memo(function TaskItemDisplay({ task, icon: Icon, iconColor = "text-gray-500", showDate = true, isClient, onClickHandler }: { task: Task; icon?: React.ElementType; iconColor?: string, showDate?: boolean, isClient: boolean, onClickHandler: (task: Task) => void }) {
   const taskDueDate = parseDateString(task.dueDate);
   return ( 
     <div 
@@ -35,19 +32,7 @@ const MemoizedTaskItemDisplay = React.memo(function TaskItemDisplay({ task, icon
       onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') onClickHandler(task); }} 
       aria-label={`Ver detalles de la tarea: ${task.title}`} 
     > 
-      <div className="flex flex-col items-center gap-1">
-        {Icon && <Icon className={`h-5 w-5 mt-1 flex-shrink-0 ${iconColor}`} />}
-        {showReminder && (
-          <Tooltip>
-            <TooltipTrigger>
-              <BellRing className="h-4 w-4 text-amber-500" />
-            </TooltipTrigger>
-            <TooltipContent>
-              <p>Se envió un recordatorio al responsable.</p>
-            </TooltipContent>
-          </Tooltip>
-        )}
-      </div>
+      {Icon && <Icon className={`h-5 w-5 mt-1 flex-shrink-0 ${iconColor}`} />}
       <div className="flex-grow min-w-0"> 
         <p className="font-semibold text-card-foreground truncate">{task.title}</p> 
         <div className="flex items-center gap-2 text-xs text-muted-foreground mt-1">
@@ -96,8 +81,6 @@ const MemoizedTaskItemDisplay = React.memo(function TaskItemDisplay({ task, icon
 MemoizedTaskItemDisplay.displayName = 'TaskItemDisplay';
 
 export default function TasksPage() {
-  const { toast } = useToast();
-
   const { clients, tasks: allTasks, isLoadingTasks, currentUser, addTask, updateTask, deleteTask } = useCRMData();
   const { setHasTasksForToday } = useTasksContext();
 
@@ -283,9 +266,9 @@ export default function TasksPage() {
   ];
 
   const postponedSections = [
-    { id: "postponed-tasks-10", title: "Pospuestas: Nivel 1 (10+ días)", tasks: postponedTasks10, color: "border-amber-300 bg-amber-50 dark:bg-amber-950/50", showReminder: true },
-    { id: "postponed-tasks-20", title: "Pospuestas: Nivel 2 (20+ días)", tasks: postponedTasks20, color: "border-orange-300 bg-orange-50 dark:bg-orange-950/50", showReminder: true },
-    { id: "postponed-tasks-30", title: "Pospuestas: Nivel 3 (30+ días)", tasks: postponedTasks30, color: "border-red-300 bg-red-50 dark:bg-red-950/50", showReminder: true },
+    { id: "postponed-tasks-10", title: "Pospuestas: Nivel 1 (10+ días)", tasks: postponedTasks10, color: "border-amber-300 bg-amber-50 dark:bg-amber-950/50" },
+    { id: "postponed-tasks-20", title: "Pospuestas: Nivel 2 (20+ días)", tasks: postponedTasks20, color: "border-orange-300 bg-orange-50 dark:bg-orange-950/50" },
+    { id: "postponed-tasks-30", title: "Pospuestas: Nivel 3 (30+ días)", tasks: postponedTasks30, color: "border-red-300 bg-red-50 dark:bg-red-950/50" },
   ];
 
   const handleAccordionChange = (value: string) => {
@@ -389,7 +372,7 @@ export default function TasksPage() {
                                      </AccordionTrigger>
                                      <AccordionContent>
                                         <CardContent className="space-y-3 pt-0 p-3">
-                                            {pSection.tasks.map(task => <MemoizedTaskItemDisplay key={task.id} task={task} icon={History} iconColor="text-amber-500" showDate isClient={isClient} onClickHandler={handleTaskClick} showReminder={pSection.showReminder} />)}
+                                            {pSection.tasks.map(task => <MemoizedTaskItemDisplay key={task.id} task={task} icon={History} iconColor="text-amber-500" showDate isClient={isClient} onClickHandler={handleTaskClick} />)}
                                         </CardContent>
                                      </AccordionContent>
                                   </Card>
@@ -428,5 +411,3 @@ export default function TasksPage() {
     </TooltipProvider>
   );
 }
-
-    

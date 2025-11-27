@@ -1,7 +1,7 @@
 
 "use client";
 
-import React, { useState, useMemo, useEffect, useRef, type ChangeEvent, type ReactNode, useCallback } from "react";
+import React, { useState, useMemo, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { Header } from "@/components/header";
 import {
@@ -11,35 +11,14 @@ import {
   CardHeader,
   CardTitle
 } from "@/components/ui/card";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-} from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Input } from "@/components/ui/input";
 import {
   Activity,
-  ChevronRight,
-  ChevronDown,
-  ListChecks,
-  Info,
   Search,
   CheckSquare,
   Loader2,
-  Target,
-  Clock,
   Briefcase,
-  MailWarning,
-  Send,
+  ListChecks,
   Users,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -47,8 +26,6 @@ import type { Client, Task, WorkflowStage } from '@/lib/types';
 import { useTasksContext } from "@/contexts/TasksContext";
 import { TaskDetailDialog } from "@/components/shared/TaskDetailDialog";
 import { useCRMData } from "@/contexts/CRMDataContext";
-import { useToast } from "@/hooks/use-toast";
-
 
 const StageNumberIcon = ({ index, variant = 'default' }: { index: number, variant?: 'default' | 'large' | 'dialog' }) => {
   const variants = {
@@ -64,7 +41,7 @@ const StageNumberIcon = ({ index, variant = 'default' }: { index: number, varian
 };
 
 export default function InicioPage() {
-  const { clients, isLoadingClients, tasks, serviceWorkflows, isLoadingWorkflows, getObjectiveById, currentUser } = useCRMData();
+  const { clients, isLoadingClients, tasks, serviceWorkflows, isLoadingWorkflows, currentUser } = useCRMData();
   const { setHasTasksForToday } = useTasksContext();
 
   const [currentClientDateForDashboard, setCurrentClientDateForDashboard] = useState<Date | null>(null);
@@ -83,8 +60,8 @@ export default function InicioPage() {
   
   const workflowStagesForDisplay: WorkflowStage[] = useMemo(() => {
       if (!serviceWorkflows || serviceWorkflows.length === 0) return [];
-      // Flatten all stages from all sub-services of all services
-      return serviceWorkflows.flatMap(sw => sw.subServices.flatMap(ss => ss.stages)).sort((a,b) => a.order - b.order);
+      // Flatten all stages from all services
+      return serviceWorkflows.flatMap(sw => sw.stages || []).sort((a,b) => a.order - b.order);
   }, [serviceWorkflows]);
 
   const clientsByStage = useMemo(() => {

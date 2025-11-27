@@ -1,7 +1,7 @@
 
 "use client";
 
-import React, { useState, useMemo, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { useSearchParams, useRouter } from "next/navigation";
 import { Header } from "@/components/header";
@@ -12,7 +12,6 @@ import { PromotersTab } from "@/components/shared/PromotersTab";
 import { SuppliersTab } from "@/components/shared/SuppliersTab";
 import { useCRMData } from "@/contexts/CRMDataContext";
 import { ClientDetailView } from "@/components/shared/ClientDetailView";
-import type { Client, Promoter, Supplier } from "@/lib/types";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { PromoterDetailView } from "@/components/shared/PromoterDetailView";

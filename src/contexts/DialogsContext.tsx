@@ -4,12 +4,12 @@
 import React, { createContext, useContext, useState, useMemo, type ReactNode } from 'react';
 import { type Client, type Task } from '@/lib/types';
 import { AddEditClientDialog } from '@/components/shared/AddEditClientDialog';
-import { SmartDocumentUploadDialog } from '@/components/shared/SmartDocumentUploadDialog';
 import { useRouter } from 'next/navigation';
 import { AddTaskDialog } from '@/components/shared/AddTaskDialog';
 import { AddPromoterDialog } from '@/components/shared/AddPromoterDialog';
 import { AddSupplierDialog } from '@/components/shared/AddSupplierDialog';
 import { useCRMData } from './CRMDataContext';
+import { SmartDocumentUploadDialog } from '@/components/shared/SmartDocumentUploadDialog';
 
 
 interface DialogsContextType {

@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import React, { useState } from "react";
@@ -11,7 +10,7 @@ import { ClientsTab } from "@/components/shared/ClientsTab";
 import { PromotersTab } from "@/components/shared/PromotersTab";
 import { SuppliersTab } from "@/components/shared/SuppliersTab";
 import { useCRMData } from "@/contexts/CRMDataContext";
-import { AddEditClientDialog } from "@/components/shared/AddEditClientDialog";
+import { useDialogs } from "@/contexts/DialogsContext";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { AddSupplierDialog } from "@/components/shared/AddSupplierDialog";
@@ -26,9 +25,14 @@ export default function DirectoryConfigPage() {
     currentUser 
   } = useCRMData();
   
-  const [isAddClientDialogOpen, setIsAddClientDialogOpen] = useState(false);
-  const [isAddSupplierDialogOpen, setIsAddSupplierDialogOpen] = useState(false);
-  const [isAddPromoterDialogOpen, setIsAddPromoterDialogOpen] = useState(false);
+  const { 
+    setIsAddClientDialogOpen, 
+    setIsAddSupplierDialogOpen, 
+    setIsAddPromoterDialogOpen 
+  } = useDialogs();
+
+  const [isAddSupplierDialogOpen, internalSetIsAddSupplierDialogOpen] = useState(false);
+  const [isAddPromoterDialogOpen, internalSetIsAddPromoterDialogOpen] = useState(false);
 
   const canCreate = currentUser?.permissions.clients_create ?? true;
 
@@ -36,9 +40,9 @@ export default function DirectoryConfigPage() {
     if (type === 'client') {
       setIsAddClientDialogOpen(true);
     } else if (type === 'supplier') {
-        setIsAddSupplierDialogOpen(true);
+        internalSetIsAddSupplierDialogOpen(true);
     } else if (type === 'promoter') {
-        setIsAddPromoterDialogOpen(true);
+        internalSetIsAddPromoterDialogOpen(true);
     }
   };
 
@@ -147,22 +151,16 @@ export default function DirectoryConfigPage() {
             </Tabs>
         </main>
       </div>
-      
-      <AddEditClientDialog
-        client={null}
-        isOpen={isAddClientDialogOpen}
-        onClose={() => setIsAddClientDialogOpen(false)}
-      />
 
       <AddSupplierDialog
         isOpen={isAddSupplierDialogOpen}
-        onClose={() => setIsAddSupplierDialogOpen(false)}
+        onClose={() => internalSetIsAddSupplierDialogOpen(false)}
         onAdd={handleAddSupplier}
       />
 
       <AddPromoterDialog
         isOpen={isAddPromoterDialogOpen}
-        onClose={() => setIsAddPromoterDialogOpen(false)}
+        onClose={() => internalSetIsAddPromoterDialogOpen(false)}
         onAdd={handleAddPromoter as any}
       />
     </>

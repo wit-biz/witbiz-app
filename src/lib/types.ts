@@ -1,5 +1,4 @@
 
-
 import { type LucideIcon } from "lucide-react";
 
 export type PosTerminal = {
@@ -42,6 +41,7 @@ export type Client = {
   customCommissions?: CustomCommission[];
   submittedRequirements?: SubmittedRequirement[];
   archivedAt?: any;
+  customCommissionServiceIds?: string[];
 };
 
 export type Promoter = {
