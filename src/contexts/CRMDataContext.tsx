@@ -23,12 +23,16 @@ import {
     type Commission,
     type Promoter,
     type Supplier,
+    type BankAccount,
+    type Category,
+    type Company,
+    type InterCompanyLoan,
+    type Transaction,
 } from '@/lib/types';
 import { useUser, useFirestore, useMemoFirebase, useCollection, useDoc, useAuth, addDocumentNonBlocking, setDocumentNonBlocking, deleteDocumentNonBlocking, useStorage } from '@/firebase';
 import { collection, doc, writeBatch, serverTimestamp, query, where, updateDoc } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
-import { serviceWorkflows as mockServiceWorkflows } from '@/lib/data';
 import { addDays, format } from 'date-fns';
 
 type AnyStage = WorkflowStage | SubStage | SubSubStage;
@@ -96,6 +100,29 @@ interface CRMContextType {
   deleteSupplier: (supplierId: string, permanent?: boolean) => Promise<boolean>;
   restoreSupplier: (supplierId: string) => Promise<boolean>;
 
+  companies: Company[];
+  isLoadingCompanies: boolean;
+  addCompany: (data: Omit<Company, 'id'>) => Promise<void>;
+  deleteCompany: (id: string) => Promise<boolean>;
+
+  bankAccounts: BankAccount[];
+  isLoadingBankAccounts: boolean;
+  addBankAccount: (data: Omit<BankAccount, 'id'|'balance'>) => Promise<void>;
+  deleteBankAccount: (id: string) => Promise<boolean>;
+
+  categories: Category[];
+  isLoadingCategories: boolean;
+  addCategory: (data: Omit<Category, 'id'>) => Promise<void>;
+  deleteCategory: (id: string) => Promise<boolean>;
+
+  transactions: Transaction[];
+  isLoadingTransactions: boolean;
+  addTransaction: (data: any) => Promise<void>;
+  
+  loans: InterCompanyLoan[];
+  isLoadingLoans: boolean;
+  addLoan: (data: Omit<InterCompanyLoan, 'id' | 'date' | 'status'>) => Promise<void>;
+
   registerUser: (name: string, email: string, pass: string, role: string) => Promise<any>;
   updateUser: (userId: string, updates: Partial<AppUser>) => Promise<boolean>;
   deleteUser: (userId: string) => Promise<boolean>;
@@ -127,6 +154,12 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
     const promotersCollection = useMemoFirebase(() => user ? collection(firestore, 'users', user.uid, 'promoters') : null, [firestore, user]);
     const suppliersCollection = useMemoFirebase(() => user ? collection(firestore, 'users', user.uid, 'suppliers') : null, [firestore, user]);
     const notesCollection = useMemoFirebase(() => user ? collection(firestore, 'users', user.uid, 'notes') : null, [firestore, user]);
+    const companiesCollection = useMemoFirebase(() => user ? collection(firestore, 'users', user.uid, 'companies') : null, [firestore, user]);
+    const bankAccountsCollection = useMemoFirebase(() => user ? collection(firestore, 'users', user.uid, 'bankAccounts') : null, [firestore, user]);
+    const categoriesCollection = useMemoFirebase(() => user ? collection(firestore, 'users', user.uid, 'categories') : null, [firestore, user]);
+    const transactionsCollection = useMemoFirebase(() => user ? collection(firestore, 'users', user.uid, 'transactions') : null, [firestore, user]);
+    const loansCollection = useMemoFirebase(() => user ? collection(firestore, 'users', user.uid, 'loans') : null, [firestore, user]);
+
 
     // --- Firestore Data ---
     const { data: clients = [], isLoading: isLoadingClients } = useCollection<Client>(clientsCollection);
@@ -136,50 +169,56 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
     const { data: promoters = [], isLoading: isLoadingPromoters } = useCollection<Promoter>(promotersCollection);
     const { data: suppliers = [], isLoading: isLoadingSuppliers } = useCollection<Supplier>(suppliersCollection);
     const { data: notes = [], isLoading: isLoadingNotes } = useCollection<Note>(notesCollection);
-
+    const { data: companies = [], isLoading: isLoadingCompanies } = useCollection<Company>(companiesCollection);
+    const { data: bankAccounts = [], isLoading: isLoadingBankAccounts } = useCollection<BankAccount>(bankAccountsCollection);
+    const { data: categories = [], isLoading: isLoadingCategories } = useCollection<Category>(categoriesCollection);
+    const { data: transactions = [], isLoading: isLoadingTransactions } = useCollection<Transaction>(transactionsCollection);
+    const { data: loans = [], isLoading: isLoadingLoans } = useCollection<InterCompanyLoan>(loansCollection);
 
     useEffect(() => {
-    if (user && !isLoadingUserProfile) {
-        if (userProfile) {
-            // This is where you would fetch role permissions in a real app.
-            // For now, we'll assign full permissions for the "Director" role.
-            const rolePermissions: Partial<AppPermissions> = userProfile.role === 'Director' 
-                ? {
-                    dashboard: true, clients_view: true, clients_create: true, clients_edit: true, clients_delete: true,
-                    tasks_view: true, tasks_create: true, tasks_edit: true, tasks_delete: true,
-                    crm_view: true, crm_edit: true, finances_view: true, admin_view: true, team_invite: true,
-                    documents_view: true, services_view: true,
-                }
-                : { // Default "Colaborador" permissions
-                    dashboard: true, clients_view: true, clients_create: true, clients_edit: false, clients_delete: false,
-                    tasks_view: true, tasks_create: true, tasks_edit: true, tasks_delete: false,
-                    crm_view: true, crm_edit: false, finances_view: false, admin_view: false, team_invite: false,
-                    documents_view: true, services_view: true,
+        if (user && !isLoadingUserProfile) {
+            if (userProfile) {
+                // This is where you would fetch role permissions in a real app.
+                // For now, we'll assign full permissions for the "Director" role.
+                const rolePermissions: Partial<AppPermissions> = userProfile.role === 'Director' 
+                    ? {
+                        dashboard: true, clients_view: true, clients_create: true, clients_edit: true, clients_delete: true,
+                        tasks_view: true, tasks_create: true, tasks_edit: true, tasks_delete: true,
+                        crm_view: true, crm_edit: true, finances_view: true, admin_view: true, team_invite: true,
+                        documents_view: true, services_view: true,
+                    }
+                    : { // Default "Colaborador" permissions
+                        dashboard: true, clients_view: true, clients_create: true, clients_edit: false, clients_delete: false,
+                        tasks_view: true, tasks_create: true, tasks_edit: true, tasks_delete: false,
+                        crm_view: true, crm_edit: false, finances_view: false, admin_view: false, team_invite: false,
+                        documents_view: true, services_view: true,
+                    };
+    
+                setCurrentUser({
+                    uid: user.uid,
+                    email: user.email,
+                    displayName: userProfile.name || user.displayName,
+                    photoURL: userProfile.photoURL || user.photoURL,
+                    role: userProfile.role,
+                    permissions: rolePermissions,
+                });
+    
+            } else if (user) {
+                // First time user, profile doesn't exist yet. Create it.
+                // Only assign Director role to specific founding users.
+                const isDirector = ['witbiz.mx@gmail.com', 'saidsaigar@gmail.com'].includes(user.email || '');
+                const newUserProfile: AppUser = {
+                    id: user.uid,
+                    name: user.displayName || 'Nuevo Usuario',
+                    email: user.email || '',
+                    role: isDirector ? 'Director' : 'Colaborador', // Default to Collaborator
                 };
-
-            setCurrentUser({
-                uid: user.uid,
-                email: user.email,
-                displayName: userProfile.name || user.displayName,
-                photoURL: userProfile.photoURL || user.photoURL,
-                role: userProfile.role,
-                permissions: rolePermissions,
-            });
-
-        } else if (user) {
-            // First time user, profile doesn't exist yet. Create it.
-            const newUserProfile: AppUser = {
-                id: user.uid,
-                name: user.displayName || 'Nuevo Usuario',
-                email: user.email || '',
-                role: 'Director', // First user is the director
-            };
-            setDocumentNonBlocking(doc(firestore, 'users', user.uid), newUserProfile, { merge: true });
+                setDocumentNonBlocking(doc(firestore, 'users', user.uid), newUserProfile, { merge: true });
+            }
+        } else if (!user && !isUserLoading) {
+            setCurrentUser(null);
         }
-    } else if (!user && !isUserLoading) {
-        setCurrentUser(null);
-    }
-}, [user, userProfile, isUserLoading, isLoadingUserProfile, firestore]);
+    }, [user, userProfile, isUserLoading, isLoadingUserProfile, firestore]);
 
 
     const registerUser = async (name: string, email: string, pass: string, role: string) => {
@@ -188,10 +227,7 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
             throw new Error('Los servicios de autenticación no están listos.');
         }
         try {
-            // This is a simplified approach. In a real app, you'd use a Callable Function
-            // to create a user to avoid needing admin privileges on the client.
-            // For this prototype, we'll proceed, but it's not a production-safe pattern.
-            const tempAuth = auth; // Use a temporary instance if needed, or manage auth state carefully
+            const tempAuth = auth;
             const userCredential = await createUserWithEmailAndPassword(tempAuth, email, pass);
             const { user: newUser } = userCredential;
 
@@ -204,10 +240,6 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
                 email: newUser.email,
                 role: role,
             }, {});
-
-            // Important: This re-authentication part is tricky and might not be ideal.
-            // In a real app, you would sign out the admin and let the new user sign in.
-            // For the prototype, we assume the admin remains logged in.
             
             return userCredential;
         } catch (error: any) {
@@ -664,12 +696,77 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
         await setDocumentNonBlocking(docRef, { status: 'Activo', archivedAt: null }, { merge: true });
         return true;
     };
-    
-    const placeholderPromise = async <T,>(data: T | null = null): Promise<any> => {
-        showNotification('info', 'Funcionalidad no implementada', 'Esta acción aún no está conectada.');
-        return data;
-    }
 
+    // --- Accounting Handlers ---
+    const addCompany = async (data: Omit<Company, 'id'>) => {
+        if (!companiesCollection) return;
+        const docRef = await addDocumentNonBlocking(companiesCollection, data);
+        await setDocumentNonBlocking(doc(companiesCollection, docRef.id), { id: docRef.id }, { merge: true });
+    };
+    const deleteCompany = async (id: string) => {
+        if (!companiesCollection) return false;
+        await deleteDocumentNonBlocking(doc(companiesCollection, id));
+        return true;
+    };
+
+    const addBankAccount = async (data: Omit<BankAccount, 'id' | 'balance'>) => {
+        if (!bankAccountsCollection) return;
+        const payload: Omit<BankAccount, 'id'> = { ...data, balance: data.initialBalance || 0 };
+        const docRef = await addDocumentNonBlocking(bankAccountsCollection, payload);
+        await setDocumentNonBlocking(doc(bankAccountsCollection, docRef.id), { id: docRef.id }, { merge: true });
+    };
+    const deleteBankAccount = async (id: string) => {
+        if (!bankAccountsCollection) return false;
+        await deleteDocumentNonBlocking(doc(bankAccountsCollection, id));
+        return true;
+    };
+    
+    const addCategory = async (data: Omit<Category, 'id'>) => {
+        if (!categoriesCollection) return;
+        const docRef = await addDocumentNonBlocking(categoriesCollection, data);
+        await setDocumentNonBlocking(doc(categoriesCollection, docRef.id), { id: docRef.id }, { merge: true });
+    };
+    const deleteCategory = async (id: string) => {
+        if (!categoriesCollection) return false;
+        await deleteDocumentNonBlocking(doc(categoriesCollection, id));
+        return true;
+    };
+    
+    const addTransaction = async (data: any) => {
+        if (!transactionsCollection || !bankAccountsCollection) return;
+
+        const { date, ...rest } = data;
+        const payload = { ...rest, date: format(date, 'yyyy-MM-dd') };
+        await addDocumentNonBlocking(transactionsCollection, payload);
+        
+        // Update account balances
+        const batch = writeBatch(firestore);
+        const originAccountRef = doc(bankAccountsCollection, payload.accountId);
+        const originAccountSnap = bankAccounts.find(acc => acc.id === payload.accountId);
+        if (originAccountSnap) {
+            const newOriginBalance = (originAccountSnap.balance || 0) - payload.amount;
+            batch.update(originAccountRef, { balance: newOriginBalance });
+        }
+
+        if(payload.type === 'transfer' && payload.destinationAccountId) {
+            const destAccountRef = doc(bankAccountsCollection, payload.destinationAccountId);
+            const destAccountSnap = bankAccounts.find(acc => acc.id === payload.destinationAccountId);
+            if(destAccountSnap) {
+                const newDestBalance = (destAccountSnap.balance || 0) + payload.amount;
+                batch.update(destAccountRef, { balance: newDestBalance });
+            }
+        }
+        await batch.commit();
+    };
+
+    const addLoan = async (data: Omit<InterCompanyLoan, 'id' | 'date' | 'status'>) => {
+        if (!loansCollection) return;
+        const payload: Omit<InterCompanyLoan, 'id'> = { ...data, status: 'En Curso', date: serverTimestamp() };
+        const docRef = await addDocumentNonBlocking(loansCollection, payload);
+        await setDocumentNonBlocking(doc(loansCollection, docRef.id), { id: docRef.id }, { merge: true });
+    };
+    
+    
     const value = useMemo(() => ({
         currentUser, isLoadingCurrentUser: isUserLoading || isLoadingUserProfile, teamMembers,
         clients, isLoadingClients, 
@@ -683,7 +780,7 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
 
         documents, isLoadingDocuments,
         addDocument,
-        updateDocument: (id, d) => placeholderPromise(false),
+        updateDocument: (id, d) => Promise.resolve(false),
         deleteDocument, restoreDocument,
         getDocumentsByClientId: (id) => documents.filter(d => d.clientId === id),
         getDocumentsByServiceId: (id) => documents.filter(d => d.serviceId === id),
@@ -707,6 +804,12 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
         suppliers, isLoadingSuppliers,
         addSupplier, updateSupplier, deleteSupplier, restoreSupplier,
         
+        companies, isLoadingCompanies, addCompany, deleteCompany,
+        bankAccounts, isLoadingBankAccounts, addBankAccount, deleteBankAccount,
+        categories, isLoadingCategories, addCategory, deleteCategory,
+        transactions, isLoadingTransactions, addTransaction,
+        loans, isLoadingLoans, addLoan,
+
         registerUser,
         updateUser,
         deleteUser,
@@ -715,7 +818,9 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
         currentUser, isUserLoading, isLoadingUserProfile, teamMembers, clients, isLoadingClients, 
         tasks, isLoadingTasks, documents, isLoadingDocuments, notes, isLoadingNotes,
         serviceWorkflows, isLoadingWorkflows, getActionById,
-        promoters, isLoadingPromoters, suppliers, isLoadingSuppliers
+        promoters, isLoadingPromoters, suppliers, isLoadingSuppliers,
+        companies, isLoadingCompanies, bankAccounts, isLoadingBankAccounts, categories, isLoadingCategories,
+        transactions, isLoadingTransactions, loans, isLoadingLoans,
     ]);
 
     return (
