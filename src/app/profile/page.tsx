@@ -71,7 +71,7 @@ export default function ProfilePage() {
   };
 
 
-  if (isUserLoading || !user) {
+  if (isUserLoading || !user || !currentUser) {
     return (
       <div className="flex flex-col min-h-screen">
          <Header
@@ -90,6 +90,10 @@ export default function ProfilePage() {
     return name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
   };
   
+  const displayName = currentUser?.displayName || user.displayName || 'Usuario';
+  const displayPhoto = currentUser?.photoURL || user.photoURL || undefined;
+
+
   return (
     <div className="flex flex-col min-h-screen">
       <Header
@@ -120,11 +124,11 @@ export default function ProfilePage() {
               <CardContent className="space-y-6">
                 <div className="flex flex-col items-center space-y-4">
                   <Avatar className="h-24 w-24">
-                    <AvatarImage src={currentUser?.photoURL || user.photoURL || undefined} data-ai-hint="professional person" />
-                    <AvatarFallback>{getInitials(currentUser?.displayName || user.displayName)}</AvatarFallback>
+                    <AvatarImage src={displayPhoto} data-ai-hint="professional person" />
+                    <AvatarFallback>{getInitials(displayName)}</AvatarFallback>
                   </Avatar>
                   <div className="text-center">
-                    <h2 className="text-2xl font-bold">{currentUser?.displayName || user.displayName || 'Usuario'}</h2>
+                    <h2 className="text-2xl font-bold">{displayName}</h2>
                   </div>
                 </div>
                 <div className="space-y-4">
@@ -139,7 +143,7 @@ export default function ProfilePage() {
                         <UserCog className="h-5 w-5 text-muted-foreground" />
                          <div className="flex flex-col">
                            <span className="text-sm text-muted-foreground">Rol</span>
-                           <span className="font-medium">{currentUser?.role}</span>
+                           <span className="font-medium">{currentUser.roleId}</span>
                         </div>
                     </div>
                 </div>
@@ -168,7 +172,7 @@ export default function ProfilePage() {
                                   disabled={isSavingName}
                                 />
                             </div>
-                             <Button onClick={handleSaveName} disabled={isSavingName}>
+                             <Button onClick={handleSaveName} disabled={isSavingName || fullName === currentUser.displayName}>
                                 {isSavingName ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Save className="mr-2 h-4 w-4" />}
                                 Guardar Nombre
                              </Button>

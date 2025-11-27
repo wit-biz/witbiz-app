@@ -41,7 +41,7 @@ export function UserNav() {
   const { currentUser } = useCRMData();
   const auth = useAuth();
 
-  if (isUserLoading) {
+  if (isUserLoading || (user && !currentUser)) {
     return (
       <div className="fixed top-4 right-4 z-50">
         <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
@@ -63,12 +63,12 @@ export function UserNav() {
               "sidebar-glowing-border"
             )}
           >
-            {user ? (
+            {user && currentUser ? (
               <Avatar className="h-8 w-8">
-                {user.photoURL ? (
-                  <AvatarImage src={user.photoURL} alt={user.displayName || 'User'}/>
+                {currentUser.photoURL || user.photoURL ? (
+                  <AvatarImage src={currentUser.photoURL || user.photoURL!} alt={currentUser.displayName || 'User'}/>
                 ) : (
-                  <AvatarFallback>{user.displayName?.charAt(0).toUpperCase() || user.email?.charAt(0).toUpperCase() || 'U'}</AvatarFallback>
+                  <AvatarFallback>{currentUser.displayName?.charAt(0).toUpperCase() || user.email?.charAt(0).toUpperCase() || 'U'}</AvatarFallback>
                 )}
               </Avatar>
             ) : (
@@ -78,19 +78,19 @@ export function UserNav() {
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
-          {user ? (
+          {user && currentUser ? (
             <>
               <DropdownMenuLabel>
                 <div className="flex items-center gap-3">
                   <Avatar className="h-9 w-9">
-                    {user.photoURL ? (
-                      <AvatarImage src={user.photoURL} alt={user.displayName || 'User'}/>
+                    {currentUser.photoURL || user.photoURL ? (
+                       <AvatarImage src={currentUser.photoURL || user.photoURL!} alt={currentUser.displayName || 'User'}/>
                     ) : (
-                      <AvatarFallback>{user.displayName?.charAt(0).toUpperCase() || user.email?.charAt(0).toUpperCase() || 'U'}</AvatarFallback>
+                      <AvatarFallback>{currentUser.displayName?.charAt(0).toUpperCase() || user.email?.charAt(0).toUpperCase() || 'U'}</AvatarFallback>
                     )}
                   </Avatar>
                   <div>
-                    <p className="text-sm font-medium leading-none">{user.displayName || 'Usuario'}</p>
+                    <p className="text-sm font-medium leading-none">{currentUser.displayName || 'Usuario'}</p>
                     <p className="text-xs leading-none text-muted-foreground">
                       {user.email || 'No email'}
                     </p>
