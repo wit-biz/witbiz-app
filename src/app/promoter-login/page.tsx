@@ -33,29 +33,21 @@ export default function PromoterLoginPage() {
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    
-    if (!isClient || isLoadingPromoters || !promoters) {
-      toast({
-        variant: "destructive",
-        title: 'Por favor espere',
-        description: 'Los datos de los promotores aún se están cargando. Inténtelo de nuevo en un momento.',
-      });
-      return;
-    }
-
     setIsSubmitting(true);
 
-    const validPromoter = promoters.find(p => p.accessCode === accessCode && p.status === 'Activo');
+    const validPromoter = promoters?.find(
+        (p) => String(p.accessCode) === String(accessCode) && p.status === 'Activo'
+    );
 
     if (validPromoter) {
       toast({
         title: 'Acceso concedido',
         description: `Bienvenido, ${validPromoter.name}. Redirigiendo...`,
       });
-      // Here you would typically set some session state
-      // For now, we'll just redirect
       router.push(`/promoters?promoterId=${validPromoter.id}`);
-      // No need to set isSubmitting to false here as we are navigating away
+      // No es estrictamente necesario limpiar el estado aquí ya que nos vamos,
+      // pero es una buena práctica.
+      setIsSubmitting(false); 
     } else {
       toast({
         variant: 'destructive',
@@ -65,7 +57,7 @@ export default function PromoterLoginPage() {
       setIsSubmitting(false);
     }
   };
-
+  
   const isDisabled = !isClient || isLoadingPromoters || isSubmitting;
 
   return (
