@@ -24,7 +24,7 @@ export default function PromoterLoginPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const router = useRouter();
   const { toast } = useToast();
-  const { promoters } = useCRMData();
+  const { promoters, isLoadingPromoters } = useCRMData();
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -32,6 +32,16 @@ export default function PromoterLoginPage() {
 
     await new Promise(resolve => setTimeout(resolve, 500));
     
+    if (!promoters) {
+        toast({
+            variant: 'destructive',
+            title: 'Error de carga',
+            description: 'Los datos de los promotores aún no se han cargado. Por favor, espere un momento y vuelva a intentarlo.',
+        });
+        setIsSubmitting(false);
+        return;
+    }
+
     const validPromoter = promoters.find(p => p.accessCode === accessCode && p.status === 'Activo');
 
     if (validPromoter) {
@@ -72,13 +82,13 @@ export default function PromoterLoginPage() {
                     placeholder="••••••"
                     value={accessCode}
                     onChange={(e) => setAccessCode(e.target.value)}
-                    disabled={isSubmitting}
+                    disabled={isSubmitting || isLoadingPromoters}
                     type="password"
                     maxLength={6}
                 />
               </div>
-              <Button type="submit" className="w-full" disabled={isSubmitting || accessCode.length < 6}>
-                {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <KeyRound className="mr-2 h-4 w-4" />}
+              <Button type="submit" className="w-full" disabled={isSubmitting || isLoadingPromoters || accessCode.length < 6}>
+                {isSubmitting || isLoadingPromoters ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <KeyRound className="mr-2 h-4 w-4" />}
                 Acceder
               </Button>
             </form>
