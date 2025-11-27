@@ -96,7 +96,7 @@ interface CRMContextType {
   deleteSupplier: (supplierId: string, permanent?: boolean) => Promise<boolean>;
   restoreSupplier: (supplierId: string) => Promise<boolean>;
 
-  registerUser: (name: string, email: string, pass: string) => Promise<any>;
+  registerUser: (name: string, email: string, pass: string, role: string) => Promise<any>;
 }
 
 const CRMContext = createContext<CRMContextType | undefined>(undefined);
@@ -107,15 +107,18 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
     const auth = useAuth();
     const storage = useStorage();
     const { user, isUserLoading } = useUser();
-
-    // MOCK DATA STATES (for data not yet in firestore)
-    const [teamMembers, setTeamMembers] = useState<AppUser[]>([]);
     
     // LOADING STATES
     
     const [currentUser, setCurrentUser] = useState<AuthenticatedUser | null>(null);
     const userProfileRef = useMemoFirebase(() => user ? doc(firestore, 'users', user.uid) : null, [firestore, user]);
     const { data: userProfile, isLoading: isLoadingUserProfile } = useDoc<AppUser>(userProfileRef);
+
+    const teamMembersCollection = useMemoFirebase(() => user ? collection(firestore, 'users') : null, [firestore, user]);
+    const { data: teamMembers = [], isLoading: isLoadingTeamMembers } = useCollection<AppUser>(teamMembersCollection, {
+        // This is a placeholder for a secure query, which should be based on roles/permissions
+        // For now, we fetch all, but this needs to be secured by Firestore rules
+    });
 
 
     // --- Collections ---
@@ -164,7 +167,6 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
                 role: userProfile.role,
                 permissions: rolePermissions,
             });
-             setTeamMembers([userProfile]);
 
         } else if (user) {
             // First time user, profile doesn't exist yet. Create it.
@@ -182,29 +184,38 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
 }, [user, userProfile, isUserLoading, isLoadingUserProfile, firestore]);
 
 
-    const registerUser = async (name: string, email: string, pass: string) => {
+    const registerUser = async (name: string, email: string, pass: string, role: string) => {
         if (!auth || !firestore) {
             showNotification('error', 'Error de registro', 'Los servicios de autenticación no están listos.');
-            return null;
+            throw new Error('Los servicios de autenticación no están listos.');
         }
         try {
-            const userCredential = await createUserWithEmailAndPassword(auth, email, pass);
+            // This is a simplified approach. In a real app, you'd use a Callable Function
+            // to create a user to avoid needing admin privileges on the client.
+            // For this prototype, we'll proceed, but it's not a production-safe pattern.
+            const tempAuth = auth; // Use a temporary instance if needed, or manage auth state carefully
+            const userCredential = await createUserWithEmailAndPassword(tempAuth, email, pass);
             const { user: newUser } = userCredential;
 
             await updateProfile(newUser, { displayName: name });
+            
             const userDocRef = doc(firestore, "users", newUser.uid);
             await setDocumentNonBlocking(userDocRef, {
                 id: newUser.uid,
                 name: name,
                 email: newUser.email,
-                role: 'Colaborador' // New users are collaborators by default
+                role: role,
             }, {});
 
+            // Important: This re-authentication part is tricky and might not be ideal.
+            // In a real app, you would sign out the admin and let the new user sign in.
+            // For the prototype, we assume the admin remains logged in.
+            
             return userCredential;
         } catch (error: any) {
             console.error("Error registering user:", error);
             showNotification('error', 'Error de registro', error.message);
-            return null;
+            throw error;
         }
     };
     

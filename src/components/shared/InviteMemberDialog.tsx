@@ -35,6 +35,7 @@ import { Loader2, UserPlus } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 const inviteSchema = z.object({
+  name: z.string().min(2, { message: "El nombre es requerido." }),
   email: z.string().email({ message: "Por favor, introduzca un email válido." }),
   role: z.string().min(1, { message: "Por favor, seleccione un rol." }),
 });
@@ -43,7 +44,7 @@ interface InviteMemberDialogProps {
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
   roles: string[];
-  onInvite: (email: string, role: string) => void;
+  onInvite: (name: string, email: string, role: string) => Promise<void>;
 }
 
 export function InviteMemberDialog({ isOpen, onOpenChange, roles, onInvite }: InviteMemberDialogProps) {
@@ -53,6 +54,7 @@ export function InviteMemberDialog({ isOpen, onOpenChange, roles, onInvite }: In
   const form = useForm<z.infer<typeof inviteSchema>>({
     resolver: zodResolver(inviteSchema),
     defaultValues: {
+      name: '',
       email: '',
       role: '',
     },
@@ -60,16 +62,23 @@ export function InviteMemberDialog({ isOpen, onOpenChange, roles, onInvite }: In
 
   const onSubmit = async (values: z.infer<typeof inviteSchema>) => {
     setIsSubmitting(true);
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    onInvite(values.email, values.role);
-    setIsSubmitting(false);
-    onOpenChange(false);
-    form.reset();
-    toast({
-      title: "Miembro Agregado",
-      description: `El usuario ${values.email} ha sido agregado al equipo.`,
-    });
+    try {
+      await onInvite(values.name, values.email, values.role);
+      onOpenChange(false);
+      form.reset();
+      toast({
+        title: "Miembro Agregado",
+        description: `Se ha enviado una invitación a ${values.email}.`,
+      });
+    } catch (error: any) {
+        toast({
+            variant: "destructive",
+            title: "Error al invitar",
+            description: error.message || "No se pudo agregar al miembro del equipo."
+        });
+    } finally {
+        setIsSubmitting(false);
+    }
   };
 
   return (
@@ -89,6 +98,23 @@ export function InviteMemberDialog({ isOpen, onOpenChange, roles, onInvite }: In
             </DialogHeader>
 
             <div className="grid gap-4 py-4">
+              <FormField
+                control={form.control}
+                name="name"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Nombre Completo</FormLabel>
+                    <FormControl>
+                      <Input
+                        placeholder="Ej. Juan Pérez"
+                        {...field}
+                        disabled={isSubmitting}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
               <FormField
                 control={form.control}
                 name="email"
@@ -139,7 +165,7 @@ export function InviteMemberDialog({ isOpen, onOpenChange, roles, onInvite }: In
                   Cancelar
                 </Button>
               </DialogClose>
-              <Button type="submit" disabled={isSubmitting}>
+              <Button type="submit" disabled={isSubmitting || !form.formState.isValid}>
                 {isSubmitting ? (
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 ) : (

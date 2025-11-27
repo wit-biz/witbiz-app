@@ -108,7 +108,7 @@ const initialRoles = [
 export default function TeamPage() {
     const [isInviteDialogOpen, setIsInviteDialogOpen] = useState(false);
     const [roles, setRoles] = useState(initialRoles);
-    const { currentUser, teamMembers } = useCRMData();
+    const { currentUser, teamMembers, registerUser } = useCRMData();
 
     const canInvite = currentUser?.permissions?.team_invite ?? false;
 
@@ -147,6 +147,11 @@ export default function TeamPage() {
             return acc;
         }, {} as Record<string, typeof allPermissions>);
     }, []);
+
+    const handleInvite = async (name: string, email: string, role: string) => {
+        // The default password is 'WitBiz!123'
+        await registerUser(name, email, 'WitBiz!123', role);
+    };
 
   return (
     <>
@@ -261,10 +266,8 @@ export default function TeamPage() {
     <InviteMemberDialog
         isOpen={isInviteDialogOpen}
         onOpenChange={setIsInviteDialogOpen}
-        roles={roles.map(r => r.name).filter(name => name !== 'Director')}
-        onInvite={(email, role) => {
-          console.log(`Adding ${email} with role ${role}`);
-        }}
+        roles={roles.map(r => r.name).filter(name => name !== 'Director' && name !== 'Promotor')}
+        onInvite={handleInvite}
     />
     </>
   );
