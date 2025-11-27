@@ -114,11 +114,8 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
     const userProfileRef = useMemoFirebase(() => user ? doc(firestore, 'users', user.uid) : null, [firestore, user]);
     const { data: userProfile, isLoading: isLoadingUserProfile } = useDoc<AppUser>(userProfileRef);
 
-    const teamMembersCollection = useMemoFirebase(() => user ? collection(firestore, 'users') : null, [firestore, user]);
-    const { data: teamMembers = [], isLoading: isLoadingTeamMembers } = useCollection<AppUser>(teamMembersCollection, {
-        // This is a placeholder for a secure query, which should be based on roles/permissions
-        // For now, we fetch all, but this needs to be secured by Firestore rules
-    });
+    const [teamMembers, setTeamMembers] = useState<AppUser[]>(mockTeamMembers);
+    const [isLoadingTeamMembers, setIsLoadingTeamMembers] = useState(false);
 
 
     // --- Collections ---
