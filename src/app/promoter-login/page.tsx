@@ -33,12 +33,9 @@ export default function PromoterLoginPage() {
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    if (!promoters) {
-        toast({
-            variant: "destructive",
-            title: "Error de carga",
-            description: "Los datos de los promotores aún no están listos. Por favor, espere un momento."
-        });
+    // The button's disabled state prevents this from being called while loading.
+    // If for some edge case it still gets called, we guard it here.
+    if (isLoadingPromoters || !promoters) {
         return;
     }
 
@@ -92,7 +89,7 @@ export default function PromoterLoginPage() {
                   />
                 </div>
                 <Button type="submit" className="w-full" disabled={accessCode.length < 6 || isDisabled}>
-                  {isLoadingPromoters || isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <KeyRound className="mr-2 h-4 w-4" />}
+                  {isDisabled ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <KeyRound className="mr-2 h-4 w-4" />}
                   Acceder
                 </Button>
               </fieldset>
