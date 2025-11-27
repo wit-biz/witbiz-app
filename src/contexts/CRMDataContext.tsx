@@ -143,8 +143,9 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
     const userProfileRef = useMemoFirebase(() => user ? doc(firestore, 'users', user.uid) : null, [firestore, user]);
     const { data: userProfile, isLoading: isLoadingUserProfile } = useDoc<AppUser>(userProfileRef);
 
-    const usersCollection = useMemoFirebase(() => collection(firestore, 'users'), [firestore]);
+    const usersCollection = useMemoFirebase(() => user ? collection(firestore, 'users') : null, [firestore, user]);
     const { data: teamMembers = [], isLoading: isLoadingTeamMembers } = useCollection<AppUser>(usersCollection);
+
 
     // --- Collections ---
     const clientsCollection = useMemoFirebase(() => user ? collection(firestore, 'users', user.uid, 'clients') : null, [firestore, user]);
@@ -191,10 +192,10 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
                     rolePermissions = {
                         dashboard: true, clients_view: true, clients_create: true, clients_edit: true, clients_delete: false,
                         tasks_view: true, tasks_create: true, tasks_edit: true, tasks_delete: false,
-                        crm_view: true, crm_edit: true, finances_view: false, admin_view: true, team_invite: true,
+                        crm_view: true, crm_edit: true, finances_view: true, admin_view: true, team_invite: true,
                         documents_view: true, services_view: true,
                     };
-                } else { // Default to 'Colaborador' or any other role
+                } else if (userProfile.role === 'Colaborador') {
                     rolePermissions = {
                         dashboard: true, clients_view: true, clients_create: true, clients_edit: false, clients_delete: false,
                         tasks_view: true, tasks_create: true, tasks_edit: true, tasks_delete: false,
