@@ -27,26 +27,37 @@ export default function PromoterLoginPage() {
   const { promoters, isLoadingPromoters } = useCRMData();
   const [isClient, setIsClient] = useState(false);
 
+  // Asegura que el componente ya está montado en el cliente
   useEffect(() => {
     setIsClient(true);
   }, []);
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    setIsSubmitting(true);
-    
-    if (isLoadingPromoters || !promoters) {
-        toast({
-            variant: 'destructive',
-            title: 'Datos no cargados',
-            description: 'Espere un momento mientras se cargan los promotores y vuelva a intentarlo.',
-        });
-        setIsSubmitting(false);
-        return;
+
+    // Evita envíos múltiples
+    if (isSubmitting) return;
+
+    // Verifica que los datos del contexto ya estén cargados
+    if (!promoters || isLoadingPromoters) {
+      toast({
+        variant: 'destructive',
+        title: 'Datos no disponibles',
+        description: 'Espere un momento, se están cargando los datos.',
+      });
+      return;
     }
 
+    setIsSubmitting(true);
+
+    // Normaliza valores para evitar diferencias tipo Number/String
+    const normalizedCode = String(accessCode).trim();
+
+    // Busca el promotor correcto
     const validPromoter = promoters.find(
-        (p) => String(p.accessCode) === String(accessCode) && p.status === 'Activo'
+      (p) =>
+        String(p.accessCode).trim() === normalizedCode &&
+        String(p.status).trim().toLowerCase() === 'activo'
     );
 
     if (validPromoter) {
@@ -54,26 +65,28 @@ export default function PromoterLoginPage() {
         title: 'Acceso concedido',
         description: `Bienvenido, ${validPromoter.name}. Redirigiendo...`,
       });
+
       router.push(`/promoters?promoterId=${validPromoter.id}`);
-      // No es estrictamente necesario limpiar el estado aquí ya que nos vamos,
-      // pero es una buena práctica.
-      setIsSubmitting(false); 
-    } else {
-      toast({
-        variant: 'destructive',
-        title: 'Código incorrecto',
-        description: 'El código de acceso no es válido o el promotor está inactivo.',
-      });
-      setIsSubmitting(false);
+      return;
     }
+
+    // Si llega aquí, no coincide
+    toast({
+      variant: 'destructive',
+      title: 'Código incorrecto',
+      description: 'El código de acceso no es válido o el promotor está inactivo.',
+    });
+    setIsSubmitting(false);
   };
-  
-  const isDisabled = !isClient || isLoadingPromoters || isSubmitting;
+
+  // El botón solo se deshabilita mientras se envía el formulario
+  const isDisabled = !isClient || isSubmitting;
 
   return (
     <div className="relative flex min-h-screen items-center justify-center bg-background p-4 overflow-hidden">
-        <div className="animated-gradient-bg"></div>
-        <Card className="w-full max-w-sm z-10">
+      <div className="animated-gradient-bg"></div>
+
+      <Card className="w-full max-w-sm z-10">
         <CardHeader className="text-center">
           <Logo className="mx-auto h-12 w-auto mb-4" />
           <CardTitle className="text-2xl">Acceso para Promotores</CardTitle>
@@ -81,34 +94,45 @@ export default function PromoterLoginPage() {
             Introduzca su código de acceso único para continuar.
           </CardDescription>
         </CardHeader>
+
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
-              <fieldset disabled={isSubmitting} className="space-y-4">
-                <div>
-                  <Label htmlFor="access-code">Código de Acceso (6 dígitos)</Label>
-                  <Input
-                      id="access-code"
-                      placeholder="••••••"
-                      value={accessCode}
-                      onChange={(e) => setAccessCode(e.target.value)}
-                      type="password"
-                      maxLength={6}
-                  />
-                </div>
-                <Button type="submit" className="w-full" disabled={accessCode.length < 6 || isDisabled}>
-                  {isDisabled ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <KeyRound className="mr-2 h-4 w-4" />}
-                  Acceder
-                </Button>
-              </fieldset>
-            </form>
-           <div className="mt-6 text-center">
-                <Button variant="ghost" size="sm" asChild>
-                    <Link href="/login">
-                        <ArrowLeft className="mr-2 h-4 w-4" />
-                        Volver al login principal
-                    </Link>
-                </Button>
-           </div>
+            <fieldset disabled={isDisabled} className="space-y-4">
+              <div>
+                <Label htmlFor="access-code">Código de Acceso (6 dígitos)</Label>
+                <Input
+                  id="access-code"
+                  placeholder="••••••"
+                  value={accessCode}
+                  onChange={(e) => setAccessCode(e.target.value)}
+                  type="password"
+                  maxLength={6}
+                />
+              </div>
+
+              <Button
+                type="submit"
+                className="w-full"
+                disabled={!isClient || isSubmitting || accessCode.length < 6}
+              >
+                {isSubmitting ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <KeyRound className="mr-2 h-4 w-4" />
+                )}
+                Acceder
+              </Button>
+            </fieldset>
+          </form>
+
+          <div className="mt-6 text-center">
+            <Button variant="ghost" size="sm" asChild>
+              <Link href="/login">
+                <ArrowLeft className="mr-2 h-4 w-4" />
+                Volver al login principal
+              </Link>
+            </Button>
+          </div>
         </CardContent>
       </Card>
     </div>
