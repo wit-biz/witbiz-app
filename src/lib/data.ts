@@ -8,7 +8,6 @@ export const teamMembers: AppUser[] = [
     { id: '2', name: 'Carla Collaborator', email: 'carla@witbiz.com', role: 'Colaborador', photoURL: 'https://picsum.photos/seed/2/40/40' },
 ];
 
-// This will now be fetched from Firestore, so we can keep it empty.
 export const serviceWorkflows: ServiceWorkflow[] = [
   {
     id: 'estimulos-fiscales',
@@ -43,8 +42,24 @@ export const serviceWorkflows: ServiceWorkflow[] = [
         order: 3,
         actions: [
           { id: 'ef-onboarding-1', title: 'Alta del cliente en el sistema', order: 1, subActions: [] },
-          { id: 'ef-onboarding-2', title: 'Recopilar documentos de Persona Moral', order: 2, subActions: [], requiredDocumentForCompletion: true, requiredDocuments: [{id: 'doc1', description: 'Acta constitutiva'}, {id: 'doc2', description: 'Poder Notarial'}, {id: 'doc3', description: 'Constancia de situación fiscal'}, {id: 'doc4', description: 'Identificación de Representante Legal'}, {id: 'doc5', description: 'Comprobante de Domicilio'}, {id: 'doc6', description: 'Vista previa de la declaración'}, {id: 'doc7', description: 'Correo electrónico del SAT'}, {id: 'doc8', description: 'CIEC'}] },
-          { id: 'ef-onboarding-3', title: 'Recopilar documentos de Persona Física', order: 3, subActions: [], requiredDocumentForCompletion: true, requiredDocuments: [{id: 'doc9', description: 'Identificación oficial vigente'}, {id: 'doc10', description: 'Constancia de situación fiscal'}, {id: 'doc11', description: 'CURP'}, {id: 'doc12', description: 'Comprobante de Domicilio'}, {id: 'doc13', description: 'Vista previa de la declaración'}, {id: 'doc14', description: 'Correo electrónico del SAT'}, {id: 'doc15', description: 'CIEC'}] },
+          { id: 'ef-onboarding-2', title: 'Check list de documentos – Persona Moral', order: 2, subActions: [], requiredDocumentForCompletion: true, requiredDocuments: [
+              {id: 'doc1', description: 'Acta constitutiva'}, 
+              {id: 'doc2', description: 'Poder Notarial'}, 
+              {id: 'doc3', description: 'Constancia de situación fiscal'}, 
+              {id: 'doc4', description: 'Identificación de Representante Legal'}, 
+              {id: 'doc5', description: 'Comprobante de Domicilio'}, 
+              {id: 'doc6', description: 'Vista previa de la declaración'}, 
+              {id: 'doc7', description: 'Correo electrónico del SAT'}, 
+              {id: 'doc8', description: 'CIEC'}
+          ] },
+          { id: 'ef-onboarding-3', title: 'Check list de documentos – Persona Física', order: 3, subActions: [], requiredDocumentForCompletion: true, requiredDocuments: [
+              {id: 'doc9', description: 'Identificación oficial vigente'}, 
+              {id: 'doc10', description: 'Constancia de situación fiscal'}, 
+              {id: 'doc11', description: 'CURP'}, {id: 'doc12', description: 'Comprobante de Domicilio'}, 
+              {id: 'doc13', description: 'Vista previa de la declaración'}, 
+              {id: 'doc14', description: 'Correo electrónico del SAT'}, 
+              {id: 'doc15', description: 'CIEC'}
+          ] },
         ],
         subStages: [],
       },
@@ -108,7 +123,7 @@ export const serviceWorkflows: ServiceWorkflow[] = [
         title: 'Propuesta y Negociación',
         order: 2,
         actions: [
-          { id: 'f-propuesta-1', title: 'Cual fue la negociación del cierre', order: 1, subActions: [] },
+          { id: 'f-propuesta-1', title: 'Definir negociación del cierre', order: 1, subActions: [] },
         ],
         subStages: [],
       },
@@ -118,9 +133,17 @@ export const serviceWorkflows: ServiceWorkflow[] = [
         order: 3,
         actions: [
           { id: 'f-onboarding-1', title: 'Alta del cliente', order: 1, subActions: [] },
-          { id: 'f-onboarding-2', title: 'Recopilar documentos generales (Opcional)', order: 2, subActions: [] },
-          { id: 'f-onboarding-3', title: 'Recopilar Constancia de Situación Fiscal', order: 3, subActions: [], requiredDocumentForCompletion: true, requiredDocuments: [{id: 'doc16', description: 'Constancia de Situación Fiscal'}] },
-          { id: 'f-onboarding-4', title: 'Recopilar concepto de facturación sugerido', order: 4, subActions: [], requiredDocumentForCompletion: true, requiredDocuments: [{id: 'doc17', description: 'Concepto de facturación sugerido'}] },
+          { id: 'f-onboarding-2', title: 'Recopilar documentos generales (Opcional si se requiere contrato)', order: 2, subActions: [], requiredDocumentForCompletion: true, requiredDocuments: [
+              {id: 'doc-fact-pm-1', description: 'Acta constitutiva (Persona Moral)'},
+              {id: 'doc-fact-pm-2', description: 'Poder Notarial (Persona Moral)'},
+              {id: 'doc-fact-pm-3', description: 'Identificación de Representante Legal (Persona Moral)'},
+              {id: 'doc-fact-pm-4', description: 'Comprobante de Domicilio (Persona Moral)'},
+              {id: 'doc-fact-pf-1', description: 'Identificación oficial vigente (Persona Física)'},
+              {id: 'doc-fact-pf-2', description: 'CURP (Persona Física)'},
+              {id: 'doc-fact-pf-3', description: 'Comprobante de Domicilio (Persona Física)'},
+          ]},
+          { id: 'f-onboarding-3', title: 'Recopilar Constancia de Situación Fiscal (Obligatorio)', order: 3, subActions: [], requiredDocumentForCompletion: true, requiredDocuments: [{id: 'doc-fact-csf', description: 'Constancia de Situación Fiscal'}] },
+          { id: 'f-onboarding-4', title: 'Recopilar concepto de facturación sugerido (Obligatorio)', order: 4, subActions: [], requiredDocumentForCompletion: true, requiredDocuments: [{id: 'doc-fact-concepto', description: 'Concepto de facturación sugerido'}] },
         ],
         subStages: [],
       },
@@ -136,7 +159,7 @@ export const serviceWorkflows: ServiceWorkflow[] = [
           { id: 'f-ejecucion-5', title: 'Entrega de facturas', order: 5, subActions: [] },
           { id: 'f-ejecucion-6', title: 'Recepción de comprobantes de pago', order: 6, subActions: [] },
           { id: 'f-ejecucion-7', title: 'Entrega de comprobante de pago', order: 7, subActions: [] },
-          { id: 'f-ejecucion-8', title: 'Registrar modo de retorno', order: 8, subActions: [] },
+          { id: 'f-ejecucion-8', title: 'Registrar modo de retorno (efectivo, transferencia, etc)', order: 8, subActions: [] },
         ],
         subStages: [],
       },
@@ -162,17 +185,9 @@ export const serviceWorkflows: ServiceWorkflow[] = [
   },
 ];
 
-// This will now be fetched from Firestore, so we can keep it empty.
 export const clients: Client[] = [];
-
-// This will now be fetched from Firestore, so we can keep it empty.
 export const tasks: Task[] = [];
-
-// This will now be fetched from Firestore, so we can keep it empty.
 export const documents: Document[] = [];
-
-
-// This will now be fetched from Firestore, so we can keep it empty.
 export const promoters: Promoter[] = [];
 export const suppliers: Supplier[] = [];
 export const notes: Note[] = [];
