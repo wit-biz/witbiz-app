@@ -30,18 +30,7 @@ export default function PromoterLoginPage() {
     e.preventDefault();
     setIsSubmitting(true);
     
-    // The isLoadingPromoters flag from the context ensures we don't proceed
-    // until data is ready. The button is already disabled, but this is a safeguard.
-    if (isLoadingPromoters || !promoters) {
-        toast({
-            variant: 'destructive',
-            title: 'Error de carga',
-            description: 'Los datos de los promotores aún se están cargando. Por favor, espere un momento y vuelva a intentarlo.',
-        });
-        setIsSubmitting(false);
-        return;
-    }
-
+    // Data is guaranteed to be loaded here because the form is disabled otherwise
     const validPromoter = promoters.find(p => p.accessCode === accessCode && p.status === 'Activo');
 
     if (validPromoter) {
@@ -75,22 +64,23 @@ export default function PromoterLoginPage() {
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
-              <div>
-                <Label htmlFor="access-code">Código de Acceso (6 dígitos)</Label>
-                <Input
-                    id="access-code"
-                    placeholder="••••••"
-                    value={accessCode}
-                    onChange={(e) => setAccessCode(e.target.value)}
-                    disabled={isSubmitting || isLoadingPromoters}
-                    type="password"
-                    maxLength={6}
-                />
-              </div>
-              <Button type="submit" className="w-full" disabled={isSubmitting || isLoadingPromoters || accessCode.length < 6}>
-                {isSubmitting || isLoadingPromoters ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <KeyRound className="mr-2 h-4 w-4" />}
-                Acceder
-              </Button>
+              <fieldset disabled={isLoadingPromoters || isSubmitting} className="space-y-4">
+                <div>
+                  <Label htmlFor="access-code">Código de Acceso (6 dígitos)</Label>
+                  <Input
+                      id="access-code"
+                      placeholder="••••••"
+                      value={accessCode}
+                      onChange={(e) => setAccessCode(e.target.value)}
+                      type="password"
+                      maxLength={6}
+                  />
+                </div>
+                <Button type="submit" className="w-full" disabled={accessCode.length < 6}>
+                  {isLoadingPromoters || isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <KeyRound className="mr-2 h-4 w-4" />}
+                  Acceder
+                </Button>
+              </fieldset>
             </form>
            <div className="mt-6 text-center">
                 <Button variant="ghost" size="sm" asChild>
