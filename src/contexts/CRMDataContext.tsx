@@ -153,7 +153,8 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
     const tasksCollection = useMemoFirebase(() => user ? collection(firestore, 'users', user.uid, 'tasks') : null, [firestore, user]);
     const documentsCollection = useMemoFirebase(() => user ? collection(firestore, 'users', user.uid, 'documents') : null, [firestore, user]);
     const serviceWorkflowsCollection = useMemoFirebase(() => user ? collection(firestore, 'users', user.uid, 'serviceWorkflows') : null, [firestore, user]);
-    const promotersCollection = useMemoFirebase(() => user ? collection(firestore, 'users', user.uid, 'promoters') : null, [firestore, user]);
+    // CORRECTED: Promoters are in a top-level collection, not per-user.
+    const promotersCollection = useMemoFirebase(() => firestore ? collection(firestore, 'promoters') : null, [firestore]);
     const suppliersCollection = useMemoFirebase(() => user ? collection(firestore, 'users', user.uid, 'suppliers') : null, [firestore, user]);
     const notesCollection = useMemoFirebase(() => user ? collection(firestore, 'users', user.uid, 'notes') : null, [firestore, user]);
     const companiesCollection = useMemoFirebase(() => user ? collection(firestore, 'users', user.uid, 'companies') : null, [firestore, user]);
@@ -670,17 +671,19 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
         if (!promotersCollection) return null;
         const payload = { ...promoterData, status: 'Activo' as const, createdAt: serverTimestamp() };
         const docRef = await addDocumentNonBlocking(promotersCollection, payload);
-        return { ...payload, id: docRef.id };
+        const finalPayload = { ...payload, id: docRef.id };
+        await setDocumentNonBlocking(doc(promotersCollection, docRef.id), finalPayload, { merge: true });
+        return finalPayload as Promoter;
     };
     const updatePromoter = async (promoterId: string, updates: Partial<Promoter>): Promise<boolean> => {
-        if (!user || !firestore) return false;
-        const docRef = doc(firestore, 'users', user.uid, 'promoters', promoterId);
+        if (!promotersCollection) return false;
+        const docRef = doc(promotersCollection, promoterId);
         await setDocumentNonBlocking(docRef, updates, { merge: true });
         return true;
     };
     const deletePromoter = async (promoterId: string, permanent: boolean = false): Promise<boolean> => {
-        if (!user || !firestore) return false;
-        const docRef = doc(firestore, 'users', user.uid, 'promoters', promoterId);
+        if (!promotersCollection) return false;
+        const docRef = doc(promotersCollection, promoterId);
         if (permanent) {
             await deleteDocumentNonBlocking(docRef);
         } else {
@@ -689,8 +692,8 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
         return true;
     };
     const restorePromoter = async (promoterId: string): Promise<boolean> => {
-        if (!user || !firestore) return false;
-        const docRef = doc(firestore, 'users', user.uid, 'promoters', promoterId);
+        if (!promotersCollection) return false;
+        const docRef = doc(promotersCollection, promoterId);
         await setDocumentNonBlocking(docRef, { status: 'Activo', archivedAt: undefined }, { merge: true });
         return true;
     };
@@ -877,5 +880,3 @@ export function useCRMData() {
   }
   return context;
 }
-
-    

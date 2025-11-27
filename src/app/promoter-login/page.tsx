@@ -1,4 +1,3 @@
-
 'use client';
 
 import { Button } from '@/components/ui/button';
@@ -35,25 +34,21 @@ export default function PromoterLoginPage() {
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
 
-    // Evita envíos múltiples
     if (isSubmitting) return;
-
-    // Verifica que los datos del contexto ya estén cargados
-    if (!promoters || isLoadingPromoters) {
-      toast({
-        variant: 'destructive',
-        title: 'Datos no disponibles',
-        description: 'Espere un momento, se están cargando los datos.',
-      });
-      return;
-    }
 
     setIsSubmitting(true);
 
-    // Normaliza valores para evitar diferencias tipo Number/String
-    const normalizedCode = String(accessCode).trim();
+    if (isLoadingPromoters || !promoters) {
+        toast({
+            variant: "destructive",
+            title: "Datos no disponibles",
+            description: "Espere un momento, se están cargando los datos de los promotores.",
+        });
+        setIsSubmitting(false);
+        return;
+    }
 
-    // Busca el promotor correcto
+    const normalizedCode = String(accessCode).trim();
     const validPromoter = promoters.find(
       (p) =>
         String(p.accessCode).trim() === normalizedCode &&
@@ -65,8 +60,8 @@ export default function PromoterLoginPage() {
         title: 'Acceso concedido',
         description: `Bienvenido, ${validPromoter.name}. Redirigiendo...`,
       });
-
       router.push(`/promoters?promoterId=${validPromoter.id}`);
+      // No necesitamos `setIsSubmitting(false)` aquí porque la página va a cambiar.
       return;
     }
 
@@ -79,8 +74,7 @@ export default function PromoterLoginPage() {
     setIsSubmitting(false);
   };
 
-  // El botón solo se deshabilita mientras se envía el formulario
-  const isDisabled = !isClient || isSubmitting;
+  const isDisabled = !isClient || isLoadingPromoters || isSubmitting;
 
   return (
     <div className="relative flex min-h-screen items-center justify-center bg-background p-4 overflow-hidden">
@@ -113,9 +107,9 @@ export default function PromoterLoginPage() {
               <Button
                 type="submit"
                 className="w-full"
-                disabled={!isClient || isSubmitting || accessCode.length < 6}
+                disabled={isDisabled || accessCode.length < 6}
               >
-                {isSubmitting ? (
+                {isDisabled ? (
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 ) : (
                   <KeyRound className="mr-2 h-4 w-4" />
