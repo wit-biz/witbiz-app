@@ -34,8 +34,18 @@ export default function PromoterLoginPage() {
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
+    
+    if (isLoadingPromoters || !promoters) {
+        toast({
+            variant: 'destructive',
+            title: 'Datos no cargados',
+            description: 'Espere un momento mientras se cargan los promotores y vuelva a intentarlo.',
+        });
+        setIsSubmitting(false);
+        return;
+    }
 
-    const validPromoter = promoters?.find(
+    const validPromoter = promoters.find(
         (p) => String(p.accessCode) === String(accessCode) && p.status === 'Activo'
     );
 
@@ -73,7 +83,7 @@ export default function PromoterLoginPage() {
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
-              <fieldset disabled={isDisabled} className="space-y-4">
+              <fieldset disabled={isSubmitting} className="space-y-4">
                 <div>
                   <Label htmlFor="access-code">Código de Acceso (6 dígitos)</Label>
                   <Input
