@@ -17,31 +17,36 @@ import Link from 'next/link';
 import { useState, type FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
+import { useCRMData } from '@/contexts/CRMDataContext';
 
 export default function PromoterLoginPage() {
   const [accessCode, setAccessCode] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const router = useRouter();
   const { toast } = useToast();
+  const { promoters } = useCRMData();
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
 
-    // Simulate a network delay
     await new Promise(resolve => setTimeout(resolve, 500));
+    
+    const validPromoter = promoters.find(p => p.accessCode === accessCode && p.status === 'Activo');
 
-    if (accessCode === '123') {
+    if (validPromoter) {
       toast({
         title: 'Acceso concedido',
-        description: 'Bienvenido, promotor.',
+        description: `Bienvenido, ${validPromoter.name}.`,
       });
+      // Here you would typically set some session state
+      // For now, we'll just redirect
       router.push('/promoters');
     } else {
       toast({
         variant: 'destructive',
         title: 'Código incorrecto',
-        description: 'El código de acceso introducido no es válido.',
+        description: 'El código de acceso no es válido o el promotor está inactivo.',
       });
       setIsSubmitting(false);
     }
@@ -61,17 +66,18 @@ export default function PromoterLoginPage() {
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
               <div>
-                <Label htmlFor="access-code">Código de Acceso</Label>
+                <Label htmlFor="access-code">Código de Acceso (6 dígitos)</Label>
                 <Input
                     id="access-code"
-                    placeholder="Introduzca su código..."
+                    placeholder="••••••"
                     value={accessCode}
                     onChange={(e) => setAccessCode(e.target.value)}
                     disabled={isSubmitting}
                     type="password"
+                    maxLength={6}
                 />
               </div>
-              <Button type="submit" className="w-full" disabled={isSubmitting}>
+              <Button type="submit" className="w-full" disabled={isSubmitting || accessCode.length < 6}>
                 {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <KeyRound className="mr-2 h-4 w-4" />}
                 Acceder
               </Button>

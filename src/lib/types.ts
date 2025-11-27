@@ -53,6 +53,7 @@ export type Promoter = {
   referredClients: number;
   totalCommissions: number;
   status: 'Activo' | 'Inactivo' | 'Archivado';
+  accessCode?: string;
   createdAt?: any;
   archivedAt?: any;
 };

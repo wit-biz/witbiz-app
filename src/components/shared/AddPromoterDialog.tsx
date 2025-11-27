@@ -17,7 +17,7 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Loader2, Save, UserCheck } from 'lucide-react';
+import { Loader2, Save, UserCheck, RefreshCw } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import {
   Form,
@@ -37,6 +37,7 @@ const promoterSchema = z.object({
   email: z.string().email({ message: "Email inválido." }).optional().or(z.literal('')),
   phone: z.string().optional(),
   status: z.enum(['Activo', 'Inactivo']),
+  accessCode: z.string().optional(),
   referredClients: z.number().optional(),
   totalCommissions: z.number().optional(),
 });
@@ -51,6 +52,10 @@ interface AddPromoterDialogProps {
   onSave?: (data: Promoter) => void;
 }
 
+const generateAccessCode = () => {
+    return Math.floor(100000 + Math.random() * 900000).toString();
+};
+
 export function AddPromoterDialog({ isOpen, onClose, promoter, onAdd, onSave }: AddPromoterDialogProps) {
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -64,6 +69,7 @@ export function AddPromoterDialog({ isOpen, onClose, promoter, onAdd, onSave }: 
       email: promoter?.email || '',
       phone: promoter?.phone || '',
       status: promoter?.status || 'Activo',
+      accessCode: promoter?.accessCode || generateAccessCode(),
     },
   });
   
@@ -75,6 +81,7 @@ export function AddPromoterDialog({ isOpen, onClose, promoter, onAdd, onSave }: 
             email: promoter?.email || '',
             phone: promoter?.phone || '',
             status: promoter?.status || 'Activo',
+            accessCode: promoter?.accessCode || generateAccessCode(),
         });
     }
   }, [isOpen, promoter, form]);
@@ -97,6 +104,10 @@ export function AddPromoterDialog({ isOpen, onClose, promoter, onAdd, onSave }: 
 
     setIsSubmitting(false);
     onClose();
+  };
+  
+  const handleGenerateNewCode = () => {
+      form.setValue('accessCode', generateAccessCode());
   };
 
   return (
@@ -172,6 +183,25 @@ export function AddPromoterDialog({ isOpen, onClose, promoter, onAdd, onSave }: 
                                         <SelectItem value="Inactivo">Inactivo</SelectItem>
                                     </SelectContent>
                                 </Select>
+                                <FormMessage />
+                            </FormItem>
+                        )}
+                    />
+
+                    <FormField
+                        control={form.control}
+                        name="accessCode"
+                        render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>Código de Acceso</FormLabel>
+                                <div className="flex items-center gap-2">
+                                    <FormControl>
+                                        <Input {...field} readOnly disabled={isSubmitting} className="font-mono bg-muted"/>
+                                    </FormControl>
+                                    <Button type="button" variant="outline" size="icon" onClick={handleGenerateNewCode} disabled={isSubmitting}>
+                                        <RefreshCw className="h-4 w-4" />
+                                    </Button>
+                                </div>
                                 <FormMessage />
                             </FormItem>
                         )}
