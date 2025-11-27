@@ -177,19 +177,9 @@ service cloud.firestore {
         match /leads/{leadId} {
           allow get, list, create, update, delete: if isOwner(userId);
 
-          /**
-           * @description Manages tasks associated with a specific lead.
-           * @path /users/{userId}/clients/{clientId}/leads/{leadId}/tasks/{taskId}
-           * @allow (create) A user can create a task.
-           * @deny (delete) A user cannot delete tasks belonging to another user.
-           * @principle Validates relational integrity by ensuring the task's internal `userId` matches the path.
-           */
-          match /tasks/{taskId} {
-            allow get, list, create, update, delete: if isOwner(userId);
-          }
         }
       }
-      
+
       /**
        * @description Manages documents associated with a specific user.
        * @path /users/{userId}/documents/{documentId}
@@ -227,6 +217,14 @@ service cloud.firestore {
        * @path /users/{userId}/notes/{noteId}
        */
        match /notes/{noteId} {
+            allow get, list, create, update, delete: if isOwner(userId);
+       }
+       
+       /**
+       * @description Manages tasks for a user. This is a top-level collection under the user.
+       * @path /users/{userId}/tasks/{taskId}
+       */
+       match /tasks/{taskId} {
             allow get, list, create, update, delete: if isOwner(userId);
        }
     }
