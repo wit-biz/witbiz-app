@@ -48,7 +48,7 @@ interface AddPromoterDialogProps {
   isOpen: boolean;
   onClose: () => void;
   promoter?: Promoter | null;
-  onAdd?: (data: Omit<PromoterFormValues, 'id' | 'referredClients' | 'totalCommissions'>) => void;
+  onAdd?: (data: Omit<Promoter, 'id' | 'referredClients' | 'totalCommissions' | 'createdAt'>) => void;
   onSave?: (data: Promoter) => void;
 }
 
@@ -83,11 +83,23 @@ export function AddPromoterDialog({ isOpen, onClose, promoter, onAdd, onSave }: 
     
     try {
       if (isEditMode && onSave) {
-          await onSave(values as Promoter);
+          const finalValues: Promoter = {
+              ...promoter,
+              ...values,
+              id: promoter.id,
+              referredClients: promoter.referredClients,
+              totalCommissions: promoter.totalCommissions,
+          };
+          await onSave(finalValues);
           toast({ title: 'Promotor Actualizado', description: `El promotor "${values.name}" ha sido actualizado.` });
       } else if (onAdd) {
           const { id, referredClients, totalCommissions, ...addValues } = values;
-          await onAdd(addValues);
+          const payload = {
+              ...addValues,
+              referredClients: 0,
+              totalCommissions: 0,
+          } as Omit<Promoter, 'id' | 'createdAt'>
+          await onAdd(payload);
           toast({ title: 'Promotor Creado', description: `El promotor "${values.name}" ha sido creado.` });
       }
     } catch (error) {
@@ -99,7 +111,7 @@ export function AddPromoterDialog({ isOpen, onClose, promoter, onAdd, onSave }: 
   };
   
   const handleGenerateNewCode = () => {
-      form.setValue('accessCode', generateAccessCode(), { shouldValidate: true });
+      form.setValue('accessCode', generateAccessCode(), { shouldValidate: true, shouldDirty: true });
   };
   
   const handleCopyCode = () => {

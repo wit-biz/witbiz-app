@@ -33,11 +33,18 @@ export default function PromoterLoginPage() {
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    if (isLoadingPromoters) return; // Defensive check
+    if (!promoters) {
+        toast({
+            variant: "destructive",
+            title: "Error de carga",
+            description: "Los datos de los promotores aún no están listos. Por favor, espere un momento."
+        });
+        return;
+    }
 
     setIsSubmitting(true);
 
-    const validPromoter = promoters?.find(p => p.accessCode === accessCode && p.status === 'Activo');
+    const validPromoter = promoters.find(p => p.accessCode === accessCode && p.status === 'Activo');
 
     if (validPromoter) {
       toast({
@@ -46,7 +53,7 @@ export default function PromoterLoginPage() {
       });
       // Here you would typically set some session state
       // For now, we'll just redirect
-      router.push('/promoters');
+      router.push(`/promoters?promoterId=${validPromoter.id}`);
     } else {
       toast({
         variant: 'destructive',
