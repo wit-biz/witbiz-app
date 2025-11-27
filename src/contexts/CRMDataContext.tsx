@@ -30,7 +30,7 @@ import {
     type Transaction,
 } from '@/lib/types';
 import { useUser, useFirestore, useMemoFirebase, useCollection, useDoc, useAuth, addDocumentNonBlocking, setDocumentNonBlocking, deleteDocumentNonBlocking, useStorage } from '@/firebase';
-import { collection, doc, writeBatch, serverTimestamp, query, where, updateDoc } from 'firebase/firestore';
+import { collection, doc, writeBatch, serverTimestamp, query, where, updateDoc, runTransaction } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
 import { addDays, format } from 'date-fns';
@@ -741,7 +741,7 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
         if (!bankAccountsCollection) return;
         const payload: Omit<BankAccount, 'id'> = { ...data, balance: data.initialBalance || 0 };
         const docRef = await addDocumentNonBlocking(bankAccountsCollection, payload);
-        await setDocumentNonBlocking(doc(bankAccountsCollection, docRef.id), { id: docRef.id }, { merge: true });
+        await setDocumentNonBlocking(doc(bankAccountsCollection, docRef.id), { id: docRef.id, initialBalance: data.initialBalance }, { merge: true });
     };
     const deleteBankAccount = async (id: string) => {
         if (!bankAccountsCollection) return false;
@@ -761,30 +761,41 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
     };
     
     const addTransaction = async (data: any) => {
-        if (!transactionsCollection || !bankAccountsCollection) return;
-
+        if (!transactionsCollection || !bankAccountsCollection || !firestore) return;
+    
         const { date, ...rest } = data;
         const payload = { ...rest, date: format(date, 'yyyy-MM-dd') };
         await addDocumentNonBlocking(transactionsCollection, payload);
-        
-        // Update account balances
-        const batch = writeBatch(firestore);
-        const originAccountRef = doc(bankAccountsCollection, payload.accountId);
-        const originAccountSnap = bankAccounts.find(acc => acc.id === payload.accountId);
-        if (originAccountSnap) {
-            const newOriginBalance = (originAccountSnap.balance || 0) - payload.amount;
-            batch.update(originAccountRef, { balance: newOriginBalance });
+    
+        try {
+            await runTransaction(firestore, async (transaction) => {
+                const amount = payload.amount;
+                const originAccountRef = doc(bankAccountsCollection, payload.accountId);
+                const originAccountDoc = await transaction.get(originAccountRef);
+    
+                if (!originAccountDoc.exists()) {
+                    throw new Error("La cuenta de origen no existe.");
+                }
+    
+                const newOriginBalance = (originAccountDoc.data().balance || 0) - (payload.type === 'transfer' || payload.type === 'expense' ? amount : -amount);
+                transaction.update(originAccountRef, { balance: newOriginBalance });
+    
+                if (payload.type === 'transfer' && payload.destinationAccountId) {
+                    const destAccountRef = doc(bankAccountsCollection, payload.destinationAccountId);
+                    const destAccountDoc = await transaction.get(destAccountRef);
+    
+                    if (!destAccountDoc.exists()) {
+                        throw new Error("La cuenta de destino no existe.");
+                    }
+    
+                    const newDestBalance = (destAccountDoc.data().balance || 0) + amount;
+                    transaction.update(destAccountRef, { balance: newDestBalance });
+                }
+            });
+        } catch (e) {
+            console.error("Error al actualizar balances de cuentas: ", e);
+            showNotification('error', 'Error de transacción', 'No se pudieron actualizar los saldos de las cuentas.');
         }
-
-        if(payload.type === 'transfer' && payload.destinationAccountId) {
-            const destAccountRef = doc(bankAccountsCollection, payload.destinationAccountId);
-            const destAccountSnap = bankAccounts.find(acc => acc.id === payload.destinationAccountId);
-            if(destAccountSnap) {
-                const newDestBalance = (destAccountSnap.balance || 0) + payload.amount;
-                batch.update(destAccountRef, { balance: newDestBalance });
-            }
-        }
-        await batch.commit();
     };
 
     const addLoan = async (data: Omit<InterCompanyLoan, 'id' | 'date' | 'status'>) => {
@@ -866,3 +877,5 @@ export function useCRMData() {
   }
   return context;
 }
+
+    
