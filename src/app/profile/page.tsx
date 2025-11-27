@@ -29,9 +29,11 @@ import { ThemeToggle } from "@/components/shared/theme-toggle";
 import { PasswordInput } from "@/components/shared/PasswordInput";
 import { useUser, useAuth } from "@/firebase";
 import { initiateSignOut } from "@/firebase/non-blocking-login";
+import { useCRMData } from "@/contexts/CRMDataContext";
 
 export default function ProfilePage() {
   const { user, isUserLoading } = useUser();
+  const { currentUser } = useCRMData();
   const auth = useAuth();
 
   if (isUserLoading || !user) {
@@ -53,8 +55,6 @@ export default function ProfilePage() {
     return name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
   };
   
-  const userRole = 'Administrador'; // This would come from useCRMData in a real scenario
-
   return (
     <div className="flex flex-col min-h-screen">
       <Header
@@ -104,7 +104,7 @@ export default function ProfilePage() {
                         <UserCog className="h-5 w-5 text-muted-foreground" />
                          <div className="flex flex-col">
                            <span className="text-sm text-muted-foreground">Rol</span>
-                           <span className="font-medium">{userRole}</span>
+                           <span className="font-medium">{currentUser?.role}</span>
                         </div>
                     </div>
                 </div>
