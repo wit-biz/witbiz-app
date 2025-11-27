@@ -1,4 +1,5 @@
 
+
 import { type LucideIcon } from "lucide-react";
 
 export type PosTerminal = {
@@ -259,6 +260,8 @@ export interface AppUser {
     email: string;
     role: string;
     photoURL?: string;
+    status?: 'Activo' | 'Archivado';
+    archivedAt?: any;
 }
 
 export interface AuthenticatedUser {
@@ -266,7 +269,7 @@ export interface AuthenticatedUser {
   email: string | null;
   displayName: string | null;
   photoURL: string | null;
-  roleId?: string;
+  role?: string;
   permissions: Partial<AppPermissions>;
 }
 

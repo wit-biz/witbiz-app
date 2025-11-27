@@ -82,7 +82,7 @@ const initialRoles = [
         permissions: {
             dashboard: true, clients_view: true, clients_create: true, clients_edit: true, clients_delete: false,
             tasks_view: true, tasks_create: true, tasks_edit: true, tasks_delete: false,
-            crm_view: true, crm_edit: true, finances_view: false, admin_view: true, team_invite: true,
+            crm_view: true, crm_edit: true, finances_view: true, admin_view: true, team_invite: true,
             documents_view: true, services_view: true,
         }
     },
@@ -128,9 +128,9 @@ export default function TeamPage() {
             'Administrador': 2,
             'Colaborador': 3,
         };
-        // Filter out promoters from the team members list
+        // Filter out promoters and archived users from the team members list
         return teamMembers
-            .filter(member => member.role !== 'Promotor')
+            .filter(member => member.role !== 'Promotor' && member.status !== 'Archivado')
             .sort((a, b) => {
                 const roleA = roleOrder[a.role as keyof typeof roleOrder] || 99;
                 const roleB = roleOrder[b.role as keyof typeof roleOrder] || 99;
@@ -179,9 +179,9 @@ export default function TeamPage() {
         setIsProcessing(true);
         const success = await deleteUser(userToDelete.id);
         if (success) {
-            toast({ title: 'Usuario Eliminado', description: `El usuario ${userToDelete.name} ha sido eliminado.` });
+            toast({ title: 'Usuario Archivado', description: `El usuario ${userToDelete.name} ha sido enviado a la papelera.` });
         } else {
-            toast({ variant: 'destructive', title: 'Error', description: 'No se pudo eliminar el usuario.' });
+            toast({ variant: 'destructive', title: 'Error', description: 'No se pudo archivar el usuario.' });
         }
         setIsProcessing(false);
         setUserToDelete(null);
@@ -335,16 +335,15 @@ export default function TeamPage() {
      <AlertDialog open={!!userToDelete} onOpenChange={() => setUserToDelete(null)}>
         <AlertDialogContent>
             <AlertDialogHeader>
-                <AlertDialogTitle>¿Eliminar Permanentemente?</AlertDialogTitle>
+                <AlertDialogTitle>¿Archivar Usuario?</AlertDialogTitle>
                 <AlertDialogDescription>
-                    Esta acción eliminará al usuario "{userToDelete?.name}" de la base de datos de la aplicación.
-                    Esta acción no se puede deshacer.
+                    Esta acción enviará al usuario "{userToDelete?.name}" a la papelera. Podrás restaurarlo más tarde. El usuario no podrá iniciar sesión mientras esté archivado.
                 </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
                 <AlertDialogCancel disabled={isProcessing}>Cancelar</AlertDialogCancel>
                 <AlertDialogAction onClick={confirmDelete} disabled={isProcessing} className="bg-destructive hover:bg-destructive/90">
-                    {isProcessing ? <Loader2 className="h-4 w-4 animate-spin"/> : 'Eliminar'}
+                    {isProcessing ? <Loader2 className="h-4 w-4 animate-spin"/> : 'Archivar'}
                 </AlertDialogAction>
             </AlertDialogFooter>
         </AlertDialogContent>

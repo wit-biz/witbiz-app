@@ -125,7 +125,7 @@ interface CRMContextType {
 
   registerUser: (name: string, email: string, pass: string, role: string) => Promise<any>;
   updateUser: (userId: string, updates: Partial<AppUser>) => Promise<boolean>;
-  deleteUser: (userId: string) => Promise<boolean>;
+  deleteUser: (userId: string, permanent?: boolean) => Promise<boolean>;
 }
 
 const CRMContext = createContext<CRMContextType | undefined>(undefined);
@@ -179,7 +179,7 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
     useEffect(() => {
         if (user && !isLoadingUserProfile) {
             if (userProfile) {
-                let rolePermissions: Partial<AppPermissions> = {}; // Start with no permissions
+                let rolePermissions: Partial<AppPermissions> = {};
                 
                 if (userProfile.role === 'Director') {
                     rolePermissions = {
@@ -220,7 +220,7 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
                     id: user.uid,
                     name: user.displayName || 'Nuevo Usuario',
                     email: user.email || '',
-                    role: isFounder ? 'Director' : 'Colaborador',
+                    role: isFounder ? 'Director' : 'Colaborador', // Default to 'Colaborador'
                 };
                 setDocumentNonBlocking(doc(firestore, 'users', user.uid), newUserProfile, { merge: true });
             }
@@ -270,16 +270,15 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
         }
     };
 
-    const deleteUser = async (userId: string): Promise<boolean> => {
+    const deleteUser = async (userId: string, permanent: boolean = false): Promise<boolean> => {
         if (!firestore) return false;
-        try {
-            const userDocRef = doc(firestore, 'users', userId);
-            await deleteDocumentNonBlocking(userDocRef);
-            return true;
-        } catch (error) {
-            console.error("Error deleting user:", error);
-            return false;
+        const docRef = doc(firestore, 'users', userId);
+        if (permanent) {
+            await deleteDocumentNonBlocking(docRef);
+        } else {
+            await setDocumentNonBlocking(docRef, { status: 'Archivado', archivedAt: serverTimestamp() }, { merge: true });
         }
+        return true;
     };
 
     // --- Data Handlers ---
