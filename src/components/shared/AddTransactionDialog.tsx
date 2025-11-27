@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import React, { useState, useCallback, useMemo } from 'react';
@@ -92,10 +93,10 @@ export function AddTransactionDialog({
   const transactionType = form.watch('type');
   const selectedCompanyId = form.watch('companyId');
 
-  const filteredAccounts = accounts.filter(acc => acc.companyId === selectedCompanyId);
+  const filteredAccounts = (accounts || []).filter(acc => acc.companyId === selectedCompanyId);
   
   const groupedCategories = useMemo(() => {
-    return categories.reduce((acc, category) => {
+    return (categories || []).reduce((acc, category) => {
         const groupName = category.groupName;
         if (!acc[groupName]) {
             acc[groupName] = [];
@@ -204,7 +205,7 @@ export function AddTransactionDialog({
                             <Select onValueChange={field.onChange} defaultValue={field.value}>
                                 <SelectTrigger><SelectValue placeholder="Seleccione un cliente..." /></SelectTrigger>
                                 <SelectContent>
-                                    {clients.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+                                    {(clients || []).map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
                                 </SelectContent>
                             </Select>
                         )}
@@ -221,7 +222,7 @@ export function AddTransactionDialog({
                         <Select onValueChange={field.onChange} defaultValue={field.value}>
                             <SelectTrigger><SelectValue placeholder="Seleccione una empresa..." /></SelectTrigger>
                             <SelectContent>
-                                {companies.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+                                {(companies || []).map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
                             </SelectContent>
                         </Select>
                     )}
@@ -256,7 +257,7 @@ export function AddTransactionDialog({
                                 <Select onValueChange={field.onChange} defaultValue={field.value}>
                                     <SelectTrigger><SelectValue placeholder="Seleccione cuenta destino..." /></SelectTrigger>
                                     <SelectContent>
-                                        {accounts.map(acc => <SelectItem key={acc.id} value={acc.id}>{`${companies.find(c => c.id === acc.companyId)?.name} - ${acc.bankName}`}</SelectItem>)}
+                                        {(accounts || []).map(acc => <SelectItem key={acc.id} value={acc.id}>{`${(companies || []).find(c => c.id === acc.companyId)?.name} - ${acc.bankName}`}</SelectItem>)}
                                     </SelectContent>
                                 </Select>
                             )}
@@ -296,7 +297,7 @@ export function AddTransactionDialog({
               <div {...getRootProps()} className={`mt-1 w-full h-28 border-2 border-dashed rounded-lg flex flex-col items-center justify-center cursor-pointer transition-colors ${isDragActive ? 'border-primary bg-primary/10' : 'border-border hover:border-primary/50'}`}>
                 <input {...getInputProps()} />
                 <UploadCloud className="h-8 w-8 text-muted-foreground mb-1" />
-                <p className="text-xs text-muted-foreground">{isDragActive ? 'Suelte el archivo aquí...' : 'Arrastre un archivo o haga clic para seleccionar'}</p>
+                <p className="text-sm text-muted-foreground">{isDragActive ? 'Suelte el archivo aquí...' : 'Arrastre un archivo o haga clic para seleccionar'}</p>
               </div>
             ) : (
               <div className="mt-1 p-2 border rounded-md bg-secondary/50 flex items-center justify-between">

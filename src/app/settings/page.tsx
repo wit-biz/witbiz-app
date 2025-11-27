@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import React, { useState, useMemo } from "react";
@@ -138,10 +139,10 @@ export default function SettingsPage() {
     })
   }
 
-  const allCategories = useMemo(() => categories.map(c => ({...c, groupName: c.type})), [categories]);
+  const allCategories = useMemo(() => (categories || []).map(c => ({...c, groupName: c.type})), [categories]);
 
   const filteredTransactions = useMemo(() => {
-    if (isLoadingTransactions) return [];
+    if (isLoadingTransactions || !transactions) return [];
     return transactions.filter(item => {
         const itemDate = new Date(item.date);
         const isDateInRange = date?.from && date.to ? isWithinInterval(itemDate, { start: startOfDay(date.from), end: endOfDay(date.to) }) : true;
@@ -207,11 +208,11 @@ export default function SettingsPage() {
   }, [trialBalanceData]);
   
   const generalSummary = useMemo(() => {
-    const totalBalance = bankAccounts.reduce((sum, acc) => sum + acc.balance, 0);
+    const totalBalance = (bankAccounts || []).reduce((sum, acc) => sum + acc.balance, 0);
     return {
       totalBalance,
-      companyCount: companies.length,
-      accountCount: bankAccounts.length,
+      companyCount: (companies || []).length,
+      accountCount: (bankAccounts || []).length,
     }
   }, [bankAccounts, companies]);
 
@@ -219,7 +220,7 @@ export default function SettingsPage() {
       const revenueByCategory = filteredTransactions
           .filter(t => t.type === 'income')
           .reduce((acc, t) => {
-              const categoryName = categories.find(c => c.id === t.categoryId)?.name || 'Desconocido';
+              const categoryName = (categories || []).find(c => c.id === t.categoryId)?.name || 'Desconocido';
               acc[categoryName] = (acc[categoryName] || 0) + t.amount;
               return acc;
           }, {} as Record<string, number>);
@@ -227,9 +228,9 @@ export default function SettingsPage() {
       const totalRevenue = Object.values(revenueByCategory).reduce((sum, amount) => sum + amount, 0);
 
       const expensesByCategory = filteredTransactions
-          .filter(t => t.type === 'expense' && categories.find(c => c.id === t.categoryId)?.type !== 'Transferencia')
+          .filter(t => t.type === 'expense' && (categories || []).find(c => c.id === t.categoryId)?.type !== 'Transferencia')
           .reduce((acc, t) => {
-              const categoryName = categories.find(c => c.id === t.categoryId)?.name || 'Desconocido';
+              const categoryName = (categories || []).find(c => c.id === t.categoryId)?.name || 'Desconocido';
               acc[categoryName] = (acc[categoryName] || 0) + Math.abs(t.amount);
               return acc;
           }, {} as Record<string, number>);
@@ -238,7 +239,7 @@ export default function SettingsPage() {
       const grossProfit = totalRevenue; 
       const incomeBeforeTax = grossProfit - totalExpenses;
 
-      const selectedCompany = companies.find(c => c.id === selectedCompanyId);
+      const selectedCompany = (companies || []).find(c => c.id === selectedCompanyId);
       let calculatedTaxes: { name: string; rate: number; amount: number }[] = [];
       let totalTaxes = 0;
 
@@ -276,12 +277,12 @@ export default function SettingsPage() {
   const { balanceSheetData, cashFlowData } = useMemo(() => {
     const fromDate = date?.from ? startOfDay(date.from) : new Date(0);
     
-    const priorTransactions = transactions.filter(t => new Date(t.date) < fromDate);
+    const priorTransactions = (transactions || []).filter(t => new Date(t.date) < fromDate);
     const initialRetainedEarnings = priorTransactions
       .filter(t => t.type === 'income' || t.type === 'expense')
       .reduce((sum, t) => sum + t.amount, 0);
     
-    const initialCash = bankAccounts.reduce((sum, acc) => sum + (acc.initialBalance || 0), 0) + priorTransactions.reduce((sum, t) => sum + t.amount, 0);
+    const initialCash = (bankAccounts || []).reduce((sum, acc) => sum + (acc.initialBalance || 0), 0) + priorTransactions.reduce((sum, t) => sum + t.amount, 0);
 
     const cashFromOperations = filteredTransactions
         .filter(t => t.type === 'income' || t.type === 'expense')
@@ -317,7 +318,7 @@ export default function SettingsPage() {
     return { balanceSheetData: bsData, cashFlowData: cfData };
   }, [date, incomeStatementData.netIncome, bankAccounts, transactions, filteredTransactions]);
 
-  const getCompanyName = (id: string) => companies.find(c => c.id === id)?.name || 'Desconocido';
+  const getCompanyName = (id: string) => (companies || []).find(c => c.id === id)?.name || 'Desconocido';
   
   return (
     <TooltipProvider>
@@ -391,7 +392,7 @@ export default function SettingsPage() {
                         <SelectTrigger className="w-full sm:w-[200px]"><SelectValue placeholder="Filtrar por empresa..." /></SelectTrigger>
                         <SelectContent>
                             <SelectItem value="all">Todas las Empresas</SelectItem>
-                            {companies.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+                            {(companies || []).map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
                         </SelectContent>
                         </Select>
                         <Select value={selectedCategoryId} onValueChange={setSelectedCategoryId}>
@@ -465,7 +466,7 @@ export default function SettingsPage() {
                                             <TableRow key={trx.id}>
                                                 <TableCell>{format(new Date(trx.date), "dd/MM/yyyy")}</TableCell>
                                                 <TableCell className="font-medium">{trx.description}</TableCell>
-                                                <TableCell>{categories.find(c => c.id === trx.categoryId)?.name || 'N/A'}</TableCell>
+                                                <TableCell>{(categories || []).find(c => c.id === trx.categoryId)?.name || 'N/A'}</TableCell>
                                                 <TableCell>
                                                     <Badge variant={trx.type === 'income' ? 'default' : trx.type === 'expense' ? 'destructive' : 'secondary'}>
                                                         {trx.type === 'income' ? 'Ingreso' : trx.type.startsWith('transfer') ? 'Transferencia' : 'Egreso'}
@@ -546,8 +547,8 @@ export default function SettingsPage() {
                                             <SelectContent>
                                                 <SelectItem value="all">Todos</SelectItem>
                                                 {auxiliaryType === 'clients' ? 
-                                                    (clients && clients.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)) : 
-                                                    (bankAccounts.map(a => <SelectItem key={a.id} value={a.id}>{a.bankName} - {companies.find(c=>c.id === a.companyId)?.name}</SelectItem>))
+                                                    ((clients || []).map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)) : 
+                                                    ((bankAccounts || []).map(a => <SelectItem key={a.id} value={a.id}>{a.bankName} - {(companies || []).find(c=>c.id === a.companyId)?.name}</SelectItem>))
                                                 }
                                             </SelectContent>
                                         </Select>
@@ -743,7 +744,7 @@ export default function SettingsPage() {
                                 <CardDescription>Cree un registro de un préstamo entre dos de sus empresas.</CardDescription>
                             </CardHeader>
                             <CardContent>
-                                <LoanForm companies={companies} onAddLoan={addLoan} />
+                                <LoanForm companies={companies || []} onAddLoan={addLoan} />
                             </CardContent>
                         </Card>
                          <Card className="md:col-span-2">
@@ -764,7 +765,7 @@ export default function SettingsPage() {
                                     </TableHeader>
                                     <TableBody>
                                     {isLoadingLoans ? <TableRow><TableCell colSpan={5} className="text-center h-24"><Loader2 className="mx-auto h-6 w-6 animate-spin"/></TableCell></TableRow> :
-                                    loans.length > 0 ? loans.map(loan => (
+                                    (loans || []).length > 0 ? (loans || []).map(loan => (
                                         <TableRow key={loan.id}>
                                             <TableCell className="font-medium">{getCompanyName(loan.lenderCompanyId)}</TableCell>
                                             <TableCell className="font-medium">{getCompanyName(loan.borrowerCompanyId)}</TableCell>
@@ -789,14 +790,12 @@ export default function SettingsPage() {
       <AddTransactionDialog 
         isOpen={isTransactionDialogOpen}
         onOpenChange={setIsTransactionDialogOpen}
-        companies={companies}
-        accounts={bankAccounts}
+        companies={companies || []}
+        accounts={bankAccounts || []}
         categories={allCategories}
-        clients={clients}
+        clients={clients || []}
         onTransactionAdd={addTransaction}
       />
     </TooltipProvider>
   );
 }
-
-    
