@@ -1,3 +1,4 @@
+
 /**
  * This ruleset enforces a strict user-ownership model for a CRM application.
  * It is designed for rapid prototyping, focusing on strong authorization while
@@ -225,6 +226,23 @@ service cloud.firestore {
        * @path /users/{userId}/tasks/{taskId}
        */
        match /tasks/{taskId} {
+            allow get, list, create, update, delete: if isOwner(userId);
+       }
+
+       // --- Accounting Collections ---
+       match /companies/{companyId} {
+            allow get, list, create, update, delete: if isOwner(userId);
+       }
+       match /bankAccounts/{accountId} {
+            allow get, list, create, update, delete: if isOwner(userId);
+       }
+       match /categories/{categoryId} {
+            allow get, list, create, update, delete: if isOwner(userId);
+       }
+       match /transactions/{transactionId} {
+            allow get, list, create, update, delete: if isOwner(userId);
+       }
+       match /loans/{loanId} {
             allow get, list, create, update, delete: if isOwner(userId);
        }
     }
