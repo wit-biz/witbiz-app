@@ -17,7 +17,7 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Loader2, Save, UserCheck, RefreshCw } from 'lucide-react';
+import { Loader2, Save, UserCheck, RefreshCw, Copy } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import {
   Form,
@@ -100,6 +100,13 @@ export function AddPromoterDialog({ isOpen, onClose, promoter, onAdd, onSave }: 
   
   const handleGenerateNewCode = () => {
       form.setValue('accessCode', generateAccessCode(), { shouldValidate: true });
+  };
+  
+  const handleCopyCode = () => {
+      const code = form.getValues('accessCode');
+      navigator.clipboard.writeText(code).then(() => {
+          toast({ title: "Código copiado", description: "El código de acceso ha sido copiado al portapapeles." });
+      });
   };
 
   return (
@@ -190,6 +197,9 @@ export function AddPromoterDialog({ isOpen, onClose, promoter, onAdd, onSave }: 
                                     <FormControl>
                                         <Input {...field} readOnly disabled={isSubmitting} className="font-mono bg-muted"/>
                                     </FormControl>
+                                    <Button type="button" variant="outline" size="icon" onClick={handleCopyCode} disabled={isSubmitting}>
+                                        <Copy className="h-4 w-4" />
+                                    </Button>
                                     <Button type="button" variant="outline" size="icon" onClick={handleGenerateNewCode} disabled={isSubmitting}>
                                         <RefreshCw className="h-4 w-4" />
                                     </Button>
