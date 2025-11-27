@@ -55,6 +55,31 @@ service cloud.firestore {
       return isOwner(userId) && resource != null;
     }
 
+    // --- Role-based Access Control ---
+    /**
+     * Retrieves the role of the requesting user from their profile document.
+     * @param uid The UID of the user whose role is being checked.
+     * @return The user's role string (e.g., 'Director', 'Admin', 'Collaborator').
+     */
+    function getRole(uid) {
+        return get(/databases/$(database)/documents/users/$(uid)).data.role;
+    }
+
+    /**
+     * Checks if the requesting user has the 'Director' role.
+     */
+    function isDirector() {
+        return isSignedIn() && getRole(request.auth.uid) == 'Director';
+    }
+
+    /**
+     * Checks if the requesting user has the 'Admin' role.
+     */
+    function isAdmin() {
+        return isSignedIn() && getRole(request.auth.uid) == 'Administrador';
+    }
+
+
     // --- Create Operation Validation ---
 
     /**
@@ -152,11 +177,11 @@ service cloud.firestore {
      * @principle Restricts access to a user's own data tree and prevents user enumeration.
      */
     match /users/{userId} {
-      allow get: if isOwner(userId);
+      allow get: if isOwner(userId) || isDirector() || isAdmin();
       allow list: if isSignedIn();
       allow create: if isOwner(userId) && hasValidUserDataForCreate(userId);
-      allow update: if isExistingOwner(userId) && hasImmutableUserFields();
-      allow delete: if isExistingOwner(userId);
+      allow update: if (isOwner(userId) || isDirector()) && hasImmutableUserFields();
+      allow delete: if isOwner(userId) || isDirector();
 
       /**
        * @description Manages a user's clients.
