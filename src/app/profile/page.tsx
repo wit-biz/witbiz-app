@@ -23,12 +23,38 @@ import {
   UserCog,
   LogOut,
   Save,
-  DollarSign,
+  Loader2,
 } from "lucide-react";
 import { ThemeToggle } from "@/components/shared/theme-toggle";
 import { PasswordInput } from "@/components/shared/PasswordInput";
+import { useUser, useAuth } from "@/firebase";
+import { initiateSignOut } from "@/firebase/non-blocking-login";
 
 export default function ProfilePage() {
+  const { user, isUserLoading } = useUser();
+  const auth = useAuth();
+
+  if (isUserLoading || !user) {
+    return (
+      <div className="flex flex-col min-h-screen">
+         <Header
+          title="Mi Perfil"
+          description="Gestiona tu información personal y las preferencias de la aplicación."
+        />
+        <div className="flex-1 flex items-center justify-center">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </div>
+      </div>
+    )
+  }
+  
+  const getInitials = (name: string | null | undefined) => {
+    if (!name) return "U";
+    return name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+  };
+  
+  const userRole = 'Administrador'; // This would come from useCRMData in a real scenario
+
   return (
     <div className="flex flex-col min-h-screen">
       <Header
@@ -59,11 +85,11 @@ export default function ProfilePage() {
               <CardContent className="space-y-6">
                 <div className="flex flex-col items-center space-y-4">
                   <Avatar className="h-24 w-24">
-                    <AvatarImage src="https://picsum.photos/seed/99/100/100" data-ai-hint="professional person" />
-                    <AvatarFallback>AU</AvatarFallback>
+                    <AvatarImage src={user.photoURL || undefined} data-ai-hint="professional person" />
+                    <AvatarFallback>{getInitials(user.displayName)}</AvatarFallback>
                   </Avatar>
                   <div className="text-center">
-                    <h2 className="text-2xl font-bold">Admin User</h2>
+                    <h2 className="text-2xl font-bold">{user.displayName || 'Usuario'}</h2>
                   </div>
                 </div>
                 <div className="space-y-4">
@@ -71,18 +97,18 @@ export default function ProfilePage() {
                         <Mail className="h-5 w-5 text-muted-foreground" />
                         <div className="flex flex-col">
                            <span className="text-sm text-muted-foreground">Email</span>
-                           <span className="font-medium">admin@witbiz.com</span>
+                           <span className="font-medium">{user.email}</span>
                         </div>
                     </div>
                     <div className="flex items-center gap-3">
                         <UserCog className="h-5 w-5 text-muted-foreground" />
                          <div className="flex flex-col">
                            <span className="text-sm text-muted-foreground">Rol</span>
-                           <span className="font-medium">Administrador</span>
+                           <span className="font-medium">{userRole}</span>
                         </div>
                     </div>
                 </div>
-                <Button variant="outline" className="w-full">
+                <Button variant="outline" className="w-full" onClick={() => initiateSignOut(auth)}>
                   <LogOut className="mr-2 h-4 w-4" />
                   Cerrar Sesión
                 </Button>
@@ -100,7 +126,7 @@ export default function ProfilePage() {
                         <CardContent className="space-y-4">
                             <div>
                                 <Label htmlFor="fullName">Nombre Completo</Label>
-                                <Input id="fullName" defaultValue="Admin User" />
+                                <Input id="fullName" defaultValue={user.displayName || ''} />
                             </div>
                              <Button><Save className="mr-2 h-4 w-4" />Guardar Nombre</Button>
                         </CardContent>
