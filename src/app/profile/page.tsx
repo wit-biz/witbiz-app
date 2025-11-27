@@ -85,11 +85,11 @@ export default function ProfilePage() {
               <CardContent className="space-y-6">
                 <div className="flex flex-col items-center space-y-4">
                   <Avatar className="h-24 w-24">
-                    <AvatarImage src={user.photoURL || undefined} data-ai-hint="professional person" />
-                    <AvatarFallback>{getInitials(user.displayName)}</AvatarFallback>
+                    <AvatarImage src={currentUser?.photoURL || user.photoURL || undefined} data-ai-hint="professional person" />
+                    <AvatarFallback>{getInitials(currentUser?.displayName || user.displayName)}</AvatarFallback>
                   </Avatar>
                   <div className="text-center">
-                    <h2 className="text-2xl font-bold">{user.displayName || 'Usuario'}</h2>
+                    <h2 className="text-2xl font-bold">{currentUser?.displayName || user.displayName || 'Usuario'}</h2>
                   </div>
                 </div>
                 <div className="space-y-4">
@@ -126,7 +126,7 @@ export default function ProfilePage() {
                         <CardContent className="space-y-4">
                             <div>
                                 <Label htmlFor="fullName">Nombre Completo</Label>
-                                <Input id="fullName" defaultValue={user.displayName || ''} />
+                                <Input id="fullName" defaultValue={currentUser?.displayName || user.displayName || ''} />
                             </div>
                              <Button><Save className="mr-2 h-4 w-4" />Guardar Nombre</Button>
                         </CardContent>
