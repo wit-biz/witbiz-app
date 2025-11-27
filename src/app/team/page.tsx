@@ -2,7 +2,7 @@
 
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useCallback } from "react";
 import { Header } from "@/components/header";
 import {
   Card,
@@ -18,7 +18,6 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import { Separator } from "@/components/ui/separator";
 import { InviteMemberDialog } from "@/components/shared/InviteMemberDialog";
 import { type AppPermissions, type AppUser } from "@/lib/types";
 import {
@@ -30,6 +29,10 @@ import {
 import { useCRMData } from "@/contexts/CRMDataContext";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { useToast } from "@/hooks/use-toast";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { EditMemberDialog } from "@/components/shared/EditMemberDialog";
+import { Loader2 } from "lucide-react";
+
 
 const allPermissions: { key: keyof AppPermissions; label: string; section: string }[] = [
     // Dashboard
@@ -109,8 +112,12 @@ const initialRoles = [
 export default function TeamPage() {
     const [isInviteDialogOpen, setIsInviteDialogOpen] = useState(false);
     const [roles, setRoles] = useState(initialRoles);
-    const { currentUser, teamMembers, registerUser } = useCRMData();
+    const { currentUser, teamMembers, registerUser, updateUser, deleteUser } = useCRMData();
     const { toast } = useToast();
+
+    const [userToEdit, setUserToEdit] = useState<AppUser | null>(null);
+    const [userToDelete, setUserToDelete] = useState<AppUser | null>(null);
+    const [isProcessing, setIsProcessing] = useState(false);
 
     const canInvite = currentUser?.permissions?.team_invite ?? false;
 
@@ -141,7 +148,7 @@ export default function TeamPage() {
         );
         toast({
             title: "Permiso Actualizado",
-            description: `Se ha actualizado un permiso para el rol ${roleId}.`,
+            description: `Se ha guardado la actualización para el rol ${roleId}.`,
         });
     };
     
@@ -156,9 +163,42 @@ export default function TeamPage() {
     }, []);
 
     const handleInvite = async (name: string, email: string, role: string) => {
-        // The default password is 'WitBiz!123'
         await registerUser(name, email, 'WitBiz!123', role);
     };
+
+    const handleEditUser = (user: AppUser) => {
+        setUserToEdit(user);
+    };
+
+    const handleDeleteClick = (user: AppUser) => {
+        setUserToDelete(user);
+    };
+    
+    const confirmDelete = async () => {
+        if (!userToDelete) return;
+        setIsProcessing(true);
+        const success = await deleteUser(userToDelete.id);
+        if (success) {
+            toast({ title: 'Usuario Eliminado', description: `El usuario ${userToDelete.name} ha sido eliminado.` });
+        } else {
+            toast({ variant: 'destructive', title: 'Error', description: 'No se pudo eliminar el usuario.' });
+        }
+        setIsProcessing(false);
+        setUserToDelete(null);
+    };
+    
+    const handleUpdateUser = async (userId: string, name: string, role: string) => {
+        setIsProcessing(true);
+        const success = await updateUser(userId, { name, role });
+        if (success) {
+            toast({ title: 'Usuario Actualizado', description: 'Los datos del usuario han sido actualizados.' });
+        } else {
+             toast({ variant: 'destructive', title: 'Error', description: 'No se pudo actualizar el usuario.' });
+        }
+        setIsProcessing(false);
+        setUserToEdit(null);
+    };
+
 
   return (
     <>
@@ -220,8 +260,8 @@ export default function TeamPage() {
                                     <TableCell>{member.email}</TableCell>
                                     <TableCell><Badge variant="secondary">{member.role}</Badge></TableCell>
                                     <TableCell className="text-right">
-                                        <Button variant="ghost" size="icon"><Edit className="h-4 w-4" /></Button>
-                                        <Button variant="ghost" size="icon" className="text-destructive"><Trash2 className="h-4 w-4" /></Button>
+                                        <Button variant="ghost" size="icon" onClick={() => handleEditUser(member)}><Edit className="h-4 w-4" /></Button>
+                                        <Button variant="ghost" size="icon" className="text-destructive" onClick={() => handleDeleteClick(member)}><Trash2 className="h-4 w-4" /></Button>
                                     </TableCell>
                                 </TableRow>
                             ))}
@@ -282,6 +322,33 @@ export default function TeamPage() {
         roles={roles.map(r => r.name).filter(name => name !== 'Director' && name !== 'Promoter')}
         onInvite={handleInvite}
     />
+    {userToEdit && (
+        <EditMemberDialog
+            isOpen={!!userToEdit}
+            onOpenChange={() => setUserToEdit(null)}
+            user={userToEdit}
+            roles={roles.map(r => r.name).filter(name => name !== 'Director' && name !== 'Promoter')}
+            onSave={handleUpdateUser}
+            isProcessing={isProcessing}
+        />
+    )}
+     <AlertDialog open={!!userToDelete} onOpenChange={() => setUserToDelete(null)}>
+        <AlertDialogContent>
+            <AlertDialogHeader>
+                <AlertDialogTitle>¿Eliminar Permanentemente?</AlertDialogTitle>
+                <AlertDialogDescription>
+                    Esta acción eliminará al usuario "{userToDelete?.name}" de la base de datos de la aplicación.
+                    Esta acción no se puede deshacer.
+                </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+                <AlertDialogCancel disabled={isProcessing}>Cancelar</AlertDialogCancel>
+                <AlertDialogAction onClick={confirmDelete} disabled={isProcessing} className="bg-destructive hover:bg-destructive/90">
+                    {isProcessing ? <Loader2 className="h-4 w-4 animate-spin"/> : 'Eliminar'}
+                </AlertDialogAction>
+            </AlertDialogFooter>
+        </AlertDialogContent>
+    </AlertDialog>
     </>
   );
 }

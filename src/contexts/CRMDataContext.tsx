@@ -97,6 +97,8 @@ interface CRMContextType {
   restoreSupplier: (supplierId: string) => Promise<boolean>;
 
   registerUser: (name: string, email: string, pass: string, role: string) => Promise<any>;
+  updateUser: (userId: string, updates: Partial<AppUser>) => Promise<boolean>;
+  deleteUser: (userId: string) => Promise<boolean>;
 }
 
 const CRMContext = createContext<CRMContextType | undefined>(undefined);
@@ -114,7 +116,7 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
     const userProfileRef = useMemoFirebase(() => user ? doc(firestore, 'users', user.uid) : null, [firestore, user]);
     const { data: userProfile, isLoading: isLoadingUserProfile } = useDoc<AppUser>(userProfileRef);
 
-    const usersCollection = useMemoFirebase(() => user ? collection(firestore, 'users') : null, [firestore, user]);
+    const usersCollection = useMemoFirebase(() => collection(firestore, 'users'), [firestore]);
     const { data: teamMembers = [], isLoading: isLoadingTeamMembers } = useCollection<AppUser>(usersCollection);
 
     // --- Collections ---
@@ -215,6 +217,30 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
         }
     };
     
+    const updateUser = async (userId: string, updates: Partial<AppUser>): Promise<boolean> => {
+        if (!firestore) return false;
+        try {
+            const userDocRef = doc(firestore, 'users', userId);
+            await setDocumentNonBlocking(userDocRef, updates, { merge: true });
+            return true;
+        } catch (error) {
+            console.error("Error updating user:", error);
+            return false;
+        }
+    };
+
+    const deleteUser = async (userId: string): Promise<boolean> => {
+        if (!firestore) return false;
+        try {
+            const userDocRef = doc(firestore, 'users', userId);
+            await deleteDocumentNonBlocking(userDocRef);
+            return true;
+        } catch (error) {
+            console.error("Error deleting user:", error);
+            return false;
+        }
+    };
+
     // --- Data Handlers ---
 
     const addClient = async (newClientData: Omit<Client, 'id'>): Promise<Client | null> => {
@@ -682,6 +708,8 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
         addSupplier, updateSupplier, deleteSupplier, restoreSupplier,
         
         registerUser,
+        updateUser,
+        deleteUser,
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }), [
         currentUser, isUserLoading, isLoadingUserProfile, teamMembers, clients, isLoadingClients, 
