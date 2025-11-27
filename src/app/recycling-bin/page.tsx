@@ -8,21 +8,27 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/com
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { Loader2, Trash2, Users, ListTodo, FileText, UserCheck, Truck, History, Briefcase, StickyNote } from 'lucide-react';
+import { Loader2, Trash2, Users, ListTodo, FileText, History, Briefcase, StickyNote } from 'lucide-react';
 import { useCRMData } from '@/contexts/CRMDataContext';
 import { formatDateString } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import { subDays, isBefore } from 'date-fns';
-import { Task, ServiceWorkflow, Note, AppUser } from '@/lib/types';
+import { Task, ServiceWorkflow, Note, AppUser, Client, Promoter, Supplier } from '@/lib/types';
+import { Badge } from '@/components/ui/badge';
 
 
 type EntityType = 'client' | 'task' | 'document' | 'promoter' | 'supplier' | 'service' | 'note' | 'user';
+
+type ContactEntityType = 'client' | 'user' | 'promoter' | 'supplier';
 
 type EntityToDelete = {
   id: string;
   name: string;
   type: EntityType;
 };
+
+type ArchivedContact = (Client | AppUser | Promoter | Supplier) & { contactType: ContactEntityType };
+
 
 export default function RecyclingBinPage() {
   const { toast } = useToast();
@@ -40,14 +46,21 @@ export default function RecyclingBinPage() {
   const [entityToDelete, setEntityToDelete] = useState<EntityToDelete | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
 
-  const archivedClients = useMemo(() => (clients || []).filter(c => c.status === 'Archivado'), [clients]);
+  const archivedContacts = useMemo(() => {
+    const allContacts: ArchivedContact[] = [];
+    (clients || []).filter(c => c.status === 'Archivado').forEach(c => allContacts.push({ ...c, contactType: 'client' }));
+    (teamMembers || []).filter(u => u.status === 'Archivado').forEach(u => allContacts.push({ ...u, contactType: 'user' }));
+    (promoters || []).filter(p => p.status === 'Archivado').forEach(p => allContacts.push({ ...p, contactType: 'promoter' }));
+    (suppliers || []).filter(s => s.status === 'Archivado').forEach(s => allContacts.push({ ...s, contactType: 'supplier' }));
+    return allContacts.sort((a,b) => (b.archivedAt?.toMillis() || 0) - (a.archivedAt?.toMillis() || 0));
+  }, [clients, teamMembers, promoters, suppliers]);
+
+  const isLoadingContacts = isLoadingClients || isLoadingTeamMembers || isLoadingPromoters || isLoadingSuppliers;
+  
   const archivedTasks = useMemo(() => (tasks || []).filter(t => t.status === 'Archivado'), [tasks]);
   const archivedDocuments = useMemo(() => (documents || []).filter(d => d.status === 'Archivado'), [documents]);
-  const archivedPromoters = useMemo(() => (promoters || []).filter(p => p.status === 'Archivado'), [promoters]);
-  const archivedSuppliers = useMemo(() => (suppliers || []).filter(s => s.status === 'Archivado'), [suppliers]);
   const archivedServices = useMemo(() => (serviceWorkflows || []).filter(s => s.status === 'Archivado'), [serviceWorkflows]);
   const archivedNotes = useMemo(() => (notes || []).filter(n => n.status === 'Archivado'), [notes]);
-  const archivedUsers = useMemo(() => (teamMembers || []).filter(u => u.status === 'Archivado'), [teamMembers]);
   
   const oneMonthAgo = subDays(new Date(), 30);
 
@@ -95,16 +108,23 @@ export default function RecyclingBinPage() {
     setEntityToDelete(null);
     setIsProcessing(false);
   };
+  
+  const getContactTypeLabel = (type: ContactEntityType) => {
+      switch(type) {
+          case 'client': return 'Cliente';
+          case 'user': return 'Usuario';
+          case 'promoter': return 'Promotor';
+          case 'supplier': return 'Proveedor';
+          default: return 'Contacto';
+      }
+  }
 
   const tabs = [
-    { type: 'client' as EntityType, icon: Users, label: 'Clientes', data: archivedClients, isLoading: isLoadingClients },
-    { type: 'user' as EntityType, icon: Users, label: 'Usuarios', data: archivedUsers, isLoading: isLoadingTeamMembers },
-    { type: 'promoter' as EntityType, icon: UserCheck, label: 'Promotores', data: archivedPromoters, isLoading: isLoadingPromoters },
-    { type: 'supplier' as EntityType, icon: Truck, label: 'Proveedores', data: archivedSuppliers, isLoading: isLoadingSuppliers },
-    { type: 'task' as EntityType, icon: ListTodo, label: 'Tareas', data: archivedTasks, isLoading: isLoadingTasks },
-    { type: 'document' as EntityType, icon: FileText, label: 'Documentos', data: archivedDocuments, isLoading: isLoadingDocuments },
-    { type: 'service' as EntityType, icon: Briefcase, label: 'Servicios', data: archivedServices, isLoading: isLoadingWorkflows },
-    { type: 'note' as EntityType, icon: StickyNote, label: 'Notas', data: archivedNotes, isLoading: isLoadingNotes },
+    { type: 'contact' as const, icon: Users, label: 'Contactos', data: archivedContacts, isLoading: isLoadingContacts },
+    { type: 'task' as const, icon: ListTodo, label: 'Tareas', data: archivedTasks, isLoading: isLoadingTasks },
+    { type: 'document' as const, icon: FileText, label: 'Documentos', data: archivedDocuments, isLoading: isLoadingDocuments },
+    { type: 'service' as const, icon: Briefcase, label: 'Servicios', data: archivedServices, isLoading: isLoadingWorkflows },
+    { type: 'note' as const, icon: StickyNote, label: 'Notas', data: archivedNotes, isLoading: isLoadingNotes },
   ];
   
   const getItemName = (item: any, type: EntityType) => {
@@ -113,7 +133,6 @@ export default function RecyclingBinPage() {
     if (type === 'user') return (item as AppUser).name;
     return item.name;
   }
-
 
   return (
     <>
@@ -131,8 +150,8 @@ export default function RecyclingBinPage() {
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
-                    <Tabs defaultValue="client" className="w-full">
-                        <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 mb-6">
+                    <Tabs defaultValue="contact" className="w-full">
+                        <TabsList className="grid w-full grid-cols-2 sm:grid-cols-3 md:grid-cols-5 mb-6">
                             {tabs.map(tab => (
                                 <TabsTrigger key={tab.type} value={tab.type}>
                                     <tab.icon className="mr-2 h-4 w-4"/>
@@ -141,7 +160,48 @@ export default function RecyclingBinPage() {
                             ))}
                         </TabsList>
 
-                        {tabs.map(tab => (
+                        <TabsContent value="contact">
+                             {isLoadingContacts ? (
+                                <div className="flex items-center justify-center p-12"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>
+                            ) : (
+                                <Table>
+                                    <TableHeader>
+                                        <TableRow>
+                                            <TableHead>Nombre</TableHead>
+                                            <TableHead>Tipo</TableHead>
+                                            <TableHead>Fecha de Archivado</TableHead>
+                                            <TableHead className="text-right">Acciones</TableHead>
+                                        </TableRow>
+                                    </TableHeader>
+                                    <TableBody>
+                                        {archivedContacts.length > 0 ? archivedContacts.map(item => {
+                                            const archivedDate = item.archivedAt?.toDate();
+                                            const isExpired = archivedDate ? isBefore(archivedDate, oneMonthAgo) : false;
+                                            return (
+                                            <TableRow key={`${item.contactType}-${item.id}`} className={isExpired ? 'bg-destructive/10' : ''}>
+                                                <TableCell className="font-medium">{item.name}</TableCell>
+                                                <TableCell><Badge variant="secondary">{getContactTypeLabel(item.contactType)}</Badge></TableCell>
+                                                <TableCell>{archivedDate ? formatDateString(archivedDate) : 'N/A'}</TableCell>
+                                                <TableCell className="text-right">
+                                                    <Button variant="ghost" size="sm" onClick={() => handleRestore(item.id, item.contactType)} disabled={isProcessing}>
+                                                        <History className="mr-2 h-4 w-4"/> Restaurar
+                                                    </Button>
+                                                    <Button variant="ghost" size="sm" className="text-destructive" onClick={() => setEntityToDelete({ id: item.id, name: item.name, type: item.contactType })} disabled={isProcessing}>
+                                                        <Trash2 className="mr-2 h-4 w-4"/> Borrar
+                                                    </Button>
+                                                </TableCell>
+                                            </TableRow>
+                                        )}) : (
+                                            <TableRow>
+                                                <TableCell colSpan={4} className="text-center h-24">La papelera para contactos está vacía.</TableCell>
+                                            </TableRow>
+                                        )}
+                                    </TableBody>
+                                </Table>
+                            )}
+                        </TabsContent>
+
+                        {tabs.filter(t => t.type !== 'contact').map(tab => (
                              <TabsContent key={tab.type} value={tab.type}>
                                 {tab.isLoading ? (
                                     <div className="flex items-center justify-center p-12"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>
@@ -167,7 +227,7 @@ export default function RecyclingBinPage() {
                                                         <Button variant="ghost" size="sm" onClick={() => handleRestore(item.id, tab.type)} disabled={isProcessing}>
                                                           <History className="mr-2 h-4 w-4"/> Restaurar
                                                         </Button>
-                                                        <Button variant="ghost" size="sm" className="text-destructive" onClick={() => setEntityToDelete({ id: item.id, name: name, type: tab.type })} disabled={isProcessing}>
+                                                        <Button variant="ghost" size="sm" className="text-destructive" onClick={() => setEntityToDelete({ id: item.id, name: name, type: tab.type as EntityType })} disabled={isProcessing}>
                                                           <Trash2 className="mr-2 h-4 w-4"/> Borrar
                                                         </Button>
                                                     </TableCell>
@@ -207,3 +267,5 @@ export default function RecyclingBinPage() {
     </>
   );
 }
+
+    
