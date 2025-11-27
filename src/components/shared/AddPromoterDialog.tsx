@@ -37,7 +37,7 @@ const promoterSchema = z.object({
   email: z.string().email({ message: "Email inválido." }).optional().or(z.literal('')),
   phone: z.string().optional(),
   status: z.enum(['Activo', 'Inactivo']),
-  accessCode: z.string().optional(),
+  accessCode: z.string().length(6, { message: 'El código de acceso debe tener 6 dígitos.' }),
   referredClients: z.number().optional(),
   totalCommissions: z.number().optional(),
 });
@@ -63,14 +63,6 @@ export function AddPromoterDialog({ isOpen, onClose, promoter, onAdd, onSave }: 
 
   const form = useForm<PromoterFormValues>({
     resolver: zodResolver(promoterSchema),
-    defaultValues: {
-      id: promoter?.id || '',
-      name: promoter?.name || '',
-      email: promoter?.email || '',
-      phone: promoter?.phone || '',
-      status: promoter?.status || 'Activo',
-      accessCode: promoter?.accessCode || generateAccessCode(),
-    },
   });
   
   useEffect(() => {
@@ -107,7 +99,7 @@ export function AddPromoterDialog({ isOpen, onClose, promoter, onAdd, onSave }: 
   };
   
   const handleGenerateNewCode = () => {
-      form.setValue('accessCode', generateAccessCode());
+      form.setValue('accessCode', generateAccessCode(), { shouldValidate: true });
   };
 
   return (

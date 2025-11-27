@@ -29,14 +29,14 @@ export default function PromoterLoginPage() {
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
-
-    await new Promise(resolve => setTimeout(resolve, 500));
     
-    if (!promoters) {
+    // The isLoadingPromoters flag from the context ensures we don't proceed
+    // until data is ready. The button is already disabled, but this is a safeguard.
+    if (isLoadingPromoters || !promoters) {
         toast({
             variant: 'destructive',
             title: 'Error de carga',
-            description: 'Los datos de los promotores aún no se han cargado. Por favor, espere un momento y vuelva a intentarlo.',
+            description: 'Los datos de los promotores aún se están cargando. Por favor, espere un momento y vuelva a intentarlo.',
         });
         setIsSubmitting(false);
         return;
