@@ -1,5 +1,4 @@
 
-
 import type { Client, Task, Document, Note, WorkflowStage, NavItem, Promoter, ServiceWorkflow, SubService, AppUser, Supplier } from './types';
 import { addDays, format, subDays } from 'date-fns';
 import { Trash2 } from 'lucide-react';
@@ -99,8 +98,8 @@ export const serviceWorkflows: ServiceWorkflow[] = [
         title: 'Prospecto',
         order: 1,
         actions: [
-          { id: 'f-prospecto-1', title: 'Identificar servicio de interés del cliente', order: 1, subActions: [] },
-          { id: 'f-prospecto-2', title: 'Agendar reunión inicial', order: 2, subActions: [] },
+          { id: 'f-prospecto-1', title: 'Cual servicio le interesa al cliente', order: 1, subActions: [] },
+          { id: 'f-prospecto-2', title: 'Agendar reunión', order: 2, subActions: [] },
         ],
         subStages: [],
       },
@@ -109,7 +108,7 @@ export const serviceWorkflows: ServiceWorkflow[] = [
         title: 'Propuesta y Negociación',
         order: 2,
         actions: [
-          { id: 'f-propuesta-1', title: 'Registrar negociación de cierre', order: 1, subActions: [] },
+          { id: 'f-propuesta-1', title: 'Cual fue la negociación del cierre', order: 1, subActions: [] },
         ],
         subStages: [],
       },
@@ -118,7 +117,7 @@ export const serviceWorkflows: ServiceWorkflow[] = [
         title: 'Onboarding',
         order: 3,
         actions: [
-          { id: 'f-onboarding-1', title: 'Alta del cliente en el sistema', order: 1, subActions: [] },
+          { id: 'f-onboarding-1', title: 'Alta del cliente', order: 1, subActions: [] },
           { id: 'f-onboarding-2', title: 'Recopilar documentos generales (Opcional)', order: 2, subActions: [] },
           { id: 'f-onboarding-3', title: 'Recopilar Constancia de Situación Fiscal', order: 3, subActions: [], requiredDocumentForCompletion: true, requiredDocuments: [{id: 'doc16', description: 'Constancia de Situación Fiscal'}] },
           { id: 'f-onboarding-4', title: 'Recopilar concepto de facturación sugerido', order: 4, subActions: [], requiredDocumentForCompletion: true, requiredDocuments: [{id: 'doc17', description: 'Concepto de facturación sugerido'}] },
