@@ -126,6 +126,7 @@ interface CRMContextType {
   registerUser: (name: string, email: string, pass: string, role: string) => Promise<any>;
   updateUser: (userId: string, updates: Partial<AppUser>) => Promise<boolean>;
   deleteUser: (userId: string, permanent?: boolean) => Promise<boolean>;
+  restoreUser: (userId: string) => Promise<boolean>;
 }
 
 const CRMContext = createContext<CRMContextType | undefined>(undefined);
@@ -280,6 +281,14 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
         }
         return true;
     };
+
+    const restoreUser = async (userId: string): Promise<boolean> => {
+        if (!firestore) return false;
+        const docRef = doc(firestore, 'users', userId);
+        await setDocumentNonBlocking(docRef, { status: 'Activo', archivedAt: null }, { merge: true });
+        return true;
+    };
+
 
     // --- Data Handlers ---
 
@@ -821,6 +830,7 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
         registerUser,
         updateUser,
         deleteUser,
+        restoreUser,
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }), [
         currentUser, isUserLoading, isLoadingUserProfile, teamMembers, clients, isLoadingClients, 

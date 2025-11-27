@@ -13,10 +13,10 @@ import { useCRMData } from '@/contexts/CRMDataContext';
 import { formatDateString } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import { subDays, isBefore } from 'date-fns';
-import { Task, ServiceWorkflow, Note } from '@/lib/types';
+import { Task, ServiceWorkflow, Note, AppUser } from '@/lib/types';
 
 
-type EntityType = 'client' | 'task' | 'document' | 'promoter' | 'supplier' | 'service' | 'note';
+type EntityType = 'client' | 'task' | 'document' | 'promoter' | 'supplier' | 'service' | 'note' | 'user';
 
 type EntityToDelete = {
   id: string;
@@ -34,6 +34,7 @@ export default function RecyclingBinPage() {
     suppliers, isLoadingSuppliers, restoreSupplier, deleteSupplier,
     serviceWorkflows, isLoadingWorkflows, restoreService, deleteService,
     notes, isLoadingNotes, restoreNote, deleteNote,
+    teamMembers, isLoadingTeamMembers, restoreUser, deleteUser,
   } = useCRMData();
 
   const [entityToDelete, setEntityToDelete] = useState<EntityToDelete | null>(null);
@@ -46,6 +47,7 @@ export default function RecyclingBinPage() {
   const archivedSuppliers = useMemo(() => (suppliers || []).filter(s => s.status === 'Archivado'), [suppliers]);
   const archivedServices = useMemo(() => (serviceWorkflows || []).filter(s => s.status === 'Archivado'), [serviceWorkflows]);
   const archivedNotes = useMemo(() => (notes || []).filter(n => n.status === 'Archivado'), [notes]);
+  const archivedUsers = useMemo(() => (teamMembers || []).filter(u => u.status === 'Archivado'), [teamMembers]);
   
   const oneMonthAgo = subDays(new Date(), 30);
 
@@ -59,6 +61,7 @@ export default function RecyclingBinPage() {
     else if (type === 'supplier') success = await restoreSupplier(id);
     else if (type === 'service') success = await restoreService(id);
     else if (type === 'note') success = await restoreNote(id);
+    else if (type === 'user') success = await restoreUser(id);
     
     if (success) {
         toast({ title: "Elemento Restaurado", description: "El elemento ha vuelto a su estado activo." });
@@ -81,6 +84,7 @@ export default function RecyclingBinPage() {
     else if (type === 'supplier') success = await deleteSupplier(id, true);
     else if (type === 'service') success = await deleteService(id, true);
     else if (type === 'note') success = await deleteNote(id, true);
+    else if (type === 'user') success = await deleteUser(id, true);
 
 
     if (success) {
@@ -94,6 +98,7 @@ export default function RecyclingBinPage() {
 
   const tabs = [
     { type: 'client' as EntityType, icon: Users, label: 'Clientes', data: archivedClients, isLoading: isLoadingClients },
+    { type: 'user' as EntityType, icon: Users, label: 'Usuarios', data: archivedUsers, isLoading: isLoadingTeamMembers },
     { type: 'promoter' as EntityType, icon: UserCheck, label: 'Promotores', data: archivedPromoters, isLoading: isLoadingPromoters },
     { type: 'supplier' as EntityType, icon: Truck, label: 'Proveedores', data: archivedSuppliers, isLoading: isLoadingSuppliers },
     { type: 'task' as EntityType, icon: ListTodo, label: 'Tareas', data: archivedTasks, isLoading: isLoadingTasks },
@@ -105,6 +110,7 @@ export default function RecyclingBinPage() {
   const getItemName = (item: any, type: EntityType) => {
     if (type === 'task') return (item as Task).title;
     if (type === 'note') return (item as Note).text.substring(0, 50) + '...';
+    if (type === 'user') return (item as AppUser).name;
     return item.name;
   }
 
@@ -126,7 +132,7 @@ export default function RecyclingBinPage() {
                 </CardHeader>
                 <CardContent>
                     <Tabs defaultValue="client" className="w-full">
-                        <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 mb-6">
+                        <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 mb-6">
                             {tabs.map(tab => (
                                 <TabsTrigger key={tab.type} value={tab.type}>
                                     <tab.icon className="mr-2 h-4 w-4"/>
