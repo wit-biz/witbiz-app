@@ -14,7 +14,7 @@ import { Label } from '@/components/ui/label';
 import { Logo } from '@/components/shared/logo';
 import { ArrowLeft, KeyRound, Loader2 } from 'lucide-react';
 import Link from 'next/link';
-import { useState, type FormEvent } from 'react';
+import { useState, type FormEvent, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
 import { useCRMData } from '@/contexts/CRMDataContext';
@@ -25,12 +25,26 @@ export default function PromoterLoginPage() {
   const router = useRouter();
   const { toast } = useToast();
   const { promoters, isLoadingPromoters } = useCRMData();
+  const [isClient, setIsClient] = useState(false);
+
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
     
-    // Data is guaranteed to be loaded here because the form is disabled otherwise
+    if (!promoters) {
+        toast({
+            variant: 'destructive',
+            title: 'Error de carga',
+            description: 'Los datos de los promotores aún no se han cargado. Por favor, espere un momento y vuelva a intentarlo.',
+        });
+        setIsSubmitting(false);
+        return;
+    }
+
     const validPromoter = promoters.find(p => p.accessCode === accessCode && p.status === 'Activo');
 
     if (validPromoter) {
@@ -51,6 +65,8 @@ export default function PromoterLoginPage() {
     }
   };
 
+  const isDisabled = !isClient || isLoadingPromoters || isSubmitting;
+
   return (
     <div className="relative flex min-h-screen items-center justify-center bg-background p-4 overflow-hidden">
         <div className="animated-gradient-bg"></div>
@@ -64,7 +80,7 @@ export default function PromoterLoginPage() {
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
-              <fieldset disabled={isLoadingPromoters || isSubmitting} className="space-y-4">
+              <fieldset disabled={isDisabled} className="space-y-4">
                 <div>
                   <Label htmlFor="access-code">Código de Acceso (6 dígitos)</Label>
                   <Input
