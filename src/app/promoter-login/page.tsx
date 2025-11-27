@@ -33,19 +33,11 @@ export default function PromoterLoginPage() {
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    setIsSubmitting(true);
-    
-    if (!promoters) {
-        toast({
-            variant: 'destructive',
-            title: 'Error de carga',
-            description: 'Los datos de los promotores aún no se han cargado. Por favor, espere un momento y vuelva a intentarlo.',
-        });
-        setIsSubmitting(false);
-        return;
-    }
+    if (isLoadingPromoters) return; // Defensive check
 
-    const validPromoter = promoters.find(p => p.accessCode === accessCode && p.status === 'Activo');
+    setIsSubmitting(true);
+
+    const validPromoter = promoters?.find(p => p.accessCode === accessCode && p.status === 'Activo');
 
     if (validPromoter) {
       toast({
@@ -92,7 +84,7 @@ export default function PromoterLoginPage() {
                       maxLength={6}
                   />
                 </div>
-                <Button type="submit" className="w-full" disabled={accessCode.length < 6}>
+                <Button type="submit" className="w-full" disabled={accessCode.length < 6 || isDisabled}>
                   {isLoadingPromoters || isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <KeyRound className="mr-2 h-4 w-4" />}
                   Acceder
                 </Button>
