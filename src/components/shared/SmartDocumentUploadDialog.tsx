@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import React, { useState, useCallback, useEffect } from 'react';
@@ -193,7 +194,7 @@ export function SmartDocumentUploadDialog({
         onDocumentUploaded?.(newDoc.id);
         handleDialogChange(false);
     } else {
-        toast({ variant: 'destructive', title: 'Error al subir', description: 'No se pudo guardar el documento.' });
+        // Error toast is handled inside addDocument
     }
 
     setIsSubmitting(false);

@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import React, { useState, useMemo } from "react";
@@ -18,10 +19,15 @@ function ServiceDocuments({ serviceId }: { serviceId: string }) {
   const { toast } = useToast();
   
   const handleDownload = (doc: Document) => {
-    toast({
-        title: "Descarga Simulada",
-        description: `Se ha iniciado la descarga de "${doc.name}".`
-    });
+    if (doc.downloadURL) {
+        window.open(doc.downloadURL, '_blank');
+    } else {
+        toast({
+            variant: "destructive",
+            title: "Sin URL",
+            description: "No se pudo encontrar la URL de descarga para este archivo."
+        });
+    }
   };
 
   return (

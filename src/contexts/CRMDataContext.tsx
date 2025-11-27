@@ -24,8 +24,9 @@ import {
     type Promoter,
     type Supplier,
 } from '@/lib/types';
-import { useUser, useFirestore, useMemoFirebase, useCollection, useDoc, useAuth, addDocumentNonBlocking, setDocumentNonBlocking, deleteDocumentNonBlocking } from '@/firebase';
+import { useUser, useFirestore, useMemoFirebase, useCollection, useDoc, useAuth, addDocumentNonBlocking, setDocumentNonBlocking, deleteDocumentNonBlocking, useStorage } from '@/firebase';
 import { collection, doc, writeBatch, serverTimestamp, query, where, updateDoc } from 'firebase/firestore';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
 import { teamMembers as mockTeamMembers, serviceWorkflows as mockServiceWorkflows } from '@/lib/data';
 import { addDays, format } from 'date-fns';
@@ -56,7 +57,7 @@ interface CRMContextType {
 
   documents: Document[];
   isLoadingDocuments: boolean;
-  addDocument: (newDocumentData: Omit<Document, 'id' | 'uploadedAt' | 'downloadURL'>, file?: File) => Promise<Document | null>;
+  addDocument: (newDocumentData: Omit<Document, 'id' | 'uploadedAt' | 'downloadURL'>, file: File) => Promise<Document | null>;
   updateDocument: (documentId: string, updates: Partial<Document>) => Promise<boolean>;
   deleteDocument: (documentId: string, permanent?: boolean) => Promise<boolean>;
   restoreDocument: (documentId: string) => Promise<boolean>;
@@ -104,6 +105,7 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
     const { showNotification } = useGlobalNotification();
     const firestore = useFirestore();
     const auth = useAuth();
+    const storage = useStorage();
     const { user, isUserLoading } = useUser();
 
     // MOCK DATA STATES (for data not yet in firestore)
@@ -112,6 +114,9 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
     // LOADING STATES
     
     const [currentUser, setCurrentUser] = useState<AuthenticatedUser | null>(null);
+    const userProfileRef = useMemoFirebase(() => user ? doc(firestore, 'users', user.uid) : null, [firestore, user]);
+    const { data: userProfile, isLoading: isLoadingUserProfile } = useDoc<AppUser>(userProfileRef);
+
 
     // --- Collections ---
     const clientsCollection = useMemoFirebase(() => user ? collection(firestore, 'users', user.uid, 'clients') : null, [firestore, user]);
@@ -133,26 +138,49 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
 
 
     useEffect(() => {
-        if (user) {
-            // Find user in mock team members to assign permissions. In a real app, this would come from the DB.
-            const userInTeam = teamMembers.find(m => m.email === user.email);
+    if (user && !isLoadingUserProfile) {
+        if (userProfile) {
+            // This is where you would fetch role permissions in a real app.
+            // For now, we'll assign full permissions for the "Director" role.
+            const rolePermissions: Partial<AppPermissions> = userProfile.role === 'Director' 
+                ? {
+                    dashboard: true, clients_view: true, clients_create: true, clients_edit: true, clients_delete: true,
+                    tasks_view: true, tasks_create: true, tasks_edit: true, tasks_delete: true,
+                    crm_view: true, crm_edit: true, finances_view: true, admin_view: true, team_invite: true,
+                    documents_view: true, services_view: true,
+                }
+                : { // Default "Colaborador" permissions
+                    dashboard: true, clients_view: true, clients_create: true, clients_edit: false, clients_delete: false,
+                    tasks_view: true, tasks_create: true, tasks_edit: true, tasks_delete: false,
+                    crm_view: true, crm_edit: false, finances_view: false, admin_view: false, team_invite: false,
+                    documents_view: true, services_view: true,
+                };
+
             setCurrentUser({
                 uid: user.uid,
                 email: user.email,
-                displayName: user.displayName,
-                photoURL: userInTeam?.photoURL || user.photoURL,
-                // In a real app, permissions would be fetched based on the user's role from the database.
-                permissions: { 
-                  dashboard: true, clients_view: true, tasks_view: true, crm_view: true, finances_view: true, admin_view: true,
-                  clients_create: true, clients_edit: true, clients_delete: true,
-                  tasks_create: true, tasks_edit: true, tasks_delete: true,
-                  crm_edit: true, team_invite: true, documents_view: true, services_view: true,
-                },
+                displayName: userProfile.name || user.displayName,
+                photoURL: userProfile.photoURL || user.photoURL,
+                role: userProfile.role,
+                permissions: rolePermissions,
             });
-        } else {
-            setCurrentUser(null);
+             setTeamMembers([userProfile]);
+
+        } else if (user) {
+            // First time user, profile doesn't exist yet. Create it.
+            const newUserProfile: AppUser = {
+                id: user.uid,
+                name: user.displayName || 'Nuevo Usuario',
+                email: user.email || '',
+                role: 'Director', // First user is the director
+            };
+            setDocumentNonBlocking(doc(firestore, 'users', user.uid), newUserProfile, { merge: true });
         }
-    }, [user, teamMembers]);
+    } else if (!user && !isUserLoading) {
+        setCurrentUser(null);
+    }
+}, [user, userProfile, isUserLoading, isLoadingUserProfile, firestore]);
+
 
     const registerUser = async (name: string, email: string, pass: string) => {
         if (!auth || !firestore) {
@@ -166,10 +194,10 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
             await updateProfile(newUser, { displayName: name });
             const userDocRef = doc(firestore, "users", newUser.uid);
             await setDocumentNonBlocking(userDocRef, {
-                uid: newUser.uid,
+                id: newUser.uid,
+                name: name,
                 email: newUser.email,
-                displayName: name,
-                roleId: 'collaborator'
+                role: 'Colaborador' // New users are collaborators by default
             }, {});
 
             return userCredential;
@@ -383,17 +411,29 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
         return true;
     };
 
-    const addDocument = async (newDocumentData: Omit<Document, 'id' | 'uploadedAt' | 'downloadURL'>, file?: File): Promise<Document | null> => {
-        if (!documentsCollection) return null;
-        // In a real app, you'd upload the file to Firebase Storage and get a downloadURL
-        const newDoc = { 
-            ...newDocumentData,
-            status: 'Activo' as const,
-            uploadedAt: serverTimestamp(),
-            downloadURL: '#' // Placeholder
-        };
-        const docRef = await addDocumentNonBlocking(documentsCollection, newDoc);
-        return { id: docRef.id, ...newDoc } as Document;
+    const addDocument = async (newDocumentData: Omit<Document, 'id' | 'uploadedAt' | 'downloadURL'>, file: File): Promise<Document | null> => {
+        if (!documentsCollection || !user || !storage) return null;
+        
+        const filePath = `users/${user.uid}/documents/${Date.now()}_${file.name}`;
+        const storageRef = ref(storage, filePath);
+        
+        try {
+            const snapshot = await uploadBytes(storageRef, file);
+            const downloadURL = await getDownloadURL(snapshot.ref);
+
+            const newDoc = { 
+                ...newDocumentData,
+                status: 'Activo' as const,
+                uploadedAt: serverTimestamp(),
+                downloadURL: downloadURL
+            };
+            const docRef = await addDocumentNonBlocking(documentsCollection, newDoc);
+            return { id: docRef.id, ...newDoc } as Document;
+        } catch (error) {
+            console.error("Error uploading file or saving document:", error);
+            showNotification('error', 'Error de subida', 'No se pudo subir el archivo.');
+            return null;
+        }
     }
 
     const deleteDocument = async (id: string, permanent: boolean = false): Promise<boolean> => {
@@ -598,7 +638,7 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
     }
 
     const value = useMemo(() => ({
-        currentUser, isLoadingCurrentUser: isUserLoading, teamMembers,
+        currentUser, isLoadingCurrentUser: isUserLoading || isLoadingUserProfile, teamMembers,
         clients, isLoadingClients, 
         addClient, updateClient, deleteClient, restoreClient,
         getClientById: (id: string) => clients?.find(c => c.id === id),
@@ -637,7 +677,7 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
         registerUser,
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }), [
-        currentUser, isUserLoading, teamMembers, clients, isLoadingClients, 
+        currentUser, isUserLoading, isLoadingUserProfile, teamMembers, clients, isLoadingClients, 
         tasks, isLoadingTasks, documents, isLoadingDocuments, notes, isLoadingNotes,
         serviceWorkflows, isLoadingWorkflows, getActionById,
         promoters, isLoadingPromoters, suppliers, isLoadingSuppliers

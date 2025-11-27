@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import React, { useState, useMemo } from "react";
@@ -54,10 +55,15 @@ export function PromoterDetailView({ promoter, onClose }: PromoterDetailViewProp
     const referredClients = getClientsByPromoterId(promoter.id);
     
     const handleDownload = (doc: Document) => {
-        toast({
-            title: "Descarga Simulada",
-            description: `Se ha iniciado la descarga de "${doc.name}".`
-        });
+        if (doc.downloadURL) {
+            window.open(doc.downloadURL, '_blank');
+        } else {
+            toast({
+                variant: "destructive",
+                title: "Sin URL",
+                description: "Este documento no tiene una URL de descarga válida."
+            });
+        }
     };
     
     const handleOpenUpload = () => {

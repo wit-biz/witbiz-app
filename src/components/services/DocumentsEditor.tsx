@@ -1,12 +1,15 @@
 
+
 "use client";
 
 import React from "react";
 import { useCRMData } from "@/contexts/CRMDataContext";
 import { Button } from "@/components/ui/button";
-import { FileText, Trash2, UploadCloud } from "lucide-react";
+import { FileText, Trash2, UploadCloud, Download } from "lucide-react";
 import { Label } from "@/components/ui/label";
 import { useDialogs } from "@/contexts/DialogsContext";
+import { useToast } from "@/hooks/use-toast";
+import { type Document } from "@/lib/types";
 
 interface ServiceDocumentsEditorProps {
     serviceId: string;
@@ -16,11 +19,24 @@ interface ServiceDocumentsEditorProps {
 export function ServiceDocumentsEditor({ serviceId, canEdit }: ServiceDocumentsEditorProps) {
     const { getDocumentsByServiceId, deleteDocument } = useCRMData();
     const { setIsSmartUploadDialogOpen, setPreselectedServiceId } = useDialogs();
+    const { toast } = useToast();
     const documents = getDocumentsByServiceId(serviceId);
 
     const handleOpenUpload = () => {
         setPreselectedServiceId(serviceId);
         setIsSmartUploadDialogOpen(true);
+    };
+
+    const handleDownload = (doc: Document) => {
+        if (doc.downloadURL) {
+            window.open(doc.downloadURL, '_blank');
+        } else {
+            toast({
+                variant: 'destructive',
+                title: 'Error',
+                description: 'Este documento no tiene una URL de descarga válida.'
+            });
+        }
     };
 
     return (
@@ -34,11 +50,16 @@ export function ServiceDocumentsEditor({ serviceId, canEdit }: ServiceDocumentsE
                                 <FileText className="h-4 w-4 text-muted-foreground flex-shrink-0" />
                                 <p className="font-medium truncate text-sm" title={doc.name}>{doc.name}</p>
                             </div>
-                            {canEdit && (
-                                <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => deleteDocument(doc.id)}>
-                                    <Trash2 className="h-4 w-4" />
+                            <div className="flex items-center">
+                               <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleDownload(doc)}>
+                                    <Download className="h-4 w-4" />
                                 </Button>
-                            )}
+                                {canEdit && (
+                                    <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => deleteDocument(doc.id)}>
+                                        <Trash2 className="h-4 w-4" />
+                                    </Button>
+                                )}
+                            </div>
                         </li>
                     ))}
                 </ul>
