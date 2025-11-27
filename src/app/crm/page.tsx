@@ -141,6 +141,12 @@ export default function CrmPage() {
         setIsDetailDialogOpen(true);
     }
   };
+  
+  const activeWorkflows = useMemo(() => {
+    if (!serviceWorkflows) return [];
+    return serviceWorkflows.filter(s => s.status !== 'Archivado').sort((a,b) => (a.order || 0) - (b.order || 0));
+  }, [serviceWorkflows]);
+
 
   if (isLoadingWorkflows || isLoadingClients) {
     return (
@@ -170,7 +176,8 @@ export default function CrmPage() {
         </Button>
       </Header>
       <main className="flex-1 p-4 md:p-8 space-y-6">
-        {serviceWorkflows && serviceWorkflows.map(service => (
+        {activeWorkflows && activeWorkflows.length > 0 ? (
+          activeWorkflows.map(service => (
             <Card key={service.id} className="w-full">
                 <CardHeader>
                     <CardTitle className="text-xl">
@@ -197,7 +204,14 @@ export default function CrmPage() {
                     </div>
                 </CardContent>
             </Card>
-        ))}
+          ))
+        ) : (
+          <div className="col-span-full text-center text-muted-foreground py-16 border border-dashed rounded-lg">
+            <Briefcase className="mx-auto h-12 w-12 mb-4" />
+            <h3 className="text-lg font-semibold">No hay servicios configurados</h3>
+            <p className="text-sm mt-1">Vaya a la sección de configuración para añadir un nuevo servicio.</p>
+          </div>
+        )}
       </main>
       
       <ClientStageDetailDialog
