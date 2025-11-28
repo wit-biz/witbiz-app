@@ -246,7 +246,7 @@ export default function TeamPage() {
                         <Card>
                             <AccordionTrigger className="w-full p-0 [&_svg]:ml-auto [&_svg]:mr-4" disabled={!canManageRoles}>
                                 <CardHeader className="flex-1 text-left">
-                                  <div className="flex justify-between items-center">
+                                  <div className="flex justify-between items-center w-full">
                                     <CardTitle className="flex items-center gap-2"><KeyRound className="h-5 w-5 text-accent"/>{role.name}</CardTitle>
                                     {!role.isBaseRole && canManageRoles && (
                                         <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={(e) => { e.stopPropagation(); setRoleToDelete(role); }}>
@@ -348,5 +348,6 @@ export default function TeamPage() {
     </>
   );
 }
+
 
 
