@@ -28,6 +28,8 @@ import type { Client, WorkflowStage, ServiceWorkflow, SubStage, SubSubStage } fr
 import { useCRMData } from "@/contexts/CRMDataContext";
 import { ClientStageDetailDialog } from "@/components/shared/ClientStageDetailDialog";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { serviceWorkflows as staticServiceWorkflows } from "@/lib/data";
+
 
 type AnyStage = WorkflowStage | SubStage | SubSubStage;
 
@@ -94,7 +96,8 @@ const StageCard = ({
 
 
 export default function CrmPage() {
-  const { clients, isLoadingClients, serviceWorkflows, isLoadingWorkflows } = useCRMData();
+  const { clients, isLoadingClients, /* serviceWorkflows, */ isLoadingWorkflows } = useCRMData();
+  const serviceWorkflows = staticServiceWorkflows;
 
   const [selectedClientForDialog, setSelectedClientForDialog] = useState<Client | null>(null);
   const [selectedStageForDialog, setSelectedStageForDialog] = useState<AnyStage | null>(null);
