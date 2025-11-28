@@ -257,6 +257,14 @@ service cloud.firestore {
        match /tasks/{taskId} {
             allow get, list, create, update, delete: if isOwner(userId);
        }
+       
+       /**
+       * @description Manages logs for a user.
+       * @path /users/{userId}/logs/{logId}
+       */
+       match /logs/{logId} {
+            allow get, list, create, update, delete: if isOwner(userId);
+       }
 
        // --- Accounting Collections ---
        match /companies/{companyId} {
