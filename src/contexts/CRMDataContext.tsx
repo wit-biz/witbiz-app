@@ -191,10 +191,14 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
             if (userProfile) {
                 let rolePermissions: Partial<AppPermissions> = {};
                 let userRole = userProfile.role || 'Colaborador';
+                let userName = userProfile.name || user.displayName;
 
                 // Special override for founders
                 if (['witbiz.mx@gmail.com', 'saidsaigar@gmail.com'].includes(user.email || '')) {
                     userRole = 'Director';
+                    if (user.email === 'saidsaigar@gmail.com') {
+                        userName = 'Said Saigar';
+                    }
                 }
                 
                 if (userRole === 'Director') {
@@ -238,7 +242,7 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
                 setCurrentUser({
                     uid: user.uid,
                     email: user.email,
-                    displayName: userProfile.name || user.displayName,
+                    displayName: userName,
                     photoURL: userProfile.photoURL || user.photoURL,
                     role: userRole,
                     permissions: rolePermissions,
