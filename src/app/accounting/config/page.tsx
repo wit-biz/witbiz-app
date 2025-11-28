@@ -371,7 +371,7 @@ export default function AccountingConfigPage() {
     <div className="flex flex-col min-h-screen">
       <Header title="Configuración Contable" description="Gestione las entidades base de su sistema contable.">
         <Button variant="outline" asChild>
-          <Link href="/settings"><ArrowLeft className="mr-2 h-4 w-4" />Volver a Contabilidad</Link>
+          <Link href="/accounting"><ArrowLeft className="mr-2 h-4 w-4" />Volver a Contabilidad</Link>
         </Button>
       </Header>
       <main className="flex-1 p-4 md:p-8">
@@ -477,5 +477,3 @@ export default function AccountingConfigPage() {
     </div>
   );
 }
-
-    

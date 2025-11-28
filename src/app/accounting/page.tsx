@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import React, { useState, useMemo } from "react";
@@ -110,7 +109,7 @@ function LoanForm({ companies, onAddLoan }: { companies: Company[], onAddLoan: (
 
 
 
-export default function SettingsPage() {
+export default function AccountingPage() {
   const { toast } = useToast();
   const { 
       clients, 
