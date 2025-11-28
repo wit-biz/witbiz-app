@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import './globals.css';
@@ -10,14 +11,16 @@ import { DialogsProvider } from '@/contexts/DialogsContext';
 import { UserNav } from '@/components/shared/user-nav';
 import { ThemeProvider } from '@/components/theme-provider';
 import { FirebaseClientProvider, useUser } from '@/firebase';
-import { CRMDataProvider } from '@/contexts/CRMDataContext';
+import { CRMDataProvider, useCRMData } from '@/contexts/CRMDataContext';
 import { TasksProvider } from '@/contexts/TasksContext';
 import { useRouter, usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { Loader2 } from 'lucide-react';
+import { ForcePasswordChangeDialog } from '@/components/shared/ForcePasswordChangeDialog';
 
 function AppContent({ children }: { children: React.ReactNode }) {
   const { user, isUserLoading } = useUser();
+  const { currentUser, isLoadingCurrentUser } = useCRMData();
   const router = useRouter();
   const pathname = usePathname();
   const [isClient, setIsClient] = useState(false);
@@ -43,12 +46,14 @@ function AppContent({ children }: { children: React.ReactNode }) {
       }
     }
   }, [isUserLoading, user, router, pathname, isAuthPage, isPromoterRoute]);
+
+  const requiresPasswordChange = !isLoadingCurrentUser && currentUser?.requiresPasswordChange;
   
   if (isPromoterRoute) {
     return <>{children}</>;
   }
   
-  if (!isClient || (isUserLoading && !isAuthPage)) {
+  if (!isClient || ((isUserLoading || isLoadingCurrentUser) && !isAuthPage)) {
     return (
       <div className="flex h-screen w-full items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin" />
@@ -57,7 +62,6 @@ function AppContent({ children }: { children: React.ReactNode }) {
   }
   
   if (isAuthPage) {
-    // If we are on an auth page and the user is logged in, show a loader while redirecting
     if (user) {
         return (
             <div className="flex h-screen w-full items-center justify-center">
@@ -69,12 +73,15 @@ function AppContent({ children }: { children: React.ReactNode }) {
   }
   
   if (!user) {
-      // If user is not logged in and not on an auth page, show loader while redirecting
       return (
           <div className="flex h-screen w-full items-center justify-center">
             <Loader2 className="h-8 w-8 animate-spin" />
           </div>
       );
+  }
+
+  if (requiresPasswordChange) {
+    return <ForcePasswordChangeDialog />;
   }
 
   return (

@@ -261,6 +261,7 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
                     photoURL: userProfile.photoURL || user.photoURL,
                     role: userRole,
                     permissions: rolePermissions,
+                    requiresPasswordChange: userProfile.requiresPasswordChange,
                 });
     
             } else if (user) {
@@ -271,6 +272,7 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
                     name: user.displayName || 'Nuevo Usuario',
                     email: user.email || '',
                     role: isFounder ? 'Director' : 'Colaborador', // Default to 'Colaborador'
+                    requiresPasswordChange: true, // Force password change for new users
                 };
                 setDocumentNonBlocking(doc(firestore, 'users', user.uid), newUserProfile, { merge: true });
             }
@@ -313,6 +315,7 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
                 name: name,
                 email: newUser.email,
                 role: role,
+                requiresPasswordChange: true,
             }, {});
             
             await addLog('user_invited', newUser.uid, 'user', name);
