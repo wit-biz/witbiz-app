@@ -1,8 +1,7 @@
 
-
 "use client";
 
-import React, { useState, useMemo, useCallback } from "react";
+import React, { useState, useMemo } from "react";
 import { Header } from "@/components/header";
 import {
   Card,
@@ -12,7 +11,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Users, Shield, PlusCircle, Edit, Trash2, KeyRound } from "lucide-react";
+import { Users, Shield, PlusCircle, Edit3, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
@@ -31,10 +30,8 @@ import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { useToast } from "@/hooks/use-toast";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { EditMemberDialog } from "@/components/shared/EditMemberDialog";
-import { Loader2 } from "lucide-react";
 import { allPermissions } from "@/lib/permissions";
 import { PromptNameDialog } from "@/components/shared/PromptNameDialog";
-import { initialRoles as baseInitialRoles } from "@/lib/data";
 
 
 export default function TeamPage() {
@@ -47,6 +44,7 @@ export default function TeamPage() {
     const [isProcessing, setIsProcessing] = useState(false);
     
     const [roleToDelete, setRoleToDelete] = useState<UserRole | null>(null);
+    const [roleToEdit, setRoleToEdit] = useState<UserRole | null>(null);
     const [isPromptNameOpen, setIsPromptNameOpen] = useState(false);
 
     const canManageMembers = currentUser?.permissions?.team_manage_members ?? false;
@@ -54,32 +52,23 @@ export default function TeamPage() {
 
     const sortedTeamMembers = useMemo(() => {
         if (!teamMembers) return [];
-        const roleOrder = {
-            'Director': 1,
-            'Administrador': 2,
-            'Colaborador': 3,
-        };
-        // Filter out promoters, archived users, and the specific user 'saidsaigar@gmail.com'
+        const roleOrder: { [key: string]: number } = { 'Director': 1, 'Administrador': 2 };
         return teamMembers
-            .filter(member => 
-                member.email !== 'saidsaigar@gmail.com' &&
-                member.role !== 'Promotor' && 
-                member.status !== 'Archivado'
-            )
+            .filter(member => member.status !== 'Archivado')
             .sort((a, b) => {
-                const roleA = roleOrder[a.role as keyof typeof roleOrder] || 99;
-                const roleB = roleOrder[b.role as keyof typeof roleOrder] || 99;
-                return roleA - roleB;
+                const roleA = roleOrder[a.role] || 99;
+                const roleB = roleOrder[b.role] || 99;
+                if (roleA !== roleB) return roleA - roleB;
+                return a.name.localeCompare(b.name);
             });
     }, [teamMembers]);
 
     const handlePermissionChange = (roleId: string, permissionKey: keyof AppPermissions, value: boolean) => {
-        const updatedRoles = roles.map(role => 
+        setRoles(prevRoles => prevRoles.map(role => 
             role.id === roleId 
                 ? { ...role, permissions: { ...role.permissions, [permissionKey]: value } }
                 : role
-        );
-        setRoles(updatedRoles);
+        ));
         toast({
             title: "Permiso Actualizado",
             description: `Se ha guardado la actualización para el rol.`,
@@ -100,15 +89,7 @@ export default function TeamPage() {
         await registerUser(name, email, 'WitBiz!123', role);
     };
 
-    const handleEditUser = (user: AppUser) => {
-        setUserToEdit(user);
-    };
-
-    const handleDeleteClick = (user: AppUser) => {
-        setUserToDelete(user);
-    };
-    
-    const confirmDelete = async () => {
+    const confirmDeleteUser = async () => {
         if (!userToDelete) return;
         setIsProcessing(true);
         const success = await deleteUser(userToDelete.id);
@@ -133,29 +114,28 @@ export default function TeamPage() {
         setUserToEdit(null);
     };
     
-    const handleAddNewRole = () => {
-        setIsPromptNameOpen(true);
-    };
-
-    const handleSaveNewRole = (name: string) => {
-        const newRole: UserRole = {
-            id: name.toLowerCase().replace(/\s+/g, '-'),
-            name,
-            isBaseRole: false,
-            permissions: { ...baseInitialRoles.find(r => r.id === 'collaborator')?.permissions } // Start with collaborator permissions
-        };
-        setRoles([...roles, newRole]);
-        toast({ title: 'Rol Creado', description: `El rol "${name}" ha sido creado.` });
+    const handleSaveRole = (name: string) => {
+        if (roleToEdit) { // Editing existing role
+            setRoles(prevRoles => prevRoles.map(r => r.id === roleToEdit.id ? { ...r, name } : r));
+            toast({ title: 'Rol Actualizado', description: `El rol "${roleToEdit.name}" ahora es "${name}".` });
+        } else { // Creating new role
+            const newRole: UserRole = {
+                id: name.toLowerCase().replace(/\s+/g, '-'),
+                name,
+                isBaseRole: false,
+                permissions: roles.find(r => r.id === 'collaborator')?.permissions || {}
+            };
+            setRoles(prevRoles => [...prevRoles, newRole]);
+            toast({ title: 'Rol Creado', description: `El rol "${name}" ha sido creado.` });
+        }
     };
     
     const confirmDeleteRole = () => {
         if (!roleToDelete) return;
-        const updatedRoles = roles.filter(r => r.id !== roleToDelete.id);
-        setRoles(updatedRoles);
+        setRoles(prevRoles => prevRoles.filter(r => r.id !== roleToDelete.id));
         toast({ title: 'Rol Eliminado', description: `El rol "${roleToDelete.name}" ha sido eliminado.` });
         setRoleToDelete(null);
     };
-
 
   return (
     <>
@@ -219,8 +199,8 @@ export default function TeamPage() {
                                     <TableCell className="text-right">
                                       {canManageMembers && member.role !== 'Director' && (
                                         <>
-                                          <Button variant="ghost" size="icon" onClick={() => handleEditUser(member)}><Edit className="h-4 w-4" /></Button>
-                                          <Button variant="ghost" size="icon" className="text-destructive" onClick={() => handleDeleteClick(member)}><Trash2 className="h-4 w-4" /></Button>
+                                          <Button variant="ghost" size="icon" onClick={() => setUserToEdit(member)}><Edit3 className="h-4 w-4" /></Button>
+                                          <Button variant="ghost" size="icon" className="text-destructive" onClick={() => setUserToDelete(member)}><Trash2 className="h-4 w-4" /></Button>
                                         </>
                                       )}
                                     </TableCell>
@@ -234,7 +214,7 @@ export default function TeamPage() {
           <TabsContent value="permissions" className="mt-6">
               {canManageRoles && (
                 <div className="mb-4">
-                    <Button onClick={handleAddNewRole}>
+                    <Button onClick={() => { setRoleToEdit(null); setIsPromptNameOpen(true); }}>
                         <PlusCircle className="mr-2 h-4 w-4" />
                         Crear Nuevo Rol
                     </Button>
@@ -244,14 +224,19 @@ export default function TeamPage() {
                 {roles.filter(role => role.id !== 'director').map((role) => (
                     <AccordionItem value={role.id} key={role.id} asChild>
                         <Card>
-                            <AccordionTrigger className="w-full p-0 [&_svg]:ml-auto [&_svg]:mr-4" disabled={!canManageRoles}>
+                            <AccordionTrigger className="w-full p-0 [&_svg]:ml-auto [&_svg]:mr-4" disabled={!canManageRoles && !role.isBaseRole}>
                                 <CardHeader className="flex-1 text-left">
                                   <div className="flex justify-between items-center w-full">
-                                    <CardTitle className="flex items-center gap-2"><KeyRound className="h-5 w-5 text-accent"/>{role.name}</CardTitle>
+                                    <CardTitle>{role.name}</CardTitle>
                                     {!role.isBaseRole && canManageRoles && (
-                                        <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={(e) => { e.stopPropagation(); setRoleToDelete(role); }}>
-                                            <Trash2 className="h-4 w-4" />
-                                        </Button>
+                                        <div className="flex items-center">
+                                            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={(e) => { e.stopPropagation(); setRoleToEdit(role); setIsPromptNameOpen(true);}}>
+                                                <Edit3 className="h-4 w-4" />
+                                            </Button>
+                                            <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={(e) => { e.stopPropagation(); setRoleToDelete(role); }}>
+                                                <Trash2 className="h-4 w-4" />
+                                            </Button>
+                                        </div>
                                     )}
                                   </div>
                                     <CardDescription>
@@ -292,7 +277,7 @@ export default function TeamPage() {
     <InviteMemberDialog
         isOpen={isInviteDialogOpen}
         onOpenChange={setIsInviteDialogOpen}
-        roles={roles.map(r => r.name).filter(name => name !== 'Director')}
+        roles={roles.filter(r => r.name !== 'Director').map(r => r.name)}
         onInvite={handleInvite}
     />
     {userToEdit && (
@@ -300,7 +285,7 @@ export default function TeamPage() {
             isOpen={!!userToEdit}
             onOpenChange={() => setUserToEdit(null)}
             user={userToEdit}
-            roles={roles.map(r => r.name).filter(name => name !== 'Director')}
+            roles={roles.filter(r => r.name !== 'Director').map(r => r.name)}
             onSave={handleUpdateUser}
             isProcessing={isProcessing}
         />
@@ -314,9 +299,9 @@ export default function TeamPage() {
                 </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
-                <AlertDialogCancel disabled={isProcessing}>Cancelar</AlertDialogCancel>
-                <AlertDialogAction onClick={confirmDelete} disabled={isProcessing} className="bg-destructive hover:bg-destructive/90">
-                    {isProcessing ? <Loader2 className="h-4 w-4 animate-spin"/> : 'Archivar'}
+                <AlertDialogCancel onClick={() => setUserToDelete(null)} disabled={isProcessing}>Cancelar</AlertDialogCancel>
+                <AlertDialogAction onClick={confirmDeleteUser} disabled={isProcessing} className="bg-destructive hover:bg-destructive/90">
+                    Archivar
                 </AlertDialogAction>
             </AlertDialogFooter>
         </AlertDialogContent>
@@ -339,18 +324,15 @@ export default function TeamPage() {
     </AlertDialog>
     <PromptNameDialog 
         isOpen={isPromptNameOpen}
-        onOpenChange={setIsPromptNameOpen}
-        title="Crear Nuevo Rol"
-        description="Introduzca un nombre para el nuevo rol de usuario."
+        onOpenChange={(open) => { if (!open) { setIsPromptNameOpen(false); setRoleToEdit(null); } else { setIsPromptNameOpen(true); }}}
+        title={roleToEdit ? "Editar Nombre del Rol" : "Crear Nuevo Rol"}
+        description={roleToEdit ? `Introduzca un nuevo nombre para el rol "${roleToEdit.name}".` : "Introduzca un nombre para el nuevo rol de usuario."}
         label="Nombre del Rol"
-        onSave={handleSaveNewRole}
+        initialValue={roleToEdit?.name || ""}
+        onSave={handleSaveRole}
     />
     </>
   );
 }
-
-
-
-
 
     
