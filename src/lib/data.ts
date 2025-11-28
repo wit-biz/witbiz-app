@@ -244,6 +244,4 @@ export const navItems: NavItem[] = [
     { href: '/services', label: 'Servicios', icon: 'Briefcase', requiredPermission: 'services_view' },
     { href: '/accounting', label: 'Contabilidad', icon: 'DollarSign', requiredPermission: 'accounting_view' },
     { href: '/intelligence', label: 'Centro de inteligencia', icon: 'BarChartIcon', requiredPermission: 'intelligence_view' },
-    { href: '/team', label: 'Equipo y Permisos', icon: 'Users', requiredPermission: 'admin_view' },
-    { href: '/recycling-bin', label: 'Papelera', icon: 'Trash2', requiredPermission: 'admin_view' },
 ];
