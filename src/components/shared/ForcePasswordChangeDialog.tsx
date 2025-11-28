@@ -1,7 +1,7 @@
 
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -23,25 +23,75 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { PasswordInput } from '@/components/shared/PasswordInput';
-import { Loader2, Save, LogOut } from 'lucide-react';
+import { Loader2, Save, LogOut, CheckCircle2, XCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useUser } from '@/firebase';
 import { useCRMData } from '@/contexts/CRMDataContext';
 import { updatePassword } from 'firebase/auth';
 import { initiateSignOut } from '@/firebase/non-blocking-login';
 import { Logo } from './logo';
+import { cn } from '@/lib/utils';
+
+const passwordRequirements = {
+  length: 8,
+  uppercase: /[A-Z]/,
+  lowercase: /[a-z]/,
+  number: /[0-9]/,
+  special: /[^A-Za-z0-9]/,
+};
 
 const passwordSchema = z
   .object({
     password: z
       .string()
-      .min(8, { message: 'La contraseña debe tener al menos 8 caracteres.' }),
+      .min(passwordRequirements.length, { message: `La contraseña debe tener al menos ${passwordRequirements.length} caracteres.` })
+      .regex(passwordRequirements.uppercase, { message: 'Debe contener al menos una mayúscula.' })
+      .regex(passwordRequirements.lowercase, { message: 'Debe contener al menos una minúscula.' })
+      .regex(passwordRequirements.number, { message: 'Debe contener al menos un número.' })
+      .regex(passwordRequirements.special, { message: 'Debe contener al menos un carácter especial.' }),
     confirmPassword: z.string(),
   })
   .refine((data) => data.password === data.confirmPassword, {
     message: 'Las contraseñas no coinciden.',
     path: ['confirmPassword'],
   });
+
+  interface PasswordRequirementIndicatorProps {
+    meets: boolean;
+    label: string;
+  }
+  
+  const PasswordRequirementIndicator: React.FC<PasswordRequirementIndicatorProps> = ({ meets, label }) => (
+    <div className={cn("flex items-center text-sm", meets ? "text-green-600" : "text-muted-foreground")}>
+      {meets ? <CheckCircle2 className="mr-2 h-4 w-4" /> : <XCircle className="mr-2 h-4 w-4" />}
+      <span>{label}</span>
+    </div>
+  );
+  
+  interface PasswordStrengthProps {
+    password?: string;
+  }
+  
+  const PasswordStrength: React.FC<PasswordStrengthProps> = ({ password = '' }) => {
+    const checks = {
+      length: password.length >= passwordRequirements.length,
+      uppercase: passwordRequirements.uppercase.test(password),
+      lowercase: passwordRequirements.lowercase.test(password),
+      number: passwordRequirements.number.test(password),
+      special: passwordRequirements.special.test(password),
+    };
+  
+    return (
+      <div className="p-3 bg-muted rounded-md space-y-2">
+        <PasswordRequirementIndicator meets={checks.length} label={`Al menos ${passwordRequirements.length} caracteres`} />
+        <PasswordRequirementIndicator meets={checks.lowercase} label="Al menos una letra minúscula" />
+        <PasswordRequirementIndicator meets={checks.uppercase} label="Al menos una letra mayúscula" />
+        <PasswordRequirementIndicator meets={checks.number} label="Al menos un número" />
+        <PasswordRequirementIndicator meets={checks.special} label="Al menos un carácter especial" />
+      </div>
+    );
+  };
+
 
 export function ForcePasswordChangeDialog() {
   const { user, auth } = useUser();
@@ -55,7 +105,10 @@ export function ForcePasswordChangeDialog() {
       password: '',
       confirmPassword: '',
     },
+    mode: 'onTouched'
   });
+
+  const passwordValue = form.watch('password');
 
   const onSubmit = async (values: z.infer<typeof passwordSchema>) => {
     if (!user) {
@@ -76,7 +129,6 @@ export function ForcePasswordChangeDialog() {
         title: 'Contraseña actualizada',
         description: 'Tu nueva contraseña ha sido guardada. Ahora tienes acceso a la plataforma.',
       });
-      // The parent component (`AppContent`) will re-render and grant access.
     } catch (error: any) {
       console.error('Error updating password:', error);
       let description = 'Ocurrió un error inesperado. Por favor, inténtelo de nuevo.';
@@ -128,6 +180,9 @@ export function ForcePasswordChangeDialog() {
                   </FormItem>
                 )}
               />
+
+              <PasswordStrength password={passwordValue} />
+
               <FormField
                 control={form.control}
                 name="confirmPassword"
