@@ -11,7 +11,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Users, Shield, PlusCircle, Edit3, Trash2 } from "lucide-react";
+import { Users, Shield, PlusCircle, Edit3, Trash2, Save, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
@@ -36,16 +36,23 @@ import { PromptNameDialog } from "@/components/shared/PromptNameDialog";
 
 export default function TeamPage() {
     const [isInviteDialogOpen, setIsInviteDialogOpen] = useState(false);
-    const { currentUser, teamMembers, registerUser, updateUser, deleteUser, roles, setRoles } = useCRMData();
+    const { currentUser, teamMembers, registerUser, updateUser, deleteUser, roles: serverRoles, setRoles: setServerRoles } = useCRMData();
     const { toast } = useToast();
 
     const [userToEdit, setUserToEdit] = useState<AppUser | null>(null);
     const [userToDelete, setUserToDelete] = useState<AppUser | null>(null);
-    const [isProcessing, setIsProcessing] = useState(false);
     
+    const [isRolesEditMode, setIsRolesEditMode] = useState(false);
+    const [localRoles, setLocalRoles] = useState<UserRole[]>([]);
     const [roleToDelete, setRoleToDelete] = useState<UserRole | null>(null);
     const [roleToEdit, setRoleToEdit] = useState<UserRole | null>(null);
     const [isPromptNameOpen, setIsPromptNameOpen] = useState(false);
+    const [isProcessing, setIsProcessing] = useState(false);
+
+    React.useEffect(() => {
+        setLocalRoles(JSON.parse(JSON.stringify(serverRoles)));
+    }, [serverRoles]);
+
 
     const canManageMembers = currentUser?.permissions?.team_manage_members ?? false;
     const canManageRoles = currentUser?.permissions?.team_manage_roles ?? false;
@@ -53,7 +60,7 @@ export default function TeamPage() {
     const sortedTeamMembers = useMemo(() => {
         if (!teamMembers) return [];
         const roleOrder: { [key: string]: number } = { 'Director': 1, 'Administrador': 2 };
-        return teamMembers
+        return [...teamMembers]
             .filter(member => member.status !== 'Archivado')
             .sort((a, b) => {
                 const roleA = roleOrder[a.role] || 99;
@@ -64,15 +71,11 @@ export default function TeamPage() {
     }, [teamMembers]);
 
     const handlePermissionChange = (roleId: string, permissionKey: keyof AppPermissions, value: boolean) => {
-        setRoles(prevRoles => prevRoles.map(role => 
+        setLocalRoles(prevRoles => prevRoles.map(role => 
             role.id === roleId 
                 ? { ...role, permissions: { ...role.permissions, [permissionKey]: value } }
                 : role
         ));
-        toast({
-            title: "Permiso Actualizado",
-            description: `Se ha guardado la actualización para el rol.`,
-        });
     };
     
     const permissionsBySection = useMemo(() => {
@@ -116,25 +119,34 @@ export default function TeamPage() {
     
     const handleSaveRole = (name: string) => {
         if (roleToEdit) { // Editing existing role
-            setRoles(prevRoles => prevRoles.map(r => r.id === roleToEdit.id ? { ...r, name } : r));
-            toast({ title: 'Rol Actualizado', description: `El rol "${roleToEdit.name}" ahora es "${name}".` });
+            setLocalRoles(prevRoles => prevRoles.map(r => r.id === roleToEdit.id ? { ...r, name } : r));
         } else { // Creating new role
             const newRole: UserRole = {
                 id: name.toLowerCase().replace(/\s+/g, '-'),
                 name,
                 isBaseRole: false,
-                permissions: roles.find(r => r.id === 'collaborator')?.permissions || {}
+                permissions: localRoles.find(r => r.id === 'collaborator')?.permissions || {}
             };
-            setRoles(prevRoles => [...prevRoles, newRole]);
-            toast({ title: 'Rol Creado', description: `El rol "${name}" ha sido creado.` });
+            setLocalRoles(prevRoles => [...prevRoles, newRole]);
         }
+        setRoleToEdit(null);
     };
     
     const confirmDeleteRole = () => {
         if (!roleToDelete) return;
-        setRoles(prevRoles => prevRoles.filter(r => r.id !== roleToDelete.id));
-        toast({ title: 'Rol Eliminado', description: `El rol "${roleToDelete.name}" ha sido eliminado.` });
+        setLocalRoles(prevRoles => prevRoles.filter(r => r.id !== roleToDelete.id));
         setRoleToDelete(null);
+    };
+
+    const handleSaveChanges = () => {
+        setServerRoles(localRoles);
+        setIsRolesEditMode(false);
+        toast({ title: 'Roles Guardados', description: 'Los cambios en los roles y permisos han sido guardados.' });
+    };
+
+    const handleCancelChanges = () => {
+        setLocalRoles(JSON.parse(JSON.stringify(serverRoles)));
+        setIsRolesEditMode(false);
     };
 
   return (
@@ -213,22 +225,35 @@ export default function TeamPage() {
           </TabsContent>
           <TabsContent value="permissions" className="mt-6">
               {canManageRoles && (
-                <div className="mb-4">
-                    <Button onClick={() => { setRoleToEdit(null); setIsPromptNameOpen(true); }}>
-                        <PlusCircle className="mr-2 h-4 w-4" />
-                        Crear Nuevo Rol
-                    </Button>
+                <div className="mb-4 flex gap-2">
+                   {!isRolesEditMode ? (
+                        <Button onClick={() => setIsRolesEditMode(true)}>
+                            <Edit3 className="mr-2 h-4 w-4" />
+                            Configurar Roles
+                        </Button>
+                   ) : (
+                        <>
+                            <Button onClick={handleSaveChanges}>
+                                <Save className="mr-2 h-4 w-4" />
+                                Guardar Cambios
+                            </Button>
+                             <Button variant="ghost" onClick={handleCancelChanges}>
+                                <X className="mr-2 h-4 w-4" />
+                                Cancelar
+                            </Button>
+                        </>
+                   )}
                 </div>
               )}
              <Accordion type="single" collapsible className="w-full space-y-4">
-                {roles.filter(role => role.id !== 'director').map((role) => (
+                {localRoles.filter(role => role.id !== 'director').map((role) => (
                     <AccordionItem value={role.id} key={role.id} asChild>
                         <Card>
-                            <AccordionTrigger className="w-full p-0 [&_svg]:ml-auto [&_svg]:mr-4" disabled={!canManageRoles && !role.isBaseRole}>
+                            <AccordionTrigger className="w-full p-0 [&_svg]:ml-auto [&_svg]:mr-4" disabled={!isRolesEditMode && !canManageRoles}>
                                 <CardHeader className="flex-1 text-left">
                                   <div className="flex justify-between items-center w-full">
                                     <CardTitle>{role.name}</CardTitle>
-                                    {!role.isBaseRole && canManageRoles && (
+                                    {isRolesEditMode && !role.isBaseRole && (
                                         <div className="flex items-center">
                                             <Button variant="ghost" size="icon" className="h-8 w-8" onClick={(e) => { e.stopPropagation(); setRoleToEdit(role); setIsPromptNameOpen(true);}}>
                                                 <Edit3 className="h-4 w-4" />
@@ -257,7 +282,7 @@ export default function TeamPage() {
                                                         id={`perm-${role.id}-${permission.key}`}
                                                         checked={role.permissions[permission.key as keyof AppPermissions] || false}
                                                         onCheckedChange={(value) => handlePermissionChange(role.id, permission.key as keyof AppPermissions, value)}
-                                                        disabled={!canManageRoles}
+                                                        disabled={!isRolesEditMode}
                                                     />
                                                 </div>
                                             ))}
@@ -270,6 +295,14 @@ export default function TeamPage() {
                     </AccordionItem>
                 ))}
               </Accordion>
+                {isRolesEditMode && (
+                    <div className="mt-4">
+                        <Button variant="outline" onClick={() => { setRoleToEdit(null); setIsPromptNameOpen(true); }}>
+                            <PlusCircle className="mr-2 h-4 w-4" />
+                            Crear Nuevo Rol
+                        </Button>
+                    </div>
+                )}
           </TabsContent>
         </Tabs>
       </main>
@@ -277,7 +310,7 @@ export default function TeamPage() {
     <InviteMemberDialog
         isOpen={isInviteDialogOpen}
         onOpenChange={setIsInviteDialogOpen}
-        roles={roles.filter(r => r.name !== 'Director').map(r => r.name)}
+        roles={localRoles.filter(r => r.name !== 'Director').map(r => r.name)}
         onInvite={handleInvite}
     />
     {userToEdit && (
@@ -285,7 +318,7 @@ export default function TeamPage() {
             isOpen={!!userToEdit}
             onOpenChange={() => setUserToEdit(null)}
             user={userToEdit}
-            roles={roles.filter(r => r.name !== 'Director').map(r => r.name)}
+            roles={localRoles.filter(r => r.name !== 'Director').map(r => r.name)}
             onSave={handleUpdateUser}
             isProcessing={isProcessing}
         />
@@ -334,5 +367,3 @@ export default function TeamPage() {
     </>
   );
 }
-
-    
