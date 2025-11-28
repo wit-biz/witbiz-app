@@ -25,8 +25,8 @@ import {
 import { PasswordInput } from '@/components/shared/PasswordInput';
 import { Loader2, Save, LogOut, CheckCircle2, XCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { useUser } from '@/firebase';
-import { useCRMData } from '@/contexts/CRMDataContext';
+import { useUser, useFirestore } from '@/firebase';
+import { doc, updateDoc } from 'firebase/firestore';
 import { updatePassword } from 'firebase/auth';
 import { initiateSignOut } from '@/firebase/non-blocking-login';
 import { Logo } from './logo';
@@ -95,7 +95,7 @@ const passwordSchema = z
 
 export function ForcePasswordChangeDialog() {
   const { user, auth } = useUser();
-  const { updateUser } = useCRMData();
+  const firestore = useFirestore();
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -111,24 +111,34 @@ export function ForcePasswordChangeDialog() {
   const passwordValue = form.watch('password');
 
   const onSubmit = async (values: z.infer<typeof passwordSchema>) => {
-    if (!user) {
+    if (!user || !firestore) {
       toast({
         variant: 'destructive',
         title: 'Error de autenticación',
-        description: 'No se ha encontrado un usuario válido. Por favor, inicie sesión de nuevo.',
+        description: 'No se ha encontrado un usuario o base de datos válida. Por favor, inicie sesión de nuevo.',
       });
       return;
     }
 
     setIsSubmitting(true);
     try {
+      // Step 1: Update the password in Firebase Auth
       await updatePassword(user, values.password);
-      await updateUser(user.uid, { requiresPasswordChange: false });
+
+      // Step 2: Update the flag in Firestore using a direct, awaited call
+      const userDocRef = doc(firestore, 'users', user.uid);
+      await updateDoc(userDocRef, { requiresPasswordChange: false });
 
       toast({
         title: 'Contraseña actualizada',
-        description: 'Tu nueva contraseña ha sido guardada. Ahora tienes acceso a la plataforma.',
+        description: 'Tu nueva contraseña ha sido guardada. La página se recargará.',
       });
+
+      // Step 3: Force a reload to re-initialize the app state with the correct flag
+      setTimeout(() => {
+        window.location.reload();
+      }, 1500);
+
     } catch (error: any) {
       console.error('Error updating password:', error);
       let description = 'Ocurrió un error inesperado. Por favor, inténtelo de nuevo.';
@@ -142,8 +152,7 @@ export function ForcePasswordChangeDialog() {
         title: 'Error al cambiar contraseña',
         description,
       });
-    } finally {
-      setIsSubmitting(false);
+      setIsSubmitting(false); // Only set to false on error
     }
   };
 
