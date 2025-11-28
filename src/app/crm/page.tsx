@@ -180,34 +180,38 @@ export default function CrmPage() {
       </Header>
       <main className="flex-1 p-4 md:p-8 space-y-6">
         {activeWorkflows && activeWorkflows.length > 0 ? (
-          activeWorkflows.map(service => (
-            <Card key={service.id} className="w-full">
-                <CardHeader>
-                    <CardTitle className="text-xl">
-                        {service.name}
-                    </CardTitle>
+          <Accordion type="multiple" defaultValue={activeWorkflows.map(s => s.id)} className="w-full space-y-4">
+          {activeWorkflows.map(service => (
+            <AccordionItem value={service.id} key={service.id} asChild>
+              <Card>
+                <AccordionTrigger className="w-full p-0 [&_svg]:ml-auto [&_svg]:mr-4">
+                  <CardHeader className="flex-1 text-left">
+                    <CardTitle className="text-xl">{service.name}</CardTitle>
                     <CardDescription>Pipeline de clientes para este servicio.</CardDescription>
-                </CardHeader>
-                <CardContent className="pt-0">
-                    <div className="flex overflow-x-auto py-4 space-x-4">
-                        {(service.stages || []).sort((a,b) => a.order - b.order).map((stage, index) => (
-                           <React.Fragment key={stage.id}>
-                             <StageCard
-                                stage={stage}
-                                clientsInStage={clientsByStage.get(stage.id) || []}
-                                onClientClick={handleClientClick}
-                            />
-                            {index < service.stages.length - 1 && (
-                                <div className="flex items-center justify-center shrink-0">
-                                    <ChevronsRight className="h-8 w-8 text-muted-foreground/50" />
-                                </div>
-                            )}
-                           </React.Fragment>
-                        ))}
-                    </div>
-                </CardContent>
-            </Card>
-          ))
+                  </CardHeader>
+                </AccordionTrigger>
+                <AccordionContent className="p-6 pt-0">
+                  <div className="flex overflow-x-auto py-4 space-x-4">
+                      {(service.stages || []).sort((a,b) => a.order - b.order).map((stage, index) => (
+                         <React.Fragment key={stage.id}>
+                           <StageCard
+                              stage={stage}
+                              clientsInStage={clientsByStage.get(stage.id) || []}
+                              onClientClick={handleClientClick}
+                          />
+                          {index < service.stages.length - 1 && (
+                              <div className="flex items-center justify-center shrink-0">
+                                  <ChevronsRight className="h-8 w-8 text-muted-foreground/50" />
+                              </div>
+                          )}
+                         </React.Fragment>
+                      ))}
+                  </div>
+                </AccordionContent>
+              </Card>
+            </AccordionItem>
+          ))}
+          </Accordion>
         ) : (
           <div className="col-span-full text-center text-muted-foreground py-16 border border-dashed rounded-lg">
             <Briefcase className="mx-auto h-12 w-12 mb-4" />
