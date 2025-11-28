@@ -26,6 +26,10 @@ import type { Client, Task, WorkflowStage } from '@/lib/types';
 import { useTasksContext } from "@/contexts/TasksContext";
 import { TaskDetailDialog } from "@/components/shared/TaskDetailDialog";
 import { useCRMData } from "@/contexts/CRMDataContext";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { ClientDetailView } from "@/components/shared/ClientDetailView";
+import { useRouter } from "next/navigation";
+
 
 const StageNumberIcon = ({ index, variant = 'default' }: { index: number, variant?: 'default' | 'large' | 'dialog' }) => {
   const variants = {
@@ -43,11 +47,15 @@ const StageNumberIcon = ({ index, variant = 'default' }: { index: number, varian
 export default function InicioPage() {
   const { clients, isLoadingClients, tasks, serviceWorkflows, isLoadingWorkflows, currentUser } = useCRMData();
   const { setHasTasksForToday } = useTasksContext();
+  const router = useRouter();
 
   const [currentClientDateForDashboard, setCurrentClientDateForDashboard] = useState<Date | null>(null);
   
   const [selectedTaskDetail, setSelectedTaskDetail] = useState<Task | null>(null);
-  const [isDetailDialogOpen, setIsDetailDialogOpen] = useState(false);
+  const [isTaskDetailDialogOpen, setIsTaskDetailDialogOpen] = useState(false);
+
+  const [selectedClientDetail, setSelectedClientDetail] = useState<Client | null>(null);
+  const [isClientDetailDialogOpen, setIsClientDetailDialogOpen] = useState(false);
 
   useEffect(() => {
     const today = new Date();
@@ -125,8 +133,13 @@ export default function InicioPage() {
   
   const handleTaskClick = useCallback((task: Task) => { 
     setSelectedTaskDetail(task); 
-    setIsDetailDialogOpen(true); 
+    setIsTaskDetailDialogOpen(true); 
   }, []);
+  
+  const handleClientClick = (client: Client) => {
+    setSelectedClientDetail(client);
+    setIsClientDetailDialogOpen(true);
+  };
   
   return (
     <div className="w-full space-y-6 p-4 md:p-8">
@@ -239,15 +252,16 @@ export default function InicioPage() {
                       <CardContent className="flex-grow space-y-2 overflow-y-auto">
                         {clientsInStage.length > 0 ? (
                            clientsInStage.map(client => (
-                             <Link key={client.id} href={`/contacts?openClient=${client.id}`} passHref>
-                                <div className={cn(
+                             <div 
+                                key={client.id} 
+                                onClick={() => handleClientClick(client)}
+                                className={cn(
                                   "p-2 border rounded-md cursor-pointer hover:bg-secondary/50 transition-all",
                                    highlightedClientId === client.id ? 'bg-accent/30 border-accent ring-2 ring-accent' : 'bg-background'
                                 )}>
                                   <p className="font-semibold text-sm truncate">{client.name}</p>
                                   <p className="text-xs text-muted-foreground truncate">{client.category}</p>
                                 </div>
-                             </Link>
                            ))
                         ) : (
                           <div className="text-center text-muted-foreground py-6 text-sm flex flex-col items-center">
@@ -267,11 +281,17 @@ export default function InicioPage() {
       {selectedTaskDetail && (
         <TaskDetailDialog
           key={selectedTaskDetail.id}
-          isOpen={isDetailDialogOpen}
-          onOpenChange={setIsDetailDialogOpen}
+          isOpen={isTaskDetailDialogOpen}
+          onOpenChange={setIsTaskDetailDialogOpen}
           task={selectedTaskDetail}
         />
       )}
+      
+      <Dialog open={isClientDetailDialogOpen} onOpenChange={setIsClientDetailDialogOpen}>
+        <DialogContent className="max-w-2xl">
+           <ClientDetailView client={selectedClientDetail} onClose={() => setIsClientDetailDialogOpen(false)} />
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
