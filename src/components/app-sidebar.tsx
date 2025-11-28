@@ -7,10 +7,12 @@ import {
   SidebarContent,
   SidebarFooter,
   SidebarSeparator,
+  SidebarMenuItem,
+  SidebarMenuButton,
 } from '@/components/ui/sidebar';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
-import { Plus, UploadCloud, UserPlus, ListTodo, Users, UserCheck, Truck, Search } from 'lucide-react';
+import { Plus, UploadCloud, UserPlus, ListTodo, Users, UserCheck, Truck, Search, Trash2 } from 'lucide-react';
 import { useDialogs } from '@/contexts/DialogsContext';
 import { cn } from '@/lib/utils';
 import { Logo } from './shared/logo';
@@ -20,6 +22,9 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Input } from '@/components/ui/input';
 import { useRouter } from 'next/navigation';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
+import { useCRMData as useCRMDataClient } from '@/contexts/CRMDataContext'; // Renamed to avoid conflict
 
 
 export function AppSidebar() {
@@ -35,8 +40,9 @@ export function AppSidebar() {
   const [isSearching, setIsSearching] = useState(false);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
+  const pathname = usePathname();
 
-  const { clients, promoters, suppliers, serviceWorkflows } = useCRMData();
+  const { clients, promoters, suppliers, serviceWorkflows, currentUser } = useCRMData();
 
   useEffect(() => {
     if (isSearching) {
@@ -71,6 +77,8 @@ export function AppSidebar() {
     setSearchTerm('');
     setIsSearching(false);
   };
+
+  const canViewRecyclingBin = currentUser?.permissions.admin_view ?? false;
 
 
   return (
@@ -204,8 +212,22 @@ export function AppSidebar() {
       <SidebarContent>
         <SidebarNav />
       </SidebarContent>
-      <SidebarFooter className="mt-auto">
-        
+      <SidebarFooter className="mt-auto p-2">
+         {canViewRecyclingBin && (
+            <SidebarMenuItem>
+              <SidebarMenuButton
+                  asChild
+                  isActive={pathname === '/recycling-bin'}
+                  tooltip="Papelera"
+                  variant="ghost"
+                  className="w-full justify-center"
+              >
+                  <Link href="/recycling-bin">
+                      <Trash2 />
+                  </Link>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+         )}
       </SidebarFooter>
     </Sidebar>
   );

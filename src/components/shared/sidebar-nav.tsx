@@ -74,7 +74,6 @@ export function SidebarNav() {
     { href: '/accounting', label: 'Contabilidad', icon: 'DollarSign', requiredPermission: 'accounting_view' },
     { href: '/intelligence', label: 'Centro de inteligencia', icon: 'BarChartIcon', requiredPermission: 'intelligence_view' },
     { href: '/team', label: 'Equipo y Permisos', icon: 'Users', requiredPermission: 'admin_view' },
-    { href: '/recycling-bin', label: 'Papelera', icon: 'Trash2', requiredPermission: 'admin_view' },
   ].map(item => ({
       ...item,
       icon: icons[item.icon as string] || LayoutDashboard
