@@ -1,7 +1,7 @@
 
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import { Header } from "@/components/header";
 import {
   Card,
@@ -59,10 +59,10 @@ export default function TeamPage() {
 
     const sortedTeamMembers = useMemo(() => {
         if (!teamMembers) return [];
-        const roleOrder: { [key: string]: number } = { 'Director': 1, 'Administrador': 2 };
         return [...teamMembers]
             .filter(member => member.status !== 'Archivado' && member.email !== 'saidsaigar@gmail.com')
             .sort((a, b) => {
+                const roleOrder: { [key: string]: number } = { 'Director': 1, 'Administrador': 2 };
                 const roleA = roleOrder[a.role] || 99;
                 const roleB = roleOrder[b.role] || 99;
                 if (roleA !== roleB) return roleA - roleB;
@@ -253,29 +253,31 @@ export default function TeamPage() {
                 {localRoles.filter(role => role.id !== 'director').map((role) => (
                     <AccordionItem value={role.id} key={role.id} asChild>
                         <Card>
-                            <CardHeader className="flex flex-row items-center p-0">
-                                <AccordionTrigger className="flex-1 p-6 hover:no-underline [&_svg]:ml-auto" disabled={!isRolesEditMode && role.id === 'director'}>
-                                    <div className="text-left">
-                                      <CardTitle>{role.name}</CardTitle>
-                                      <CardDescription className="mt-1">
-                                          Permisos para el rol de {role.name}.
-                                      </CardDescription>
-                                    </div>
-                                </AccordionTrigger>
-                                {isRolesEditMode && (
-                                    <div className="flex items-center pr-4">
-                                        {role.id !== 'director' && (
-                                            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={(e) => { e.stopPropagation(); setRoleToEdit(role); setIsPromptNameOpen(true);}}>
-                                                <Edit3 className="h-4 w-4" />
-                                            </Button>
-                                        )}
-                                        {!role.isBaseRole && (
-                                            <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={(e) => { e.stopPropagation(); setRoleToDelete(role); }}>
-                                                <Trash2 className="h-4 w-4" />
-                                            </Button>
-                                        )}
-                                    </div>
-                                )}
+                            <CardHeader className="p-0">
+                                <div className="flex items-center p-6">
+                                    <AccordionTrigger className="flex-1 p-0 hover:no-underline [&_svg]:ml-auto text-left">
+                                        <div className="text-left">
+                                            <CardTitle>{role.name}</CardTitle>
+                                            <CardDescription className="mt-1">
+                                                Permisos para el rol de {role.name}.
+                                            </CardDescription>
+                                        </div>
+                                    </AccordionTrigger>
+                                    {isRolesEditMode && (
+                                        <div className="flex items-center pl-4">
+                                            {role.id !== 'director' && (
+                                                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={(e) => { e.stopPropagation(); setRoleToEdit(role); setIsPromptNameOpen(true);}}>
+                                                    <Edit3 className="h-4 w-4" />
+                                                </Button>
+                                            )}
+                                            {!role.isBaseRole && (
+                                                <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={(e) => { e.stopPropagation(); setRoleToDelete(role); }}>
+                                                    <Trash2 className="h-4 w-4" />
+                                                </Button>
+                                            )}
+                                        </div>
+                                    )}
+                                </div>
                             </CardHeader>
                             <AccordionContent>
                                 <CardContent className="space-y-6 max-h-[60vh] overflow-y-auto">
