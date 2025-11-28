@@ -92,6 +92,7 @@ export type Task = {
   createdAt?: any;
   requiredDocumentForCompletion?: boolean;
   requiredDocuments?: { id: string; description: string }[];
+  requiresInput?: boolean;
   postponedReason?: string;
   postponedAt?: string; // ISO String YYYY-MM-DD
   reactivationDate?: string; // ISO String YYYY-MM-DD
@@ -217,6 +218,7 @@ export type WorkflowAction = {
   subActions: SubAction[];
   requiredDocumentForCompletion?: boolean;
   requiredDocuments?: { id: string; description: string }[];
+  requiresInput?: boolean;
   description?: string;
   assignedToId?: string;
   serviceId?: string;

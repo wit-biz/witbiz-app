@@ -16,7 +16,7 @@ import {
   DialogClose,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Edit, Trash, CheckCircle, Loader2, PlusCircle, UploadCloud, Calendar as CalendarIcon, Save, History, Redo } from 'lucide-react';
+import { Edit, Trash, CheckCircle, Loader2, PlusCircle, UploadCloud, Calendar as CalendarIcon, Save, History, Redo, MessageSquare } from 'lucide-react';
 import { Task, Client, SubTask } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
@@ -68,12 +68,14 @@ export function TaskDetailDialog({
   onDeleteTask,
 }: TaskDetailDialogProps) {
   const { toast } = useToast();
-  const { clients, teamMembers, addTask } = useCRMData();
+  const { clients, teamMembers, addNote } = useCRMData();
   const { setIsSmartUploadDialogOpen } = useDialogs();
   
   const [task, setTask] = useState(initialTask);
   const [isEditing, setIsEditing] = useState(false);
   const [isPostponing, setIsPostponing] = useState(false);
+  const [isAddingNote, setIsAddingNote] = useState(false);
+  const [noteContent, setNoteContent] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isConfirmingDelete, setIsConfirmingDelete] = useState(false);
   
@@ -104,6 +106,8 @@ export function TaskDetailDialog({
     if (!isOpen) {
       setIsEditing(false);
       setIsPostponing(false);
+      setIsAddingNote(false);
+      setNoteContent("");
     }
   }, [initialTask, isOpen, form, postponeForm]);
 
@@ -119,6 +123,12 @@ export function TaskDetailDialog({
   
   const handleMarkAsComplete = async () => {
     if (!onUpdateTask) return;
+    
+    if (task.requiresInput && !isAddingNote) {
+        setIsAddingNote(true);
+        return;
+    }
+    
     if (!areAllSubTasksCompleted) {
         toast({
             variant: 'destructive',
@@ -127,7 +137,13 @@ export function TaskDetailDialog({
         });
         return;
     }
+
     setIsSubmitting(true);
+    
+    if (isAddingNote && noteContent.trim()) {
+        await addNote(task.clientId, `Nota de la tarea "${task.title}":\n${noteContent.trim()}`);
+    }
+    
     const success = await onUpdateTask(task.id, { status: 'Completada' });
     if (success) {
       toast({ title: 'Éxito', description: 'Tarea marcada como completada.' });
@@ -259,7 +275,7 @@ export function TaskDetailDialog({
         <TooltipProvider>
             <DialogHeader>
                 {isEditing || isPostponing ? (
-                    <DialogTitle>{isEditing ? 'Editando Tarea' : 'Posponer Tarea'}</DialogTitle>
+                    <DialogTitle>{isEditing ? 'Editando Tarea' : isPostponing ? 'Posponer Tarea' : 'Añadir Nota'}</DialogTitle>
                 ) : (
                     <>
                         <DialogTitle>{task.title}</DialogTitle>
@@ -406,6 +422,17 @@ export function TaskDetailDialog({
                         />
                     </form>
                  </Form>
+            ) : isAddingNote ? (
+                <div className="py-4 space-y-2">
+                    <Label htmlFor="note-content">Añada una nota para completar la tarea:</Label>
+                    <Textarea 
+                        id="note-content"
+                        placeholder="Escriba aquí los detalles requeridos..." 
+                        value={noteContent}
+                        onChange={(e) => setNoteContent(e.target.value)}
+                        autoFocus
+                    />
+                </div>
             ) : (
                 <div className="py-4 space-y-4">
                     <div className="flex items-center gap-2">
@@ -493,6 +520,14 @@ export function TaskDetailDialog({
                             Guardar Pospuesto
                         </Button>
                     </>
+                ) : isAddingNote ? (
+                    <>
+                        <Button variant="outline" onClick={() => setIsAddingNote(false)} disabled={isSubmitting}>Cancelar</Button>
+                        <Button onClick={handleMarkAsComplete} disabled={isSubmitting || !noteContent.trim()}>
+                            {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
+                            Guardar Nota y Completar
+                        </Button>
+                    </>
                 ) : (
                     <>
                         <div className="flex gap-2">
@@ -541,8 +576,8 @@ export function TaskDetailDialog({
                                         </Button>
                                     ) : (
                                         <Button onClick={handleMarkAsComplete} disabled={isSubmitting || task.status === 'Completada' || !onUpdateTask || !areAllSubTasksCompleted} className="bg-green-600 hover:bg-green-700 text-white">
-                                            {isSubmitting && onUpdateTask ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <CheckCircle className="mr-2 h-4 w-4" />}
-                                            Completada
+                                            {isSubmitting && onUpdateTask ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : (task.requiresInput ? <MessageSquare className="mr-2 h-4 w-4" /> : <CheckCircle className="mr-2 h-4 w-4" />)}
+                                            {task.requiresInput ? 'Añadir Nota y Completar' : 'Completada'}
                                         </Button>
                                     )}
                                 </>

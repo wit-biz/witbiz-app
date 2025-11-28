@@ -20,7 +20,7 @@ export const serviceWorkflows: ServiceWorkflow[] = [
         title: 'Prospecto',
         order: 1,
         actions: [
-          { id: 'ef-prospecto-1', title: 'Cual servicio le interesa al cliente', order: 1, subActions: [] },
+          { id: 'ef-prospecto-1', title: 'Cual servicio le interesa al cliente', order: 1, subActions: [], requiresInput: true },
           { id: 'ef-prospecto-2', title: 'Agendar reunión', order: 2, subActions: [] },
         ],
         subStages: [],
@@ -32,7 +32,7 @@ export const serviceWorkflows: ServiceWorkflow[] = [
         actions: [
           { id: 'ef-propuesta-1', title: 'Solicitud de propuesta', order: 1, subActions: [] },
           { id: 'ef-propuesta-2', title: 'Reunión con el cliente para explicación de propuesta', order: 2, subActions: [] },
-          { id: 'ef-propuesta-3', title: 'Cual fue la negociación del cierre', order: 3, subActions: [] },
+          { id: 'ef-propuesta-3', title: 'Cual fue la negociación del cierre', order: 3, subActions: [], requiresInput: true },
         ],
         subStages: [],
       },
@@ -87,7 +87,7 @@ export const serviceWorkflows: ServiceWorkflow[] = [
         title: 'Desarrollo y Expansión',
         order: 5,
         actions: [
-          { id: 'ef-expansion-1', title: 'Proponer nuevos servicios al cliente', order: 1, subActions: [] },
+          { id: 'ef-expansion-1', title: 'Proponer nuevos servicios al cliente', order: 1, subActions: [], requiresInput: true },
         ],
         subStages: [],
       },
@@ -113,7 +113,7 @@ export const serviceWorkflows: ServiceWorkflow[] = [
         title: 'Prospecto',
         order: 1,
         actions: [
-          { id: 'f-prospecto-1', title: 'Cual servicio le interesa al cliente', order: 1, subActions: [] },
+          { id: 'f-prospecto-1', title: 'Cual servicio le interesa al cliente', order: 1, subActions: [], requiresInput: true },
           { id: 'f-prospecto-2', title: 'Agendar reunión', order: 2, subActions: [] },
         ],
         subStages: [],
@@ -123,7 +123,7 @@ export const serviceWorkflows: ServiceWorkflow[] = [
         title: 'Propuesta y Negociación',
         order: 2,
         actions: [
-          { id: 'f-propuesta-1', title: 'Cual fue la negociación del cierre', order: 1, subActions: [] },
+          { id: 'f-propuesta-1', title: 'Cual fue la negociación del cierre', order: 1, subActions: [], requiresInput: true },
         ],
         subStages: [],
       },
@@ -152,23 +152,23 @@ export const serviceWorkflows: ServiceWorkflow[] = [
         title: 'Proyecto en Ejecución',
         order: 4,
         actions: [
-          { id: 'f-ejecucion-1', title: 'Solicitud de contratos (Depende del cliente)', order: 1, subActions: [] },
+          { id: 'f-ejecucion-1', title: 'Solicitud de contratos. (Depende del cliente)', order: 1, subActions: [] },
           { id: 'f-ejecucion-2', title: 'Envío de contrato para firma', order: 2, subActions: [] },
           { id: 'f-ejecucion-3', title: 'Recepción de contratos firmados', order: 3, subActions: [] },
           { id: 'f-ejecucion-4', title: 'Solicitud de facturas', order: 4, subActions: [] },
           { id: 'f-ejecucion-5', title: 'Entrega de facturas', order: 5, subActions: [] },
           { id: 'f-ejecucion-6', title: 'Recepción de comprobantes de pago', order: 6, subActions: [] },
           { id: 'f-ejecucion-7', title: 'Entrega de comprobante de pago', order: 7, subActions: [] },
-          { id: 'f-ejecucion-8', title: 'Modo de retorno (efectivo, transferencia, etc)', order: 8, subActions: [] },
+          { id: 'f-ejecucion-8', title: 'Modo de retorno. (efectivo, transferencia,etc)', order: 8, subActions: [], requiresInput: true },
         ],
         subStages: [],
       },
       {
         id: 'f-expansion',
-        title: 'Desarrollo y Expansión',
+        title: 'Desarrollo y Expansión de la Cuenta',
         order: 5,
         actions: [
-          { id: 'f-expansion-1', title: 'Proponer nuevos servicios al cliente', order: 1, subActions: [] },
+          { id: 'f-expansion-1', title: 'Proponer nuevos servicios al cliente', order: 1, subActions: [], requiresInput: true },
         ],
         subStages: [],
       },
@@ -177,7 +177,7 @@ export const serviceWorkflows: ServiceWorkflow[] = [
         title: 'Cierre y Renovación',
         order: 6,
         actions: [
-          { id: 'f-cierre-1', title: 'Registrar y cerrar formalmente la relación', order: 1, subActions: [] },
+          { id: 'f-cierre-1', title: 'Registrar y cerrar formalmente la relación. (En caso de que ya no trabaje con Wit)', order: 1, subActions: [] },
         ],
         subStages: [],
       },
