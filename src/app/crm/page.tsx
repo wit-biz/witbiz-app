@@ -34,15 +34,15 @@ import { serviceWorkflows as staticServiceWorkflows } from "@/lib/data";
 type AnyStage = WorkflowStage | SubStage | SubSubStage;
 
 const StageClientCard = ({ client, onClientClick }: { client: Client, onClientClick: (client: Client) => void }) => (
-  <div
-    onClick={() => onClientClick(client)}
-    className="p-2 border rounded-md cursor-pointer hover:bg-secondary/50 transition-all bg-background"
-  >
-    <p className="font-semibold text-sm truncate">{client.name}</p>
-    <p className="text-xs text-muted-foreground truncate">{client.category}</p>
-  </div>
+    <div
+      onClick={() => onClientClick(client)}
+      className="p-2 border rounded-md cursor-pointer hover:bg-secondary/50 transition-all bg-background shrink-0 w-40"
+    >
+      <p className="font-semibold text-sm truncate">{client.name}</p>
+      <p className="text-xs text-muted-foreground truncate">{client.category}</p>
+    </div>
 );
-
+  
 const StageCard = ({ 
     stage, 
     clientsInStage, 
@@ -52,46 +52,52 @@ const StageCard = ({
     clientsInStage: Client[], 
     onClientClick: (client: Client) => void
 }) => {
-
-  return (
-    <Card id={`stage-card-${stage.id}`} className="flex flex-col w-full shrink-0">
-        <CardHeader className="flex-grow-0 p-3">
-            <div className="flex items-center justify-between gap-2">
-                <CardTitle className="text-base">{stage.title}</CardTitle>
-                <span className="text-sm font-normal bg-muted text-muted-foreground rounded-full px-2 py-0.5 ml-auto">
-                    {clientsInStage.length}
-                </span>
-            </div>
-        </CardHeader>
-        <CardContent className="space-y-3 overflow-y-auto flex-1 p-3">
-           {stage.actions && stage.actions.length > 0 && (
-                <div className="text-sm text-muted-foreground pt-2 space-y-2 border-t">
-                     <h4 className="font-semibold text-xs text-foreground/80 pl-1">Acciones</h4>
-                     <ul className="space-y-1">
-                        {stage.actions.map(action => (
-                            <li key={action.id} className="flex items-start gap-2 text-xs">
-                                <ListTodo className="h-3 w-3 shrink-0 mt-0.5" />
-                                <span className="truncate" title={action.title}>{action.title}</span>
-                            </li>
-                        ))}
-                     </ul>
-                </div>
-           )}
-           <div className="space-y-2 pt-2 border-t">
-               {clientsInStage.length > 0 ? (
-                    clientsInStage.map(client => (
-                        <StageClientCard key={client.id} client={client} onClientClick={onClientClick} />
-                    ))
-                ) : (
-                    <div className="text-center text-muted-foreground py-4 text-sm flex flex-col items-center">
-                        <Users className="h-6 w-6 mb-1" />
-                        <p>No hay clientes.</p>
+    return (
+        <Card id={`stage-card-${stage.id}`} className="w-full">
+            <CardHeader className="p-4">
+                <div className="flex items-center gap-4">
+                    <div className="flex-grow">
+                        <CardTitle className="text-lg">{stage.title}</CardTitle>
+                        <CardDescription>{stage.actions?.length || 0} acciones automáticas</CardDescription>
                     </div>
-                )}
-           </div>
-        </CardContent>
-    </Card>
-  );
+                     <div className="flex items-center gap-2 text-muted-foreground">
+                        <Users className="h-5 w-5" />
+                        <span className="text-lg font-bold">{clientsInStage.length}</span>
+                    </div>
+                </div>
+            </CardHeader>
+            <CardContent className="p-4 pt-0 space-y-3">
+                 {stage.actions && stage.actions.length > 0 && (
+                    <div className="text-sm text-muted-foreground pt-3 border-t">
+                         <h4 className="font-semibold text-xs text-foreground/80 pl-1 mb-2">Acciones Automáticas</h4>
+                         <ul className="space-y-1">
+                            {stage.actions.map(action => (
+                                <li key={action.id} className="flex items-start gap-2 text-xs">
+                                    <ListTodo className="h-3 w-3 shrink-0 mt-0.5" />
+                                    <span className="truncate" title={action.title}>{action.title}</span>
+                                </li>
+                            ))}
+                         </ul>
+                    </div>
+               )}
+               <div className="pt-3 border-t">
+                    <h4 className="font-semibold text-xs text-foreground/80 pl-1 mb-2">Clientes en esta Etapa</h4>
+                    {clientsInStage.length > 0 ? (
+                        <div className="flex space-x-3 overflow-x-auto pb-2">
+                        {clientsInStage.map(client => (
+                            <StageClientCard key={client.id} client={client} onClientClick={onClientClick} />
+                        ))}
+                        </div>
+                    ) : (
+                        <div className="text-center text-muted-foreground py-4 text-sm flex flex-col items-center">
+                            <Users className="h-6 w-6 mb-1" />
+                            <p>No hay clientes.</p>
+                        </div>
+                    )}
+               </div>
+            </CardContent>
+        </Card>
+    );
 };
 
 
@@ -180,7 +186,7 @@ export default function CrmPage() {
       </Header>
       <main className="flex-1 p-4 md:p-8 space-y-6">
         {activeWorkflows && activeWorkflows.length > 0 ? (
-          <Accordion type="single" collapsible className="w-full space-y-4">
+          <Accordion type="single" collapsible className="w-full space-y-4" defaultValue={activeWorkflows[0]?.id}>
           {activeWorkflows.map(service => (
             <AccordionItem value={service.id} key={service.id} asChild>
               <Card>
@@ -191,7 +197,7 @@ export default function CrmPage() {
                   </CardHeader>
                 </AccordionTrigger>
                 <AccordionContent className="p-6 pt-0">
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                  <div className="space-y-4">
                       {(service.stages || []).sort((a,b) => a.order - b.order).map((stage) => (
                          <StageCard
                             key={stage.id}
