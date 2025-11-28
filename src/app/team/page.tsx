@@ -258,15 +258,17 @@ export default function TeamPage() {
                                       </CardDescription>
                                     </div>
                                 </AccordionTrigger>
-                                {isRolesEditMode && !role.isBaseRole && (
-                                    <div className="flex items-center pr-4">
-                                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => { setRoleToEdit(role); setIsPromptNameOpen(true);}}>
-                                            <Edit3 className="h-4 w-4" />
-                                        </Button>
-                                        <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => setRoleToDelete(role)}>
+                                {isRolesEditMode && role.id !== 'director' && (
+                                <div className="flex items-center pr-4">
+                                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={(e) => { e.stopPropagation(); setRoleToEdit(role); setIsPromptNameOpen(true);}}>
+                                        <Edit3 className="h-4 w-4" />
+                                    </Button>
+                                    {!role.isBaseRole && (
+                                        <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={(e) => { e.stopPropagation(); setRoleToDelete(role); }}>
                                             <Trash2 className="h-4 w-4" />
                                         </Button>
-                                    </div>
+                                    )}
+                                </div>
                                 )}
                             </CardHeader>
                             <AccordionContent>
@@ -282,7 +284,7 @@ export default function TeamPage() {
                                                         id={`perm-${role.id}-${permission.key}`}
                                                         checked={role.permissions[permission.key as keyof AppPermissions] || false}
                                                         onCheckedChange={(value) => handlePermissionChange(role.id, permission.key as keyof AppPermissions, value)}
-                                                        disabled={!isRolesEditMode || role.id === 'director'}
+                                                        disabled={!isRolesEditMode}
                                                     />
                                                 </div>
                                             ))}
