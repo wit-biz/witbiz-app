@@ -1,5 +1,3 @@
-# XML Change Format Guidelines
-
 Remember, the XML structure you generate is the only mechanism for applying changes to the user's code. Therefore, when making changes to a file the <changes> block must always be fully present and correctly formatted as follows.
 
 <changes>
