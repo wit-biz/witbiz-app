@@ -23,6 +23,7 @@ import {
   Database,
   Landmark,
   Trash2,
+  BarChartIcon,
   type LucideIcon,
 } from "lucide-react";
 import {
@@ -55,7 +56,8 @@ const icons: { [key: string]: LucideIcon } = {
     Briefcase,
     Database,
     Landmark,
-    Trash2
+    Trash2,
+    BarChartIcon
 };
 
 export function SidebarNav() {
