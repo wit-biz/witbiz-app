@@ -33,6 +33,7 @@ import { EditMemberDialog } from "@/components/shared/EditMemberDialog";
 import { Loader2 } from "lucide-react";
 import { allPermissions } from "@/lib/permissions";
 import { PromptNameDialog } from "@/components/shared/PromptNameDialog";
+import { initialRoles as baseInitialRoles } from "@/lib/data";
 
 
 export default function TeamPage() {
@@ -140,7 +141,7 @@ export default function TeamPage() {
             id: name.toLowerCase().replace(/\s+/g, '-'),
             name,
             isBaseRole: false,
-            permissions: { ...initialRoles.find(r => r.id === 'collaborator')?.permissions } // Start with collaborator permissions
+            permissions: { ...baseInitialRoles.find(r => r.id === 'collaborator')?.permissions } // Start with collaborator permissions
         };
         setRoles([...roles, newRole]);
         toast({ title: 'Rol Creado', description: `El rol "${name}" ha sido creado.` });
@@ -270,7 +271,7 @@ export default function TeamPage() {
                                                         id={`perm-${role.id}-${permission.key}`}
                                                         checked={role.permissions[permission.key as keyof AppPermissions] || false}
                                                         onCheckedChange={(value) => handlePermissionChange(role.id, permission.key as keyof AppPermissions, value)}
-                                                        disabled={!canManageRoles || role.isBaseRole}
+                                                        disabled={!canManageRoles}
                                                     />
                                                 </div>
                                             ))}
@@ -346,3 +347,5 @@ export default function TeamPage() {
     </>
   );
 }
+
+    
