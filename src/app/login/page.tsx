@@ -29,8 +29,8 @@ import { useToast } from '@/hooks/use-toast';
 import { PasswordInput } from '@/components/shared/PasswordInput';
 import { Logo } from '@/components/shared/logo';
 import { Loader2, LogIn, Users } from 'lucide-react';
-import { initiateEmailSignIn } from '@/firebase/non-blocking-login';
 import { useAuth } from '@/firebase';
+import { signInWithEmailAndPassword } from 'firebase/auth';
 
 const loginSchema = z.object({
   email: z.string().email({ message: 'Por favor, introduzca un email válido.' }),
@@ -40,7 +40,6 @@ const loginSchema = z.object({
 });
 
 export default function LoginPage() {
-  const router = useRouter();
   const { toast } = useToast();
   const auth = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -56,7 +55,9 @@ export default function LoginPage() {
   const onSubmit = async (values: z.infer<typeof loginSchema>) => {
     setIsSubmitting(true);
     try {
-        await initiateEmailSignIn(auth, values.email, values.password);
+        await signInWithEmailAndPassword(auth, values.email, values.password);
+        // On successful sign-in, the onAuthStateChanged listener in the layout
+        // will handle the user state and redirection automatically.
         toast({
             title: 'Inicio de sesión exitoso',
             description: 'Redirigiendo a la plataforma...',

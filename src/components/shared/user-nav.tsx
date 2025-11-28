@@ -49,7 +49,7 @@ export function UserNav() {
     );
   }
 
-  const canViewAdmin = currentUser?.permissions.admin_view ?? true; // Default to true for demo
+  const canViewAdmin = currentUser?.permissions.admin_view;
 
   return (
     <div className="fixed top-4 right-4 z-50 flex items-center gap-2">

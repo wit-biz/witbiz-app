@@ -27,10 +27,11 @@ function AppContent({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     setIsClient(true);
+  }, []);
+
+  useEffect(() => {
     if (!isUserLoading) {
       if (isPromoterRoute) {
-        // Promoter routes are public, no redirection logic needed here
-        // unless a logged-in user tries to access them, which we'll ignore for now.
         return;
       }
       
@@ -41,12 +42,12 @@ function AppContent({ children }: { children: React.ReactNode }) {
         router.push('/');
       }
     }
-  }, [isUserLoading, user, router, pathname, isClient, isAuthPage, isPromoterRoute]);
+  }, [isUserLoading, user, router, pathname, isAuthPage, isPromoterRoute]);
   
   if (isPromoterRoute) {
     return <>{children}</>;
   }
-
+  
   if (!isClient || (isUserLoading && !isAuthPage)) {
     return (
       <div className="flex h-screen w-full items-center justify-center">
@@ -93,7 +94,6 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const router = useRouter();
 
   return (
     <html lang="es" suppressHydrationWarning>

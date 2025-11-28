@@ -29,6 +29,8 @@ import { PasswordInput } from '@/components/shared/PasswordInput';
 import { Logo } from '@/components/shared/logo';
 import { Loader2, UserPlus } from 'lucide-react';
 import { useCRMData } from '@/contexts/CRMDataContext';
+import { useAuth } from '@/firebase';
+import { signInWithEmailAndPassword } from 'firebase/auth';
 
 const registerSchema = z
   .object({
@@ -48,6 +50,7 @@ export default function RegisterPage() {
   const router = useRouter();
   const { toast } = useToast();
   const { registerUser } = useCRMData();
+  const auth = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const form = useForm<z.infer<typeof registerSchema>>({
@@ -65,11 +68,13 @@ export default function RegisterPage() {
     try {
       const userCredential = await registerUser(values.name, values.email, values.password);
       if (userCredential) {
+        // After successful creation, sign in the user
+        await signInWithEmailAndPassword(auth, values.email, values.password);
         toast({
           title: 'Registro exitoso',
           description: '¡Bienvenido! Serás redirigido en breve.',
         });
-        router.push('/');
+        // The AppContent component will handle redirection
       } else {
          throw new Error("No se pudo crear el cliente.");
       }
@@ -188,5 +193,3 @@ export default function RegisterPage() {
     </div>
   );
 }
-
-    

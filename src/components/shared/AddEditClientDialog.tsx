@@ -1,8 +1,8 @@
 
 "use client";
 
-import React, { useEffect, useMemo, useState } from 'react';
-import { useForm, useWatch } from 'react-hook-form';
+import React, { useEffect } from 'react';
+import { useForm, useWatch, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import {
@@ -49,7 +49,7 @@ const promoterRefSchema = z.object({
 const customCommissionSchema = z.object({
     serviceId: z.string(),
     commissionId: z.string(),
-    rate: z.coerce.number().optional(), // Opcional para que se pueda dejar vacío
+    rate: z.coerce.number().optional(),
 });
 
 const clientSchema = z.object({
@@ -61,7 +61,7 @@ const clientSchema = z.object({
   website: z.string().url({ message: "Por favor, introduzca una URL válida." }).optional().or(z.literal('')),
   promoters: z.array(promoterRefSchema).optional(),
   subscribedServiceIds: z.array(z.string()).min(1, { message: "Debe seleccionar al menos un servicio." }),
-  customCommissionServiceIds: z.array(z.string()).optional(), // Tracks services with custom commissions ON
+  customCommissionServiceIds: z.array(z.string()).optional(),
   status: z.enum(['Activo', 'Inactivo']),
   hasPosTerminals: z.boolean().default(false),
   posTerminals: z.array(posTerminalSchema).optional(),
@@ -69,7 +69,6 @@ const clientSchema = z.object({
 }).refine(data => {
     if (data.promoters && data.promoters.length > 0) {
         const totalPercentage = data.promoters.reduce((sum, p) => sum + p.percentage, 0);
-        // Use a small tolerance for floating point issues
         return Math.abs(totalPercentage - 100) < 0.01;
     }
     return true;
@@ -108,13 +107,11 @@ export function AddEditClientDialog({ client, isOpen, onClose }: AddEditClientDi
   
   React.useEffect(() => {
     if (isOpen && serviceWorkflows) {
-        // Filter out any stale service IDs that might be stored on the client
         const availableServiceIds = new Set((serviceWorkflows || []).map(s => s.id));
-        
         const validSubscribedServiceIds = (client?.subscribedServiceIds || []).filter(id => availableServiceIds.has(id));
         const validCustomCommissionServiceIds = (client?.customCommissionServiceIds || []).filter(id => availableServiceIds.has(id));
 
-        const defaultValues = {
+        form.reset({
             name: client?.name || '',
             owner: client?.owner || '',
             category: client?.category || '',
@@ -128,13 +125,20 @@ export function AddEditClientDialog({ client, isOpen, onClose }: AddEditClientDi
             hasPosTerminals: !!client?.posTerminals && client.posTerminals.length > 0,
             posTerminals: client?.posTerminals || [],
             customCommissions: client?.customCommissions || [],
-        };
-        form.reset(defaultValues);
+        });
     }
   }, [isOpen, client, form, serviceWorkflows]);
 
-  const { subscribedServiceIds, customCommissionServiceIds, hasPosTerminals } = useWatch({
+  const { subscribedServiceIds, customCommissionServiceIds, hasPosTerminals } = useWatch({ control: form.control });
+
+  const { fields: promoterFields, append: appendPromoter, remove: removePromoter } = useFieldArray({
       control: form.control,
+      name: "promoters"
+  });
+  
+  const { fields: terminalFields, append: appendTerminal, remove: removeTerminal } = useFieldArray({
+      control: form.control,
+      name: "posTerminals"
   });
 
   useEffect(() => {
@@ -143,7 +147,7 @@ export function AddEditClientDialog({ client, isOpen, onClose }: AddEditClientDi
     }
   }, [hasPosTerminals, form]);
 
-  const commissionsForSelectedServices = useMemo(() => {
+  const commissionsForSelectedServices = React.useMemo(() => {
     if (!subscribedServiceIds || !serviceWorkflows || !customCommissionServiceIds) return [];
     return serviceWorkflows
         .filter(sw => customCommissionServiceIds.includes(sw.id) && sw.commissions && sw.commissions.length > 0)
@@ -154,7 +158,6 @@ export function AddEditClientDialog({ client, isOpen, onClose }: AddEditClientDi
     setIsSubmitting(true);
     let success = false;
     
-    // Filter out custom commissions for services where the switch is off
     const finalCustomCommissions = values.customCommissions?.filter(
         cc => values.customCommissionServiceIds?.includes(cc.serviceId)
     );
@@ -196,111 +199,67 @@ export function AddEditClientDialog({ client, isOpen, onClose }: AddEditClientDi
                 </DialogHeader>
 
                 <div className="grid gap-4 py-4 max-h-[60vh] overflow-y-auto px-1">
-                    <FormField
-                        control={form.control}
-                        name="name"
-                        render={({ field }) => (
-                            <FormItem>
-                                <FormLabel>Nombre de la Empresa <span className="text-destructive">*</span></FormLabel>
-                                <FormControl>
-                                    <Input placeholder="Nombre del cliente" {...field} disabled={isSubmitting}/>
-                                </FormControl>
-                                <FormMessage />
-                            </FormItem>
-                        )}
-                    />
-                    <FormField
-                        control={form.control}
-                        name="status"
-                        render={({ field }) => (
-                            <FormItem>
-                                <FormLabel>Estado <span className="text-destructive">*</span></FormLabel>
-                                <Select onValueChange={field.onChange} value={field.value}>
+                    <FormField control={form.control} name="name" render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>Nombre de la Empresa <span className="text-destructive">*</span></FormLabel>
+                            <FormControl><Input placeholder="Nombre del cliente" {...field} disabled={isSubmitting}/></FormControl>
+                            <FormMessage />
+                        </FormItem>
+                    )} />
+                    <FormField control={form.control} name="status" render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>Estado <span className="text-destructive">*</span></FormLabel>
+                            <Select onValueChange={field.onChange} value={field.value}>
+                                <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
+                                <SelectContent>
+                                    <SelectItem value="Activo">Activo</SelectItem>
+                                    <SelectItem value="Inactivo">Inactivo</SelectItem>
+                                </SelectContent>
+                            </Select>
+                            <FormMessage />
+                        </FormItem>
+                    )} />
+                    <FormField control={form.control} name="subscribedServiceIds" render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>Servicios Contratados <span className="text-destructive">*</span></FormLabel>
+                            <Popover>
+                                <PopoverTrigger asChild>
                                     <FormControl>
-                                        <SelectTrigger>
-                                            <SelectValue />
-                                        </SelectTrigger>
+                                        <Button variant="outline" role="combobox" className={cn("w-full justify-between", !field.value?.length && "text-muted-foreground")}>
+                                            <span className="truncate">{field.value?.length ? `${field.value.length} servicio(s) seleccionado(s)` : "Seleccione servicios..."}</span>
+                                            <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                        </Button>
                                     </FormControl>
-                                    <SelectContent>
-                                        <SelectItem value="Activo">Activo</SelectItem>
-                                        <SelectItem value="Inactivo">Inactivo</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                                <FormMessage />
-                            </FormItem>
-                        )}
-                    />
-                    <FormField
-                        control={form.control}
-                        name="subscribedServiceIds"
-                        render={({ field }) => (
-                            <FormItem>
-                                <FormLabel>Servicios Contratados <span className="text-destructive">*</span></FormLabel>
-                                <Popover>
-                                    <PopoverTrigger asChild>
-                                        <FormControl>
-                                            <Button
-                                                variant="outline"
-                                                role="combobox"
-                                                className={cn("w-full justify-between", !(subscribedServiceIds && subscribedServiceIds.length > 0) && "text-muted-foreground")}
-                                            >
-                                                <span className="truncate">
-                                                   {subscribedServiceIds && subscribedServiceIds.length > 0
-                                                     ? `${subscribedServiceIds.length} servicio(s) seleccionado(s)`
-                                                     : "Seleccione servicios..."}
-                                                </span>
-                                                <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                                            </Button>
-                                        </FormControl>
-                                    </PopoverTrigger>
-                                    <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
-                                       <div className="p-2 space-y-1">
-                                        {(serviceWorkflows || []).map((service) => {
-                                            const isChecked = (field.value || []).includes(service.id);
-                                            return (
-                                                <div
-                                                    key={service.id}
-                                                    className="flex items-center justify-between gap-2 p-2 rounded-md hover:bg-muted"
-                                                >
-                                                    <div
-                                                        className="flex items-center gap-2 flex-grow cursor-pointer"
-                                                        onClick={(e) => {
-                                                            e.preventDefault();
-                                                            const currentIds = form.getValues("subscribedServiceIds") || [];
-                                                            const newIds = isChecked
-                                                                ? currentIds.filter(id => id !== service.id)
-                                                                : [...currentIds, service.id];
-                                                            form.setValue("subscribedServiceIds", newIds, { shouldValidate: true, shouldDirty: true });
-                                                        }}
-                                                    >
-                                                        <Checkbox checked={isChecked} />
-                                                        <span className="text-sm font-medium">{service.name}</span>
-                                                    </div>
-                                                    <div className="flex items-center space-x-2">
-                                                        <FormLabel htmlFor={`custom-comm-${service.id}`} className="text-xs text-muted-foreground">Personalizar</FormLabel>
-                                                        <Switch
-                                                            id={`custom-comm-${service.id}`}
-                                                            disabled={!isChecked}
-                                                            checked={(customCommissionServiceIds || []).includes(service.id)}
-                                                            onCheckedChange={(checked) => {
-                                                                const currentCustomIds = form.getValues("customCommissionServiceIds") || [];
-                                                                const newCustomIds = checked
-                                                                    ? [...currentCustomIds, service.id]
-                                                                    : currentCustomIds.filter(id => id !== service.id);
-                                                                form.setValue("customCommissionServiceIds", newCustomIds, { shouldDirty: true });
-                                                            }}
-                                                        />
-                                                    </div>
-                                                </div>
-                                            )
-                                        })}
-                                       </div>
-                                    </PopoverContent>
-                                </Popover>
-                                <FormMessage />
-                            </FormItem>
-                        )}
-                    />
+                                </PopoverTrigger>
+                                <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
+                                   <div className="p-2 space-y-1">
+                                    {(serviceWorkflows || []).map((service) => (
+                                        <div key={service.id} className="flex items-center justify-between gap-2 p-2 rounded-md hover:bg-muted">
+                                            <div className="flex items-center gap-2 flex-grow cursor-pointer" onClick={(e) => {
+                                                e.preventDefault();
+                                                const currentIds = field.value || [];
+                                                const newIds = currentIds.includes(service.id) ? currentIds.filter(id => id !== service.id) : [...currentIds, service.id];
+                                                form.setValue("subscribedServiceIds", newIds, { shouldValidate: true, shouldDirty: true });
+                                            }}>
+                                                <Checkbox checked={field.value?.includes(service.id)} />
+                                                <span className="text-sm font-medium">{service.name}</span>
+                                            </div>
+                                            <div className="flex items-center space-x-2">
+                                                <FormLabel htmlFor={`custom-comm-${service.id}`} className="text-xs text-muted-foreground">Personalizar</FormLabel>
+                                                <Switch id={`custom-comm-${service.id}`} disabled={!field.value?.includes(service.id)} checked={customCommissionServiceIds?.includes(service.id)} onCheckedChange={(checked) => {
+                                                    const currentCustomIds = form.getValues("customCommissionServiceIds") || [];
+                                                    const newCustomIds = checked ? [...currentCustomIds, service.id] : currentCustomIds.filter(id => id !== service.id);
+                                                    form.setValue("customCommissionServiceIds", newCustomIds, { shouldDirty: true });
+                                                }} />
+                                            </div>
+                                        </div>
+                                    ))}
+                                   </div>
+                                </PopoverContent>
+                            </Popover>
+                            <FormMessage />
+                        </FormItem>
+                    )} />
                     
                      {commissionsForSelectedServices.length > 0 && (
                         <>
@@ -312,33 +271,20 @@ export function AddEditClientDialog({ client, isOpen, onClose }: AddEditClientDi
                                 {commissionsForSelectedServices.map((commission, index) => {
                                     const customCommissionIndex = form.getValues('customCommissions')?.findIndex(cc => cc.serviceId === commission.serviceId && cc.commissionId === commission.id) ?? -1;
                                     const fieldIndex = customCommissionIndex !== -1 ? customCommissionIndex : (form.getValues('customCommissions')?.length || 0) + index;
-                                    
                                     return (
                                         <div key={`${commission.serviceId}-${commission.id}`} className="p-2 border rounded-md">
-                                             <FormField
-                                                control={form.control}
-                                                name={`customCommissions.${fieldIndex}.rate`}
-                                                render={({ field }) => (
-                                                    <FormItem>
-                                                        <FormLabel className="text-xs">
-                                                            <span className="text-green-600 font-semibold">{commission.serviceName}:</span> {commission.name} (Estándar: {commission.rate}%)
-                                                        </FormLabel>
-                                                        <div className="relative">
+                                             <FormField control={form.control} name={`customCommissions.${fieldIndex}.rate`} render={({ field }) => (
+                                                <FormItem>
+                                                    <FormLabel className="text-xs"><span className="text-green-600 font-semibold">{commission.serviceName}:</span> {commission.name} (Estándar: {commission.rate}%)</FormLabel>
+                                                    <div className="relative">
                                                         <FormControl>
-                                                            <Input 
-                                                                type="number" 
-                                                                placeholder="Tasa personalizada"
-                                                                {...field}
-                                                                value={field.value ?? ''}
-                                                                onChange={e => field.onChange(e.target.value === '' ? undefined : parseFloat(e.target.value))}
-                                                            />
+                                                            <Input type="number" placeholder="Tasa personalizada" {...field} value={field.value ?? ''} onChange={e => field.onChange(e.target.value === '' ? undefined : parseFloat(e.target.value))} />
                                                         </FormControl>
                                                         <Percent className="absolute right-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                                                        </div>
-                                                        <FormMessage />
-                                                    </FormItem>
-                                                )}
-                                            />
+                                                    </div>
+                                                    <FormMessage />
+                                                </FormItem>
+                                            )} />
                                             <input type="hidden" {...form.register(`customCommissions.${fieldIndex}.serviceId`)} value={commission.serviceId} />
                                             <input type="hidden" {...form.register(`customCommissions.${fieldIndex}.commissionId`)} value={commission.id} />
                                         </div>
@@ -349,124 +295,77 @@ export function AddEditClientDialog({ client, isOpen, onClose }: AddEditClientDi
                         </>
                     )}
 
-
                     <Separator />
-                    
                     <div>
                         <FormLabel>Promotores Referidos</FormLabel>
                         <div className="space-y-3 mt-2">
-                          {/* Promoter fields will be rendered here by useFieldArray */}
+                          {promoterFields.map((field, index) => (
+                              <div key={field.id} className="grid grid-cols-[1fr_auto_auto] items-center gap-2 p-2 border rounded-md">
+                                  <FormField control={form.control} name={`promoters.${index}.promoterId`} render={({ field }) => (
+                                      <FormItem>
+                                          <Select onValueChange={field.onChange} value={field.value}>
+                                              <FormControl><SelectTrigger><SelectValue placeholder="Seleccione promotor..." /></SelectTrigger></FormControl>
+                                              <SelectContent>{promoters.map(p => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}</SelectContent>
+                                          </Select>
+                                          <FormMessage />
+                                      </FormItem>
+                                  )} />
+                                  <FormField control={form.control} name={`promoters.${index}.percentage`} render={({ field }) => (
+                                      <FormItem>
+                                          <div className="relative">
+                                            <FormControl><Input type="number" className="w-24 pr-6" placeholder="%" {...field} /></FormControl>
+                                            <Percent className="absolute right-2 top-1/2 -translate-y-1/2 h-3 w-3 text-muted-foreground" />
+                                          </div>
+                                          <FormMessage />
+                                      </FormItem>
+                                  )} />
+                                  <Button type="button" variant="ghost" size="icon" onClick={() => removePromoter(index)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
+                              </div>
+                          ))}
+                          <Button type="button" variant="outline" size="sm" onClick={() => appendPromoter({ promoterId: '', percentage: 0 })}><PlusCircle className="mr-2 h-4 w-4" />Añadir Promotor</Button>
+                           <FormMessage>{form.formState.errors.promoters?.message}</FormMessage>
                         </div>
                     </div>
 
-
                     <Separator />
-
-                    <FormField
-                        control={form.control}
-                        name="owner"
-                        render={({ field }) => (
-                            <FormItem>
-                                <FormLabel>Contacto Principal</FormLabel>
-                                <FormControl>
-                                    <Input placeholder="Propietario asignado" {...field} disabled={isSubmitting}/>
-                                </FormControl>
-                                <FormMessage />
-                            </FormItem>
-                        )}
-                    />
-                    <FormField
-                        control={form.control}
-                        name="category"
-                        render={({ field }) => (
-                            <FormItem>
-                                <FormLabel>Categoría</FormLabel>
-                                <FormControl>
-                                    <Input placeholder="Categoría del cliente" {...field} disabled={isSubmitting}/>
-                                </FormControl>
-                                <FormMessage />
-                            </FormItem>
-                        )}
-                    />
-                     <FormField
-                        control={form.control}
-                        name="contactEmail"
-                        render={({ field }) => (
-                            <FormItem>
-                                <FormLabel>Email de Contacto</FormLabel>
-                                <FormControl>
-                                    <Input type="email" placeholder="ejemplo@email.com" {...field} disabled={isSubmitting}/>
-                                </FormControl>
-                                <FormMessage />
-                            </FormItem>
-                        )}
-                    />
-                     <FormField
-                        control={form.control}
-                        name="contactPhone"
-                        render={({ field }) => (
-                            <FormItem>
-                                <FormLabel>Teléfono</FormLabel>
-                                <FormControl>
-                                    <Input placeholder="+1 234 567 890" {...field} disabled={isSubmitting}/>
-                                </FormControl>
-                                <FormMessage />
-                            </FormItem>
-                        )}
-                    />
-                     <FormField
-                        control={form.control}
-                        name="website"
-                        render={({ field }) => (
-                            <FormItem>
-                                <FormLabel>Sitio Web</FormLabel>
-                                <FormControl>
-                                    <Input placeholder="https://ejemplo.com" {...field} disabled={isSubmitting}/>
-                                </FormControl>
-                                <FormMessage />
-                            </FormItem>
-                        )}
-                    />
+                    <FormField control={form.control} name="owner" render={({ field }) => (<FormItem><FormLabel>Contacto Principal</FormLabel><FormControl><Input placeholder="Propietario asignado" {...field} disabled={isSubmitting}/></FormControl><FormMessage /></FormItem>)} />
+                    <FormField control={form.control} name="category" render={({ field }) => (<FormItem><FormLabel>Categoría</FormLabel><FormControl><Input placeholder="Categoría del cliente" {...field} disabled={isSubmitting}/></FormControl><FormMessage /></FormItem>)} />
+                    <FormField control={form.control} name="contactEmail" render={({ field }) => (<FormItem><FormLabel>Email de Contacto</FormLabel><FormControl><Input type="email" placeholder="ejemplo@email.com" {...field} disabled={isSubmitting}/></FormControl><FormMessage /></FormItem>)} />
+                    <FormField control={form.control} name="contactPhone" render={({ field }) => (<FormItem><FormLabel>Teléfono</FormLabel><FormControl><Input placeholder="+1 234 567 890" {...field} disabled={isSubmitting}/></FormControl><FormMessage /></FormItem>)} />
+                    <FormField control={form.control} name="website" render={({ field }) => (<FormItem><FormLabel>Sitio Web</FormLabel><FormControl><Input placeholder="https://ejemplo.com" {...field} disabled={isSubmitting}/></FormControl><FormMessage /></FormItem>)} />
                     <Separator />
                     
-                    <FormField
-                        control={form.control}
-                        name="hasPosTerminals"
-                        render={({ field }) => (
-                            <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
-                                <div className="space-y-0.5">
-                                    <FormLabel>¿Tiene Terminales Punto de Venta (TPV)?</FormLabel>
-                                </div>
-                                <FormControl>
-                                    <Switch
-                                        checked={field.value}
-                                        onCheckedChange={field.onChange}
-                                    />
-                                </FormControl>
-                            </FormItem>
-                        )}
-                    />
+                    <FormField control={form.control} name="hasPosTerminals" render={({ field }) => (
+                        <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
+                            <div className="space-y-0.5"><FormLabel>¿Tiene Terminales Punto de Venta (TPV)?</FormLabel></div>
+                            <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
+                        </FormItem>
+                    )} />
                      
                     {hasPosTerminals && (
                         <div className="space-y-2 mt-2 pl-4 border-l-2">
-                          {/* POS Terminal fields will be rendered here by useFieldArray */}
+                          {terminalFields.map((field, index) => (
+                              <FormField key={field.id} control={form.control} name={`posTerminals.${index}.serialNumber`} render={({ field }) => (
+                                  <FormItem>
+                                      <FormLabel className="text-xs">Terminal #{index + 1}</FormLabel>
+                                      <div className="flex items-center gap-2">
+                                        <FormControl><Input placeholder="Número de serie" {...field} /></FormControl>
+                                        <Button type="button" variant="ghost" size="icon" onClick={() => removeTerminal(index)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
+                                      </div>
+                                      <FormMessage />
+                                  </FormItem>
+                              )} />
+                          ))}
+                          <Button type="button" variant="outline" size="sm" onClick={() => appendTerminal({ serialNumber: ''})}><PlusCircle className="mr-2 h-4 w-4" />Añadir Terminal</Button>
                         </div>
                     )}
                 </div>
 
                 <DialogFooter>
-                    <DialogClose asChild>
-                        <Button type="button" variant="outline" disabled={isSubmitting}>
-                            Cancelar
-                        </Button>
-                    </DialogClose>
+                    <DialogClose asChild><Button type="button" variant="outline" disabled={isSubmitting}>Cancelar</Button></DialogClose>
                     <Button type="submit" disabled={isSubmitting}>
-                    {isSubmitting ? (
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    ) : (
-                        <Save className="mr-2 h-4 w-4" />
-                    )}
-                    {isEditMode ? 'Guardar Cambios' : 'Crear Cliente'}
+                        {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
+                        {isEditMode ? 'Guardar Cambios' : 'Crear Cliente'}
                     </Button>
                 </DialogFooter>
             </form>
