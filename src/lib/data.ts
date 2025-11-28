@@ -133,7 +133,7 @@ export const serviceWorkflows: ServiceWorkflow[] = [
         order: 3,
         actions: [
           { id: 'f-onboarding-1', title: 'Alta del cliente', order: 1, subActions: [] },
-          { id: 'f-onboarding-2', title: 'Recopilar documentos generales (Opcional si se requiere contrato)', order: 2, subActions: [], requiredDocumentForCompletion: true, requiredDocuments: [
+          { id: 'f-onboarding-2', title: 'Recopilar documentos generales para contrato (Opcional)', order: 2, subActions: [], requiredDocumentForCompletion: true, requiredDocuments: [
               {id: 'doc-fact-pm-1', description: 'Acta constitutiva (Persona Moral)'},
               {id: 'doc-fact-pm-2', description: 'Poder Notarial (Persona Moral)'},
               {id: 'doc-fact-pm-3', description: 'Identificación de Representante Legal (Persona Moral)'},
@@ -152,7 +152,7 @@ export const serviceWorkflows: ServiceWorkflow[] = [
         title: 'Proyecto en Ejecución',
         order: 4,
         actions: [
-          { id: 'f-ejecucion-1', title: 'Solicitud de contratos. (Depende del cliente)', order: 1, subActions: [] },
+          { id: 'f-ejecucion-1', title: 'Solicitud de contratos (Depende del cliente)', order: 1, subActions: [] },
           { id: 'f-ejecucion-2', title: 'Envío de contrato para firma', order: 2, subActions: [] },
           { id: 'f-ejecucion-3', title: 'Recepción de contratos firmados', order: 3, subActions: [] },
           { id: 'f-ejecucion-4', title: 'Solicitud de facturas', order: 4, subActions: [] },
