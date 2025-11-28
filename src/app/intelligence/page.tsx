@@ -1,9 +1,9 @@
 
 "use client";
 
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo } from 'react';
 import { DateRange } from 'react-day-picker';
-import { subDays, startOfDay, endOfDay, isWithinInterval, endOfMonth } from 'date-fns';
+import { subDays, isWithinInterval, startOfDay, endOfDay } from 'date-fns';
 import { Header } from "@/components/header";
 import {
   Card,
@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { LineChart, History, BarChart, Download, ArrowUpCircle, ArrowDownCircle, Users, Briefcase } from "lucide-react";
+import { BarChart, History, Download } from "lucide-react";
 import { DateRangeChartsTab } from "@/components/shared/DateRangeChartsTab";
 import { useCRMData } from "@/contexts/CRMDataContext";
 import { Loader2 } from "lucide-react";
@@ -22,18 +22,8 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
-import { es } from "date-fns/locale";
 import { DateRangeFilter } from '@/components/shared/DateRangeFilter';
-
-
-// Mock Data for Reports (Transactions)
-const reportData = [
-  { id: 'rep1', date: new Date(), description: 'Comisión por Cierre - Synergy Corp.', amount: 2500, type: 'income', clientName: 'Synergy Corp.', serviceName: 'Asesoría de Crédito Empresarial' },
-  { id: 'rep2', date: subDays(new Date(), 2), description: 'Pago de Software de Análisis', amount: -150, type: 'expense', clientName: null, serviceName: null },
-  { id: 'rep3', date: subDays(new Date(), 5), description: 'Adelanto de Asesoría - Global Net', amount: 1000, type: 'income', clientName: 'Global Net', serviceName: 'Gestión Patrimonial'},
-  { id: 'rep4', date: subDays(new Date(), 10), description: 'Gastos de Representación', amount: -200, type: 'expense', clientName: null, serviceName: null},
-  { id: 'rep5', date: subDays(new Date(), 32), description: 'Comisión por Firma - Innovate Inc.', amount: 5000, type: 'income', clientName: 'Innovate Inc.', serviceName: 'Operaciones de Divisas' },
-];
+import { Transaction } from '@/lib/types';
 
 // Mock Data for Logs (Activities)
 const logData = [
@@ -46,7 +36,7 @@ const logData = [
 
 
 export default function IntelligenceCenterPage() {
-  const { clients, serviceWorkflows, isLoadingClients, isLoadingWorkflows } = useCRMData();
+  const { clients, serviceWorkflows, transactions, isLoadingClients, isLoadingWorkflows, isLoadingTransactions } = useCRMData();
   const { toast } = useToast();
 
   const [date, setDate] = React.useState<DateRange | undefined>({
@@ -59,6 +49,29 @@ export default function IntelligenceCenterPage() {
 
   const chartServices = serviceWorkflows ? serviceWorkflows.map(s => ({ id: s.id, name: s.name })) : [];
   const chartClients = (clients || []).map(c => ({ id: c.id, name: c.name }));
+
+  const filteredTransactions = useMemo(() => {
+    if (isLoadingTransactions || !transactions) return [];
+    
+    return transactions.filter(item => {
+        const itemDate = new Date(item.date);
+        const isDateInRange = date?.from && date.to ? isWithinInterval(itemDate, { start: startOfDay(date.from), end: endOfDay(date.to) }) : true;
+        
+        let clientMatch = selectedClientId === 'all';
+        if (!clientMatch) {
+            // A transaction can be linked to a client directly, or via its company and account
+            const account = transactions.find(t => t.id === item.id)?.accountId;
+            const company = transactions.find(t => t.id === item.id)?.companyId;
+            // This is a simplified logic. A full implementation might need deeper relations.
+            clientMatch = item.clientId === selectedClientId;
+        }
+        
+        const isServiceMatch = selectedServiceId === 'all'; // Simplified for now
+
+        return isDateInRange && clientMatch && isServiceMatch;
+    });
+  }, [date, selectedClientId, selectedServiceId, transactions, isLoadingTransactions]);
+
 
   const filteredLogs = useMemo(() => {
      return logData.filter(item => {
@@ -94,7 +107,7 @@ export default function IntelligenceCenterPage() {
     setIsComparativeView(false);
   };
 
-  const canBeComparative = selectedClientId === 'all' || selectedServiceId === 'all';
+  const isLoading = isLoadingClients || isLoadingWorkflows || isLoadingTransactions;
 
   return (
     <div className="flex flex-col min-h-screen">
@@ -128,7 +141,7 @@ export default function IntelligenceCenterPage() {
                     onClearFilters={handleClearFilters}
                     isComparative={isComparativeView}
                     setIsComparative={setIsComparativeView}
-                    canBeComparative={canBeComparative}
+                    canBeComparative={false} // Disabled for now
                 />
             </CardContent>
         </Card>
@@ -161,18 +174,13 @@ export default function IntelligenceCenterPage() {
                     </Button>
                 </CardHeader>
                 <CardContent>
-                 {isLoadingClients || isLoadingWorkflows ? (
+                 {isLoading ? (
                     <div className="flex items-center justify-center py-12">
                       <Loader2 className="h-8 w-8 animate-spin text-primary" />
                     </div>
                  ) : (
                     <DateRangeChartsTab 
-                        date={date}
-                        selectedClientId={selectedClientId}
-                        selectedServiceId={selectedServiceId}
-                        isComparative={isComparativeView}
-                        clients={chartClients}
-                        services={chartServices}
+                        transactions={filteredTransactions}
                     />
                  )}
                 </CardContent>
@@ -185,7 +193,7 @@ export default function IntelligenceCenterPage() {
                  <div>
                     <CardTitle>Bitácora de Actividades</CardTitle>
                     <CardDescription>
-                      Registro de todas las acciones importantes realizadas dentro de la aplicación.
+                      Registro de todas las acciones importantes realizadas dentro de la aplicación. (Datos de demostración)
                     </CardDescription>
                  </div>
                 <Button variant="outline" size="sm" onClick={() => handleDownload('Bitácoras')}>
@@ -225,5 +233,3 @@ export default function IntelligenceCenterPage() {
     </div>
   );
 }
-
-    
