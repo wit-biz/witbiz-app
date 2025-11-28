@@ -249,26 +249,26 @@ export default function TeamPage() {
                 {localRoles.filter(role => role.id !== 'director').map((role) => (
                     <AccordionItem value={role.id} key={role.id} asChild>
                         <Card>
-                            <AccordionTrigger className="w-full p-0 [&_svg]:ml-auto [&_svg]:mr-4" disabled={!isRolesEditMode && role.id !== 'director'}>
-                                <CardHeader className="flex-1 text-left">
-                                  <div className="flex justify-between items-center w-full">
-                                    <CardTitle>{role.name}</CardTitle>
-                                    {isRolesEditMode && !role.isBaseRole && (
-                                        <div className="flex items-center">
-                                            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={(e) => { e.stopPropagation(); setRoleToEdit(role); setIsPromptNameOpen(true);}}>
-                                                <Edit3 className="h-4 w-4" />
-                                            </Button>
-                                            <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={(e) => { e.stopPropagation(); setRoleToDelete(role); }}>
-                                                <Trash2 className="h-4 w-4" />
-                                            </Button>
-                                        </div>
-                                    )}
-                                  </div>
-                                    <CardDescription>
-                                        Configure los permisos para el rol de {role.name}.
-                                    </CardDescription>
-                                </CardHeader>
-                            </AccordionTrigger>
+                             <CardHeader className="flex flex-row items-center p-0">
+                                <AccordionTrigger className="flex-1 p-6 hover:no-underline [&_svg]:ml-auto" disabled={!isRolesEditMode && role.id === 'director'}>
+                                    <div className="text-left">
+                                      <CardTitle>{role.name}</CardTitle>
+                                      <CardDescription className="mt-1">
+                                          Configure los permisos para el rol de {role.name}.
+                                      </CardDescription>
+                                    </div>
+                                </AccordionTrigger>
+                                {isRolesEditMode && !role.isBaseRole && (
+                                    <div className="flex items-center pr-4">
+                                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => { setRoleToEdit(role); setIsPromptNameOpen(true);}}>
+                                            <Edit3 className="h-4 w-4" />
+                                        </Button>
+                                        <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => setRoleToDelete(role)}>
+                                            <Trash2 className="h-4 w-4" />
+                                        </Button>
+                                    </div>
+                                )}
+                            </CardHeader>
                             <AccordionContent>
                                 <CardContent className="space-y-6 max-h-[60vh] overflow-y-auto">
                                     {Object.entries(permissionsBySection).map(([section, permissions]) => (
