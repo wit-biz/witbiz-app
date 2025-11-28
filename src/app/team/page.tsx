@@ -35,33 +35,33 @@ import { Loader2 } from "lucide-react";
 
 
 const allPermissions: { key: keyof AppPermissions; label: string; section: string }[] = [
-    // Dashboard
-    { key: "dashboard", label: "Ver Dashboard", section: "General" },
-
-    // Clients
-    { key: "clients_view", label: "Ver Clientes", section: "Clientes" },
-    { key: "clients_create", label: "Crear Clientes", section: "Clientes" },
-    { key: "clients_edit", label: "Editar Clientes", section: "Clientes" },
-    { key: "clients_delete", label: "Eliminar Clientes", section: "Clientes" },
+    // General
+    { key: "dashboard", label: "Ver Dashboard de Inicio", section: "General" },
+    { key: "services_view", label: "Ver Página de Servicios", section: "General" },
     
-    // Tasks
+    // CRM y Flujos
+    { key: "crm_view", label: "Ver Flujos de Trabajo (CRM)", section: "CRM y Flujos" },
+    { key: "crm_edit", label: "Editar Flujos y Servicios", section: "CRM y Flujos" },
+    
+    // Clientes y Contactos
+    { key: "clients_view", label: "Ver Contactos (Clientes, Proveedores, Promotores)", section: "Clientes y Contactos" },
+    { key: "clients_create", label: "Crear Nuevos Contactos", section: "Clientes y Contactos" },
+    { key: "clients_edit", label: "Editar Contactos", section: "Clientes y Contactos" },
+    { key: "clients_delete", label: "Archivar Contactos", section: "Clientes y Contactos" },
+    
+    // Tareas
     { key: "tasks_view", label: "Ver Tareas", section: "Tareas" },
     { key: "tasks_create", label: "Crear Tareas", section: "Tareas" },
     { key: "tasks_edit", label: "Editar Tareas", section: "Tareas" },
-    { key: "tasks_delete", label: "Eliminar Tareas", section: "Tareas" },
+    { key: "tasks_delete", label: "Archivar Tareas", section: "Tareas" },
 
-    // CRM
-    { key: "crm_view", label: "Ver Flujos CRM", section: "CRM y Servicios" },
-    { key: "crm_edit", label: "Editar Flujos CRM", section: "CRM y Servicios" },
-    { key: "services_view", label: "Ver Servicios", section: "CRM y Servicios" },
+    // Finanzas y Administración
+    { key: "finances_view", label: "Ver Centro de Inteligencia", section: "Finanzas y Administración" },
+    { key: "admin_view", label: "Ver Módulo de Contabilidad", section: "Finanzas y Administración" },
+    { key: "team_invite", label: "Invitar y Gestionar Miembros del Equipo", section: "Finanzas y Administración" },
 
-    // Admin & Finances
-    { key: "finances_view", label: "Ver Finanzas", section: "Administración" },
-    { key: "admin_view", label: "Ver Contabilidad", section: "Administración" },
-    { key: "team_invite", label: "Invitar Miembros", section: "Administración" },
-
-    // Documents
-    { key: "documents_view", label: "Ver Documentos", section: "Documentos" },
+    // Documentos
+    { key: "documents_view", label: "Ver y Descargar Documentos", section: "Documentos" },
 ];
 
 
@@ -80,8 +80,8 @@ const initialRoles = [
         id: 'admin', 
         name: 'Administrador', 
         permissions: {
-            dashboard: true, clients_view: true, clients_create: true, clients_edit: true, clients_delete: false,
-            tasks_view: true, tasks_create: true, tasks_edit: true, tasks_delete: false,
+            dashboard: true, clients_view: true, clients_create: true, clients_edit: true, clients_delete: true,
+            tasks_view: true, tasks_create: true, tasks_edit: true, tasks_delete: true,
             crm_view: true, crm_edit: true, finances_view: true, admin_view: true, team_invite: true,
             documents_view: true, services_view: true,
         }
@@ -99,7 +99,7 @@ const initialRoles = [
     { 
         id: 'promoter', 
         name: 'Promotor', 
-        permissions: {
+        permissions: { // Los promotores no tienen acceso a la app principal
             dashboard: false, clients_view: false, clients_create: false, clients_edit: false, clients_delete: false,
             tasks_view: false, tasks_create: false, tasks_edit: false, tasks_delete: false,
             crm_view: false, crm_edit: false, finances_view: false, admin_view: false, team_invite: false,
@@ -272,17 +272,14 @@ export default function TeamPage() {
           </TabsContent>
           <TabsContent value="permissions" className="mt-6">
              <Accordion type="single" collapsible className="w-full space-y-4">
-                {roles.filter(r => r.id !== 'promoter').map((role) => (
+                {roles.filter(r => r.id !== 'promoter' && r.id !== 'director').map((role) => (
                     <AccordionItem value={role.id} key={role.id} asChild>
                         <Card>
-                            <AccordionTrigger className="w-full p-0 [&_svg]:ml-auto [&_svg]:mr-4" disabled={role.id === 'director'}>
+                            <AccordionTrigger className="w-full p-0 [&_svg]:ml-auto [&_svg]:mr-4">
                                 <CardHeader className="flex-1">
                                     <CardTitle className="flex items-center gap-2 text-left"><KeyRound className="h-5 w-5 text-accent"/>{role.name}</CardTitle>
                                     <CardDescription className="text-left">
-                                        {role.id === 'director' 
-                                            ? 'Rol con acceso total. No se puede modificar.'
-                                            : `Configure los permisos para el rol de ${role.name}.`
-                                        }
+                                        Configure los permisos para el rol de {role.name}.
                                     </CardDescription>
                                 </CardHeader>
                             </AccordionTrigger>
@@ -299,7 +296,6 @@ export default function TeamPage() {
                                                         id={`perm-${role.id}-${permission.key}`}
                                                         checked={role.permissions[permission.key] || false}
                                                         onCheckedChange={(value) => handlePermissionChange(role.id, permission.key, value)}
-                                                        disabled={role.id === 'director'}
                                                     />
                                                 </div>
                                             ))}
