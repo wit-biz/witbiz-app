@@ -1,7 +1,7 @@
 
 'use client';
 
-import React, { useState, useMemo, useEffect, type FormEvent } from 'react';
+import React, { useState, useMemo, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { DateRange } from 'react-day-picker';
 import { format, isWithinInterval, startOfDay } from 'date-fns';
@@ -385,7 +385,7 @@ function ProfileView({ promoter }: { promoter: Promoter }) {
 }
 
 
-export default function PromoterPage() {
+function PromoterPageContent() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const { promoters, isLoadingPromoters } = useCRMData();
@@ -515,3 +515,13 @@ export default function PromoterPage() {
         </div>
     );
 }
+
+export default function PromoterPage() {
+    return (
+        <Suspense fallback={<div className="flex h-screen w-full items-center justify-center"><Loader2 className="h-8 w-8 animate-spin" /></div>}>
+            <PromoterPageContent />
+        </Suspense>
+    );
+}
+
+    
