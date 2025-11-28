@@ -1,269 +1,378 @@
-
 "use client";
 
-import React, { useState, useMemo } from 'react';
-import { Header } from '@/components/header';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
-import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from '@/components/ui/table';
-import { Button } from '@/components/ui/button';
+import React, { useState, useMemo } from "react";
+import { Header } from "@/components/header";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Users, Shield, PlusCircle, Edit3, Trash2, Save, X } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
+import { InviteMemberDialog } from "@/components/shared/InviteMemberDialog";
+import { type AppPermissions, type AppUser, type UserRole } from "@/lib/types";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
+import { useCRMData } from "@/contexts/CRMDataContext";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { useToast } from "@/hooks/use-toast";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { Loader2, Trash2, Users, ListTodo, FileText, History, Briefcase, StickyNote } from 'lucide-react';
-import { useCRMData } from '@/contexts/CRMDataContext';
-import { formatDateString } from '@/lib/utils';
-import { useToast } from '@/hooks/use-toast';
-import { subDays, isBefore } from 'date-fns';
-import { Task, ServiceWorkflow, Note, AppUser, Client, Promoter, Supplier } from '@/lib/types';
-import { Badge } from '@/components/ui/badge';
+import { EditMemberDialog } from "@/components/shared/EditMemberDialog";
+import { allPermissions } from "@/lib/permissions";
+import { PromptNameDialog } from "@/components/shared/PromptNameDialog";
 
 
-type EntityType = 'client' | 'task' | 'document' | 'promoter' | 'supplier' | 'service' | 'note' | 'user';
+export default function TeamPage() {
+    const [isInviteDialogOpen, setIsInviteDialogOpen] = useState(false);
+    const { currentUser, teamMembers, registerUser, updateUser, deleteUser, roles: serverRoles, setRoles: setServerRoles } = useCRMData();
+    const { toast } = useToast();
 
-type ContactEntityType = 'client' | 'user' | 'promoter' | 'supplier';
-
-type EntityToDelete = {
-  id: string;
-  name: string;
-  type: EntityType;
-};
-
-type ArchivedContact = (Client | AppUser | Promoter | Supplier) & { contactType: ContactEntityType };
-
-
-export default function RecyclingBinPage() {
-  const { toast } = useToast();
-  const {
-    clients, isLoadingClients, restoreClient, deleteClient,
-    tasks, isLoadingTasks, restoreTask, deleteTask,
-    documents, isLoadingDocuments, restoreDocument, deleteDocument,
-    promoters, isLoadingPromoters, restorePromoter, deletePromoter,
-    suppliers, isLoadingSuppliers, restoreSupplier, deleteSupplier,
-    serviceWorkflows, isLoadingWorkflows, restoreService, deleteService,
-    notes, isLoadingNotes, restoreNote, deleteNote,
-    teamMembers, isLoadingTeamMembers, restoreUser, deleteUser,
-  } = useCRMData();
-
-  const [entityToDelete, setEntityToDelete] = useState<EntityToDelete | null>(null);
-  const [isProcessing, setIsProcessing] = useState(false);
-
-  const archivedContacts = useMemo(() => {
-    const allContacts: ArchivedContact[] = [];
-    (clients || []).filter(c => c.status === 'Archivado').forEach(c => allContacts.push({ ...c, contactType: 'client' }));
-    (teamMembers || []).filter(u => u.status === 'Archivado').forEach(u => allContacts.push({ ...u, contactType: 'user' }));
-    (promoters || []).filter(p => p.status === 'Archivado').forEach(p => allContacts.push({ ...p, contactType: 'promoter' }));
-    (suppliers || []).filter(s => s.status === 'Archivado').forEach(s => allContacts.push({ ...s, contactType: 'supplier' }));
-    return allContacts.sort((a,b) => (b.archivedAt?.toMillis() || 0) - (a.archivedAt?.toMillis() || 0));
-  }, [clients, teamMembers, promoters, suppliers]);
-
-  const isLoadingContacts = isLoadingClients || isLoadingTeamMembers || isLoadingPromoters || isLoadingSuppliers;
-  
-  const archivedTasks = useMemo(() => (tasks || []).filter(t => t.status === 'Archivado'), [tasks]);
-  const archivedDocuments = useMemo(() => (documents || []).filter(d => d.status === 'Archivado'), [documents]);
-  const archivedServices = useMemo(() => (serviceWorkflows || []).filter(s => s.status === 'Archivado'), [serviceWorkflows]);
-  const archivedNotes = useMemo(() => (notes || []).filter(n => n.status === 'Archivado'), [notes]);
-  
-  const oneMonthAgo = subDays(new Date(), 30);
-
-  const handleRestore = async (id: string, type: EntityType) => {
-    setIsProcessing(true);
-    let success = false;
-    if (type === 'client') success = await restoreClient(id);
-    else if (type === 'task') success = await restoreTask(id);
-    else if (type === 'document') success = await restoreDocument(id);
-    else if (type === 'promoter') success = await restorePromoter(id);
-    else if (type === 'supplier') success = await restoreSupplier(id);
-    else if (type === 'service') success = await restoreService(id);
-    else if (type === 'note') success = await restoreNote(id);
-    else if (type === 'user') success = await restoreUser(id);
+    const [userToEdit, setUserToEdit] = useState<AppUser | null>(null);
+    const [userToDelete, setUserToDelete] = useState<AppUser | null>(null);
     
-    if (success) {
-        toast({ title: "Elemento Restaurado", description: "El elemento ha vuelto a su estado activo." });
-    } else {
-        toast({ variant: 'destructive', title: 'Error', description: 'No se pudo restaurar el elemento.' });
-    }
-    setIsProcessing(false);
-  };
-  
-  const confirmDelete = async () => {
-    if (!entityToDelete) return;
-    setIsProcessing(true);
-    let success = false;
-    const { id, type } = entityToDelete;
+    const [isRolesEditMode, setIsRolesEditMode] = useState(false);
+    const [localRoles, setLocalRoles] = useState<UserRole[]>([]);
+    const [roleToDelete, setRoleToDelete] = useState<UserRole | null>(null);
+    const [roleToEdit, setRoleToEdit] = useState<UserRole | null>(null);
+    const [isPromptNameOpen, setIsPromptNameOpen] = useState(false);
+    const [isProcessing, setIsProcessing] = useState(false);
+
+    useEffect(() => {
+        setLocalRoles(JSON.parse(JSON.stringify(serverRoles)));
+    }, [serverRoles]);
+
+
+    const canManageMembers = currentUser?.permissions?.team_manage_members ?? false;
+    const canManageRoles = currentUser?.permissions?.team_manage_roles ?? false;
+
+    const sortedTeamMembers = useMemo(() => {
+        if (!teamMembers) return [];
+        const roleOrder: { [key: string]: number } = { 'Director': 1, 'Administrador': 2 };
+        return [...teamMembers]
+            .filter(member => member.status !== 'Archivado' && member.email !== 'saidsaigar@gmail.com')
+            .sort((a, b) => {
+                const roleA = roleOrder[a.role] || 99;
+                const roleB = roleOrder[b.role] || 99;
+                if (roleA !== roleB) return roleA - roleB;
+                return a.name.localeCompare(b.name);
+            });
+    }, [teamMembers]);
+
+    const handlePermissionChange = (roleId: string, permissionKey: keyof AppPermissions, value: boolean) => {
+        setLocalRoles(prevRoles => prevRoles.map(role => 
+            role.id === roleId 
+                ? { ...role, permissions: { ...role.permissions, [permissionKey]: value } }
+                : role
+        ));
+    };
     
-    if (type === 'client') success = await deleteClient(id, true);
-    else if (type === 'task') success = await deleteTask(id, true);
-    else if (type === 'document') success = await deleteDocument(id, true);
-    else if (type === 'promoter') success = await deletePromoter(id, true);
-    else if (type === 'supplier') success = await deleteSupplier(id, true);
-    else if (type === 'service') success = await deleteService(id, true);
-    else if (type === 'note') success = await deleteNote(id, true);
-    else if (type === 'user') success = await deleteUser(id, true);
+    const permissionsBySection = useMemo(() => {
+        return allPermissions.reduce((acc, permission) => {
+            if (!acc[permission.section]) {
+                acc[permission.section] = [];
+            }
+            acc[permission.section].push(permission);
+            return acc;
+        }, {} as Record<string, typeof allPermissions>);
+    }, []);
 
+    const handleInvite = async (name: string, email: string, role: string) => {
+        await registerUser(name, email, 'WitBiz!123', role);
+    };
 
-    if (success) {
-      toast({ title: "Elemento Eliminado", description: "El elemento ha sido eliminado permanentemente." });
-    } else {
-      toast({ variant: 'destructive', title: 'Error', description: 'No se pudo eliminar el elemento.' });
-    }
-    setEntityToDelete(null);
-    setIsProcessing(false);
-  };
-  
-  const getContactTypeLabel = (type: ContactEntityType) => {
-      switch(type) {
-          case 'client': return 'Cliente';
-          case 'user': return 'Usuario';
-          case 'promoter': return 'Promotor';
-          case 'supplier': return 'Proveedor';
-          default: return 'Contacto';
-      }
-  }
+    const confirmDeleteUser = async () => {
+        if (!userToDelete) return;
+        setIsProcessing(true);
+        const success = await deleteUser(userToDelete.id);
+        if (success) {
+            toast({ title: 'Usuario Archivado', description: `El usuario ${userToDelete.name} ha sido enviado a la papelera.` });
+        } else {
+            toast({ variant: 'destructive', title: 'Error', description: 'No se pudo archivar el usuario.' });
+        }
+        setIsProcessing(false);
+        setUserToDelete(null);
+    };
+    
+    const handleUpdateUser = async (userId: string, name: string, role: string) => {
+        setIsProcessing(true);
+        const success = await updateUser(userId, { name, role });
+        if (success) {
+            toast({ title: 'Usuario Actualizado', description: 'Los datos del usuario han sido actualizados.' });
+        } else {
+             toast({ variant: 'destructive', title: 'Error', description: 'No se pudo actualizar el usuario.' });
+        }
+        setIsProcessing(false);
+        setUserToEdit(null);
+    };
+    
+    const handleSaveRole = (name: string) => {
+        if (roleToEdit) { // Editing existing role name
+            setLocalRoles(prevRoles => prevRoles.map(r => r.id === roleToEdit.id ? { ...r, name } : r));
+        } else { // Creating a new role
+            const newRole: UserRole = {
+                id: name.toLowerCase().replace(/\s+/g, '-').replace(/[^\w-]/g, ''),
+                name,
+                isBaseRole: false,
+                permissions: localRoles.find(r => r.id === 'collaborator')?.permissions || {}
+            };
+            const updatedRoles = [...localRoles, newRole];
+            setServerRoles(updatedRoles);
+            toast({ title: "Rol Creado", description: `El rol "${name}" ha sido creado.` });
+        }
+        setRoleToEdit(null);
+    };
+    
+    const confirmDeleteRole = () => {
+        if (!roleToDelete) return;
+        const updatedRoles = localRoles.filter(r => r.id !== roleToDelete.id);
+        setLocalRoles(updatedRoles);
+        // Persist deletion immediately
+        setServerRoles(updatedRoles);
+        setRoleToDelete(null);
+        toast({ title: "Rol Eliminado", description: `El rol "${roleToDelete.name}" ha sido eliminado.`});
+    };
 
-  const tabs = [
-    { type: 'contact' as const, icon: Users, label: 'Contactos', data: archivedContacts, isLoading: isLoadingContacts },
-    { type: 'task' as const, icon: ListTodo, label: 'Tareas', data: archivedTasks, isLoading: isLoadingTasks },
-    { type: 'document' as const, icon: FileText, label: 'Documentos', data: archivedDocuments, isLoading: isLoadingDocuments },
-    { type: 'service' as const, icon: Briefcase, label: 'Servicios', data: archivedServices, isLoading: isLoadingWorkflows },
-    { type: 'note' as const, icon: StickyNote, label: 'Notas', data: archivedNotes, isLoading: isLoadingNotes },
-  ];
-  
-  const getItemName = (item: any, type: EntityType) => {
-    if (type === 'task') return (item as Task).title;
-    if (type === 'note') return (item as Note).text.substring(0, 50) + '...';
-    if (type === 'user') return (item as AppUser).name;
-    return item.name;
-  }
+    const handleSaveChanges = () => {
+        setServerRoles(localRoles);
+        setIsRolesEditMode(false);
+        toast({ title: 'Roles Guardados', description: 'Los cambios en los roles y permisos han sido guardados.' });
+    };
+
+    const handleCancelChanges = () => {
+        setLocalRoles(JSON.parse(JSON.stringify(serverRoles)));
+        setIsRolesEditMode(false);
+    };
 
   return (
     <>
-      <div className="flex flex-col min-h-screen">
-        <Header 
-          title="Papelera de Reciclaje"
-          description="Elementos eliminados que pueden ser restaurados o borrados permanentemente."
-        />
-        <main className="flex-1 p-4 md:p-8">
+    <div className="flex flex-col min-h-screen">
+      <Header
+        title="Equipo y Permisos"
+        description="Gestione los miembros de su equipo y configure los roles y permisos."
+      />
+      <main className="flex-1 p-4 md:p-8">
+        <Tabs defaultValue="members" className="w-full">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="members">
+              <Users className="mr-2 h-4 w-4" />
+              Miembros del Equipo
+            </TabsTrigger>
+            <TabsTrigger value="permissions">
+              <Shield className="mr-2 h-4 w-4" />
+              Roles y Permisos
+            </TabsTrigger>
+          </TabsList>
+          <TabsContent value="members" className="mt-6">
             <Card>
-                <CardHeader>
-                    <CardTitle>Contenido Archivado</CardTitle>
-                    <CardDescription>
-                        Los elementos se eliminarán permanentemente después de 30 días en la papelera.
-                    </CardDescription>
+                <CardHeader className="flex flex-row items-center justify-between">
+                    <div>
+                        <CardTitle>Listado de Miembros</CardTitle>
+                        <CardDescription>
+                            Usuarios con acceso a la plataforma.
+                        </CardDescription>
+                    </div>
+                    {canManageMembers && (
+                        <Button size="sm" onClick={() => setIsInviteDialogOpen(true)}>
+                            <PlusCircle className="mr-2 h-4 w-4" />
+                            Agregar Miembro
+                        </Button>
+                    )}
                 </CardHeader>
                 <CardContent>
-                    <Tabs defaultValue="contact" className="w-full">
-                        <TabsList className="grid w-full grid-cols-2 sm:grid-cols-3 md:grid-cols-5 mb-6">
-                            {tabs.map(tab => (
-                                <TabsTrigger key={tab.type} value={tab.type}>
-                                    <tab.icon className="mr-2 h-4 w-4"/>
-                                    {tab.label}
-                                </TabsTrigger>
+                    <Table>
+                        <TableHeader>
+                            <TableRow>
+                                <TableHead>Nombre</TableHead>
+                                <TableHead>Email</TableHead>
+                                <TableHead>Rol</TableHead>
+                                <TableHead className="text-right">Acciones</TableHead>
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                            {sortedTeamMembers.map((member) => (
+                                <TableRow key={member.id}>
+                                    <TableCell className="font-medium">
+                                        <div className="flex items-center gap-2">
+                                            <Avatar className="h-8 w-8">
+                                                <AvatarImage src={member.photoURL} alt={member.name} />
+                                                <AvatarFallback>{member.name.charAt(0)}</AvatarFallback>
+                                            </Avatar>
+                                            <span>{member.name}</span>
+                                        </div>
+                                    </TableCell>
+                                    <TableCell>{member.email}</TableCell>
+                                    <TableCell><Badge variant="secondary">{member.role}</Badge></TableCell>
+                                    <TableCell className="text-right">
+                                      {canManageMembers && member.role !== 'Director' && (
+                                        <>
+                                          <Button variant="ghost" size="icon" onClick={() => setUserToEdit(member)}><Edit3 className="h-4 w-4" /></Button>
+                                          <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive" onClick={() => setUserToDelete(member)}><Trash2 className="h-4 w-4" /></Button>
+                                        </>
+                                      )}
+                                    </TableCell>
+                                </TableRow>
                             ))}
-                        </TabsList>
-
-                        <TabsContent value="contact">
-                             {isLoadingContacts ? (
-                                <div className="flex items-center justify-center p-12"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>
-                            ) : (
-                                <Table>
-                                    <TableHeader>
-                                        <TableRow>
-                                            <TableHead>Nombre</TableHead>
-                                            <TableHead>Tipo</TableHead>
-                                            <TableHead>Fecha de Archivado</TableHead>
-                                            <TableHead className="text-right">Acciones</TableHead>
-                                        </TableRow>
-                                    </TableHeader>
-                                    <TableBody>
-                                        {archivedContacts.length > 0 ? archivedContacts.map(item => {
-                                            const archivedDate = item.archivedAt?.toDate();
-                                            const isExpired = archivedDate ? isBefore(archivedDate, oneMonthAgo) : false;
-                                            return (
-                                            <TableRow key={`${item.contactType}-${item.id}`} className={isExpired ? 'bg-destructive/10' : ''}>
-                                                <TableCell className="font-medium">{item.name}</TableCell>
-                                                <TableCell><Badge variant="secondary">{getContactTypeLabel(item.contactType)}</Badge></TableCell>
-                                                <TableCell>{archivedDate ? formatDateString(archivedDate) : 'N/A'}</TableCell>
-                                                <TableCell className="text-right">
-                                                    <Button variant="ghost" size="sm" onClick={() => handleRestore(item.id, item.contactType)} disabled={isProcessing}>
-                                                        <History className="mr-2 h-4 w-4"/> Restaurar
-                                                    </Button>
-                                                    <Button variant="ghost" size="sm" className="text-destructive" onClick={() => setEntityToDelete({ id: item.id, name: item.name, type: item.contactType })} disabled={isProcessing}>
-                                                        <Trash2 className="mr-2 h-4 w-4"/> Borrar
-                                                    </Button>
-                                                </TableCell>
-                                            </TableRow>
-                                        )}) : (
-                                            <TableRow>
-                                                <TableCell colSpan={4} className="text-center h-24">La papelera para contactos está vacía.</TableCell>
-                                            </TableRow>
-                                        )}
-                                    </TableBody>
-                                </Table>
-                            )}
-                        </TabsContent>
-
-                        {tabs.filter(t => t.type !== 'contact').map(tab => (
-                             <TabsContent key={tab.type} value={tab.type}>
-                                {tab.isLoading ? (
-                                    <div className="flex items-center justify-center p-12"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>
-                                ) : (
-                                    <Table>
-                                        <TableHeader>
-                                            <TableRow>
-                                                <TableHead>Nombre / Título / Contenido</TableHead>
-                                                <TableHead>Fecha de Archivado</TableHead>
-                                                <TableHead className="text-right">Acciones</TableHead>
-                                            </TableRow>
-                                        </TableHeader>
-                                        <TableBody>
-                                            {tab.data && tab.data.length > 0 ? tab.data.map(item => {
-                                                const archivedDate = item.archivedAt?.toDate();
-                                                const isExpired = archivedDate ? isBefore(archivedDate, oneMonthAgo) : false;
-                                                const name = getItemName(item, tab.type);
-                                                return (
-                                                <TableRow key={item.id} className={isExpired ? 'bg-destructive/10' : ''}>
-                                                    <TableCell className="font-medium">{name}</TableCell>
-                                                    <TableCell>{archivedDate ? formatDateString(archivedDate) : 'N/A'}</TableCell>
-                                                    <TableCell className="text-right">
-                                                        <Button variant="ghost" size="sm" onClick={() => handleRestore(item.id, tab.type)} disabled={isProcessing}>
-                                                          <History className="mr-2 h-4 w-4"/> Restaurar
-                                                        </Button>
-                                                        <Button variant="ghost" size="sm" className="text-destructive" onClick={() => setEntityToDelete({ id: item.id, name: name, type: tab.type as EntityType })} disabled={isProcessing}>
-                                                          <Trash2 className="mr-2 h-4 w-4"/> Borrar
-                                                        </Button>
-                                                    </TableCell>
-                                                </TableRow>
-                                            )}) : (
-                                                <TableRow>
-                                                    <TableCell colSpan={3} className="text-center h-24">La papelera para {tab.label.toLowerCase()} está vacía.</TableCell>
-                                                </TableRow>
-                                            )}
-                                        </TableBody>
-                                    </Table>
-                                )}
-                            </TabsContent>
-                        ))}
-                    </Tabs>
+                        </TableBody>
+                    </Table>
                 </CardContent>
             </Card>
-        </main>
-      </div>
-
-       <AlertDialog open={!!entityToDelete} onOpenChange={() => setEntityToDelete(null)}>
-          <AlertDialogContent>
+          </TabsContent>
+          <TabsContent value="permissions" className="mt-6">
+              <div className="mb-4 flex gap-2">
+                 {!isRolesEditMode ? (
+                      <Button onClick={() => setIsRolesEditMode(true)} disabled={!canManageRoles}>
+                          <Edit3 className="mr-2 h-4 w-4" />
+                          Configurar Roles
+                      </Button>
+                 ) : (
+                      <>
+                          <Button onClick={handleSaveChanges}>
+                              <Save className="mr-2 h-4 w-4" />
+                              Guardar Cambios
+                          </Button>
+                           <Button variant="ghost" onClick={handleCancelChanges}>
+                              <X className="mr-2 h-4 w-4" />
+                              Cancelar
+                          </Button>
+                      </>
+                 )}
+              </div>
+             <Accordion type="single" collapsible className="w-full space-y-4">
+                {localRoles.filter(role => role.id !== 'director').map((role) => (
+                    <AccordionItem value={role.id} key={role.id} asChild>
+                        <Card>
+                            <CardHeader className="flex flex-row items-center p-0">
+                                <AccordionTrigger className="flex-1 p-6 hover:no-underline [&_svg]:ml-auto" disabled={!isRolesEditMode && role.id === 'director'}>
+                                    <div className="text-left">
+                                      <CardTitle>{role.name}</CardTitle>
+                                      <CardDescription className="mt-1">
+                                          Permisos para el rol de {role.name}.
+                                      </CardDescription>
+                                    </div>
+                                </AccordionTrigger>
+                                {isRolesEditMode && (
+                                    <div className="flex items-center pr-4">
+                                        {role.id !== 'director' && (
+                                            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={(e) => { e.stopPropagation(); setRoleToEdit(role); setIsPromptNameOpen(true);}}>
+                                                <Edit3 className="h-4 w-4" />
+                                            </Button>
+                                        )}
+                                        {!role.isBaseRole && (
+                                            <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={(e) => { e.stopPropagation(); setRoleToDelete(role); }}>
+                                                <Trash2 className="h-4 w-4" />
+                                            </Button>
+                                        )}
+                                    </div>
+                                )}
+                            </CardHeader>
+                            <AccordionContent>
+                                <CardContent className="space-y-6 max-h-[60vh] overflow-y-auto">
+                                    {Object.entries(permissionsBySection).map(([section, permissions]) => (
+                                        <div key={section}>
+                                            <h4 className="font-semibold mb-2">{section}</h4>
+                                            <div className="space-y-3 pl-4">
+                                            {permissions.map(permission => (
+                                                <div key={permission.key} className="flex items-center justify-between">
+                                                    <Label htmlFor={`perm-${role.id}-${permission.key}`}>{permission.label}</Label>
+                                                    <Switch
+                                                        id={`perm-${role.id}-${permission.key}`}
+                                                        checked={role.permissions[permission.key as keyof AppPermissions] || false}
+                                                        onCheckedChange={(value) => handlePermissionChange(role.id, permission.key as keyof AppPermissions, value)}
+                                                        disabled={!isRolesEditMode}
+                                                    />
+                                                </div>
+                                            ))}
+                                            </div>
+                                        </div>
+                                    ))}
+                                </CardContent>
+                            </AccordionContent>
+                        </Card>
+                    </AccordionItem>
+                ))}
+              </Accordion>
+                {isRolesEditMode && (
+                    <div className="mt-4">
+                        <Button variant="outline" onClick={() => { setRoleToEdit(null); setIsPromptNameOpen(true); }}>
+                            <PlusCircle className="mr-2 h-4 w-4" />
+                            Crear Nuevo Rol
+                        </Button>
+                    </div>
+                )}
+          </TabsContent>
+        </Tabs>
+      </main>
+    </div>
+    <InviteMemberDialog
+        isOpen={isInviteDialogOpen}
+        onOpenChange={setIsInviteDialogOpen}
+        roles={localRoles.filter(r => r.name !== 'Director').map(r => r.name)}
+        onInvite={handleInvite}
+    />
+    {userToEdit && (
+        <EditMemberDialog
+            isOpen={!!userToEdit}
+            onOpenChange={() => setUserToEdit(null)}
+            user={userToEdit}
+            roles={localRoles.filter(r => r.name !== 'Director').map(r => r.name)}
+            onSave={handleUpdateUser}
+            isProcessing={isProcessing}
+        />
+    )}
+     <AlertDialog open={!!userToDelete} onOpenChange={() => setUserToDelete(null)}>
+        <AlertDialogContent>
             <AlertDialogHeader>
-              <AlertDialogTitle>¿Eliminar Permanentemente?</AlertDialogTitle>
-              <AlertDialogDescription>
-                Esta acción no se puede deshacer. ¿Está seguro de que desea eliminar permanentemente "{entityToDelete?.name}"?
-              </AlertDialogDescription>
+                <AlertDialogTitle>¿Archivar Usuario?</AlertDialogTitle>
+                <AlertDialogDescription>
+                    Esta acción enviará al usuario "{userToDelete?.name}" a la papelera. Podrás restaurarlo más tarde. El usuario no podrá iniciar sesión mientras esté archivado.
+                </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
-              <AlertDialogCancel onClick={() => setEntityToDelete(null)} disabled={isProcessing}>Cancelar</AlertDialogCancel>
-              <AlertDialogAction onClick={confirmDelete} disabled={isProcessing} className="bg-destructive hover:bg-destructive/90">
-                {isProcessing ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Eliminando...</> : "Eliminar Permanentemente"}
-              </AlertDialogAction>
+                <AlertDialogCancel onClick={() => setUserToDelete(null)} disabled={isProcessing}>Cancelar</AlertDialogCancel>
+                <AlertDialogAction onClick={confirmDeleteUser} disabled={isProcessing} className="bg-destructive hover:bg-destructive/90">
+                    Archivar
+                </AlertDialogAction>
             </AlertDialogFooter>
-          </AlertDialogContent>
-      </AlertDialog>
+        </AlertDialogContent>
+    </AlertDialog>
+     <AlertDialog open={!!roleToDelete} onOpenChange={() => setRoleToDelete(null)}>
+        <AlertDialogContent>
+            <AlertDialogHeader>
+                <AlertDialogTitle>¿Eliminar Rol?</AlertDialogTitle>
+                <AlertDialogDescription>
+                    Esta acción eliminará permanentemente el rol "{roleToDelete?.name}". Los usuarios con este rol deberán ser reasignados a un nuevo rol. ¿Está seguro?
+                </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+                <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                <AlertDialogAction onClick={confirmDeleteRole} className="bg-destructive hover:bg-destructive/90">
+                    Eliminar Rol
+                </AlertDialogAction>
+            </AlertDialogFooter>
+        </AlertDialogContent>
+    </AlertDialog>
+    {isPromptNameOpen && (
+        <PromptNameDialog 
+            isOpen={isPromptNameOpen}
+            onOpenChange={(open) => { if (!open) { setIsPromptNameOpen(false); setRoleToEdit(null); } else { setIsPromptNameOpen(true); }}}
+            title={roleToEdit ? "Editar Nombre del Rol" : "Crear Nuevo Rol"}
+            description={roleToEdit ? `Introduzca un nuevo nombre para el rol "${roleToEdit.name}".` : "Introduzca un nombre para el nuevo rol de usuario."}
+            label="Nombre del Rol"
+            initialValue={roleToEdit?.name || ""}
+            onSave={handleSaveRole}
+        />
+    )}
     </>
   );
 }

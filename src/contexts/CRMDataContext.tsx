@@ -44,7 +44,7 @@ interface CRMContextType {
   isLoadingCurrentUser: boolean;
   teamMembers: AppUser[];
   roles: UserRole[];
-  setRoles: React.Dispatch<React.SetStateAction<UserRole[]>>;
+  setRoles: (roles: UserRole[]) => void;
 
   clients: Client[];
   isLoadingClients: boolean;
@@ -257,7 +257,7 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
             entityName,
             createdAt: serverTimestamp(),
         };
-        await addDocumentNonBlocking(logsCollection, logEntry);
+        addDocumentNonBlocking(logsCollection, logEntry);
     }, [logsCollection, currentUser]);
 
 
@@ -266,50 +266,40 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
             showNotification('error', 'Error de registro', 'Los servicios de autenticación no están listos.');
             throw new Error('Los servicios de autenticación no están listos.');
         }
-        try {
-            const tempAuth = auth;
-            const userCredential = await createUserWithEmailAndPassword(tempAuth, email, pass);
-            const { user: newUser } = userCredential;
+        
+        const tempAuth = auth;
+        const userCredential = await createUserWithEmailAndPassword(tempAuth, email, pass);
+        const { user: newUser } = userCredential;
 
-            await updateProfile(newUser, { displayName: name });
-            
-            const userDocRef = doc(firestore, "users", newUser.uid);
-            await setDocumentNonBlocking(userDocRef, {
-                id: newUser.uid,
-                name: name,
-                email: newUser.email,
-                role: role,
-            }, {});
-            
-            await addLog('user_invited', newUser.uid, 'user', name);
+        await updateProfile(newUser, { displayName: name });
+        
+        const userDocRef = doc(firestore, "users", newUser.uid);
+        setDocumentNonBlocking(userDocRef, {
+            id: newUser.uid,
+            name: name,
+            email: newUser.email,
+            role: role,
+        }, {});
+        
+        addLog('user_invited', newUser.uid, 'user', name);
 
-            return userCredential;
-        } catch (error: any) {
-            console.error("Error registering user:", error);
-            showNotification('error', 'Error de registro', error.message);
-            throw error;
-        }
+        return userCredential;
     };
     
     const updateUser = async (userId: string, updates: Partial<AppUser>): Promise<boolean> => {
         if (!firestore) return false;
-        try {
-            const userDocRef = doc(firestore, 'users', userId);
-            await setDocumentNonBlocking(userDocRef, updates, { merge: true });
-            return true;
-        } catch (error) {
-            console.error("Error updating user:", error);
-            return false;
-        }
+        const userDocRef = doc(firestore, 'users', userId);
+        setDocumentNonBlocking(userDocRef, updates, { merge: true });
+        return true;
     };
 
     const deleteUser = async (userId: string, permanent: boolean = false): Promise<boolean> => {
         if (!firestore) return false;
         const docRef = doc(firestore, 'users', userId);
         if (permanent) {
-            await deleteDocumentNonBlocking(docRef);
+            deleteDocumentNonBlocking(docRef);
         } else {
-            await setDocumentNonBlocking(docRef, { status: 'Archivado', archivedAt: serverTimestamp() }, { merge: true });
+            setDocumentNonBlocking(docRef, { status: 'Archivado', archivedAt: serverTimestamp() }, { merge: true });
         }
         return true;
     };
@@ -317,7 +307,7 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
     const restoreUser = async (userId: string): Promise<boolean> => {
         if (!firestore) return false;
         const docRef = doc(firestore, 'users', userId);
-        await setDocumentNonBlocking(docRef, { status: 'Activo', archivedAt: undefined }, { merge: true });
+        setDocumentNonBlocking(docRef, { status: 'Activo', archivedAt: undefined }, { merge: true });
         return true;
     };
 
@@ -339,7 +329,7 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
         };
 
         const docRef = await addDocumentNonBlocking(clientsCollection, payload);
-        await addLog('client_created', docRef.id, 'client', newClientData.name);
+        addLog('client_created', docRef.id, 'client', newClientData.name);
         
         const newClient = { id: docRef.id, ...payload } as Client;
 
@@ -359,9 +349,9 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
     const updateClient = async (clientId: string, updates: Partial<Client>): Promise<boolean> => {
         if (!user || !firestore) return false;
         const docRef = doc(firestore, 'users', user.uid, 'clients', clientId);
-        await setDocumentNonBlocking(docRef, updates, { merge: true });
+        setDocumentNonBlocking(docRef, updates, { merge: true });
         const clientName = clients.find(c => c.id === clientId)?.name || updates.name;
-        await addLog('client_updated', clientId, 'client', clientName);
+        addLog('client_updated', clientId, 'client', clientName);
         return true;
     };
 
@@ -369,11 +359,11 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
         if (!user || !firestore) return false;
         const docRef = doc(firestore, 'users', user.uid, 'clients', clientId);
         if (permanent) {
-            await deleteDocumentNonBlocking(docRef);
+            deleteDocumentNonBlocking(docRef);
         } else {
-            await setDocumentNonBlocking(docRef, { status: 'Archivado', archivedAt: serverTimestamp() }, { merge: true });
+            setDocumentNonBlocking(docRef, { status: 'Archivado', archivedAt: serverTimestamp() }, { merge: true });
             const clientName = clients.find(c => c.id === clientId)?.name;
-            await addLog('client_archived', clientId, 'client', clientName);
+            addLog('client_archived', clientId, 'client', clientName);
         }
         return true;
     };
@@ -381,7 +371,7 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
     const restoreClient = async (clientId: string): Promise<boolean> => {
         if (!user || !firestore) return false;
         const docRef = doc(firestore, 'users', user.uid, 'clients', clientId);
-        await setDocumentNonBlocking(docRef, { status: 'Activo', archivedAt: undefined }, { merge: true });
+        setDocumentNonBlocking(docRef, { status: 'Activo', archivedAt: undefined }, { merge: true });
         return true;
     };
     
@@ -423,24 +413,24 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
 
         const docRef = await addDocumentNonBlocking(tasksCollection, newTaskPayload);
         showNotification('success', 'Tarea Creada', `La tarea "${newTaskPayload.title}" ha sido creada.`);
-        await addLog('task_created', docRef.id, 'task', newTaskPayload.title);
+        addLog('task_created', docRef.id, 'task', newTaskPayload.title);
         return { id: docRef.id, ...newTaskPayload } as Task;
     };
     
     const updateTask = async (taskId: string, updates: Partial<Task>): Promise<boolean> => {
         if (!user || !firestore) return false;
         const docRef = doc(firestore, 'users', user.uid, 'tasks', taskId);
-        await setDocumentNonBlocking(docRef, updates, { merge: true });
+        setDocumentNonBlocking(docRef, updates, { merge: true });
         
         if (updates.status === 'Completada') {
             const completedTask = { ...tasks.find(t => t.id === taskId), ...updates } as Task | undefined;
             if (completedTask) {
-                await addLog('task_completed', taskId, 'task', completedTask.title);
+                addLog('task_completed', taskId, 'task', completedTask.title);
                 await checkAndAdvanceWorkflow(completedTask.clientId);
             }
         } else {
             const taskName = tasks.find(t => t.id === taskId)?.title || updates.title;
-            await addLog('task_updated', taskId, 'task', taskName);
+            addLog('task_updated', taskId, 'task', taskName);
         }
         return true;
     };
@@ -526,9 +516,9 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
         if (!user || !firestore) return false;
         const docRef = doc(firestore, 'users', user.uid, 'tasks', taskId);
         if (permanent) {
-            await deleteDocumentNonBlocking(docRef);
+            deleteDocumentNonBlocking(docRef);
         } else {
-            await setDocumentNonBlocking(docRef, { status: 'Archivado', archivedAt: serverTimestamp() }, { merge: true });
+            setDocumentNonBlocking(docRef, { status: 'Archivado', archivedAt: serverTimestamp() }, { merge: true });
         }
         return true;
     };
@@ -536,7 +526,7 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
     const restoreTask = async (taskId: string): Promise<boolean> => {
         if (!user || !firestore) return false;
         const docRef = doc(firestore, 'users', user.uid, 'tasks', taskId);
-        await setDocumentNonBlocking(docRef, { status: 'Pendiente', archivedAt: undefined }, { merge: true });
+        setDocumentNonBlocking(docRef, { status: 'Pendiente', archivedAt: undefined }, { merge: true });
         return true;
     };
 
@@ -557,7 +547,7 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
                 downloadURL: downloadURL
             };
             const docRef = await addDocumentNonBlocking(documentsCollection, newDoc);
-            await addLog('document_uploaded', docRef.id, 'document', file.name);
+            addLog('document_uploaded', docRef.id, 'document', file.name);
             return { id: docRef.id, ...newDoc } as Document;
         } catch (error) {
             console.error("Error uploading file or saving document:", error);
@@ -570,9 +560,9 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
         if (!user || !firestore) return false;
         const docRef = doc(firestore, 'users', user.uid, 'documents', id);
         if (permanent) {
-            await deleteDocumentNonBlocking(docRef);
+            deleteDocumentNonBlocking(docRef);
         } else {
-            await setDocumentNonBlocking(docRef, { status: 'Archivado', archivedAt: serverTimestamp() }, { merge: true });
+            setDocumentNonBlocking(docRef, { status: 'Archivado', archivedAt: serverTimestamp() }, { merge: true });
         }
         return true;
     };
@@ -580,7 +570,7 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
     const restoreDocument = async (documentId: string): Promise<boolean> => {
         if (!user || !firestore) return false;
         const docRef = doc(firestore, 'users', user.uid, 'documents', documentId);
-        await setDocumentNonBlocking(docRef, { status: 'Activo', archivedAt: undefined }, { merge: true });
+        setDocumentNonBlocking(docRef, { status: 'Activo', archivedAt: undefined }, { merge: true });
         return true;
     };
 
@@ -596,14 +586,14 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
             status: 'Activo' as const,
         };
         const docRef = await addDocumentNonBlocking(notesCollection, newNoteData);
-        await addLog('note_created', clientId, 'client', `Nota para ${clientName}`);
+        addLog('note_created', clientId, 'client', `Nota para ${clientName}`);
         return { id: docRef.id, ...newNoteData } as Note;
     };
 
     const updateNote = async (noteId: string, newText: string): Promise<boolean> => {
         if (!user || !firestore) return false;
         const docRef = doc(firestore, 'users', user.uid, 'notes', noteId);
-        await setDocumentNonBlocking(docRef, { text: newText, content: newText, updatedAt: serverTimestamp() }, { merge: true });
+        setDocumentNonBlocking(docRef, { text: newText, content: newText, updatedAt: serverTimestamp() }, { merge: true });
         return true;
     };
 
@@ -611,9 +601,9 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
         if (!user || !firestore) return false;
         const docRef = doc(firestore, 'users', user.uid, 'notes', noteId);
         if (permanent) {
-            await deleteDocumentNonBlocking(docRef);
+            deleteDocumentNonBlocking(docRef);
         } else {
-            await setDocumentNonBlocking(docRef, { status: 'Archivado', archivedAt: serverTimestamp() }, { merge: true });
+            setDocumentNonBlocking(docRef, { status: 'Archivado', archivedAt: serverTimestamp() }, { merge: true });
         }
         return true;
     };
@@ -621,7 +611,7 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
     const restoreNote = async (noteId: string): Promise<boolean> => {
         if (!user || !firestore) return false;
         const docRef = doc(firestore, 'users', user.uid, 'notes', noteId);
-        await setDocumentNonBlocking(docRef, { status: 'Activo', archivedAt: undefined }, { merge: true });
+        setDocumentNonBlocking(docRef, { status: 'Activo', archivedAt: undefined }, { merge: true });
         return true;
     };
 
@@ -669,7 +659,7 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
     const updateService = async (serviceId: string, updates: Partial<Omit<ServiceWorkflow, 'id' | 'stages' | 'subServices' | 'order'>>): Promise<boolean> => {
         if (!user || !firestore) return false;
         const docRef = doc(firestore, 'users', user.uid, 'serviceWorkflows', serviceId);
-        await setDocumentNonBlocking(docRef, updates, { merge: true });
+        setDocumentNonBlocking(docRef, updates, { merge: true });
         showNotification('success', 'Servicio Guardado', 'Los cambios se han guardado correctamente.');
         return true;
     }
@@ -689,9 +679,9 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
         if (!user || !firestore) return false;
         const docRef = doc(firestore, 'users', user.uid, 'serviceWorkflows', serviceId);
         if (permanent) {
-            await deleteDocumentNonBlocking(docRef);
+            deleteDocumentNonBlocking(docRef);
         } else {
-            await setDocumentNonBlocking(docRef, { status: 'Archivado', archivedAt: serverTimestamp() }, { merge: true });
+            setDocumentNonBlocking(docRef, { status: 'Archivado', archivedAt: serverTimestamp() }, { merge: true });
         }
         showNotification('success', 'Servicio Eliminado', 'El servicio ha sido enviado a la papelera.');
         return true;
@@ -700,7 +690,7 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
     const restoreService = async (serviceId: string): Promise<boolean> => {
         if (!user || !firestore) return false;
         const docRef = doc(firestore, 'users', user.uid, 'serviceWorkflows', serviceId);
-        await setDocumentNonBlocking(docRef, { status: 'Activo', archivedAt: undefined }, { merge: true });
+        setDocumentNonBlocking(docRef, { status: 'Activo', archivedAt: undefined }, { merge: true });
         return true;
     };
 
@@ -710,29 +700,29 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
         const payload = { ...promoterData, status: 'Activo' as const, createdAt: serverTimestamp() };
         const docRef = await addDocumentNonBlocking(promotersCollection, payload);
         const finalPayload = { ...payload, id: docRef.id };
-        await setDocumentNonBlocking(doc(promotersCollection, docRef.id), finalPayload, { merge: true });
+        setDocumentNonBlocking(doc(promotersCollection, docRef.id), finalPayload, { merge: true });
         return finalPayload as Promoter;
     };
     const updatePromoter = async (promoterId: string, updates: Partial<Promoter>): Promise<boolean> => {
         if (!promotersCollection) return false;
         const docRef = doc(promotersCollection, promoterId);
-        await setDocumentNonBlocking(docRef, updates, { merge: true });
+        setDocumentNonBlocking(docRef, updates, { merge: true });
         return true;
     };
     const deletePromoter = async (promoterId: string, permanent: boolean = false): Promise<boolean> => {
         if (!promotersCollection) return false;
         const docRef = doc(promotersCollection, promoterId);
         if (permanent) {
-            await deleteDocumentNonBlocking(docRef);
+            deleteDocumentNonBlocking(docRef);
         } else {
-            await setDocumentNonBlocking(docRef, { status: 'Archivado', archivedAt: serverTimestamp() }, { merge: true });
+            setDocumentNonBlocking(docRef, { status: 'Archivado', archivedAt: serverTimestamp() }, { merge: true });
         }
         return true;
     };
     const restorePromoter = async (promoterId: string): Promise<boolean> => {
         if (!promotersCollection) return false;
         const docRef = doc(promotersCollection, promoterId);
-        await setDocumentNonBlocking(docRef, { status: 'Activo', archivedAt: undefined }, { merge: true });
+        setDocumentNonBlocking(docRef, { status: 'Activo', archivedAt: undefined }, { merge: true });
         return true;
     };
 
@@ -746,23 +736,23 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
     const updateSupplier = async (supplierId: string, updates: Partial<Supplier>): Promise<boolean> => {
         if (!user || !firestore) return false;
         const docRef = doc(firestore, 'users', user.uid, 'suppliers', supplierId);
-        await setDocumentNonBlocking(docRef, updates, { merge: true });
+        setDocumentNonBlocking(docRef, updates, { merge: true });
         return true;
     };
     const deleteSupplier = async (supplierId: string, permanent: boolean = false): Promise<boolean> => {
         if (!user || !firestore) return false;
         const docRef = doc(firestore, 'users', user.uid, 'suppliers', supplierId);
         if (permanent) {
-            await deleteDocumentNonBlocking(docRef);
+            deleteDocumentNonBlocking(docRef);
         } else {
-            await setDocumentNonBlocking(docRef, { status: 'Archivado', archivedAt: serverTimestamp() }, { merge: true });
+            setDocumentNonBlocking(docRef, { status: 'Archivado', archivedAt: serverTimestamp() }, { merge: true });
         }
         return true;
     };
     const restoreSupplier = async (supplierId: string): Promise<boolean> => {
         if (!user || !firestore) return false;
         const docRef = doc(firestore, 'users', user.uid, 'suppliers', supplierId);
-        await setDocumentNonBlocking(docRef, { status: 'Activo', archivedAt: undefined }, { merge: true });
+        setDocumentNonBlocking(docRef, { status: 'Activo', archivedAt: undefined }, { merge: true });
         return true;
     };
 
@@ -770,11 +760,11 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
     const addCompany = async (data: Omit<Company, 'id'>) => {
         if (!companiesCollection) return;
         const docRef = await addDocumentNonBlocking(companiesCollection, data);
-        await setDocumentNonBlocking(doc(companiesCollection, docRef.id), { id: docRef.id }, { merge: true });
+        setDocumentNonBlocking(doc(companiesCollection, docRef.id), { id: docRef.id }, { merge: true });
     };
     const deleteCompany = async (id: string) => {
         if (!companiesCollection) return false;
-        await deleteDocumentNonBlocking(doc(companiesCollection, id));
+        deleteDocumentNonBlocking(doc(companiesCollection, id));
         return true;
     };
 
@@ -782,22 +772,22 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
         if (!bankAccountsCollection) return;
         const payload: Omit<BankAccount, 'id'> = { ...data, balance: data.initialBalance || 0 };
         const docRef = await addDocumentNonBlocking(bankAccountsCollection, payload);
-        await setDocumentNonBlocking(doc(bankAccountsCollection, docRef.id), { id: docRef.id, initialBalance: data.initialBalance }, { merge: true });
+        setDocumentNonBlocking(doc(bankAccountsCollection, docRef.id), { id: docRef.id, initialBalance: data.initialBalance }, { merge: true });
     };
     const deleteBankAccount = async (id: string) => {
         if (!bankAccountsCollection) return false;
-        await deleteDocumentNonBlocking(doc(bankAccountsCollection, id));
+        deleteDocumentNonBlocking(doc(bankAccountsCollection, id));
         return true;
     };
     
     const addCategory = async (data: Omit<Category, 'id'>) => {
         if (!categoriesCollection) return;
         const docRef = await addDocumentNonBlocking(categoriesCollection, data);
-        await setDocumentNonBlocking(doc(categoriesCollection, docRef.id), { id: docRef.id }, { merge: true });
+        setDocumentNonBlocking(doc(categoriesCollection, docRef.id), { id: docRef.id }, { merge: true });
     };
     const deleteCategory = async (id: string) => {
         if (!categoriesCollection) return false;
-        await deleteDocumentNonBlocking(doc(categoriesCollection, id));
+        deleteDocumentNonBlocking(doc(categoriesCollection, id));
         return true;
     };
     
@@ -807,7 +797,7 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
         const { date, ...rest } = data;
         const payload = { ...rest, date: format(date, 'yyyy-MM-dd') };
         const docRef = await addDocumentNonBlocking(transactionsCollection, payload);
-        await addLog('transaction_created', docRef.id, 'transaction', `Transacción de ${payload.amount}`);
+        addLog('transaction_created', docRef.id, 'transaction', `Transacción de ${payload.amount}`);
     
         try {
             await runTransaction(firestore, async (transaction) => {
@@ -844,7 +834,7 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
         if (!loansCollection) return;
         const payload: Omit<InterCompanyLoan, 'id'> = { ...data, status: 'En Curso', date: serverTimestamp() };
         const docRef = await addDocumentNonBlocking(loansCollection, payload);
-        await setDocumentNonBlocking(doc(loansCollection, docRef.id), { id: docRef.id }, { merge: true });
+        setDocumentNonBlocking(doc(loansCollection, docRef.id), { id: docRef.id }, { merge: true });
     };
     
     
@@ -921,3 +911,5 @@ export function useCRMData() {
   }
   return context;
 }
+
+    

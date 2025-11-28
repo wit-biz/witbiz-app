@@ -1,7 +1,7 @@
 
 "use client";
 
-import React, { useState, useMemo, useEffect } from "react";
+import React, { useState, useMemo } from "react";
 import { Header } from "@/components/header";
 import {
   Card,
@@ -127,7 +127,6 @@ export default function TeamPage() {
                 isBaseRole: false,
                 permissions: localRoles.find(r => r.id === 'collaborator')?.permissions || {}
             };
-             // Save new role immediately instead of waiting for "Save Changes"
             const updatedRoles = [...localRoles, newRole];
             setServerRoles(updatedRoles);
             toast({ title: "Rol Creado", description: `El rol "${name}" ha sido creado.` });
@@ -254,7 +253,7 @@ export default function TeamPage() {
                 {localRoles.filter(role => role.id !== 'director').map((role) => (
                     <AccordionItem value={role.id} key={role.id} asChild>
                         <Card>
-                             <CardHeader className="flex flex-row items-center p-0">
+                            <CardHeader className="flex flex-row items-center p-0">
                                 <AccordionTrigger className="flex-1 p-6 hover:no-underline [&_svg]:ml-auto" disabled={!isRolesEditMode && role.id === 'director'}>
                                     <div className="text-left">
                                       <CardTitle>{role.name}</CardTitle>
@@ -378,3 +377,5 @@ export default function TeamPage() {
     </>
   );
 }
+
+    
