@@ -24,6 +24,7 @@ import {
   LogOut,
   Save,
   Loader2,
+  Info,
 } from "lucide-react";
 import { ThemeToggle } from "@/components/shared/theme-toggle";
 import { PasswordInput } from "@/components/shared/PasswordInput";
@@ -184,15 +185,10 @@ export default function ProfilePage() {
                             <CardDescription>Actualice la dirección de correo electrónico asociada a su cuenta.</CardDescription>
                         </CardHeader>
                         <CardContent className="space-y-4">
-                            <div>
-                                <Label htmlFor="newEmail">Nuevo Correo Electrónico</Label>
-                                <Input id="newEmail" type="email" placeholder="su.nuevo@correo.com" />
-                            </div>
-                            <div>
-                                <Label htmlFor="currentPasswordEmail">Contraseña Actual</Label>
-                                <PasswordInput id="currentPasswordEmail" placeholder="••••••••" autoComplete="current-password" />
-                            </div>
-                            <Button><Save className="mr-2 h-4 w-4" />Guardar Correo</Button>
+                           <div className="flex items-center gap-3 p-4 rounded-md bg-muted text-muted-foreground">
+                                <Info className="h-5 w-5 shrink-0" />
+                                <p className="text-xs">Esta funcionalidad estará disponible en una futura actualización.</p>
+                           </div>
                         </CardContent>
                     </Card>
                 </div>
@@ -202,21 +198,10 @@ export default function ProfilePage() {
                         <CardDescription>Asegúrese de usar una contraseña segura.</CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-4">
-                        <div className="grid sm:grid-cols-3 gap-4">
-                            <div>
-                                <Label htmlFor="currentPassword">Contraseña Actual</Label>
-                                <PasswordInput id="currentPassword" placeholder="••••••••" autoComplete="current-password" />
-                            </div>
-                            <div>
-                                <Label htmlFor="newPassword">Nueva Contraseña</Label>
-                                <PasswordInput id="newPassword" placeholder="••••••••" autoComplete="new-password"/>
-                            </div>
-                            <div>
-                                <Label htmlFor="confirmNewPassword">Confirmar Nueva Contraseña</Label>
-                                <PasswordInput id="confirmNewPassword" placeholder="••••••••" autoComplete="new-password"/>
-                            </div>
-                        </div>
-                        <Button><Save className="mr-2 h-4 w-4" />Guardar Contraseña</Button>
+                        <div className="flex items-center gap-3 p-4 rounded-md bg-muted text-muted-foreground">
+                            <Info className="h-5 w-5 shrink-0" />
+                            <p className="text-xs">Esta funcionalidad estará disponible en una futura actualización. Para cambiar su contraseña, por favor contacte al administrador.</p>
+                       </div>
                     </CardContent>
                 </Card>
             </div>
