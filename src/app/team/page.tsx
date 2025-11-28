@@ -36,32 +36,51 @@ import { Loader2 } from "lucide-react";
 
 const allPermissions: { key: keyof AppPermissions; label: string; section: string }[] = [
     // General
-    { key: "dashboard", label: "Ver Dashboard de Inicio", section: "General" },
-    { key: "services_view", label: "Ver Página de Servicios", section: "General" },
+    { key: "dashboard_view", label: "Ver Dashboard de Inicio", section: "General" },
+
+    // Clientes
+    { key: "clients_view", label: "Ver Clientes", section: "Clientes" },
+    { key: "clients_create", label: "Crear Clientes", section: "Clientes" },
+    { key: "clients_edit", label: "Editar Clientes", section: "Clientes" },
+    { key: "clients_delete", label: "Archivar Clientes", section: "Clientes" },
     
-    // CRM y Flujos
-    { key: "crm_view", label: "Ver Flujos de Trabajo (CRM)", section: "CRM y Flujos" },
-    { key: "crm_edit", label: "Editar Flujos y Servicios", section: "CRM y Flujos" },
-    
-    // Clientes y Contactos
-    { key: "clients_view", label: "Ver Contactos (Clientes, Proveedores, Promotores)", section: "Clientes y Contactos" },
-    { key: "clients_create", label: "Crear Nuevos Contactos", section: "Clientes y Contactos" },
-    { key: "clients_edit", label: "Editar Contactos", section: "Clientes y Contactos" },
-    { key: "clients_delete", label: "Archivar Contactos", section: "Clientes y Contactos" },
-    
+    // Proveedores
+    { key: "suppliers_view", label: "Ver Proveedores", section: "Proveedores" },
+    { key: "suppliers_create", label: "Crear Proveedores", section: "Proveedores" },
+    { key: "suppliers_edit", label: "Editar Proveedores", section: "Proveedores" },
+    { key: "suppliers_delete", label: "Archivar Proveedores", section: "Proveedores" },
+
+    // Promotores
+    { key: "promoters_view", label: "Ver Promotores", section: "Promotores" },
+    { key: "promoters_create", label: "Crear Promotores", section: "Promotores" },
+    { key: "promoters_edit", label: "Editar Promotores", section: "Promotores" },
+    { key: "promoters_delete", label: "Archivar Promotores", section: "Promotores" },
+
     // Tareas
     { key: "tasks_view", label: "Ver Tareas", section: "Tareas" },
     { key: "tasks_create", label: "Crear Tareas", section: "Tareas" },
     { key: "tasks_edit", label: "Editar Tareas", section: "Tareas" },
     { key: "tasks_delete", label: "Archivar Tareas", section: "Tareas" },
-
-    // Finanzas y Administración
-    { key: "finances_view", label: "Ver Centro de Inteligencia", section: "Finanzas y Administración" },
-    { key: "admin_view", label: "Ver Módulo de Contabilidad", section: "Finanzas y Administración" },
-    { key: "team_invite", label: "Invitar y Gestionar Miembros del Equipo", section: "Finanzas y Administración" },
-
+    
     // Documentos
     { key: "documents_view", label: "Ver y Descargar Documentos", section: "Documentos" },
+    { key: "documents_upload", label: "Subir Documentos", section: "Documentos" },
+    { key: "documents_delete", label: "Eliminar Documentos", section: "Documentos" },
+
+    // Servicios y Flujos de Trabajo
+    { key: "services_view", label: "Ver Página de Servicios", section: "Servicios y Flujos" },
+    { key: "crm_view", label: "Ver Flujos de Trabajo (CRM)", section: "Servicios y Flujos" },
+    { key: "workflow_edit", label: "Editar Etapas y Acciones de Flujos", section: "Servicios y Flujos" },
+    { key: "services_edit", label: "Editar Detalles de Servicios (descripción, comisiones, etc.)", section: "Servicios y Flujos" },
+
+    // Finanzas
+    { key: "intelligence_view", label: "Ver Centro de Inteligencia", section: "Finanzas" },
+    { key: "accounting_view", label: "Ver Módulo de Contabilidad", section: "Finanzas" },
+    { key: "accounting_config", label: "Configurar Contabilidad (empresas, cuentas)", section: "Finanzas" },
+
+    // Administración
+    { key: "team_manage_members", label: "Invitar, Editar y Archivar Miembros", section: "Administración de Equipo" },
+    { key: "team_manage_roles", label: "Gestionar Roles y Permisos", section: "Administración de Equipo" },
 ];
 
 
@@ -69,41 +88,36 @@ const initialRoles = [
     { 
         id: 'director', 
         name: 'Director', 
-        permissions: {
-            dashboard: true, clients_view: true, clients_create: true, clients_edit: true, clients_delete: true,
-            tasks_view: true, tasks_create: true, tasks_edit: true, tasks_delete: true,
-            crm_view: true, crm_edit: true, finances_view: true, admin_view: true, team_invite: true,
-            documents_view: true, services_view: true,
-        }
+        permissions: Object.keys(allPermissions.reduce((acc, p) => ({...acc, [p.key]: true}), {})).reduce((acc, key) => ({...acc, [key]: true}), {}) as AppPermissions,
     },
     { 
         id: 'admin', 
         name: 'Administrador', 
         permissions: {
-            dashboard: true, clients_view: true, clients_create: true, clients_edit: true, clients_delete: true,
+            dashboard_view: true, 
+            clients_view: true, clients_create: true, clients_edit: true, clients_delete: true,
+            suppliers_view: true, suppliers_create: true, suppliers_edit: true, suppliers_delete: true,
+            promoters_view: true, promoters_create: true, promoters_edit: true, promoters_delete: true,
             tasks_view: true, tasks_create: true, tasks_edit: true, tasks_delete: true,
-            crm_view: true, crm_edit: true, finances_view: true, admin_view: true, team_invite: true,
-            documents_view: true, services_view: true,
+            documents_view: true, documents_upload: true, documents_delete: true,
+            services_view: true, crm_view: true, workflow_edit: true, services_edit: true,
+            intelligence_view: true, accounting_view: true, accounting_config: true,
+            team_manage_members: true, team_manage_roles: true,
         }
     },
     { 
         id: 'collaborator', 
         name: 'Colaborador', 
         permissions: {
-            dashboard: true, clients_view: true, clients_create: true, clients_edit: false, clients_delete: false,
+            dashboard_view: true,
+            clients_view: true, clients_create: true, clients_edit: true, clients_delete: false,
+            suppliers_view: true, suppliers_create: true, suppliers_edit: true, suppliers_delete: false,
+            promoters_view: true, promoters_create: true, promoters_edit: true, promoters_delete: false,
             tasks_view: true, tasks_create: true, tasks_edit: true, tasks_delete: false,
-            crm_view: true, crm_edit: false, finances_view: false, admin_view: false, team_invite: false,
-            documents_view: true, services_view: true,
-        }
-    },
-    { 
-        id: 'promoter', 
-        name: 'Promotor', 
-        permissions: { // Los promotores no tienen acceso a la app principal
-            dashboard: false, clients_view: false, clients_create: false, clients_edit: false, clients_delete: false,
-            tasks_view: false, tasks_create: false, tasks_edit: false, tasks_delete: false,
-            crm_view: false, crm_edit: false, finances_view: false, admin_view: false, team_invite: false,
-            documents_view: false, services_view: false,
+            documents_view: true, documents_upload: true, documents_delete: false,
+            services_view: true, crm_view: true, workflow_edit: false, services_edit: false,
+            intelligence_view: false, accounting_view: false, accounting_config: false,
+            team_manage_members: false, team_manage_roles: false,
         }
     },
 ];
@@ -119,7 +133,8 @@ export default function TeamPage() {
     const [userToDelete, setUserToDelete] = useState<AppUser | null>(null);
     const [isProcessing, setIsProcessing] = useState(false);
 
-    const canInvite = currentUser?.permissions?.team_invite ?? false;
+    const canManageMembers = currentUser?.permissions?.team_manage_members ?? false;
+    const canManageRoles = currentUser?.permissions?.team_manage_roles ?? false;
 
     const sortedTeamMembers = useMemo(() => {
         if (!teamMembers) return [];
@@ -228,7 +243,7 @@ export default function TeamPage() {
                             Usuarios con acceso a la plataforma.
                         </CardDescription>
                     </div>
-                    {canInvite && (
+                    {canManageMembers && (
                         <Button size="sm" onClick={() => setIsInviteDialogOpen(true)}>
                             <PlusCircle className="mr-2 h-4 w-4" />
                             Agregar Miembro
@@ -260,8 +275,12 @@ export default function TeamPage() {
                                     <TableCell>{member.email}</TableCell>
                                     <TableCell><Badge variant="secondary">{member.role}</Badge></TableCell>
                                     <TableCell className="text-right">
-                                        <Button variant="ghost" size="icon" onClick={() => handleEditUser(member)}><Edit className="h-4 w-4" /></Button>
-                                        <Button variant="ghost" size="icon" className="text-destructive" onClick={() => handleDeleteClick(member)}><Trash2 className="h-4 w-4" /></Button>
+                                      {canManageMembers && member.role !== 'Director' && (
+                                        <>
+                                          <Button variant="ghost" size="icon" onClick={() => handleEditUser(member)}><Edit className="h-4 w-4" /></Button>
+                                          <Button variant="ghost" size="icon" className="text-destructive" onClick={() => handleDeleteClick(member)}><Trash2 className="h-4 w-4" /></Button>
+                                        </>
+                                      )}
                                     </TableCell>
                                 </TableRow>
                             ))}
@@ -272,10 +291,10 @@ export default function TeamPage() {
           </TabsContent>
           <TabsContent value="permissions" className="mt-6">
              <Accordion type="single" collapsible className="w-full space-y-4">
-                {roles.filter(r => r.id !== 'promoter' && r.id !== 'director').map((role) => (
+                {roles.filter(r => r.id !== 'director').map((role) => (
                     <AccordionItem value={role.id} key={role.id} asChild>
                         <Card>
-                            <AccordionTrigger className="w-full p-0 [&_svg]:ml-auto [&_svg]:mr-4">
+                            <AccordionTrigger className="w-full p-0 [&_svg]:ml-auto [&_svg]:mr-4" disabled={!canManageRoles}>
                                 <CardHeader className="flex-1">
                                     <CardTitle className="flex items-center gap-2 text-left"><KeyRound className="h-5 w-5 text-accent"/>{role.name}</CardTitle>
                                     <CardDescription className="text-left">
@@ -294,8 +313,9 @@ export default function TeamPage() {
                                                     <Label htmlFor={`perm-${role.id}-${permission.key}`}>{permission.label}</Label>
                                                     <Switch
                                                         id={`perm-${role.id}-${permission.key}`}
-                                                        checked={role.permissions[permission.key] || false}
-                                                        onCheckedChange={(value) => handlePermissionChange(role.id, permission.key, value)}
+                                                        checked={role.permissions[permission.key as keyof AppPermissions] || false}
+                                                        onCheckedChange={(value) => handlePermissionChange(role.id, permission.key as keyof AppPermissions, value)}
+                                                        disabled={!canManageRoles}
                                                     />
                                                 </div>
                                             ))}
@@ -315,7 +335,7 @@ export default function TeamPage() {
     <InviteMemberDialog
         isOpen={isInviteDialogOpen}
         onOpenChange={setIsInviteDialogOpen}
-        roles={roles.map(r => r.name).filter(name => name !== 'Director' && name !== 'Promoter')}
+        roles={roles.map(r => r.name).filter(name => name !== 'Director' && name !== 'Promotor')}
         onInvite={handleInvite}
     />
     {userToEdit && (
@@ -323,7 +343,7 @@ export default function TeamPage() {
             isOpen={!!userToEdit}
             onOpenChange={() => setUserToEdit(null)}
             user={userToEdit}
-            roles={roles.map(r => r.name).filter(name => name !== 'Director' && name !== 'Promoter')}
+            roles={roles.map(r => r.name).filter(name => name !== 'Director' && name !== 'Promotor')}
             onSave={handleUpdateUser}
             isProcessing={isProcessing}
         />

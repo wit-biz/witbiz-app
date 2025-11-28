@@ -199,24 +199,39 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
                 
                 if (userRole === 'Director') {
                     rolePermissions = {
-                        dashboard: true, clients_view: true, clients_create: true, clients_edit: true, clients_delete: true,
+                        dashboard_view: true, 
+                        clients_view: true, clients_create: true, clients_edit: true, clients_delete: true,
+                        suppliers_view: true, suppliers_create: true, suppliers_edit: true, suppliers_delete: true,
+                        promoters_view: true, promoters_create: true, promoters_edit: true, promoters_delete: true,
                         tasks_view: true, tasks_create: true, tasks_edit: true, tasks_delete: true,
-                        crm_view: true, crm_edit: true, finances_view: true, admin_view: true, team_invite: true,
-                        documents_view: true, services_view: true,
+                        documents_view: true, documents_upload: true, documents_delete: true,
+                        services_view: true, crm_view: true, workflow_edit: true, services_edit: true,
+                        intelligence_view: true, accounting_view: true, accounting_config: true,
+                        team_manage_members: true, team_manage_roles: true,
                     };
                 } else if (userRole === 'Administrador') {
                     rolePermissions = {
-                        dashboard: true, clients_view: true, clients_create: true, clients_edit: true, clients_delete: true,
+                        dashboard_view: true, 
+                        clients_view: true, clients_create: true, clients_edit: true, clients_delete: true,
+                        suppliers_view: true, suppliers_create: true, suppliers_edit: true, suppliers_delete: true,
+                        promoters_view: true, promoters_create: true, promoters_edit: true, promoters_delete: true,
                         tasks_view: true, tasks_create: true, tasks_edit: true, tasks_delete: true,
-                        crm_view: true, crm_edit: true, finances_view: true, admin_view: true, team_invite: true,
-                        documents_view: true, services_view: true,
+                        documents_view: true, documents_upload: true, documents_delete: true,
+                        services_view: true, crm_view: true, workflow_edit: true, services_edit: true,
+                        intelligence_view: true, accounting_view: true, accounting_config: true,
+                        team_manage_members: true, team_manage_roles: true,
                     };
                 } else { // Default to 'Colaborador'
                      rolePermissions = {
-                        dashboard: true, clients_view: true, clients_create: true, clients_edit: false, clients_delete: false,
+                        dashboard_view: true,
+                        clients_view: true, clients_create: true, clients_edit: true, clients_delete: false,
+                        suppliers_view: true, suppliers_create: true, suppliers_edit: true, suppliers_delete: false,
+                        promoters_view: true, promoters_create: true, promoters_edit: true, promoters_delete: false,
                         tasks_view: true, tasks_create: true, tasks_edit: true, tasks_delete: false,
-                        crm_view: true, crm_edit: false, finances_view: false, admin_view: false, team_invite: false,
-                        documents_view: true, services_view: true,
+                        documents_view: true, documents_upload: true, documents_delete: false,
+                        services_view: true, crm_view: true, workflow_edit: false, services_edit: false,
+                        intelligence_view: false, accounting_view: false, accounting_config: false,
+                        team_manage_members: false, team_manage_roles: false,
                     };
                 }
     

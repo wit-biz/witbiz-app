@@ -253,22 +253,44 @@ export type SubAction = {
 export type DocumentType = "Contrato" | "Factura" | "Propuesta" | "Informe" | "Otro" | "Descargable";
 
 export type AppPermissions = {
+    // General
+    dashboard_view: boolean;
+    // Clientes
+    clients_view: boolean;
     clients_create: boolean;
     clients_edit: boolean;
     clients_delete: boolean;
-    clients_view: boolean;
-    documents_view: boolean;
+    // Proveedores
+    suppliers_view: boolean;
+    suppliers_create: boolean;
+    suppliers_edit: boolean;
+    suppliers_delete: boolean;
+    // Promotores
+    promoters_view: boolean;
+    promoters_create: boolean;
+    promoters_edit: boolean;
+    promoters_delete: boolean;
+    // Tareas
+    tasks_view: boolean;
     tasks_create: boolean;
     tasks_edit: boolean;
     tasks_delete: boolean;
-    tasks_view: boolean;
-    crm_edit: boolean;
-    crm_view: boolean;
-    finances_view: boolean;
-    admin_view: boolean;
-    dashboard: boolean;
-    team_invite: boolean;
+    // Documentos
+    documents_view: boolean;
+    documents_upload: boolean;
+    documents_delete: boolean;
+    // Servicios y Flujos
     services_view: boolean;
+    crm_view: boolean;
+    workflow_edit: boolean;
+    services_edit: boolean;
+    // Finanzas
+    intelligence_view: boolean;
+    accounting_view: boolean;
+    accounting_config: boolean;
+    // Administración de Equipo
+    team_manage_members: boolean;
+    team_manage_roles: boolean;
 }
 
 export type UserRole = {
