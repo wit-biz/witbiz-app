@@ -65,7 +65,7 @@ const StageCard = ({
         </CardHeader>
         <CardContent className="space-y-3 overflow-y-auto flex-1 p-3">
            {stage.actions && stage.actions.length > 0 && (
-                <div className="text-sm text-muted-foreground pt-2 space-y-2">
+                <div className="text-sm text-muted-foreground pt-2 space-y-2 border-t">
                      <h4 className="font-semibold text-xs text-foreground/80 pl-1">Acciones</h4>
                      <ul className="space-y-1">
                         {stage.actions.map(action => (
@@ -180,7 +180,7 @@ export default function CrmPage() {
       </Header>
       <main className="flex-1 p-4 md:p-8 space-y-6">
         {activeWorkflows && activeWorkflows.length > 0 ? (
-          <Accordion type="multiple" defaultValue={activeWorkflows.map(s => s.id)} className="w-full space-y-4">
+          <Accordion type="single" collapsible className="w-full space-y-4">
           {activeWorkflows.map(service => (
             <AccordionItem value={service.id} key={service.id} asChild>
               <Card>
