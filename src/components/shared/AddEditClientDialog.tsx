@@ -147,6 +147,16 @@ export function AddEditClientDialog({ client, isOpen, onClose }: AddEditClientDi
     }
   }, [hasPosTerminals, form]);
 
+  useEffect(() => {
+    // When a subscribed service is removed, also remove its custom commission flag if it exists.
+    const currentCustomIds = form.getValues('customCommissionServiceIds') || [];
+    const validCustomIds = currentCustomIds.filter(id => subscribedServiceIds?.includes(id));
+    if (validCustomIds.length < currentCustomIds.length) {
+      form.setValue('customCommissionServiceIds', validCustomIds);
+    }
+  }, [subscribedServiceIds, form]);
+
+
   const commissionsForSelectedServices = React.useMemo(() => {
     if (!subscribedServiceIds || !serviceWorkflows || !customCommissionServiceIds) return [];
     return serviceWorkflows

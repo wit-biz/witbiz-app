@@ -2,6 +2,7 @@
 'use client';
 
 import React, { useState, useMemo, useEffect, type FormEvent } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { DateRange } from 'react-day-picker';
 import { format, isWithinInterval, startOfDay } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -28,17 +29,15 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { useCRMData } from '@/contexts/CRMDataContext';
-import { type Document } from '@/lib/types';
+import { type Document, type Promoter } from '@/lib/types';
 
 // --- Components for each view ---
 
-function ClientsView() {
+function ClientsView({ promoterId }: { promoterId: string }) {
     const { getClientsByPromoterId, promoters } = useCRMData();
     const [isClient, setIsClient] = useState(false);
     
-    // Assuming the logged-in promoter is the first one for this demo
-    const currentPromoter = promoters?.[0];
-    const referredClients = currentPromoter ? getClientsByPromoterId(currentPromoter.id) : [];
+    const referredClients = getClientsByPromoterId(promoterId);
 
     useEffect(() => {
         setIsClient(true);
@@ -267,12 +266,11 @@ function CommissionsView() {
     );
 }
 
-function ResourcesView() {
-    const { getDocumentsByPromoterId, promoters } = useCRMData();
+function ResourcesView({ promoterId }: { promoterId: string }) {
+    const { getDocumentsByPromoterId } = useCRMData();
     const { toast } = useToast();
 
-    const currentPromoter = promoters?.[0];
-    const resources = currentPromoter ? getDocumentsByPromoterId(currentPromoter.id) : [];
+    const resources = getDocumentsByPromoterId(promoterId);
 
     const handleDownload = (doc: Document) => {
         if (doc.downloadURL) {
@@ -320,10 +318,8 @@ function ResourcesView() {
     );
 }
 
-function ProfileView() {
+function ProfileView({ promoter }: { promoter: Promoter }) {
     const { toast } = useToast();
-    const { promoters } = useCRMData();
-    const currentPromoter = promoters?.[0];
 
     const handlePasswordChange = (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
@@ -332,17 +328,6 @@ function ProfileView() {
             description: "Tu contraseña ha sido cambiada exitosamente (simulación).",
         });
     };
-
-    if (!currentPromoter) {
-        return (
-            <Card className="max-w-2xl mx-auto">
-                <CardHeader><CardTitle>Mi Perfil de Promotor</CardTitle></CardHeader>
-                <CardContent className='flex items-center justify-center p-12'>
-                    <Loader2 className='h-8 w-8 animate-spin'/>
-                </CardContent>
-            </Card>
-        )
-    }
 
     return (
         <Card className="max-w-2xl mx-auto">
@@ -355,7 +340,7 @@ function ProfileView() {
             <CardContent className="space-y-4">
                  <div className="space-y-2">
                     <Label>Nombre Completo</Label>
-                    <Input value={currentPromoter.name} disabled />
+                    <Input value={promoter.name} disabled />
                 </div>
                  <div className="space-y-2">
                     <Label>Rol</Label>
@@ -363,7 +348,7 @@ function ProfileView() {
                 </div>
                  <div className="space-y-2">
                     <Label>Correo Electrónico</Label>
-                    <Input value={currentPromoter.email || 'N/A'} disabled />
+                    <Input value={promoter.email || 'N/A'} disabled />
                 </div>
             </CardContent>
             <Separator />
@@ -399,26 +384,67 @@ function ProfileView() {
     );
 }
 
-const navItems = [
-    { id: 'clients', label: 'Clientes', icon: Users, component: ClientsView },
-    { id: 'commissions', label: 'Comisiones', icon: CircleDollarSign, component: CommissionsView },
-    { id: 'charts', label: 'Gráficos', icon: BarChart, component: DateRangeChartsTab },
-    { id: 'resources', label: 'Recursos', icon: BookText, component: ResourcesView },
-];
-
-const profileNavItem = { id: 'profile', label: 'Perfil', icon: User, component: ProfileView };
-
 
 export default function PromoterPage() {
     const router = useRouter();
+    const searchParams = useSearchParams();
+    const { promoters, isLoadingPromoters } = useCRMData();
+    const { toast } = useToast();
+
     const [activeView, setActiveView] = useState('clients');
     const [isMenuOpen, setIsMenuOpen] = useState(false);
+    const [isValidPromoter, setIsValidPromoter] = useState<boolean | null>(null);
+    const [currentPromoter, setCurrentPromoter] = useState<Promoter | null>(null);
+    const promoterId = searchParams.get('promoterId');
     
+    useEffect(() => {
+        if (!isLoadingPromoters) {
+            if (promoterId) {
+                const promoter = promoters.find(p => p.id === promoterId);
+                if (promoter && promoter.status === 'Activo') {
+                    setCurrentPromoter(promoter);
+                    setIsValidPromoter(true);
+                } else {
+                    setIsValidPromoter(false);
+                }
+            } else {
+                setIsValidPromoter(false);
+            }
+        }
+    }, [promoterId, promoters, isLoadingPromoters]);
+    
+    useEffect(() => {
+        if (isValidPromoter === false) {
+            toast({
+                variant: 'destructive',
+                title: 'Acceso Denegado',
+                description: 'ID de promotor inválido o inactivo.',
+            });
+            router.replace('/promoter-login');
+        }
+    }, [isValidPromoter, router, toast]);
+
     const handleLogout = () => {
         router.push('/promoter-login');
     };
+    
+    if (isValidPromoter === null || !currentPromoter) {
+        return (
+            <div className="flex h-screen w-full items-center justify-center">
+                <Loader2 className="h-8 w-8 animate-spin" />
+            </div>
+        );
+    }
+    
+    const navItems = [
+        { id: 'clients', label: 'Clientes', icon: Users, component: () => <ClientsView promoterId={currentPromoter.id} /> },
+        { id: 'commissions', label: 'Comisiones', icon: CircleDollarSign, component: CommissionsView },
+        { id: 'charts', label: 'Gráficos', icon: BarChart, component: DateRangeChartsTab },
+        { id: 'resources', label: 'Recursos', icon: BookText, component: () => <ResourcesView promoterId={currentPromoter.id} /> },
+    ];
+    const profileNavItem = { id: 'profile', label: 'Perfil', icon: User, component: () => <ProfileView promoter={currentPromoter} /> };
 
-    const ActiveComponent = [...navItems, profileNavItem].find(item => item.id === activeView)?.component || ClientsView;
+    const ActiveComponent = [...navItems, profileNavItem].find(item => item.id === activeView)?.component;
     
     const SidebarContent = () => (
       <div className="flex h-full flex-col">
@@ -483,7 +509,7 @@ export default function PromoterPage() {
                     </h1>
                 </header>
                 <main className="grid items-start gap-4 p-4 sm:px-6 sm:py-0 md:gap-8 overflow-x-auto">
-                    <ActiveComponent />
+                    {ActiveComponent && <ActiveComponent />}
                 </main>
             </div>
         </div>

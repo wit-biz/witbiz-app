@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import React, { useMemo, useState } from "react";
@@ -20,7 +19,18 @@ interface SupplierDetailViewProps {
 }
 
 const DetailItem = ({ icon: Icon, label, value, href }: { icon: React.ElementType; label: string; value?: string; href?: string }) => {
-    if (!value) return null;
+    if (!value) {
+        return (
+            <div className="flex items-start gap-3">
+                <Icon className="h-5 w-5 text-muted-foreground mt-0.5" />
+                <div className="flex flex-col">
+                    <span className="text-sm text-muted-foreground">{label}</span>
+                    <p className="text-sm font-medium text-muted-foreground/70">N/A</p>
+                </div>
+            </div>
+        );
+    };
+
     return (
         <div className="flex items-start gap-3">
             <Icon className="h-5 w-5 text-muted-foreground mt-0.5" />

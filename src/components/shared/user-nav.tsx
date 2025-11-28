@@ -49,7 +49,7 @@ export function UserNav() {
     );
   }
 
-  const canViewAdmin = currentUser?.permissions.admin_view;
+  const canViewAdmin = currentUser?.permissions.admin_view ?? false;
 
   return (
     <div className="fixed top-4 right-4 z-50 flex items-center gap-2">
@@ -65,11 +65,8 @@ export function UserNav() {
           >
             {user && currentUser ? (
               <Avatar className="h-8 w-8">
-                {currentUser.photoURL || user.photoURL ? (
-                  <AvatarImage src={currentUser.photoURL || user.photoURL!} alt={currentUser.displayName || 'User'}/>
-                ) : (
-                  <AvatarFallback>{currentUser.displayName?.charAt(0).toUpperCase() || user.email?.charAt(0).toUpperCase() || 'U'}</AvatarFallback>
-                )}
+                <AvatarImage src={currentUser.photoURL || user.photoURL || ''} alt={currentUser.displayName || 'User'}/>
+                <AvatarFallback>{currentUser.displayName?.charAt(0).toUpperCase() || user.email?.charAt(0).toUpperCase() || 'U'}</AvatarFallback>
               </Avatar>
             ) : (
               <UserMenuIcon />
@@ -83,11 +80,8 @@ export function UserNav() {
               <DropdownMenuLabel>
                 <div className="flex items-center gap-3">
                   <Avatar className="h-9 w-9">
-                    {currentUser.photoURL || user.photoURL ? (
-                       <AvatarImage src={currentUser.photoURL || user.photoURL!} alt={currentUser.displayName || 'User'}/>
-                    ) : (
-                      <AvatarFallback>{currentUser.displayName?.charAt(0).toUpperCase() || user.email?.charAt(0).toUpperCase() || 'U'}</AvatarFallback>
-                    )}
+                     <AvatarImage src={currentUser.photoURL || user.photoURL || ''} alt={currentUser.displayName || 'User'}/>
+                     <AvatarFallback>{currentUser.displayName?.charAt(0).toUpperCase() || user.email?.charAt(0).toUpperCase() || 'U'}</AvatarFallback>
                   </Avatar>
                   <div>
                     <p className="text-sm font-medium leading-none">{currentUser.displayName || 'Usuario'}</p>

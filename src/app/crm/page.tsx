@@ -28,7 +28,6 @@ import type { Client, WorkflowStage, ServiceWorkflow, SubStage, SubSubStage } fr
 import { useCRMData } from "@/contexts/CRMDataContext";
 import { ClientStageDetailDialog } from "@/components/shared/ClientStageDetailDialog";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import { serviceWorkflows as staticServiceWorkflows } from "@/lib/data";
 
 
 type AnyStage = WorkflowStage | SubStage | SubSubStage;
@@ -39,7 +38,7 @@ const StageClientCard = ({ client, onClientClick }: { client: Client, onClientCl
       className="p-2 border rounded-md cursor-pointer hover:bg-secondary/50 transition-all bg-background shrink-0 w-40"
     >
       <p className="font-semibold text-sm truncate">{client.name}</p>
-      <p className="text-xs text-muted-foreground truncate">{client.category}</p>
+      <p className="text-xs text-muted-foreground truncate">{client.category || 'Sin categoría'}</p>
     </div>
 );
 
@@ -113,8 +112,7 @@ const StageCard = ({
 
 
 export default function CrmPage() {
-  const { clients, isLoadingClients } = useCRMData();
-  const serviceWorkflows = staticServiceWorkflows;
+  const { clients, isLoadingClients, serviceWorkflows, isLoadingWorkflows } = useCRMData();
 
   const [selectedClientForDialog, setSelectedClientForDialog] = useState<Client | null>(null);
   const [selectedStageForDialog, setSelectedStageForDialog] = useState<AnyStage | null>(null);
@@ -168,7 +166,7 @@ export default function CrmPage() {
   }, [serviceWorkflows]);
 
 
-  if (isLoadingClients) {
+  if (isLoadingClients || isLoadingWorkflows) {
     return (
         <div className="flex flex-col min-h-screen">
             <Header

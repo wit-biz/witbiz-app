@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import React, { useState, useMemo } from "react";
@@ -25,15 +24,18 @@ interface ClientDetailViewProps {
   onClose: () => void;
 }
 
-const DetailItem = ({ label, value, href }: { label: string; value?: string; href?: string }) => {
-    if (!value) return null;
+const DetailItem = ({ label, value, href }: { label: string; value?: string | null; href?: string }) => {
     return (
         <div>
             <p className="text-sm text-muted-foreground">{label}</p>
-            {href ? (
-                <a href={href} target="_blank" rel="noopener noreferrer" className="text-sm font-medium text-primary hover:underline">{value}</a>
+            {value ? (
+                 href ? (
+                    <a href={href} target="_blank" rel="noopener noreferrer" className="text-sm font-medium text-primary hover:underline">{value}</a>
+                ) : (
+                    <p className="text-sm font-medium">{value}</p>
+                )
             ) : (
-                <p className="text-sm font-medium">{value}</p>
+                <p className="text-sm font-medium text-muted-foreground/70">N/A</p>
             )}
         </div>
     );
