@@ -1,5 +1,4 @@
 
-
 import { type LucideIcon } from "lucide-react";
 
 export type PosTerminal = {
@@ -296,6 +295,7 @@ export type UserRole = {
     id: string;
     name: string;
     permissions: Partial<AppPermissions>;
+    isBaseRole?: boolean;
 }
 
 export interface AppUser {

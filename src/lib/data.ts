@@ -1,11 +1,54 @@
 
-import type { Client, Task, Document, Note, WorkflowStage, NavItem, Promoter, ServiceWorkflow, SubService, AppUser, Supplier } from './types';
+import type { Client, Task, Document, Note, WorkflowStage, NavItem, Promoter, ServiceWorkflow, SubService, AppUser, Supplier, UserRole } from './types';
 import { addDays, format, subDays } from 'date-fns';
 import { Trash2 } from 'lucide-react';
+import { allPermissions } from '@/lib/permissions';
+
 
 export const teamMembers: AppUser[] = [
     { id: '1', name: 'Andrea Admin', email: 'admin@witbiz.com', role: 'Administrador', photoURL: 'https://picsum.photos/seed/1/40/40' },
     { id: '2', name: 'Carla Collaborator', email: 'carla@witbiz.com', role: 'Colaborador', photoURL: 'https://picsum.photos/seed/2/40/40' },
+];
+
+export const initialRoles: UserRole[] = [
+    { 
+        id: 'director', 
+        name: 'Director',
+        isBaseRole: true,
+        permissions: allPermissions.reduce((acc, p) => ({...acc, [p.key]: true}), {}) as any,
+    },
+    { 
+        id: 'admin', 
+        name: 'Administrador',
+        isBaseRole: true,
+        permissions: {
+            dashboard_view: true, 
+            clients_view: true, clients_create: true, clients_edit: true, clients_delete: true,
+            suppliers_view: true, suppliers_create: true, suppliers_edit: true, suppliers_delete: true,
+            promoters_view: true, promoters_create: true, promoters_edit: true, promoters_delete: true,
+            tasks_view: true, tasks_create: true, tasks_edit: true, tasks_delete: true,
+            documents_view: true, documents_upload: true, documents_delete: true,
+            services_view: true, crm_view: true, workflow_edit: true, services_edit: true,
+            intelligence_view: true, accounting_view: true, accounting_config: true,
+            admin_view: true, team_manage_members: true, team_manage_roles: true,
+        }
+    },
+    { 
+        id: 'collaborator', 
+        name: 'Colaborador',
+        isBaseRole: true,
+        permissions: {
+            dashboard_view: true,
+            clients_view: true, clients_create: true, clients_edit: true, clients_delete: false,
+            suppliers_view: true, suppliers_create: false, suppliers_edit: false, suppliers_delete: false,
+            promoters_view: true, promoters_create: false, promoters_edit: false, promoters_delete: false,
+            tasks_view: true, tasks_create: true, tasks_edit: true, tasks_delete: false,
+            documents_view: true, documents_upload: true, documents_delete: false,
+            services_view: true, crm_view: true, workflow_edit: false, services_edit: false,
+            intelligence_view: false, accounting_view: false, accounting_config: false,
+            admin_view: false, team_manage_members: false, team_manage_roles: false,
+        }
+    },
 ];
 
 export const serviceWorkflows: ServiceWorkflow[] = [

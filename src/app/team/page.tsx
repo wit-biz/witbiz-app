@@ -18,7 +18,7 @@ import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { InviteMemberDialog } from "@/components/shared/InviteMemberDialog";
-import { type AppPermissions, type AppUser } from "@/lib/types";
+import { type AppPermissions, type AppUser, type UserRole } from "@/lib/types";
 import {
   Accordion,
   AccordionContent,
@@ -31,103 +31,21 @@ import { useToast } from "@/hooks/use-toast";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { EditMemberDialog } from "@/components/shared/EditMemberDialog";
 import { Loader2 } from "lucide-react";
-
-
-const allPermissions: { key: keyof AppPermissions; label: string; section: string }[] = [
-    // General
-    { key: "dashboard_view", label: "Ver Dashboard de Inicio", section: "General" },
-
-    // Contactos
-    { key: "clients_view", label: "Ver Clientes", section: "Contactos" },
-    { key: "clients_create", label: "Crear Clientes", section: "Contactos" },
-    { key: "clients_edit", label: "Editar Clientes", section: "Contactos" },
-    { key: "clients_delete", label: "Archivar Clientes", section: "Contactos" },
-    { key: "suppliers_view", label: "Ver Proveedores", section: "Contactos" },
-    { key: "suppliers_create", label: "Crear Proveedores", section: "Contactos" },
-    { key: "suppliers_edit", label: "Editar Proveedores", section: "Contactos" },
-    { key: "suppliers_delete", label: "Archivar Proveedores", section: "Contactos" },
-    { key: "promoters_view", label: "Ver Promotores", section: "Contactos" },
-    { key: "promoters_create", label: "Crear Promotores", section: "Contactos" },
-    { key: "promoters_edit", label: "Editar Promotores", section: "Contactos" },
-    { key: "promoters_delete", label: "Archivar Promotores", section: "Contactos" },
-
-    // Tareas
-    { key: "tasks_view", label: "Ver Tareas", section: "Tareas" },
-    { key: "tasks_create", label: "Crear Tareas", section: "Tareas" },
-    { key: "tasks_edit", label: "Editar Tareas", section: "Tareas" },
-    { key: "tasks_delete", label: "Archivar Tareas", section: "Tareas" },
-    
-    // Documentos
-    { key: "documents_view", label: "Ver y Descargar Documentos", section: "Documentos" },
-    { key: "documents_upload", label: "Subir Documentos", section: "Documentos" },
-    { key: "documents_delete", label: "Eliminar Documentos", section: "Documentos" },
-
-    // Servicios y Flujos de Trabajo
-    { key: "services_view", label: "Ver Página de Servicios", section: "Servicios y Flujos" },
-    { key: "crm_view", label: "Ver Flujos de Trabajo (CRM)", section: "Servicios y Flujos" },
-    { key: "workflow_edit", label: "Editar Etapas y Acciones de Flujos", section: "Servicios y Flujos" },
-    { key: "services_edit", label: "Editar Detalles de Servicios (descripción, comisiones, etc.)", section: "Servicios y Flujos" },
-
-    // Finanzas
-    { key: "intelligence_view", label: "Ver Centro de Inteligencia", section: "Finanzas" },
-    { key: "accounting_view", label: "Ver Módulo de Contabilidad", section: "Finanzas" },
-    { key: "accounting_config", label: "Configurar Contabilidad (empresas, cuentas)", section: "Finanzas" },
-
-    // Administración
-    { key: "admin_view", label: "Ver Secciones de Administración (Equipo, Papelera, etc.)", section: "Administración" },
-    { key: "team_manage_members", label: "Invitar, Editar y Archivar Miembros", section: "Administración" },
-    { key: "team_manage_roles", label: "Gestionar Roles y Permisos", section: "Administración" },
-];
-
-
-const initialRoles = [
-    { 
-        id: 'director', 
-        name: 'Director', 
-        permissions: allPermissions.reduce((acc, p) => ({...acc, [p.key]: true}), {}) as AppPermissions,
-    },
-    { 
-        id: 'admin', 
-        name: 'Administrador', 
-        permissions: {
-            dashboard_view: true, 
-            clients_view: true, clients_create: true, clients_edit: true, clients_delete: true,
-            suppliers_view: true, suppliers_create: true, suppliers_edit: true, suppliers_delete: true,
-            promoters_view: true, promoters_create: true, promoters_edit: true, promoters_delete: true,
-            tasks_view: true, tasks_create: true, tasks_edit: true, tasks_delete: true,
-            documents_view: true, documents_upload: true, documents_delete: true,
-            services_view: true, crm_view: true, workflow_edit: true, services_edit: true,
-            intelligence_view: true, accounting_view: true, accounting_config: true,
-            admin_view: true, team_manage_members: true, team_manage_roles: true,
-        }
-    },
-    { 
-        id: 'collaborator', 
-        name: 'Colaborador', 
-        permissions: {
-            dashboard_view: true,
-            clients_view: true, clients_create: true, clients_edit: true, clients_delete: false,
-            suppliers_view: true, suppliers_create: false, suppliers_edit: false, suppliers_delete: false,
-            promoters_view: true, promoters_create: false, promoters_edit: false, promoters_delete: false,
-            tasks_view: true, tasks_create: true, tasks_edit: true, tasks_delete: false,
-            documents_view: true, documents_upload: true, documents_delete: false,
-            services_view: true, crm_view: true, workflow_edit: false, services_edit: false,
-            intelligence_view: false, accounting_view: false, accounting_config: false,
-            admin_view: false, team_manage_members: false, team_manage_roles: false,
-        }
-    },
-];
+import { allPermissions } from "@/lib/permissions";
+import { PromptNameDialog } from "@/components/shared/PromptNameDialog";
 
 
 export default function TeamPage() {
     const [isInviteDialogOpen, setIsInviteDialogOpen] = useState(false);
-    const [roles, setRoles] = useState(initialRoles);
-    const { currentUser, teamMembers, registerUser, updateUser, deleteUser } = useCRMData();
+    const { currentUser, teamMembers, registerUser, updateUser, deleteUser, roles, setRoles } = useCRMData();
     const { toast } = useToast();
 
     const [userToEdit, setUserToEdit] = useState<AppUser | null>(null);
     const [userToDelete, setUserToDelete] = useState<AppUser | null>(null);
     const [isProcessing, setIsProcessing] = useState(false);
+    
+    const [roleToDelete, setRoleToDelete] = useState<UserRole | null>(null);
+    const [isPromptNameOpen, setIsPromptNameOpen] = useState(false);
 
     const canManageMembers = currentUser?.permissions?.team_manage_members ?? false;
     const canManageRoles = currentUser?.permissions?.team_manage_roles ?? false;
@@ -154,16 +72,15 @@ export default function TeamPage() {
     }, [teamMembers]);
 
     const handlePermissionChange = (roleId: string, permissionKey: keyof AppPermissions, value: boolean) => {
-        setRoles(currentRoles => 
-            currentRoles.map(role => 
-                role.id === roleId 
-                    ? { ...role, permissions: { ...role.permissions, [permissionKey]: value } }
-                    : role
-            )
+        const updatedRoles = roles.map(role => 
+            role.id === roleId 
+                ? { ...role, permissions: { ...role.permissions, [permissionKey]: value } }
+                : role
         );
+        setRoles(updatedRoles);
         toast({
             title: "Permiso Actualizado",
-            description: `Se ha guardado la actualización para el rol ${roleId}.`,
+            description: `Se ha guardado la actualización para el rol.`,
         });
     };
     
@@ -212,6 +129,29 @@ export default function TeamPage() {
         }
         setIsProcessing(false);
         setUserToEdit(null);
+    };
+    
+    const handleAddNewRole = () => {
+        setIsPromptNameOpen(true);
+    };
+
+    const handleSaveNewRole = (name: string) => {
+        const newRole: UserRole = {
+            id: name.toLowerCase().replace(/\s+/g, '-'),
+            name,
+            isBaseRole: false,
+            permissions: { ...initialRoles.find(r => r.id === 'collaborator')?.permissions } // Start with collaborator permissions
+        };
+        setRoles([...roles, newRole]);
+        toast({ title: 'Rol Creado', description: `El rol "${name}" ha sido creado.` });
+    };
+    
+    const confirmDeleteRole = () => {
+        if (!roleToDelete) return;
+        const updatedRoles = roles.filter(r => r.id !== roleToDelete.id);
+        setRoles(updatedRoles);
+        toast({ title: 'Rol Eliminado', description: `El rol "${roleToDelete.name}" ha sido eliminado.` });
+        setRoleToDelete(null);
     };
 
 
@@ -290,14 +230,29 @@ export default function TeamPage() {
             </Card>
           </TabsContent>
           <TabsContent value="permissions" className="mt-6">
+              {canManageRoles && (
+                <div className="mb-4">
+                    <Button onClick={handleAddNewRole}>
+                        <PlusCircle className="mr-2 h-4 w-4" />
+                        Crear Nuevo Rol
+                    </Button>
+                </div>
+              )}
              <Accordion type="single" collapsible className="w-full space-y-4">
                 {roles.filter(r => r.id !== 'director').map((role) => (
                     <AccordionItem value={role.id} key={role.id} asChild>
                         <Card>
                             <AccordionTrigger className="w-full p-0 [&_svg]:ml-auto [&_svg]:mr-4" disabled={!canManageRoles}>
-                                <CardHeader className="flex-1">
-                                    <CardTitle className="flex items-center gap-2 text-left"><KeyRound className="h-5 w-5 text-accent"/>{role.name}</CardTitle>
-                                    <CardDescription className="text-left">
+                                <CardHeader className="flex-1 text-left">
+                                  <div className="flex justify-between items-center">
+                                    <CardTitle className="flex items-center gap-2"><KeyRound className="h-5 w-5 text-accent"/>{role.name}</CardTitle>
+                                    {!role.isBaseRole && canManageRoles && (
+                                        <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={(e) => { e.stopPropagation(); setRoleToDelete(role); }}>
+                                            <Trash2 className="h-4 w-4" />
+                                        </Button>
+                                    )}
+                                  </div>
+                                    <CardDescription>
                                         Configure los permisos para el rol de {role.name}.
                                     </CardDescription>
                                 </CardHeader>
@@ -315,7 +270,7 @@ export default function TeamPage() {
                                                         id={`perm-${role.id}-${permission.key}`}
                                                         checked={role.permissions[permission.key as keyof AppPermissions] || false}
                                                         onCheckedChange={(value) => handlePermissionChange(role.id, permission.key as keyof AppPermissions, value)}
-                                                        disabled={!canManageRoles}
+                                                        disabled={!canManageRoles || role.isBaseRole}
                                                     />
                                                 </div>
                                             ))}
@@ -335,7 +290,7 @@ export default function TeamPage() {
     <InviteMemberDialog
         isOpen={isInviteDialogOpen}
         onOpenChange={setIsInviteDialogOpen}
-        roles={roles.map(r => r.name).filter(name => name !== 'Director' && name !== 'Promotor')}
+        roles={roles.map(r => r.name).filter(name => name !== 'Director')}
         onInvite={handleInvite}
     />
     {userToEdit && (
@@ -343,7 +298,7 @@ export default function TeamPage() {
             isOpen={!!userToEdit}
             onOpenChange={() => setUserToEdit(null)}
             user={userToEdit}
-            roles={roles.map(r => r.name).filter(name => name !== 'Director' && name !== 'Promotor')}
+            roles={roles.map(r => r.name).filter(name => name !== 'Director')}
             onSave={handleUpdateUser}
             isProcessing={isProcessing}
         />
@@ -364,6 +319,30 @@ export default function TeamPage() {
             </AlertDialogFooter>
         </AlertDialogContent>
     </AlertDialog>
+     <AlertDialog open={!!roleToDelete} onOpenChange={() => setRoleToDelete(null)}>
+        <AlertDialogContent>
+            <AlertDialogHeader>
+                <AlertDialogTitle>¿Eliminar Rol?</AlertDialogTitle>
+                <AlertDialogDescription>
+                    Esta acción eliminará permanentemente el rol "{roleToDelete?.name}". Los usuarios con este rol deberán ser reasignados a un nuevo rol. ¿Está seguro?
+                </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+                <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                <AlertDialogAction onClick={confirmDeleteRole} className="bg-destructive hover:bg-destructive/90">
+                    Eliminar Rol
+                </AlertDialogAction>
+            </AlertDialogFooter>
+        </AlertDialogContent>
+    </AlertDialog>
+    <PromptNameDialog 
+        isOpen={isPromptNameOpen}
+        onOpenChange={setIsPromptNameOpen}
+        title="Crear Nuevo Rol"
+        description="Introduzca un nombre para el nuevo rol de usuario."
+        label="Nombre del Rol"
+        onSave={handleSaveNewRole}
+    />
     </>
   );
 }

@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import React, { createContext, useContext, useState, useMemo, type ReactNode, useCallback, useEffect } from 'react';
@@ -36,6 +35,7 @@ import { collection, doc, writeBatch, serverTimestamp, query, where, updateDoc, 
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
 import { addDays, format } from 'date-fns';
+import { initialRoles as baseInitialRoles } from '@/lib/data';
 
 type AnyStage = WorkflowStage | SubStage | SubSubStage;
 
@@ -43,6 +43,8 @@ interface CRMContextType {
   currentUser: AuthenticatedUser | null;
   isLoadingCurrentUser: boolean;
   teamMembers: AppUser[];
+  roles: UserRole[];
+  setRoles: React.Dispatch<React.SetStateAction<UserRole[]>>;
 
   clients: Client[];
   isLoadingClients: boolean;
@@ -144,6 +146,9 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
     const storage = useStorage();
     const { user, isUserLoading } = useUser();
     
+    // Simulating role management with local state for now
+    const [roles, setRoles] = useState<UserRole[]>(baseInitialRoles);
+    
     // LOADING STATES
     
     const [currentUser, setCurrentUser] = useState<AuthenticatedUser | null>(null);
@@ -201,13 +206,13 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
     useEffect(() => {
         if (user && !isLoadingUserProfile) {
             if (userProfile) {
-                let rolePermissions: Partial<AppPermissions> = {};
-                let userRole = userProfile.role || 'Colaborador';
+                
+                let userRoleName = userProfile.role || 'Colaborador';
                 let userName = userProfile.name || user.displayName;
 
                 // Special override for founders
                 if (['witbiz.mx@gmail.com', 'saidsaigar@gmail.com'].includes(user.email || '')) {
-                    userRole = 'Director';
+                    userRoleName = 'Director';
                     if (user.email === 'saidsaigar@gmail.com') {
                         userName = 'Said Saigar';
                     }
@@ -216,51 +221,15 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
                     }
                 }
                 
-                if (userRole === 'Director') {
-                    rolePermissions = {
-                        dashboard_view: true, 
-                        clients_view: true, clients_create: true, clients_edit: true, clients_delete: true,
-                        suppliers_view: true, suppliers_create: true, suppliers_edit: true, suppliers_delete: true,
-                        promoters_view: true, promoters_create: true, promoters_edit: true, promoters_delete: true,
-                        tasks_view: true, tasks_create: true, tasks_edit: true, tasks_delete: true,
-                        documents_view: true, documents_upload: true, documents_delete: true,
-                        services_view: true, crm_view: true, workflow_edit: true, services_edit: true,
-                        intelligence_view: true, accounting_view: true, accounting_config: true,
-                        admin_view: true, team_manage_members: true, team_manage_roles: true,
-                    };
-                } else if (userRole === 'Administrador') {
-                    rolePermissions = {
-                        dashboard_view: true, 
-                        clients_view: true, clients_create: true, clients_edit: true, clients_delete: true,
-                        suppliers_view: true, suppliers_create: true, suppliers_edit: true, suppliers_delete: true,
-                        promoters_view: true, promoters_create: true, promoters_edit: true, promoters_delete: true,
-                        tasks_view: true, tasks_create: true, tasks_edit: true, tasks_delete: true,
-                        documents_view: true, documents_upload: true, documents_delete: true,
-                        services_view: true, crm_view: true, workflow_edit: true, services_edit: true,
-                        intelligence_view: true, accounting_view: true, accounting_config: true,
-                        admin_view: true, team_manage_members: true, team_manage_roles: true,
-                    };
-                } else { // Default to 'Colaborador'
-                     rolePermissions = {
-                        dashboard_view: true,
-                        clients_view: true, clients_create: true, clients_edit: true, clients_delete: false,
-                        suppliers_view: true, suppliers_create: true, suppliers_edit: true, suppliers_delete: false,
-                        promoters_view: true, promoters_create: true, promoters_edit: true, promoters_delete: false,
-                        tasks_view: true, tasks_create: true, tasks_edit: true, tasks_delete: false,
-                        documents_view: true, documents_upload: true, documents_delete: false,
-                        services_view: true, crm_view: true, workflow_edit: false, services_edit: false,
-                        intelligence_view: false, accounting_view: false, accounting_config: false,
-                        admin_view: false, team_manage_members: false, team_manage_roles: false,
-                    };
-                }
-    
+                const userRole = roles.find(r => r.name === userRoleName) || roles.find(r => r.id === 'collaborator');
+
                 setCurrentUser({
                     uid: user.uid,
                     email: user.email,
                     displayName: userName,
                     photoURL: userProfile.photoURL || user.photoURL,
-                    role: userRole,
-                    permissions: rolePermissions,
+                    role: userRole?.name,
+                    permissions: userRole?.permissions || {},
                     requiresPasswordChange: userProfile.requiresPasswordChange,
                 });
     
@@ -279,7 +248,7 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
         } else if (!user && !isUserLoading) {
             setCurrentUser(null);
         }
-    }, [user, userProfile, isUserLoading, isLoadingUserProfile, firestore]);
+    }, [user, userProfile, isUserLoading, isLoadingUserProfile, firestore, roles]);
 
 
     const addLog = useCallback(async (action: LogAction, entityId: string, entityType: string, entityName?: string) => {
@@ -886,7 +855,7 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
     
     
     const value = useMemo(() => ({
-        currentUser, isLoadingCurrentUser: isUserLoading || isLoadingUserProfile, teamMembers,
+        currentUser, isLoadingCurrentUser: isUserLoading || isLoadingUserProfile, teamMembers, roles, setRoles,
         clients, isLoadingClients, 
         addClient, updateClient, deleteClient, restoreClient,
         getClientById: (id: string) => clients?.find(c => c.id === id),
@@ -936,7 +905,7 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
         restoreUser,
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }), [
-        currentUser, isUserLoading, isLoadingUserProfile, teamMembers, clients, isLoadingClients, 
+        currentUser, isUserLoading, isLoadingUserProfile, teamMembers, roles, setRoles, clients, isLoadingClients, 
         tasks, isLoadingTasks, documents, isLoadingDocuments, notes, isLoadingNotes, logs, isLoadingLogs,
         serviceWorkflows, isLoadingWorkflows, getActionById,
         promoters, isLoadingPromoters, suppliers, isLoadingSuppliers,
