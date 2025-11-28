@@ -194,13 +194,13 @@ export const suppliers: Supplier[] = [];
 export const notes: Note[] = [];
 
 export const navItems: NavItem[] = [
-    { href: '/', label: 'Inicio', icon: 'LayoutDashboard', exactMatch: true, requiredPermission: 'dashboard' },
-    { href: '/contacts', label: 'Base de Datos', icon: 'Database', requiredPermission: 'clients_view' },
+    { href: '/', label: 'Inicio', icon: 'LayoutDashboard', exactMatch: true, requiredPermission: 'dashboard_view' },
+    { href: '/contacts', label: 'Base de Datos', icon: 'Database' },
     { href: '/tasks', label: 'Tareas', icon: 'ListTodo', requiredPermission: 'tasks_view' },
     { href: '/crm', label: 'CRM', icon: 'Workflow', requiredPermission: 'crm_view' },
     { href: '/services', label: 'Servicios', icon: 'Briefcase', requiredPermission: 'services_view' },
-    { href: '/accounting', label: 'Contabilidad', icon: 'DollarSign', requiredPermission: 'admin_view' },
-    { href: '/intelligence', label: 'Centro de inteligencia', icon: 'BarChartIcon', requiredPermission: 'finances_view' },
+    { href: '/accounting', label: 'Contabilidad', icon: 'DollarSign', requiredPermission: 'accounting_view' },
+    { href: '/intelligence', label: 'Centro de inteligencia', icon: 'BarChartIcon', requiredPermission: 'intelligence_view' },
+    { href: '/team', label: 'Equipo y Permisos', icon: 'Users', requiredPermission: 'admin_view' },
+    { href: '/recycling-bin', label: 'Papelera', icon: 'Trash2', requiredPermission: 'admin_view' },
 ];
-
-    

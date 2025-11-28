@@ -65,7 +65,17 @@ export function SidebarNav() {
   const { isMobile, setOpenMobile } = useSidebar();
   const { currentUser, isLoadingCurrentUser } = useCRMData();
 
-  const navItems: NavItem[] = navData.map(item => ({
+  const navItems: NavItem[] = [
+    { href: '/', label: 'Inicio', icon: 'LayoutDashboard', exactMatch: true, requiredPermission: 'dashboard_view' },
+    { href: '/contacts', label: 'Base de Datos', icon: 'Database' },
+    { href: '/tasks', label: 'Tareas', icon: 'ListTodo', requiredPermission: 'tasks_view' },
+    { href: '/crm', label: 'CRM', icon: 'Workflow', requiredPermission: 'crm_view' },
+    { href: '/services', label: 'Servicios', icon: 'Briefcase', requiredPermission: 'services_view' },
+    { href: '/accounting', label: 'Contabilidad', icon: 'DollarSign', requiredPermission: 'accounting_view' },
+    { href: '/intelligence', label: 'Centro de inteligencia', icon: 'BarChartIcon', requiredPermission: 'intelligence_view' },
+    { href: '/team', label: 'Equipo y Permisos', icon: 'Users', requiredPermission: 'admin_view' },
+    { href: '/recycling-bin', label: 'Papelera', icon: 'Trash2', requiredPermission: 'admin_view' },
+  ].map(item => ({
       ...item,
       icon: icons[item.icon as string] || LayoutDashboard
   }));
@@ -89,20 +99,11 @@ export function SidebarNav() {
   return (
     <SidebarMenu>
       {navItems.map((item) => {
-        // This logic handles the visibility of the CRM link and its configuration sub-link.
-        // The CRM page itself will decide if the configuration button is visible based on permissions.
-        if (item.href === '/crm' && !currentUser.permissions.crm_view) {
-          return null;
-        }
-
         if (item.requiredPermission && !currentUser.permissions[item.requiredPermission]) {
             return null;
         }
 
         const Icon = item.icon as LucideIcon;
-        // For exactMatch, we want to match only the exact href.
-        // For non-exactMatch, we check if the pathname starts with the href,
-        // but we also ensure href isn't just "/" to avoid matching all routes.
         const isActive = item.exactMatch
           ? pathname === item.href
           : (pathname.startsWith(item.href) && item.href !== '/') || (item.href === '/crm' && pathname.startsWith('/workflows'));

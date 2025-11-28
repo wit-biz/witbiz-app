@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import React, { useState, useMemo, useCallback } from "react";
@@ -38,23 +37,19 @@ const allPermissions: { key: keyof AppPermissions; label: string; section: strin
     // General
     { key: "dashboard_view", label: "Ver Dashboard de Inicio", section: "General" },
 
-    // Clientes
-    { key: "clients_view", label: "Ver Clientes", section: "Clientes" },
-    { key: "clients_create", label: "Crear Clientes", section: "Clientes" },
-    { key: "clients_edit", label: "Editar Clientes", section: "Clientes" },
-    { key: "clients_delete", label: "Archivar Clientes", section: "Clientes" },
-    
-    // Proveedores
-    { key: "suppliers_view", label: "Ver Proveedores", section: "Proveedores" },
-    { key: "suppliers_create", label: "Crear Proveedores", section: "Proveedores" },
-    { key: "suppliers_edit", label: "Editar Proveedores", section: "Proveedores" },
-    { key: "suppliers_delete", label: "Archivar Proveedores", section: "Proveedores" },
-
-    // Promotores
-    { key: "promoters_view", label: "Ver Promotores", section: "Promotores" },
-    { key: "promoters_create", label: "Crear Promotores", section: "Promotores" },
-    { key: "promoters_edit", label: "Editar Promotores", section: "Promotores" },
-    { key: "promoters_delete", label: "Archivar Promotores", section: "Promotores" },
+    // Clientes, Proveedores, Promotores
+    { key: "clients_view", label: "Ver Clientes", section: "Contactos" },
+    { key: "clients_create", label: "Crear Clientes", section: "Contactos" },
+    { key: "clients_edit", label: "Editar Clientes", section: "Contactos" },
+    { key: "clients_delete", label: "Archivar Clientes", section: "Contactos" },
+    { key: "suppliers_view", label: "Ver Proveedores", section: "Contactos" },
+    { key: "suppliers_create", label: "Crear Proveedores", section: "Contactos" },
+    { key: "suppliers_edit", label: "Editar Proveedores", section: "Contactos" },
+    { key: "suppliers_delete", label: "Archivar Proveedores", section: "Contactos" },
+    { key: "promoters_view", label: "Ver Promotores", section: "Contactos" },
+    { key: "promoters_create", label: "Crear Promotores", section: "Contactos" },
+    { key: "promoters_edit", label: "Editar Promotores", section: "Contactos" },
+    { key: "promoters_delete", label: "Archivar Promotores", section: "Contactos" },
 
     // Tareas
     { key: "tasks_view", label: "Ver Tareas", section: "Tareas" },
@@ -79,8 +74,9 @@ const allPermissions: { key: keyof AppPermissions; label: string; section: strin
     { key: "accounting_config", label: "Configurar Contabilidad (empresas, cuentas)", section: "Finanzas" },
 
     // Administración
-    { key: "team_manage_members", label: "Invitar, Editar y Archivar Miembros", section: "Administración de Equipo" },
-    { key: "team_manage_roles", label: "Gestionar Roles y Permisos", section: "Administración de Equipo" },
+    { key: "admin_view", label: "Ver Secciones de Administración (Equipo, Papelera, etc.)", section: "Administración" },
+    { key: "team_manage_members", label: "Invitar, Editar y Archivar Miembros", section: "Administración" },
+    { key: "team_manage_roles", label: "Gestionar Roles y Permisos", section: "Administración" },
 ];
 
 
@@ -88,7 +84,7 @@ const initialRoles = [
     { 
         id: 'director', 
         name: 'Director', 
-        permissions: Object.keys(allPermissions.reduce((acc, p) => ({...acc, [p.key]: true}), {})).reduce((acc, key) => ({...acc, [key]: true}), {}) as AppPermissions,
+        permissions: allPermissions.reduce((acc, p) => ({...acc, [p.key]: true}), {}) as AppPermissions,
     },
     { 
         id: 'admin', 
@@ -102,7 +98,7 @@ const initialRoles = [
             documents_view: true, documents_upload: true, documents_delete: true,
             services_view: true, crm_view: true, workflow_edit: true, services_edit: true,
             intelligence_view: true, accounting_view: true, accounting_config: true,
-            team_manage_members: true, team_manage_roles: true,
+            admin_view: true, team_manage_members: true, team_manage_roles: true,
         }
     },
     { 
@@ -111,13 +107,13 @@ const initialRoles = [
         permissions: {
             dashboard_view: true,
             clients_view: true, clients_create: true, clients_edit: true, clients_delete: false,
-            suppliers_view: true, suppliers_create: true, suppliers_edit: true, suppliers_delete: false,
-            promoters_view: true, promoters_create: true, promoters_edit: true, promoters_delete: false,
+            suppliers_view: true, suppliers_create: false, suppliers_edit: false, suppliers_delete: false,
+            promoters_view: true, promoters_create: false, promoters_edit: false, promoters_delete: false,
             tasks_view: true, tasks_create: true, tasks_edit: true, tasks_delete: false,
             documents_view: true, documents_upload: true, documents_delete: false,
             services_view: true, crm_view: true, workflow_edit: false, services_edit: false,
             intelligence_view: false, accounting_view: false, accounting_config: false,
-            team_manage_members: false, team_manage_roles: false,
+            admin_view: false, team_manage_members: false, team_manage_roles: false,
         }
     },
 ];

@@ -255,17 +255,15 @@ export type DocumentType = "Contrato" | "Factura" | "Propuesta" | "Informe" | "O
 export type AppPermissions = {
     // General
     dashboard_view: boolean;
-    // Clientes
+    // Contactos
     clients_view: boolean;
     clients_create: boolean;
     clients_edit: boolean;
     clients_delete: boolean;
-    // Proveedores
     suppliers_view: boolean;
     suppliers_create: boolean;
     suppliers_edit: boolean;
     suppliers_delete: boolean;
-    // Promotores
     promoters_view: boolean;
     promoters_create: boolean;
     promoters_edit: boolean;
@@ -288,7 +286,8 @@ export type AppPermissions = {
     intelligence_view: boolean;
     accounting_view: boolean;
     accounting_config: boolean;
-    // Administración de Equipo
+    // Administración
+    admin_view: boolean;
     team_manage_members: boolean;
     team_manage_roles: boolean;
 }
