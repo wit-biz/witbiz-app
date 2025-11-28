@@ -45,7 +45,7 @@ const logData = [
 ];
 
 
-export default function FinancesPage() {
+export default function IntelligenceCenterPage() {
   const { clients, serviceWorkflows, isLoadingClients, isLoadingWorkflows } = useCRMData();
   const { toast } = useToast();
 
@@ -99,8 +99,8 @@ export default function FinancesPage() {
   return (
     <div className="flex flex-col min-h-screen">
       <Header
-        title="Finanzas"
-        description="Centro de análisis financiero y bitácora de actividades."
+        title="Centro de inteligencia"
+        description="Análisis de desempeño y bitácora de actividades de la plataforma."
       >
         <Button onClick={() => handleDownload('Todo')}>
           <Download className="mr-2 h-4 w-4" />
