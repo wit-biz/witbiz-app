@@ -146,15 +146,23 @@ const StageCard = ({
                                         )}
                                     </div>
                                      {canEditWorkflow && (
-                                        <div className="flex items-center space-x-2">
-                                            <Switch
-                                                id={`req-doc-${action.id}`}
-                                                checked={action.requiredDocumentForCompletion}
-                                                onCheckedChange={(checked) => handleUpdateAction(action.id, { requiredDocumentForCompletion: checked, requiredDocuments: checked ? (action.requiredDocuments || [{ id: `doc-req-${Date.now()}`, description: '' }]) : [] })}
-                                            />
-                                            <Label htmlFor={`req-doc-${action.id}`} className="text-sm">
-                                                Requiere documento(s) para completar
-                                            </Label>
+                                        <div className="space-y-3 pt-2 border-t">
+                                            <div className="flex items-center space-x-2">
+                                                <Switch
+                                                    id={`req-doc-${action.id}`}
+                                                    checked={action.requiredDocumentForCompletion}
+                                                    onCheckedChange={(checked) => handleUpdateAction(action.id, { requiredDocumentForCompletion: checked, requiresInput: checked ? false : action.requiresInput })}
+                                                />
+                                                <Label htmlFor={`req-doc-${action.id}`} className="text-sm">Requiere documento(s)</Label>
+                                            </div>
+                                            <div className="flex items-center space-x-2">
+                                                <Switch
+                                                    id={`req-input-${action.id}`}
+                                                    checked={action.requiresInput}
+                                                    onCheckedChange={(checked) => handleUpdateAction(action.id, { requiresInput: checked, requiredDocumentForCompletion: checked ? false : action.requiredDocumentForCompletion })}
+                                                />
+                                                <Label htmlFor={`req-input-${action.id}`} className="text-sm">Requiere nota</Label>
+                                            </div>
                                         </div>
                                      )}
                                 </div>

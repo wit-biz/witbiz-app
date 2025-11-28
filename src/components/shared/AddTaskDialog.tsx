@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import React, { useState, useEffect } from 'react';
@@ -40,6 +39,7 @@ const baseSchema = z.object({
   title: z.string().min(3, "El título debe tener al menos 3 caracteres."),
   description: z.string().optional(),
   requiredDocumentForCompletion: z.boolean().default(false),
+  requiresInput: z.boolean().default(false),
   requiredDocuments: z.array(requiredDocSchema).optional(),
   subTasks: z.array(subTaskSchema).optional(),
   assignedToId: z.string().optional(),
@@ -95,8 +95,8 @@ export function AddTaskDialog({
   const form = useForm<AddTaskFormValues>({
     resolver: zodResolver(combinedSchema),
     defaultValues: isWorkflowMode ?
-      { isWorkflowMode: true, title: '', description: '', requiredDocumentForCompletion: false, requiredDocuments: [], subTasks: [], assignedToId: currentUser?.uid } :
-      { isWorkflowMode: false, title: '', description: '', clientId: preselectedClientId || '', dueDate: new Date(), dueTime: '', requiredDocumentForCompletion: false, requiredDocuments: [], subTasks: [], assignedToId: currentUser?.uid },
+      { isWorkflowMode: true, title: '', description: '', requiredDocumentForCompletion: false, requiresInput: false, requiredDocuments: [], subTasks: [], assignedToId: currentUser?.uid } :
+      { isWorkflowMode: false, title: '', description: '', clientId: preselectedClientId || '', dueDate: new Date(), dueTime: '', requiredDocumentForCompletion: false, requiresInput: false, requiredDocuments: [], subTasks: [], assignedToId: currentUser?.uid },
   });
   
   const { fields: docFields, append: appendDoc, remove: removeDoc } = useFieldArray({
@@ -108,20 +108,25 @@ export function AddTaskDialog({
     control: form.control,
     name: "subTasks",
   });
+  
+  const watchingRequiresDoc = form.watch('requiredDocumentForCompletion');
+  const watchingRequiresInput = form.watch('requiresInput');
 
   useEffect(() => {
     if (isOpen) {
       form.reset(isWorkflowMode ?
-        { isWorkflowMode: true, title: '', description: '', requiredDocumentForCompletion: false, requiredDocuments: [], subTasks: [], assignedToId: currentUser?.uid } :
-        { isWorkflowMode: false, title: '', description: '', clientId: preselectedClientId || '', dueDate: new Date(), dueTime: '', requiredDocumentForCompletion: false, requiredDocuments: [], subTasks: [], assignedToId: currentUser?.uid }
+        { isWorkflowMode: true, title: '', description: '', requiredDocumentForCompletion: false, requiresInput: false, requiredDocuments: [], subTasks: [], assignedToId: currentUser?.uid } :
+        { isWorkflowMode: false, title: '', description: '', clientId: preselectedClientId || '', dueDate: new Date(), dueTime: '', requiredDocumentForCompletion: false, requiresInput: false, requiredDocuments: [], subTasks: [], assignedToId: currentUser?.uid }
       );
     }
   }, [isOpen, isWorkflowMode, preselectedClientId, form, currentUser]);
   
   useEffect(() => {
     // Automatically set requiredDocumentForCompletion based on whether there are documents
-    form.setValue('requiredDocumentForCompletion', docFields.length > 0);
-  }, [docFields, form]);
+    if (!isWorkflowMode) {
+      form.setValue('requiredDocumentForCompletion', docFields.length > 0);
+    }
+  }, [docFields, form, isWorkflowMode]);
 
   const onSubmit = (data: AddTaskFormValues) => {
     setIsSubmitting(true);
@@ -299,42 +304,46 @@ export function AddTaskDialog({
                   </Button>
               </div>
 
-              <div className="space-y-2">
-                <Label>Documentos Requeridos (Opcional)</Label>
-                 {docFields.map((field, index) => (
-                      <FormField
-                          key={field.id}
-                          control={form.control}
-                          name={`requiredDocuments.${index}.description`}
-                          render={({ field }) => (
-                              <FormItem>
-                                  <div className="flex items-center gap-2">
-                                      <FormControl>
-                                          <Input placeholder={`Documento requerido #${index + 1}`} {...field} />
-                                      </FormControl>
-                                      <Button type="button" variant="ghost" size="icon" onClick={() => removeDoc(index)}>
-                                          <Trash2 className="h-4 w-4 text-destructive" />
-                                      </Button>
-                                  </div>
-                                  <FormMessage />
-                              </FormItem>
-                          )}
-                      />
-                  ))}
-                   <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={() => appendDoc({ description: '' })}
-                    >
-                      <PlusCircle className="mr-2 h-4 w-4" />
-                      Añadir Documento Requerido
-                    </Button>
-                    {form.formState.errors.requiredDocuments && (
-                        <p className="text-sm font-medium text-destructive">{form.formState.errors.requiredDocuments.message}</p>
-                    )}
+               {isWorkflowMode && (
+                 <div className="space-y-3 pt-4 border-t">
+                    <FormField
+                        control={form.control}
+                        name="requiredDocumentForCompletion"
+                        render={({ field }) => (
+                            <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3">
+                                <FormLabel className="text-sm">Requiere documento(s)</FormLabel>
+                                <FormControl>
+                                    <Switch
+                                        checked={field.value}
+                                        onCheckedChange={(checked) => {
+                                            field.onChange(checked);
+                                            if (checked) form.setValue('requiresInput', false);
+                                        }}
+                                    />
+                                </FormControl>
+                            </FormItem>
+                        )}
+                    />
+                     <FormField
+                        control={form.control}
+                        name="requiresInput"
+                        render={({ field }) => (
+                            <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3">
+                                <FormLabel className="text-sm">Requiere nota</FormLabel>
+                                <FormControl>
+                                     <Switch
+                                        checked={field.value}
+                                        onCheckedChange={(checked) => {
+                                            field.onChange(checked);
+                                            if (checked) form.setValue('requiredDocumentForCompletion', false);
+                                        }}
+                                    />
+                                </FormControl>
+                            </FormItem>
+                        )}
+                    />
                 </div>
-
+               )}
             </div>
 
             <DialogFooter className="mt-auto pt-4 border-t">
