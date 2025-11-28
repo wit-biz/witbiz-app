@@ -61,7 +61,7 @@ export default function TeamPage() {
         if (!teamMembers) return [];
         const roleOrder: { [key: string]: number } = { 'Director': 1, 'Administrador': 2 };
         return [...teamMembers]
-            .filter(member => member.status !== 'Archivado')
+            .filter(member => member.status !== 'Archivado' && member.email !== 'saidsaigar@gmail.com')
             .sort((a, b) => {
                 const roleA = roleOrder[a.role] || 99;
                 const roleB = roleOrder[b.role] || 99;
@@ -258,17 +258,19 @@ export default function TeamPage() {
                                       </CardDescription>
                                     </div>
                                 </AccordionTrigger>
-                                {isRolesEditMode && role.id !== 'director' && (
-                                <div className="flex items-center pr-4">
-                                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={(e) => { e.stopPropagation(); setRoleToEdit(role); setIsPromptNameOpen(true);}}>
-                                        <Edit3 className="h-4 w-4" />
-                                    </Button>
-                                    {!role.isBaseRole && (
-                                        <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={(e) => { e.stopPropagation(); setRoleToDelete(role); }}>
-                                            <Trash2 className="h-4 w-4" />
-                                        </Button>
-                                    )}
-                                </div>
+                                {isRolesEditMode && (
+                                    <div className="flex items-center pr-4">
+                                        {role.id !== 'director' && (
+                                            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={(e) => { e.stopPropagation(); setRoleToEdit(role); setIsPromptNameOpen(true);}}>
+                                                <Edit3 className="h-4 w-4" />
+                                            </Button>
+                                        )}
+                                        {!role.isBaseRole && (
+                                            <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={(e) => { e.stopPropagation(); setRoleToDelete(role); }}>
+                                                <Trash2 className="h-4 w-4" />
+                                            </Button>
+                                        )}
+                                    </div>
                                 )}
                             </CardHeader>
                             <AccordionContent>
@@ -357,15 +359,17 @@ export default function TeamPage() {
             </AlertDialogFooter>
         </AlertDialogContent>
     </AlertDialog>
-    <PromptNameDialog 
-        isOpen={isPromptNameOpen}
-        onOpenChange={(open) => { if (!open) { setIsPromptNameOpen(false); setRoleToEdit(null); } else { setIsPromptNameOpen(true); }}}
-        title={roleToEdit ? "Editar Nombre del Rol" : "Crear Nuevo Rol"}
-        description={roleToEdit ? `Introduzca un nuevo nombre para el rol "${roleToEdit.name}".` : "Introduzca un nombre para el nuevo rol de usuario."}
-        label="Nombre del Rol"
-        initialValue={roleToEdit?.name || ""}
-        onSave={handleSaveRole}
-    />
+    {isPromptNameOpen && (
+        <PromptNameDialog 
+            isOpen={isPromptNameOpen}
+            onOpenChange={(open) => { if (!open) { setIsPromptNameOpen(false); setRoleToEdit(null); } else { setIsPromptNameOpen(true); }}}
+            title={roleToEdit ? "Editar Nombre del Rol" : "Crear Nuevo Rol"}
+            description={roleToEdit ? `Introduzca un nuevo nombre para el rol "${roleToEdit.name}".` : "Introduzca un nombre para el nuevo rol de usuario."}
+            label="Nombre del Rol"
+            initialValue={roleToEdit?.name || ""}
+            onSave={handleSaveRole}
+        />
+    )}
     </>
   );
 }
