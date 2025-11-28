@@ -187,6 +187,26 @@ export type Note = {
   archivedAt?: any;
 };
 
+export type LogAction = 
+  | 'client_created' | 'client_updated' | 'client_archived'
+  | 'task_created' | 'task_completed' | 'task_updated'
+  | 'document_uploaded'
+  | 'note_created'
+  | 'transaction_created'
+  | 'user_invited';
+
+export type Log = {
+  id: string;
+  authorId: string;
+  authorName: string;
+  action: LogAction;
+  entityId: string;
+  entityType: 'client' | 'task' | 'document' | 'note' | 'transaction' | 'user';
+  entityName?: string;
+  createdAt: any;
+};
+
+
 // New 3-level structure
 export type SubSubStage = {
   id: string;

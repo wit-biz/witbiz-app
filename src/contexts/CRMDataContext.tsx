@@ -28,6 +28,8 @@ import {
     type Company,
     type InterCompanyLoan,
     type Transaction,
+    type Log,
+    type LogAction,
 } from '@/lib/types';
 import { useUser, useFirestore, useMemoFirebase, useCollection, useDoc, useAuth, addDocumentNonBlocking, setDocumentNonBlocking, deleteDocumentNonBlocking, useStorage } from '@/firebase';
 import { collection, doc, writeBatch, serverTimestamp, query, where, updateDoc, runTransaction } from 'firebase/firestore';
@@ -76,6 +78,10 @@ interface CRMContextType {
   updateNote: (noteId: string, newText: string, clientId?: string) => Promise<boolean>;
   deleteNote: (noteId: string, permanent?: boolean) => Promise<boolean>;
   restoreNote: (noteId: string) => Promise<boolean>;
+
+  logs: Log[];
+  isLoadingLogs: boolean;
+  addLog: (action: LogAction, entityId: string, entityType: string, entityName?: string) => Promise<void>;
 
   serviceWorkflows: ServiceWorkflow[];
   setServiceWorkflows: (workflows: ServiceWorkflow[]) => void;
@@ -161,6 +167,7 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
     const categoriesCollection = useMemoFirebase(() => user ? collection(firestore, 'users', user.uid, 'categories') : null, [firestore, user]);
     const transactionsCollection = useMemoFirebase(() => user ? collection(firestore, 'users', user.uid, 'transactions') : null, [firestore, user]);
     const loansCollection = useMemoFirebase(() => user ? collection(firestore, 'users', user.uid, 'loans') : null, [firestore, user]);
+    const logsCollection = useMemoFirebase(() => user ? collection(firestore, 'users', user.uid, 'logs') : null, [firestore, user]);
 
 
     // --- Firestore Data ---
@@ -176,6 +183,8 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
     const { data: categories = [], isLoading: isLoadingCategories } = useCollection<Category>(categoriesCollection);
     const { data: transactions = [], isLoading: isLoadingTransactions } = useCollection<Transaction>(transactionsCollection);
     const { data: loans = [], isLoading: isLoadingLoans } = useCollection<InterCompanyLoan>(loansCollection);
+    const { data: logs = [], isLoading: isLoadingLogs } = useCollection<Log>(logsCollection);
+
 
     useEffect(() => {
         if (user && !isLoadingUserProfile) {
@@ -237,6 +246,21 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
     }, [user, userProfile, isUserLoading, isLoadingUserProfile, firestore]);
 
 
+    const addLog = useCallback(async (action: LogAction, entityId: string, entityType: string, entityName?: string) => {
+        if (!logsCollection || !currentUser) return;
+        const logEntry: Omit<Log, 'id'> = {
+            authorId: currentUser.uid,
+            authorName: currentUser.displayName || 'Sistema',
+            action,
+            entityId,
+            entityType,
+            entityName,
+            createdAt: serverTimestamp(),
+        };
+        await addDocumentNonBlocking(logsCollection, logEntry);
+    }, [logsCollection, currentUser]);
+
+
     const registerUser = async (name: string, email: string, pass: string, role: string) => {
         if (!auth || !firestore) {
             showNotification('error', 'Error de registro', 'Los servicios de autenticación no están listos.');
@@ -257,6 +281,8 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
                 role: role,
             }, {});
             
+            await addLog('user_invited', newUser.uid, 'user', name);
+
             return userCredential;
         } catch (error: any) {
             console.error("Error registering user:", error);
@@ -313,6 +339,7 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
         };
 
         const docRef = await addDocumentNonBlocking(clientsCollection, payload);
+        await addLog('client_created', docRef.id, 'client', newClientData.name);
         
         const newClient = { id: docRef.id, ...payload } as Client;
 
@@ -333,6 +360,8 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
         if (!user || !firestore) return false;
         const docRef = doc(firestore, 'users', user.uid, 'clients', clientId);
         await setDocumentNonBlocking(docRef, updates, { merge: true });
+        const clientName = clients.find(c => c.id === clientId)?.name || updates.name;
+        await addLog('client_updated', clientId, 'client', clientName);
         return true;
     };
 
@@ -343,6 +372,8 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
             await deleteDocumentNonBlocking(docRef);
         } else {
             await setDocumentNonBlocking(docRef, { status: 'Archivado', archivedAt: serverTimestamp() }, { merge: true });
+            const clientName = clients.find(c => c.id === clientId)?.name;
+            await addLog('client_archived', clientId, 'client', clientName);
         }
         return true;
     };
@@ -392,6 +423,7 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
 
         const docRef = await addDocumentNonBlocking(tasksCollection, newTaskPayload);
         showNotification('success', 'Tarea Creada', `La tarea "${newTaskPayload.title}" ha sido creada.`);
+        await addLog('task_created', docRef.id, 'task', newTaskPayload.title);
         return { id: docRef.id, ...newTaskPayload } as Task;
     };
     
@@ -403,8 +435,12 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
         if (updates.status === 'Completada') {
             const completedTask = { ...tasks.find(t => t.id === taskId), ...updates } as Task | undefined;
             if (completedTask) {
+                await addLog('task_completed', taskId, 'task', completedTask.title);
                 await checkAndAdvanceWorkflow(completedTask.clientId);
             }
+        } else {
+            const taskName = tasks.find(t => t.id === taskId)?.title || updates.title;
+            await addLog('task_updated', taskId, 'task', taskName);
         }
         return true;
     };
@@ -521,6 +557,7 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
                 downloadURL: downloadURL
             };
             const docRef = await addDocumentNonBlocking(documentsCollection, newDoc);
+            await addLog('document_uploaded', docRef.id, 'document', file.name);
             return { id: docRef.id, ...newDoc } as Document;
         } catch (error) {
             console.error("Error uploading file or saving document:", error);
@@ -549,6 +586,7 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
 
     const addNote = async (clientId: string, text: string): Promise<Note | null> => {
         if (!currentUser || !notesCollection) return null;
+        const clientName = clients.find(c => c.id === clientId)?.name || 'Cliente Desconocido';
         const newNoteData = {
             clientId: clientId,
             text: text,
@@ -558,6 +596,7 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
             status: 'Activo' as const,
         };
         const docRef = await addDocumentNonBlocking(notesCollection, newNoteData);
+        await addLog('note_created', clientId, 'client', `Nota para ${clientName}`);
         return { id: docRef.id, ...newNoteData } as Note;
     };
 
@@ -767,7 +806,8 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
     
         const { date, ...rest } = data;
         const payload = { ...rest, date: format(date, 'yyyy-MM-dd') };
-        await addDocumentNonBlocking(transactionsCollection, payload);
+        const docRef = await addDocumentNonBlocking(transactionsCollection, payload);
+        await addLog('transaction_created', docRef.id, 'transaction', `Transacción de ${payload.amount}`);
     
         try {
             await runTransaction(firestore, async (transaction) => {
@@ -833,6 +873,8 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
         updateNote,
         deleteNote, restoreNote,
 
+        logs, isLoadingLogs, addLog,
+
         serviceWorkflows, 
         setServiceWorkflows: setServiceWorkflowsAndPersist, 
         isLoadingWorkflows,
@@ -858,7 +900,7 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }), [
         currentUser, isUserLoading, isLoadingUserProfile, teamMembers, clients, isLoadingClients, 
-        tasks, isLoadingTasks, documents, isLoadingDocuments, notes, isLoadingNotes,
+        tasks, isLoadingTasks, documents, isLoadingDocuments, notes, isLoadingNotes, logs, isLoadingLogs,
         serviceWorkflows, isLoadingWorkflows, getActionById,
         promoters, isLoadingPromoters, suppliers, isLoadingSuppliers,
         companies, isLoadingCompanies, bankAccounts, isLoadingBankAccounts, categories, isLoadingCategories,
@@ -879,5 +921,3 @@ export function useCRMData() {
   }
   return context;
 }
-
-    
