@@ -212,7 +212,7 @@ export function AppSidebar() {
       <SidebarContent>
         <SidebarNav />
       </SidebarContent>
-      <SidebarFooter className="mt-auto p-2">
+      <SidebarFooter className="mt-auto p-2 flex justify-end">
          {canViewRecyclingBin && (
             <SidebarMenuItem>
               <SidebarMenuButton
@@ -220,7 +220,6 @@ export function AppSidebar() {
                   isActive={pathname === '/recycling-bin'}
                   tooltip="Papelera"
                   variant="ghost"
-                  className="w-full justify-center"
               >
                   <Link href="/recycling-bin">
                       <Trash2 />
