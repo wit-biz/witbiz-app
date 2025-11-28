@@ -37,7 +37,7 @@ const allPermissions: { key: keyof AppPermissions; label: string; section: strin
     // General
     { key: "dashboard_view", label: "Ver Dashboard de Inicio", section: "General" },
 
-    // Clientes, Proveedores, Promotores
+    // Contactos
     { key: "clients_view", label: "Ver Clientes", section: "Contactos" },
     { key: "clients_create", label: "Crear Clientes", section: "Contactos" },
     { key: "clients_edit", label: "Editar Clientes", section: "Contactos" },
@@ -139,9 +139,13 @@ export default function TeamPage() {
             'Administrador': 2,
             'Colaborador': 3,
         };
-        // Filter out promoters and archived users from the team members list
+        // Filter out promoters, archived users, and the specific user 'saidsaigar@gmail.com'
         return teamMembers
-            .filter(member => member.role !== 'Promotor' && member.status !== 'Archivado')
+            .filter(member => 
+                member.email !== 'saidsaigar@gmail.com' &&
+                member.role !== 'Promotor' && 
+                member.status !== 'Archivado'
+            )
             .sort((a, b) => {
                 const roleA = roleOrder[a.role as keyof typeof roleOrder] || 99;
                 const roleB = roleOrder[b.role as keyof typeof roleOrder] || 99;
