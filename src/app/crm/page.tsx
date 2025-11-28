@@ -54,7 +54,7 @@ const StageCard = ({
 }) => {
 
   return (
-    <Card id={`stage-card-${stage.id}`} className="flex flex-col w-64 shrink-0">
+    <Card id={`stage-card-${stage.id}`} className="flex flex-col w-full shrink-0">
         <CardHeader className="flex-grow-0 p-3">
             <div className="flex items-center justify-between gap-2">
                 <CardTitle className="text-base">{stage.title}</CardTitle>
@@ -96,7 +96,7 @@ const StageCard = ({
 
 
 export default function CrmPage() {
-  const { clients, isLoadingClients, /* serviceWorkflows, */ isLoadingWorkflows } = useCRMData();
+  const { clients, isLoadingClients } = useCRMData();
   const serviceWorkflows = staticServiceWorkflows;
 
   const [selectedClientForDialog, setSelectedClientForDialog] = useState<Client | null>(null);
@@ -151,7 +151,7 @@ export default function CrmPage() {
   }, [serviceWorkflows]);
 
 
-  if (isLoadingWorkflows || isLoadingClients) {
+  if (isLoadingClients) {
     return (
         <div className="flex flex-col min-h-screen">
             <Header
@@ -191,20 +191,14 @@ export default function CrmPage() {
                   </CardHeader>
                 </AccordionTrigger>
                 <AccordionContent className="p-6 pt-0">
-                  <div className="flex overflow-x-auto py-4 space-x-4">
-                      {(service.stages || []).sort((a,b) => a.order - b.order).map((stage, index) => (
-                         <React.Fragment key={stage.id}>
-                           <StageCard
-                              stage={stage}
-                              clientsInStage={clientsByStage.get(stage.id) || []}
-                              onClientClick={handleClientClick}
-                          />
-                          {index < service.stages.length - 1 && (
-                              <div className="flex items-center justify-center shrink-0">
-                                  <ChevronsRight className="h-8 w-8 text-muted-foreground/50" />
-                              </div>
-                          )}
-                         </React.Fragment>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                      {(service.stages || []).sort((a,b) => a.order - b.order).map((stage) => (
+                         <StageCard
+                            key={stage.id}
+                            stage={stage}
+                            clientsInStage={clientsByStage.get(stage.id) || []}
+                            onClientClick={handleClientClick}
+                        />
                       ))}
                   </div>
                 </AccordionContent>
