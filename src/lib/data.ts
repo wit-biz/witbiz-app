@@ -152,7 +152,7 @@ export const serviceWorkflows: ServiceWorkflow[] = [
         title: 'Proyecto en Ejecución',
         order: 4,
         actions: [
-          { id: 'f-ejecucion-1', title: 'Solicitud de contratos (Depende del cliente)', order: 1, subActions: [] },
+          { id: 'f-ejecucion-1', title: 'Solicitud de contratos. (Depende del cliente)', order: 1, subActions: [] },
           { id: 'f-ejecucion-2', title: 'Envío de contrato para firma', order: 2, subActions: [] },
           { id: 'f-ejecucion-3', title: 'Recepción de contratos firmados', order: 3, subActions: [] },
           { id: 'f-ejecucion-4', title: 'Solicitud de facturas', order: 4, subActions: [] },
@@ -184,6 +184,7 @@ export const serviceWorkflows: ServiceWorkflow[] = [
     ],
   },
 ];
+
 
 export const clients: Client[] = [];
 export const tasks: Task[] = [];
