@@ -42,13 +42,23 @@ const StageClientCard = ({ client, onClientClick }: { client: Client, onClientCl
       <p className="text-xs text-muted-foreground truncate">{client.category}</p>
     </div>
 );
+
+const StageNumberIcon = ({ index }: { index: number }) => {
+    return (
+        <span className="font-bold text-accent text-3xl">
+            {index + 1}.
+        </span>
+    );
+};
   
 const StageCard = ({ 
-    stage, 
+    stage,
+    index,
     clientsInStage, 
     onClientClick
 }: { 
-    stage: AnyStage, 
+    stage: AnyStage,
+    index: number,
     clientsInStage: Client[], 
     onClientClick: (client: Client) => void
 }) => {
@@ -56,6 +66,7 @@ const StageCard = ({
         <Card id={`stage-card-${stage.id}`} className="w-full">
             <CardHeader className="p-4">
                 <div className="flex items-center gap-4">
+                    <StageNumberIcon index={index} />
                     <div className="flex-grow">
                         <CardTitle className="text-lg">{stage.title}</CardTitle>
                         <CardDescription>{stage.actions?.length || 0} acciones automáticas</CardDescription>
@@ -198,10 +209,11 @@ export default function CrmPage() {
                 </AccordionTrigger>
                 <AccordionContent className="p-6 pt-0">
                   <div className="space-y-4">
-                      {(service.stages || []).sort((a,b) => a.order - b.order).map((stage) => (
+                      {(service.stages || []).sort((a,b) => a.order - b.order).map((stage, index) => (
                          <StageCard
                             key={stage.id}
                             stage={stage}
+                            index={index}
                             clientsInStage={clientsByStage.get(stage.id) || []}
                             onClientClick={handleClientClick}
                         />
