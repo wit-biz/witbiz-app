@@ -72,7 +72,7 @@ const StageCard = ({
 }) => {
     
     const { currentUser } = useCRMData();
-    const canEditWorkflow = currentUser?.permissions.crm_edit ?? true;
+    const canEditWorkflow = true; // Force edit mode
     const [addTaskDialogState, setAddTaskDialogState] = useState<{isOpen: boolean, path: string | null}>({isOpen: false, path: null});
 
     const levelStyles = {
@@ -293,7 +293,7 @@ export default function WorkflowConfigurationPage() {
     inputPlaceholder?: string;
   } | null>(null);
   
-  const canEditWorkflow = currentUser?.permissions.crm_edit ?? true;
+  const canEditWorkflow = true; // Force edit mode
 
   const fromPage = searchParams.get('from') || 'services';
   const backLink = fromPage === 'crm' ? '/crm' : '/services';
