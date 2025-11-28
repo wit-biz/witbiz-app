@@ -28,6 +28,7 @@ import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover
 import { ServiceDetailsEditor } from "@/components/services/DetailsEditor";
 import { ServiceDocumentsEditor } from "@/components/services/DocumentsEditor";
 import { ServiceCommissionsEditor } from "@/components/services/CommissionsEditor";
+import { serviceWorkflows as staticServiceWorkflows } from "@/lib/data";
 
 
 type AnyStage = WorkflowStage | SubStage | SubSubStage;
@@ -268,12 +269,12 @@ function SortableServiceItem({ service, onSelect, onDelete }: { service: Service
 export default function WorkflowConfigurationPage() {
   const { 
     currentUser,
-    serviceWorkflows: initialWorkflows,
     isLoadingWorkflows,
     addService,
     setServiceWorkflows,
     deleteService,
   } = useCRMData();
+  const initialWorkflows = staticServiceWorkflows; // Use static data
   const router = useRouter();
   const searchParams = useSearchParams();
   const { showNotification } = useGlobalNotification();
