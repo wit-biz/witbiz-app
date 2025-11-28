@@ -1,7 +1,7 @@
 
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import { Header } from "@/components/header";
 import {
   Card,
@@ -49,7 +49,7 @@ export default function TeamPage() {
     const [isPromptNameOpen, setIsPromptNameOpen] = useState(false);
     const [isProcessing, setIsProcessing] = useState(false);
 
-    React.useEffect(() => {
+    useEffect(() => {
         setLocalRoles(JSON.parse(JSON.stringify(serverRoles)));
     }, [serverRoles]);
 
@@ -118,24 +118,31 @@ export default function TeamPage() {
     };
     
     const handleSaveRole = (name: string) => {
-        if (roleToEdit) { // Editing existing role
+        if (roleToEdit) { // Editing existing role name
             setLocalRoles(prevRoles => prevRoles.map(r => r.id === roleToEdit.id ? { ...r, name } : r));
-        } else { // Creating new role
+        } else { // Creating a new role
             const newRole: UserRole = {
-                id: name.toLowerCase().replace(/\s+/g, '-'),
+                id: name.toLowerCase().replace(/\s+/g, '-').replace(/[^\w-]/g, ''),
                 name,
                 isBaseRole: false,
                 permissions: localRoles.find(r => r.id === 'collaborator')?.permissions || {}
             };
-            setLocalRoles(prevRoles => [...prevRoles, newRole]);
+             // Save new role immediately instead of waiting for "Save Changes"
+            const updatedRoles = [...localRoles, newRole];
+            setServerRoles(updatedRoles);
+            toast({ title: "Rol Creado", description: `El rol "${name}" ha sido creado.` });
         }
         setRoleToEdit(null);
     };
     
     const confirmDeleteRole = () => {
         if (!roleToDelete) return;
-        setLocalRoles(prevRoles => prevRoles.filter(r => r.id !== roleToDelete.id));
+        const updatedRoles = localRoles.filter(r => r.id !== roleToDelete.id);
+        setLocalRoles(updatedRoles);
+        // Persist deletion immediately
+        setServerRoles(updatedRoles);
         setRoleToDelete(null);
+        toast({ title: "Rol Eliminado", description: `El rol "${roleToDelete.name}" ha sido eliminado.`});
     };
 
     const handleSaveChanges = () => {
@@ -224,27 +231,25 @@ export default function TeamPage() {
             </Card>
           </TabsContent>
           <TabsContent value="permissions" className="mt-6">
-              {canManageRoles && (
-                <div className="mb-4 flex gap-2">
-                   {!isRolesEditMode ? (
-                        <Button onClick={() => setIsRolesEditMode(true)}>
-                            <Edit3 className="mr-2 h-4 w-4" />
-                            Configurar Roles
-                        </Button>
-                   ) : (
-                        <>
-                            <Button onClick={handleSaveChanges}>
-                                <Save className="mr-2 h-4 w-4" />
-                                Guardar Cambios
-                            </Button>
-                             <Button variant="ghost" onClick={handleCancelChanges}>
-                                <X className="mr-2 h-4 w-4" />
-                                Cancelar
-                            </Button>
-                        </>
-                   )}
-                </div>
-              )}
+              <div className="mb-4 flex gap-2">
+                 {!isRolesEditMode ? (
+                      <Button onClick={() => setIsRolesEditMode(true)} disabled={!canManageRoles}>
+                          <Edit3 className="mr-2 h-4 w-4" />
+                          Configurar Roles
+                      </Button>
+                 ) : (
+                      <>
+                          <Button onClick={handleSaveChanges}>
+                              <Save className="mr-2 h-4 w-4" />
+                              Guardar Cambios
+                          </Button>
+                           <Button variant="ghost" onClick={handleCancelChanges}>
+                              <X className="mr-2 h-4 w-4" />
+                              Cancelar
+                          </Button>
+                      </>
+                 )}
+              </div>
              <Accordion type="single" collapsible className="w-full space-y-4">
                 {localRoles.filter(role => role.id !== 'director').map((role) => (
                     <AccordionItem value={role.id} key={role.id} asChild>
@@ -254,7 +259,7 @@ export default function TeamPage() {
                                     <div className="text-left">
                                       <CardTitle>{role.name}</CardTitle>
                                       <CardDescription className="mt-1">
-                                          Configure los permisos para el rol de {role.name}.
+                                          Permisos para el rol de {role.name}.
                                       </CardDescription>
                                     </div>
                                 </AccordionTrigger>
