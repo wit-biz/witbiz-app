@@ -240,10 +240,10 @@ export default function TeamPage() {
                 </div>
               )}
              <Accordion type="single" collapsible className="w-full space-y-4">
-                {roles.filter(r => r.id !== 'director').map((role) => (
+                {roles.map((role) => (
                     <AccordionItem value={role.id} key={role.id} asChild>
                         <Card>
-                            <AccordionTrigger className="w-full p-0 [&_svg]:ml-auto [&_svg]:mr-4" disabled={!canManageRoles}>
+                            <AccordionTrigger className="w-full p-0 [&_svg]:ml-auto [&_svg]:mr-4" disabled={!canManageRoles || role.id === 'director'}>
                                 <CardHeader className="flex-1 text-left">
                                   <div className="flex justify-between items-center">
                                     <CardTitle className="flex items-center gap-2"><KeyRound className="h-5 w-5 text-accent"/>{role.name}</CardTitle>
@@ -271,7 +271,7 @@ export default function TeamPage() {
                                                         id={`perm-${role.id}-${permission.key}`}
                                                         checked={role.permissions[permission.key as keyof AppPermissions] || false}
                                                         onCheckedChange={(value) => handlePermissionChange(role.id, permission.key as keyof AppPermissions, value)}
-                                                        disabled={!canManageRoles}
+                                                        disabled={!canManageRoles || role.id === 'director'}
                                                     />
                                                 </div>
                                             ))}
@@ -347,5 +347,3 @@ export default function TeamPage() {
     </>
   );
 }
-
-    
