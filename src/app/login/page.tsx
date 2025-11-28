@@ -36,12 +36,13 @@ const loginSchema = z.object({
   email: z.string().email({ message: 'Por favor, introduzca un email válido.' }),
   password: z
     .string()
-    .min(6, { message: 'La contraseña debe tener al menos 6 caracteres.' }),
+    .min(1, { message: 'La contraseña es requerida.' }),
 });
 
 export default function LoginPage() {
   const { toast } = useToast();
   const auth = useAuth();
+  const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const form = useForm<z.infer<typeof loginSchema>>({
@@ -56,12 +57,23 @@ export default function LoginPage() {
     setIsSubmitting(true);
     try {
         await signInWithEmailAndPassword(auth, values.email, values.password);
-        // On successful sign-in, the onAuthStateChanged listener in the layout
-        // will handle the user state and redirection automatically.
-        toast({
-            title: 'Inicio de sesión exitoso',
-            description: 'Redirigiendo a la plataforma...',
-        });
+
+        if (values.password === 'WitBiz!123') {
+            toast({
+                title: 'Cambio de Contraseña Requerido',
+                description: 'Por favor, actualice su contraseña.',
+            });
+            router.push('/force-password-change');
+        } else {
+            toast({
+                title: 'Inicio de sesión exitoso',
+                description: 'Redirigiendo a la plataforma...',
+            });
+            // On successful sign-in, the onAuthStateChanged listener in the layout
+            // will handle the user state and redirection automatically.
+            router.push('/');
+        }
+
     } catch (error: any) {
         let description = 'Ocurrió un error inesperado. Por favor, inténtelo de nuevo.';
         if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
@@ -72,7 +84,6 @@ export default function LoginPage() {
             title: 'Error al iniciar sesión',
             description,
         });
-    } finally {
         setIsSubmitting(false);
     }
   };

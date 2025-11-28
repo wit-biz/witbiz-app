@@ -1,19 +1,13 @@
 
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React from 'react';
+import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '../ui/card';
+import { Button } from '../ui/button';
+import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogFooter,
-} from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
 import {
   Form,
   FormControl,
@@ -25,12 +19,12 @@ import {
 import { PasswordInput } from '@/components/shared/PasswordInput';
 import { Loader2, Save, LogOut, CheckCircle2, XCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { useUser, useFirestore } from '@/firebase';
-import { doc, updateDoc } from 'firebase/firestore';
+import { useUser } from '@/firebase';
 import { updatePassword } from 'firebase/auth';
 import { initiateSignOut } from '@/firebase/non-blocking-login';
 import { Logo } from './logo';
 import { cn } from '@/lib/utils';
+
 
 const passwordRequirements = {
   length: 8,
@@ -93,11 +87,11 @@ const passwordSchema = z
   };
 
 
-export function ForcePasswordChangeDialog() {
-  const { user, auth } = useUser();
-  const firestore = useFirestore();
+export default function ForcePasswordChangePage() {
+  const { user, auth, isUserLoading } = useUser();
   const { toast } = useToast();
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const router = useRouter();
+  const [isSubmitting, setIsSubmitting] = React.useState(false);
 
   const form = useForm<z.infer<typeof passwordSchema>>({
     resolver: zodResolver(passwordSchema),
@@ -110,34 +104,31 @@ export function ForcePasswordChangeDialog() {
 
   const passwordValue = form.watch('password');
 
+  React.useEffect(() => {
+      if (!isUserLoading && !user) {
+          router.replace('/login');
+      }
+  }, [isUserLoading, user, router]);
+
   const onSubmit = async (values: z.infer<typeof passwordSchema>) => {
-    if (!user || !firestore) {
+    if (!user) {
       toast({
         variant: 'destructive',
         title: 'Error de autenticación',
-        description: 'No se ha encontrado un usuario o base de datos válida. Por favor, inicie sesión de nuevo.',
+        description: 'No se ha encontrado un usuario válido. Por favor, inicie sesión de nuevo.',
       });
       return;
     }
 
     setIsSubmitting(true);
     try {
-      // Step 1: Update the password in Firebase Auth
       await updatePassword(user, values.password);
-
-      // Step 2: Update the flag in Firestore using a direct, awaited call
-      const userDocRef = doc(firestore, 'users', user.uid);
-      await updateDoc(userDocRef, { requiresPasswordChange: false });
-
       toast({
         title: 'Contraseña actualizada',
-        description: 'Tu nueva contraseña ha sido guardada. La página se recargará.',
+        description: 'Tu nueva contraseña ha sido guardada. Serás redirigido.',
       });
 
-      // Step 3: Force a reload to re-initialize the app state with the correct flag
-      setTimeout(() => {
-        window.location.reload();
-      }, 1500);
+      router.push('/');
 
     } catch (error: any) {
       console.error('Error updating password:', error);
@@ -152,78 +143,88 @@ export function ForcePasswordChangeDialog() {
         title: 'Error al cambiar contraseña',
         description,
       });
-      setIsSubmitting(false); // Only set to false on error
+      setIsSubmitting(false);
     }
   };
 
   const handleLogout = () => {
     if (auth) {
         initiateSignOut(auth);
+        router.push('/login');
     }
   }
 
+  if (isUserLoading || !user) {
+      return (
+          <div className="flex h-screen w-full items-center justify-center">
+            <Loader2 className="h-8 w-8 animate-spin" />
+          </div>
+      );
+  }
+
   return (
-    <Dialog open={true}>
-      <DialogContent className="sm:max-w-md" onInteractOutside={(e) => e.preventDefault()}>
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)}>
-            <DialogHeader className="items-center text-center">
-                <Logo className="h-12 w-auto mb-4" />
-              <DialogTitle>Cambio de Contraseña Requerido</DialogTitle>
-              <DialogDescription>
-                Por tu seguridad, debes cambiar la contraseña temporal antes de continuar.
-              </DialogDescription>
-            </DialogHeader>
+    <div className="relative flex min-h-screen items-center justify-center bg-background p-4 overflow-hidden">
+        <div className="animated-gradient-bg"></div>
+        <Card className="w-full max-w-sm z-10">
+             <Form {...form}>
+                <form onSubmit={form.handleSubmit(onSubmit)}>
+                    <CardHeader className="text-center">
+                        <Logo className="mx-auto h-12 w-auto mb-4" />
+                        <CardTitle>Cambio de Contraseña Requerido</CardTitle>
+                        <CardDescription>
+                            Por tu seguridad, debes cambiar la contraseña temporal antes de continuar.
+                        </CardDescription>
+                    </CardHeader>
 
-            <div className="grid gap-4 py-4">
-              <FormField
-                control={form.control}
-                name="password"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Nueva Contraseña</FormLabel>
-                    <FormControl>
-                      <PasswordInput placeholder="••••••••" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+                    <CardContent className="space-y-4">
+                        <FormField
+                            control={form.control}
+                            name="password"
+                            render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>Nueva Contraseña</FormLabel>
+                                <FormControl>
+                                <PasswordInput placeholder="••••••••" {...field} />
+                                </FormControl>
+                                <FormMessage />
+                            </FormItem>
+                            )}
+                        />
 
-              <PasswordStrength password={passwordValue} />
+                        <PasswordStrength password={passwordValue} />
 
-              <FormField
-                control={form.control}
-                name="confirmPassword"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Confirmar Nueva Contraseña</FormLabel>
-                    <FormControl>
-                      <PasswordInput placeholder="••••••••" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
+                        <FormField
+                            control={form.control}
+                            name="confirmPassword"
+                            render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>Confirmar Nueva Contraseña</FormLabel>
+                                <FormControl>
+                                <PasswordInput placeholder="••••••••" {...field} />
+                                </FormControl>
+                                <FormMessage />
+                            </FormItem>
+                            )}
+                        />
+                    </CardContent>
 
-            <DialogFooter className="flex-col-reverse sm:flex-row sm:justify-between">
-              <Button type="button" variant="outline" onClick={handleLogout} disabled={isSubmitting}>
-                <LogOut className="mr-2 h-4 w-4" />
-                Cerrar Sesión
-              </Button>
-              <Button type="submit" disabled={isSubmitting || !form.formState.isValid}>
-                {isSubmitting ? (
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                ) : (
-                  <Save className="mr-2 h-4 w-4" />
-                )}
-                Guardar y Continuar
-              </Button>
-            </DialogFooter>
-          </form>
-        </Form>
-      </DialogContent>
-    </Dialog>
+                    <CardFooter className="flex-col-reverse sm:flex-row sm:justify-between">
+                         <Button type="button" variant="outline" onClick={handleLogout} disabled={isSubmitting}>
+                            <LogOut className="mr-2 h-4 w-4" />
+                            Cerrar Sesión
+                        </Button>
+                        <Button type="submit" disabled={isSubmitting || !form.formState.isValid}>
+                            {isSubmitting ? (
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            ) : (
+                            <Save className="mr-2 h-4 w-4" />
+                            )}
+                            Guardar y Continuar
+                        </Button>
+                    </CardFooter>
+                </form>
+            </Form>
+        </Card>
+    </div>
   );
 }

@@ -16,16 +16,15 @@ import { TasksProvider } from '@/contexts/TasksContext';
 import { useRouter, usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { Loader2 } from 'lucide-react';
-import { ForcePasswordChangeDialog } from '@/components/shared/ForcePasswordChangeDialog';
+
 
 function AppContent({ children }: { children: React.ReactNode }) {
   const { user, isUserLoading } = useUser();
-  const { currentUser, isLoadingCurrentUser } = useCRMData();
   const router = useRouter();
   const pathname = usePathname();
   const [isClient, setIsClient] = useState(false);
 
-  const isAuthPage = pathname === '/login' || pathname === '/register';
+  const isAuthPage = pathname === '/login' || pathname === '/register' || pathname === '/force-password-change';
   const isPromoterRoute = pathname.startsWith('/promoter');
 
   useEffect(() => {
@@ -41,35 +40,23 @@ function AppContent({ children }: { children: React.ReactNode }) {
       if (!user && !isAuthPage) {
         router.push('/login');
       }
-      if (user && isAuthPage) {
+      if (user && (pathname === '/login' || pathname === '/register')) {
         router.push('/');
       }
     }
   }, [isUserLoading, user, router, pathname, isAuthPage, isPromoterRoute]);
 
-  const requiresPasswordChange = !isLoadingCurrentUser && currentUser?.requiresPasswordChange;
   
-  if (isPromoterRoute) {
+  if (isPromoterRoute || isAuthPage) {
     return <>{children}</>;
   }
   
-  if (!isClient || ((isUserLoading || isLoadingCurrentUser) && !isAuthPage)) {
+  if (!isClient || isUserLoading) {
     return (
       <div className="flex h-screen w-full items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin" />
       </div>
     );
-  }
-  
-  if (isAuthPage) {
-    if (user) {
-        return (
-            <div className="flex h-screen w-full items-center justify-center">
-              <Loader2 className="h-8 w-8 animate-spin" />
-            </div>
-        );
-    }
-    return <>{children}</>;
   }
   
   if (!user) {
@@ -78,10 +65,6 @@ function AppContent({ children }: { children: React.ReactNode }) {
             <Loader2 className="h-8 w-8 animate-spin" />
           </div>
       );
-  }
-
-  if (requiresPasswordChange) {
-    return <ForcePasswordChangeDialog />;
   }
 
   return (

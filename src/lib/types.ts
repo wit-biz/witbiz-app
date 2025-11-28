@@ -306,7 +306,6 @@ export interface AppUser {
     photoURL?: string;
     status?: 'Activo' | 'Archivado';
     archivedAt?: any;
-    requiresPasswordChange?: boolean;
 }
 
 export interface AuthenticatedUser {
@@ -316,7 +315,6 @@ export interface AuthenticatedUser {
   photoURL: string | null;
   role?: string;
   permissions: Partial<AppPermissions>;
-  requiresPasswordChange?: boolean;
 }
 
 export interface Service {
