@@ -151,7 +151,7 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
     const { data: userProfile, isLoading: isLoadingUserProfile } = useDoc<AppUser>(userProfileRef);
 
     const usersCollectionQuery = useMemoFirebase(() => user ? query(collection(firestore, 'users')) : null, [firestore, user]);
-    const { data: teamMembers = [], isLoading: isLoadingTeamMembers } = useCollection<AppUser>(usersCollectionQuery);
+    const { data: teamMembersData, isLoading: isLoadingTeamMembers } = useCollection<AppUser>(usersCollectionQuery);
 
 
     // --- Collections ---
@@ -185,6 +185,18 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
     const { data: loans = [], isLoading: isLoadingLoans } = useCollection<InterCompanyLoan>(loansCollection);
     const { data: logs = [], isLoading: isLoadingLogs } = useCollection<Log>(logsCollection);
 
+    const teamMembers = useMemo(() => {
+        return (teamMembersData || []).map(member => {
+            if (member.email === 'saidsaigar@gmail.com') {
+                return { ...member, name: 'Said Saigar' };
+            }
+            if (member.email === 'witbiz.mx@gmail.com') {
+                return { ...member, name: 'Isaac Golzarri' };
+            }
+            return member;
+        });
+    }, [teamMembersData]);
+
 
     useEffect(() => {
         if (user && !isLoadingUserProfile) {
@@ -198,6 +210,9 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
                     userRole = 'Director';
                     if (user.email === 'saidsaigar@gmail.com') {
                         userName = 'Said Saigar';
+                    }
+                     if (user.email === 'witbiz.mx@gmail.com') {
+                        userName = 'Isaac Golzarri';
                     }
                 }
                 
