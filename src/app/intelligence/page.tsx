@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { BarChart, History, Download } from "lucide-react";
+import { BarChart, History, Download, MessageSquare } from "lucide-react";
 import { DateRangeChartsTab } from "@/components/shared/DateRangeChartsTab";
 import { useCRMData } from "@/contexts/CRMDataContext";
 import { Loader2 } from "lucide-react";
@@ -22,21 +22,13 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
+import { es } from "date-fns/locale";
 import { DateRangeFilter } from '@/components/shared/DateRangeFilter';
 import { Transaction } from '@/lib/types';
 
-// Mock Data for Logs (Activities)
-const logData = [
-  { id: 'log1', date: new Date(), user: 'Andrea Admin', action: 'Tarea Completada', details: 'Tarea "Preparar contrato de Synergy Corp." marcada como completada.', clientId: '2', serviceId: 'service-1' },
-  { id: 'log2', date: subDays(new Date(), 1), user: 'Carla Collaborator', action: 'Cliente Creado', details: 'Nuevo cliente "Futura Dynamics" fue añadido a la base de datos.', clientId: null, serviceId: null },
-  { id: 'log3', date: subDays(new Date(), 3), user: 'Admin User', action: 'Permisos Modificados', details: 'El rol "Colaborador" fue actualizado.', clientId: null, serviceId: null },
-  { id: 'log4', date: subDays(new Date(), 8), user: 'Andrea Admin', action: 'Documento Subido', details: 'Se subió el documento "Propuesta_Final.pdf" para el cliente "Global Net".', clientId: '4', serviceId: 'service-1' },
-  { id: 'log5', date: subDays(new Date(), 40), user: 'Carla Collaborator', action: 'Inicio de Sesión', details: 'El usuario ha iniciado sesión en la plataforma.', clientId: null, serviceId: null },
-];
-
 
 export default function IntelligenceCenterPage() {
-  const { clients, serviceWorkflows, transactions, isLoadingClients, isLoadingWorkflows, isLoadingTransactions } = useCRMData();
+  const { clients, serviceWorkflows, transactions, notes, isLoadingClients, isLoadingWorkflows, isLoadingTransactions, isLoadingNotes } = useCRMData();
   const { toast } = useToast();
 
   const [date, setDate] = React.useState<DateRange | undefined>({
@@ -59,10 +51,6 @@ export default function IntelligenceCenterPage() {
         
         let clientMatch = selectedClientId === 'all';
         if (!clientMatch) {
-            // A transaction can be linked to a client directly, or via its company and account
-            const account = transactions.find(t => t.id === item.id)?.accountId;
-            const company = transactions.find(t => t.id === item.id)?.companyId;
-            // This is a simplified logic. A full implementation might need deeper relations.
             clientMatch = item.clientId === selectedClientId;
         }
         
@@ -74,15 +62,19 @@ export default function IntelligenceCenterPage() {
 
 
   const filteredLogs = useMemo(() => {
-     return logData.filter(item => {
-        const itemDate = new Date(item.date);
+     if (isLoadingNotes || !notes) return [];
+     return notes.filter(item => {
+        if (!item.createdAt) return false;
+        const itemDate = item.createdAt.toDate();
         const isDateInRange = date?.from && date.to ? isWithinInterval(itemDate, { start: startOfDay(date.from), end: endOfDay(date.to) }) : true;
         const isClientMatch = selectedClientId === 'all' || item.clientId === selectedClientId;
-        const isServiceMatch = selectedServiceId === 'all' || item.serviceId === selectedServiceId;
         
-        return isDateInRange && isClientMatch && isServiceMatch;
-    })
-  }, [date, selectedClientId, selectedServiceId]);
+        // No service filter for notes for now
+        // const isServiceMatch = selectedServiceId === 'all';
+        
+        return isDateInRange && isClientMatch;
+    }).sort((a,b) => (b.createdAt?.toMillis() || 0) - (a.createdAt?.toMillis() || 0));
+  }, [date, selectedClientId, notes, isLoadingNotes]);
 
 
   const handleDownload = (section: string) => {
@@ -107,7 +99,12 @@ export default function IntelligenceCenterPage() {
     setIsComparativeView(false);
   };
 
-  const isLoading = isLoadingClients || isLoadingWorkflows || isLoadingTransactions;
+  const isLoading = isLoadingClients || isLoadingWorkflows || isLoadingTransactions || isLoadingNotes;
+
+  const getClientName = (clientId?: string) => {
+      if (!clientId) return 'N/A';
+      return clients.find(c => c.id === clientId)?.name || 'Cliente Desconocido';
+  }
 
   return (
     <div className="flex flex-col min-h-screen">
@@ -193,7 +190,7 @@ export default function IntelligenceCenterPage() {
                  <div>
                     <CardTitle>Bitácora de Actividades</CardTitle>
                     <CardDescription>
-                      Registro de todas las acciones importantes realizadas dentro de la aplicación. (Datos de demostración)
+                      Registro de todas las notas y acuerdos guardados en la plataforma.
                     </CardDescription>
                  </div>
                 <Button variant="outline" size="sm" onClick={() => handleDownload('Bitácoras')}>
@@ -202,28 +199,45 @@ export default function IntelligenceCenterPage() {
                 </Button>
               </CardHeader>
               <CardContent>
+                {isLoadingNotes ? (
+                     <div className="flex items-center justify-center py-12">
+                      <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                    </div>
+                ) : (
                  <Table>
                     <TableHeader>
                         <TableRow>
                             <TableHead>Fecha</TableHead>
+                            <TableHead>Cliente</TableHead>
                             <TableHead>Usuario</TableHead>
                             <TableHead>Acción</TableHead>
                             <TableHead>Detalle</TableHead>
                         </TableRow>
                     </TableHeader>
                     <TableBody>
-                        {filteredLogs.map((log) => (
+                        {filteredLogs.length > 0 ? filteredLogs.map((log) => (
                             <TableRow key={log.id}>
-                                <TableCell>{format(new Date(log.date), 'dd/MM/yyyy HH:mm:ss')}</TableCell>
-                                <TableCell className="font-medium">{log.user}</TableCell>
+                                <TableCell>{log.createdAt ? format(log.createdAt.toDate(), 'dd/MM/yyyy HH:mm') : 'N/A'}</TableCell>
+                                <TableCell className="font-medium">{getClientName(log.clientId)}</TableCell>
+                                <TableCell className="font-medium">{log.authorName}</TableCell>
                                 <TableCell>
-                                  <Badge variant="secondary">{log.action}</Badge>
+                                  <Badge variant="secondary" className="flex items-center gap-1.5">
+                                      <MessageSquare className="h-3 w-3" />
+                                      Nota Creada
+                                  </Badge>
                                 </TableCell>
-                                <TableCell>{log.details}</TableCell>
+                                <TableCell className="text-sm text-muted-foreground">{log.text}</TableCell>
                             </TableRow>
-                        ))}
+                        )) : (
+                           <TableRow>
+                                <TableCell colSpan={5} className="text-center h-24">
+                                    No hay notas que mostrar para los filtros seleccionados.
+                                </TableCell>
+                            </TableRow>
+                        )}
                     </TableBody>
                 </Table>
+                )}
               </CardContent>
             </Card>
           </TabsContent>
