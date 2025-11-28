@@ -31,14 +31,14 @@ interface DateRangeFilterProps {
   setDate: (date: DateRange | undefined) => void;
   selectedClientId: string;
   setSelectedClientId: (id: string) => void;
-  selectedServiceId: string;
-  setSelectedServiceId: (id: string) => void;
   clients: { id: string; name: string }[];
-  services: { id: string; name: string }[];
   onClearFilters: () => void;
-  isComparative: boolean;
-  setIsComparative: (isComparative: boolean) => void;
-  canBeComparative: boolean;
+  selectedServiceId?: string;
+  setSelectedServiceId?: (id: string) => void;
+  services?: { id: string; name: string }[];
+  isComparative?: boolean;
+  setIsComparative?: (isComparative: boolean) => void;
+  canBeComparative?: boolean;
 }
 
 export function DateRangeFilter({
@@ -46,11 +46,11 @@ export function DateRangeFilter({
   setDate,
   selectedClientId,
   setSelectedClientId,
+  clients,
+  onClearFilters,
   selectedServiceId,
   setSelectedServiceId,
-  clients,
   services,
-  onClearFilters,
   isComparative,
   setIsComparative,
   canBeComparative
@@ -121,34 +121,40 @@ export function DateRangeFilter({
         </SelectContent>
       </Select>
 
-      <Select value={selectedServiceId} onValueChange={setSelectedServiceId}>
-        <SelectTrigger className="w-full sm:w-[180px]">
-          <SelectValue>
-              <span className="flex items-center gap-2">
-                  <Briefcase className="h-4 w-4" />
-                  Servicio: {selectedServiceId === 'all' ? 'Todos' : services.find(s=>s.id === selectedServiceId)?.name}
-              </span>
-          </SelectValue>
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="all">Todos los Servicios</SelectItem>
-          {services.map(s => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}
-        </SelectContent>
-      </Select>
-      <TooltipProvider>
-        <Tooltip>
-            <TooltipTrigger asChild>
-                <div className="flex items-center space-x-2">
-                    <Switch 
-                      id="comparative-view" 
-                      checked={isComparative} 
-                      onCheckedChange={setIsComparative}
-                    />
-                    <Label htmlFor="comparative-view">Vista Comparativa</Label>
-                </div>
-            </TooltipTrigger>
-        </Tooltip>
-      </TooltipProvider>
+      {services && setSelectedServiceId && selectedServiceId && (
+        <Select value={selectedServiceId} onValueChange={setSelectedServiceId}>
+          <SelectTrigger className="w-full sm:w-[180px]">
+            <SelectValue>
+                <span className="flex items-center gap-2">
+                    <Briefcase className="h-4 w-4" />
+                    Servicio: {selectedServiceId === 'all' ? 'Todos' : services.find(s=>s.id === selectedServiceId)?.name}
+                </span>
+            </SelectValue>
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Todos los Servicios</SelectItem>
+            {services.map(s => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}
+          </SelectContent>
+        </Select>
+      )}
+
+      {canBeComparative && setIsComparative && (
+        <TooltipProvider>
+          <Tooltip>
+              <TooltipTrigger asChild>
+                  <div className="flex items-center space-x-2">
+                      <Switch 
+                        id="comparative-view" 
+                        checked={isComparative} 
+                        onCheckedChange={setIsComparative}
+                      />
+                      <Label htmlFor="comparative-view">Vista Comparativa</Label>
+                  </div>
+              </TooltipTrigger>
+          </Tooltip>
+        </TooltipProvider>
+      )}
+
       <Button variant="ghost" onClick={onClearFilters} size="icon">
           <FilterX className="h-4 w-4 text-muted-foreground" />
           <span className="sr-only">Limpiar filtros</span>

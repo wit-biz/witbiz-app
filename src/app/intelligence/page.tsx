@@ -42,7 +42,7 @@ const LOG_ACTION_DETAILS: Record<LogAction, { text: string; icon: React.ElementT
 
 
 export default function IntelligenceCenterPage() {
-  const { clients, serviceWorkflows, transactions, logs, isLoadingClients, isLoadingWorkflows, isLoadingTransactions, isLoadingLogs } = useCRMData();
+  const { clients, transactions, logs, isLoadingClients, isLoadingTransactions, isLoadingLogs } = useCRMData();
   const { toast } = useToast();
 
   const [date, setDate] = React.useState<DateRange | undefined>({
@@ -50,10 +50,7 @@ export default function IntelligenceCenterPage() {
     to: new Date(),
   })
   const [selectedClientId, setSelectedClientId] = React.useState<string>("all");
-  const [selectedServiceId, setSelectedServiceId] = React.useState<string>("all");
-  const [isComparativeView, setIsComparativeView] = useState(false);
 
-  const chartServices = serviceWorkflows ? serviceWorkflows.map(s => ({ id: s.id, name: s.name })) : [];
   const chartClients = (clients || []).map(c => ({ id: c.id, name: c.name }));
 
   const filteredTransactions = useMemo(() => {
@@ -68,11 +65,9 @@ export default function IntelligenceCenterPage() {
             clientMatch = item.clientId === selectedClientId;
         }
         
-        const isServiceMatch = selectedServiceId === 'all'; // Simplified for now
-
-        return isDateInRange && clientMatch && isServiceMatch;
+        return isDateInRange && clientMatch;
     });
-  }, [date, selectedClientId, selectedServiceId, transactions, isLoadingTransactions]);
+  }, [date, selectedClientId, transactions, isLoadingTransactions]);
 
 
   const filteredLogs = useMemo(() => {
@@ -90,9 +85,8 @@ export default function IntelligenceCenterPage() {
 
   const handleDownload = (section: string) => {
       const clientName = clients?.find(c => c.id === selectedClientId)?.name || "Todos";
-      const serviceName = serviceWorkflows?.find(s => s.id === selectedServiceId)?.name || "Todos";
 
-      let description = `Iniciando descarga de "${section}". Filtros aplicados: Cliente - ${clientName}, Servicio - ${serviceName}.`;
+      let description = `Iniciando descarga de "${section}". Filtros aplicados: Cliente - ${clientName}.`;
       if (date?.from && date.to) {
           description += ` Rango: ${format(date.from, "dd/MM/yy")} a ${format(date.to, "dd/MM/yy")}.`;
       }
@@ -106,11 +100,9 @@ export default function IntelligenceCenterPage() {
   const handleClearFilters = () => {
     setDate({ from: subDays(new Date(), 29), to: new Date() });
     setSelectedClientId("all");
-    setSelectedServiceId("all");
-    setIsComparativeView(false);
   };
 
-  const isLoading = isLoadingClients || isLoadingWorkflows || isLoadingTransactions || isLoadingLogs;
+  const isLoading = isLoadingClients || isLoadingTransactions || isLoadingLogs;
 
   return (
     <div className="flex flex-col min-h-screen">
@@ -128,7 +120,7 @@ export default function IntelligenceCenterPage() {
             <CardHeader>
                 <CardTitle>Filtros de Análisis</CardTitle>
                 <CardDescription>
-                    Seleccione un rango de fechas y filtre por cliente o servicio para analizar los datos. Los filtros se aplicarán a todas las pestañas.
+                    Seleccione un rango de fechas y filtre por cliente para analizar los datos. Los filtros se aplicarán a todas las pestañas.
                 </CardDescription>
             </CardHeader>
             <CardContent>
@@ -137,14 +129,8 @@ export default function IntelligenceCenterPage() {
                     setDate={setDate}
                     selectedClientId={selectedClientId}
                     setSelectedClientId={setSelectedClientId}
-                    selectedServiceId={selectedServiceId}
-                    setSelectedServiceId={setSelectedServiceId}
                     clients={chartClients}
-                    services={chartServices}
                     onClearFilters={handleClearFilters}
-                    isComparative={isComparativeView}
-                    setIsComparative={setIsComparativeView}
-                    canBeComparative={false} // Disabled for now
                 />
             </CardContent>
         </Card>
@@ -196,7 +182,7 @@ export default function IntelligenceCenterPage() {
                  <div>
                     <CardTitle>Bitácora de Actividades</CardTitle>
                     <CardDescription>
-                      Registro de todas las notas y acuerdos guardados en la plataforma.
+                      Registro de todas las acciones importantes guardadas en la plataforma.
                     </CardDescription>
                  </div>
                 <Button variant="outline" size="sm" onClick={() => handleDownload('Bitácoras')}>
