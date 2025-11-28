@@ -212,7 +212,7 @@ export default function TeamPage() {
                                       {canManageMembers && member.role !== 'Director' && (
                                         <>
                                           <Button variant="ghost" size="icon" onClick={() => setUserToEdit(member)}><Edit3 className="h-4 w-4" /></Button>
-                                          <Button variant="ghost" size="icon" className="text-destructive" onClick={() => setUserToDelete(member)}><Trash2 className="h-4 w-4" /></Button>
+                                          <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive" onClick={() => setUserToDelete(member)}><Trash2 className="h-4 w-4" /></Button>
                                         </>
                                       )}
                                     </TableCell>
@@ -249,7 +249,7 @@ export default function TeamPage() {
                 {localRoles.filter(role => role.id !== 'director').map((role) => (
                     <AccordionItem value={role.id} key={role.id} asChild>
                         <Card>
-                            <AccordionTrigger className="w-full p-0 [&_svg]:ml-auto [&_svg]:mr-4" disabled={!isRolesEditMode && !canManageRoles}>
+                            <AccordionTrigger className="w-full p-0 [&_svg]:ml-auto [&_svg]:mr-4" disabled={!isRolesEditMode && role.id !== 'director'}>
                                 <CardHeader className="flex-1 text-left">
                                   <div className="flex justify-between items-center w-full">
                                     <CardTitle>{role.name}</CardTitle>
@@ -282,7 +282,7 @@ export default function TeamPage() {
                                                         id={`perm-${role.id}-${permission.key}`}
                                                         checked={role.permissions[permission.key as keyof AppPermissions] || false}
                                                         onCheckedChange={(value) => handlePermissionChange(role.id, permission.key as keyof AppPermissions, value)}
-                                                        disabled={!isRolesEditMode}
+                                                        disabled={!isRolesEditMode || role.id === 'director'}
                                                     />
                                                 </div>
                                             ))}
