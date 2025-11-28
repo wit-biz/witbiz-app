@@ -204,47 +204,44 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
 
 
     useEffect(() => {
-        if (user && !isLoadingUserProfile) {
-            if (userProfile) {
-                
-                let userRoleName = userProfile.role || 'Colaborador';
-                let userName = userProfile.name || user.displayName;
+        if (user && userProfile) {
+            let userRoleName = userProfile.role || 'Colaborador';
+            let userName = userProfile.name || user.displayName;
 
-                // Special override for founders
-                if (['witbiz.mx@gmail.com', 'saidsaigar@gmail.com'].includes(user.email || '')) {
-                    userRoleName = 'Director';
-                    if (user.email === 'saidsaigar@gmail.com') {
-                        userName = 'Said Saigar';
-                    }
-                     if (user.email === 'witbiz.mx@gmail.com') {
-                        userName = 'Isaac Golzarri';
-                    }
+            // Special override for founders
+            if (['witbiz.mx@gmail.com', 'saidsaigar@gmail.com'].includes(user.email || '')) {
+                userRoleName = 'Director';
+                if (user.email === 'saidsaigar@gmail.com') {
+                    userName = 'Said Saigar';
                 }
-                
-                const userRole = roles.find(r => r.name === userRoleName) || roles.find(r => r.id === 'collaborator');
-
-                setCurrentUser({
-                    uid: user.uid,
-                    email: user.email,
-                    displayName: userName,
-                    photoURL: userProfile.photoURL || user.photoURL,
-                    role: userRole?.name,
-                    permissions: userRole?.permissions || {},
-                    requiresPasswordChange: userProfile.requiresPasswordChange,
-                });
-    
-            } else if (user) {
-                // First time user, profile doesn't exist yet. Create it.
-                const isFounder = ['witbiz.mx@gmail.com', 'saidsaigar@gmail.com'].includes(user.email || '');
-                const newUserProfile: AppUser = {
-                    id: user.uid,
-                    name: user.displayName || 'Nuevo Usuario',
-                    email: user.email || '',
-                    role: isFounder ? 'Director' : 'Colaborador', // Default to 'Colaborador'
-                    requiresPasswordChange: true, // Force password change for new users
-                };
-                setDocumentNonBlocking(doc(firestore, 'users', user.uid), newUserProfile, { merge: true });
+                if (user.email === 'witbiz.mx@gmail.com') {
+                    userName = 'Isaac Golzarri';
+                }
             }
+            
+            const userRole = roles.find(r => r.name === userRoleName) || roles.find(r => r.id === 'collaborator');
+
+            setCurrentUser({
+                uid: user.uid,
+                email: user.email,
+                displayName: userName,
+                photoURL: userProfile.photoURL || user.photoURL,
+                role: userRole?.name,
+                permissions: userRole?.permissions || {},
+                requiresPasswordChange: userProfile.requiresPasswordChange,
+            });
+
+        } else if (user && !isLoadingUserProfile) {
+            // First time user, profile doesn't exist yet. Create it.
+            const isFounder = ['witbiz.mx@gmail.com', 'saidsaigar@gmail.com'].includes(user.email || '');
+            const newUserProfile: AppUser = {
+                id: user.uid,
+                name: user.displayName || 'Nuevo Usuario',
+                email: user.email || '',
+                role: isFounder ? 'Director' : 'Colaborador', // Default to 'Colaborador'
+                requiresPasswordChange: true, // Force password change for new users
+            };
+            setDocumentNonBlocking(doc(firestore, 'users', user.uid), newUserProfile, { merge: true });
         } else if (!user && !isUserLoading) {
             setCurrentUser(null);
         }
