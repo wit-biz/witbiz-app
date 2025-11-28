@@ -200,5 +200,7 @@ export const navItems: NavItem[] = [
     { href: '/crm', label: 'CRM', icon: 'Workflow', requiredPermission: 'crm_view' },
     { href: '/services', label: 'Servicios', icon: 'Briefcase', requiredPermission: 'services_view' },
     { href: '/accounting', label: 'Contabilidad', icon: 'DollarSign', requiredPermission: 'admin_view' },
-    { href: '/finances', label: 'Centro de inteligencia', icon: 'BarChartIcon', requiredPermission: 'finances_view' },
+    { href: '/intelligence', label: 'Centro de inteligencia', icon: 'BarChartIcon', requiredPermission: 'finances_view' },
 ];
+
+    
