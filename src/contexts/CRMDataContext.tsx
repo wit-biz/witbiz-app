@@ -207,7 +207,7 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
                         documents_view: true, documents_upload: true, documents_delete: true,
                         services_view: true, crm_view: true, workflow_edit: true, services_edit: true,
                         intelligence_view: true, accounting_view: true, accounting_config: true,
-                        team_manage_members: true, team_manage_roles: true,
+                        admin_view: true, team_manage_members: true, team_manage_roles: true,
                     };
                 } else if (userRole === 'Administrador') {
                     rolePermissions = {
@@ -219,7 +219,7 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
                         documents_view: true, documents_upload: true, documents_delete: true,
                         services_view: true, crm_view: true, workflow_edit: true, services_edit: true,
                         intelligence_view: true, accounting_view: true, accounting_config: true,
-                        team_manage_members: true, team_manage_roles: true,
+                        admin_view: true, team_manage_members: true, team_manage_roles: true,
                     };
                 } else { // Default to 'Colaborador'
                      rolePermissions = {
@@ -231,7 +231,7 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
                         documents_view: true, documents_upload: true, documents_delete: false,
                         services_view: true, crm_view: true, workflow_edit: false, services_edit: false,
                         intelligence_view: false, accounting_view: false, accounting_config: false,
-                        team_manage_members: false, team_manage_roles: false,
+                        admin_view: false, team_manage_members: false, team_manage_roles: false,
                     };
                 }
     
