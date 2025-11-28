@@ -106,12 +106,6 @@ export function UserNav() {
                           <span>Equipo y Permisos</span>
                       </Link>
                   </DropdownMenuItem>
-                  <DropdownMenuItem asChild>
-                    <Link href="/recycling-bin">
-                        <Trash2 className="mr-2 h-4 w-4" />
-                        <span>Papelera de Reciclaje</span>
-                    </Link>
-                </DropdownMenuItem>
                 </>
                )}
               <DropdownMenuSeparator />
