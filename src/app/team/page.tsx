@@ -48,10 +48,19 @@ export default function TeamPage() {
     const [roleToEdit, setRoleToEdit] = useState<UserRole | null>(null);
     const [isPromptNameOpen, setIsPromptNameOpen] = useState(false);
     const [isProcessing, setIsProcessing] = useState(false);
+    const [openAccordionItems, setOpenAccordionItems] = useState<string[]>([]);
 
     useEffect(() => {
         setLocalRoles(JSON.parse(JSON.stringify(serverRoles)));
     }, [serverRoles]);
+    
+    useEffect(() => {
+        if (isRolesEditMode) {
+            setOpenAccordionItems(localRoles.map(r => r.id));
+        } else {
+            setOpenAccordionItems([]);
+        }
+    }, [isRolesEditMode, localRoles]);
 
 
     const canManageMembers = currentUser?.permissions?.team_manage_members ?? false;
@@ -128,7 +137,7 @@ export default function TeamPage() {
                 permissions: localRoles.find(r => r.id === 'collaborator')?.permissions || {}
             };
             const updatedRoles = [...localRoles, newRole];
-            setServerRoles(updatedRoles);
+            setServerRoles(updatedRoles); // Persist immediately
             toast({ title: "Rol Creado", description: `El rol "${name}" ha sido creado.` });
         }
         setRoleToEdit(null);
@@ -137,8 +146,6 @@ export default function TeamPage() {
     const confirmDeleteRole = () => {
         if (!roleToDelete) return;
         const updatedRoles = localRoles.filter(r => r.id !== roleToDelete.id);
-        setLocalRoles(updatedRoles);
-        // Persist deletion immediately
         setServerRoles(updatedRoles);
         setRoleToDelete(null);
         toast({ title: "Rol Eliminado", description: `El rol "${roleToDelete.name}" ha sido eliminado.`});
@@ -249,29 +256,27 @@ export default function TeamPage() {
                       </>
                  )}
               </div>
-             <Accordion type="single" collapsible className="w-full space-y-4">
+             <Accordion type="multiple" value={openAccordionItems} onValueChange={setOpenAccordionItems} className="w-full space-y-4">
                 {localRoles.filter(role => role.id !== 'director').map((role) => (
                     <AccordionItem value={role.id} key={role.id} asChild>
                         <Card>
-                            <CardHeader className="p-0">
-                                <div className="flex items-center p-6">
-                                    <AccordionTrigger className="flex-1 p-0 hover:no-underline [&_svg]:ml-auto text-left">
+                             <CardHeader className="p-0">
+                                <div className="flex items-center">
+                                    <AccordionTrigger className="flex-1 p-6 hover:no-underline [&_svg]:ml-auto">
                                         <div className="text-left">
                                             <CardTitle>{role.name}</CardTitle>
-                                            <CardDescription className="mt-1">
-                                                Permisos para el rol de {role.name}.
-                                            </CardDescription>
+                                            <CardDescription className="mt-1">Permisos para el rol de {role.name}.</CardDescription>
                                         </div>
                                     </AccordionTrigger>
                                     {isRolesEditMode && (
-                                        <div className="flex items-center pl-4">
+                                        <div className="flex items-center pr-4">
                                             {role.id !== 'director' && (
-                                                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={(e) => { e.stopPropagation(); setRoleToEdit(role); setIsPromptNameOpen(true);}}>
+                                                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => { setRoleToEdit(role); setIsPromptNameOpen(true);}}>
                                                     <Edit3 className="h-4 w-4" />
                                                 </Button>
                                             )}
                                             {!role.isBaseRole && (
-                                                <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={(e) => { e.stopPropagation(); setRoleToDelete(role); }}>
+                                                <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => setRoleToDelete(role)}>
                                                     <Trash2 className="h-4 w-4" />
                                                 </Button>
                                             )}
