@@ -1,9 +1,11 @@
+
 'use client';
 import {
   Auth, // Import Auth type for type hinting
   signInAnonymously,
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
+  signOut,
   // Assume getAuth and app are initialized elsewhere
 } from 'firebase/auth';
 
@@ -26,4 +28,12 @@ export function initiateEmailSignIn(authInstance: Auth, email: string, password:
   // CRITICAL: Call signInWithEmailAndPassword directly. Do NOT use 'await signInWithEmailAndPassword(...)'.
   signInWithEmailAndPassword(authInstance, email, password);
   // Code continues immediately. Auth state change is handled by onAuthStateChanged listener.
+}
+
+/**
+ * Initiates the sign-out process.
+ * @param authInstance The Firebase Auth instance.
+ */
+export function initiateSignOut(authInstance: Auth): void {
+  signOut(authInstance);
 }
