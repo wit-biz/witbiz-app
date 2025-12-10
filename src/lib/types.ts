@@ -188,12 +188,18 @@ export type Note = {
 };
 
 export type LogAction = 
-  | 'client_created' | 'client_updated' | 'client_archived'
-  | 'task_created' | 'task_completed' | 'task_updated'
-  | 'document_uploaded'
-  | 'note_created'
+  | 'client_created' | 'client_updated' | 'client_archived' | 'client_deleted_permanently'
+  | 'task_created' | 'task_completed' | 'task_updated' | 'task_deleted_permanently'
+  | 'document_uploaded' | 'document_deleted_permanently'
+  | 'note_created' | 'note_deleted_permanently'
   | 'transaction_created'
-  | 'user_invited';
+  | 'user_invited' | 'user_deleted_permanently'
+  | 'service_deleted_permanently'
+  | 'supplier_deleted_permanently'
+  | 'promoter_deleted_permanently'
+  | 'entity_deleted_automatically';
+
+export type LogEntityType = 'client' | 'task' | 'document' | 'note' | 'transaction' | 'user' | 'service' | 'promoter' | 'supplier' | 'system';
 
 export type Log = {
   id: string;
@@ -201,7 +207,7 @@ export type Log = {
   authorName: string;
   action: LogAction;
   entityId: string;
-  entityType: 'client' | 'task' | 'document' | 'note' | 'transaction' | 'user';
+  entityType: LogEntityType;
   entityName?: string;
   createdAt: any;
 };

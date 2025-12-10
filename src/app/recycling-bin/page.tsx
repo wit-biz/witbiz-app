@@ -13,9 +13,10 @@ import { useCRMData } from '@/contexts/CRMDataContext';
 import { formatDateString } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import { subDays, isBefore } from 'date-fns';
-import { Task, ServiceWorkflow, Note, AppUser, Client, Promoter, Supplier } from '@/lib/types';
+import { Task, ServiceWorkflow, Note, AppUser, Client, Promoter, Supplier, LogAction } from '@/lib/types';
 import { Badge } from '@/components/ui/badge';
-
+import { format } from 'date-fns';
+import { es } from 'date-fns/locale';
 
 type EntityType = 'client' | 'task' | 'document' | 'promoter' | 'supplier' | 'service' | 'note' | 'user';
 
@@ -29,6 +30,33 @@ type EntityToDelete = {
 
 type ArchivedContact = (Client | AppUser | Promoter | Supplier) & { contactType: ContactEntityType };
 
+const DELETION_LOG_ACTIONS: LogAction[] = [
+    'client_deleted_permanently',
+    'task_deleted_permanently',
+    'document_deleted_permanently',
+    'note_deleted_permanently',
+    'user_deleted_permanently',
+    'service_deleted_permanently',
+    'supplier_deleted_permanently',
+    'promoter_deleted_permanently',
+    'entity_deleted_automatically',
+];
+
+const LOG_ACTION_TEXTS: Record<LogAction, string> = {
+    client_deleted_permanently: "Cliente eliminado permanentemente",
+    task_deleted_permanently: "Tarea eliminada permanentemente",
+    document_deleted_permanently: "Documento eliminado permanentemente",
+    note_deleted_permanently: "Nota eliminada permanentemente",
+    user_deleted_permanently: "Usuario eliminado permanentemente",
+    service_deleted_permanently: "Servicio eliminado permanentemente",
+    supplier_deleted_permanently: "Proveedor eliminado permanentemente",
+    promoter_deleted_permanently: "Promotor eliminado permanentemente",
+    entity_deleted_automatically: "Entidad eliminada automáticamente",
+    // Add other non-deletion logs here to satisfy the type, though they won't be used
+    client_created: '', client_updated: '', client_archived: '',
+    task_created: '', task_completed: '', task_updated: '',
+    document_uploaded: '', note_created: '', transaction_created: '', user_invited: ''
+};
 
 export default function RecyclingBinPage() {
   const { toast } = useToast();
@@ -41,6 +69,7 @@ export default function RecyclingBinPage() {
     serviceWorkflows, isLoadingWorkflows, restoreService, deleteService,
     notes, isLoadingNotes, restoreNote, deleteNote,
     teamMembers, isLoadingTeamMembers, restoreUser, deleteUser,
+    logs, isLoadingLogs
   } = useCRMData();
 
   const [entityToDelete, setEntityToDelete] = useState<EntityToDelete | null>(null);
@@ -61,6 +90,12 @@ export default function RecyclingBinPage() {
   const archivedDocuments = useMemo(() => (documents || []).filter(d => d.status === 'Archivado'), [documents]);
   const archivedServices = useMemo(() => (serviceWorkflows || []).filter(s => s.status === 'Archivado'), [serviceWorkflows]);
   const archivedNotes = useMemo(() => (notes || []).filter(n => n.status === 'Archivado'), [notes]);
+  
+  const deletionLogs = useMemo(() => 
+    (logs || [])
+      .filter(log => DELETION_LOG_ACTIONS.includes(log.action))
+      .sort((a,b) => (b.createdAt?.toMillis() || 0) - (a.createdAt?.toMillis() || 0))
+  , [logs]);
   
   const oneMonthAgo = subDays(new Date(), 30);
 
@@ -88,7 +123,7 @@ export default function RecyclingBinPage() {
     if (!entityToDelete) return;
     setIsProcessing(true);
     let success = false;
-    const { id, type } = entityToDelete;
+    const { id, type, name } = entityToDelete;
     
     if (type === 'client') success = await deleteClient(id, true);
     else if (type === 'task') success = await deleteTask(id, true);
@@ -101,7 +136,7 @@ export default function RecyclingBinPage() {
 
 
     if (success) {
-      toast({ title: "Elemento Eliminado", description: "El elemento ha sido eliminado permanentemente." });
+      toast({ title: "Elemento Eliminado", description: `El elemento "${name}" ha sido eliminado permanentemente.` });
     } else {
       toast({ variant: 'destructive', title: 'Error', description: 'No se pudo eliminar el elemento.' });
     }
@@ -125,6 +160,7 @@ export default function RecyclingBinPage() {
     { type: 'document' as const, icon: FileText, label: 'Documentos', data: archivedDocuments, isLoading: isLoadingDocuments },
     { type: 'service' as const, icon: Briefcase, label: 'Servicios', data: archivedServices, isLoading: isLoadingWorkflows },
     { type: 'note' as const, icon: StickyNote, label: 'Notas', data: archivedNotes, isLoading: isLoadingNotes },
+    { type: 'log' as const, icon: History, label: 'Bitácora', data: deletionLogs, isLoading: isLoadingLogs },
   ];
   
   const getItemName = (item: any, type: EntityType) => {
@@ -151,7 +187,7 @@ export default function RecyclingBinPage() {
                 </CardHeader>
                 <CardContent>
                     <Tabs defaultValue="contact" className="w-full">
-                        <TabsList className="grid w-full grid-cols-2 sm:grid-cols-3 md:grid-cols-5 mb-6">
+                        <TabsList className="grid w-full grid-cols-3 sm:grid-cols-3 md:grid-cols-6 mb-6">
                             {tabs.map(tab => (
                                 <TabsTrigger key={tab.type} value={tab.type}>
                                     <tab.icon className="mr-2 h-4 w-4"/>
@@ -201,7 +237,7 @@ export default function RecyclingBinPage() {
                             )}
                         </TabsContent>
 
-                        {tabs.filter(t => t.type !== 'contact').map(tab => (
+                        {tabs.filter(t => t.type !== 'contact' && t.type !== 'log').map(tab => (
                              <TabsContent key={tab.type} value={tab.type}>
                                 {tab.isLoading ? (
                                     <div className="flex items-center justify-center p-12"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>
@@ -224,7 +260,7 @@ export default function RecyclingBinPage() {
                                                     <TableCell className="font-medium">{name}</TableCell>
                                                     <TableCell>{archivedDate ? formatDateString(archivedDate) : 'N/A'}</TableCell>
                                                     <TableCell className="text-right">
-                                                        <Button variant="ghost" size="sm" onClick={() => handleRestore(item.id, tab.type)} disabled={isProcessing}>
+                                                        <Button variant="ghost" size="sm" onClick={() => handleRestore(item.id, tab.type as EntityType)} disabled={isProcessing}>
                                                           <History className="mr-2 h-4 w-4"/> Restaurar
                                                         </Button>
                                                         <Button variant="ghost" size="sm" className="text-destructive" onClick={() => setEntityToDelete({ id: item.id, name: name, type: tab.type as EntityType })} disabled={isProcessing}>
@@ -242,6 +278,37 @@ export default function RecyclingBinPage() {
                                 )}
                             </TabsContent>
                         ))}
+                        
+                        <TabsContent value="log">
+                             {isLoadingLogs ? (
+                                <div className="flex items-center justify-center p-12"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>
+                            ) : (
+                                <Table>
+                                    <TableHeader>
+                                        <TableRow>
+                                            <TableHead>Fecha y Hora</TableHead>
+                                            <TableHead>Usuario</TableHead>
+                                            <TableHead>Acción</TableHead>
+                                            <TableHead>Detalle</TableHead>
+                                        </TableRow>
+                                    </TableHeader>
+                                    <TableBody>
+                                        {deletionLogs.length > 0 ? deletionLogs.map(log => (
+                                            <TableRow key={log.id}>
+                                                <TableCell>{log.createdAt ? format(log.createdAt.toDate(), 'Pp', { locale: es }) : 'N/A'}</TableCell>
+                                                <TableCell className="font-medium">{log.authorName}</TableCell>
+                                                <TableCell><Badge variant="destructive">{LOG_ACTION_TEXTS[log.action] || log.action}</Badge></TableCell>
+                                                <TableCell className="text-muted-foreground">{log.entityName || `ID: ${log.entityId}`}</TableCell>
+                                            </TableRow>
+                                        )) : (
+                                            <TableRow>
+                                                <TableCell colSpan={4} className="text-center h-24">No hay registros de eliminaciones.</TableCell>
+                                            </TableRow>
+                                        )}
+                                    </TableBody>
+                                </Table>
+                            )}
+                        </TabsContent>
                     </Tabs>
                 </CardContent>
             </Card>

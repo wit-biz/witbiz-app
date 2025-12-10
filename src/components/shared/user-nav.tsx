@@ -48,13 +48,22 @@ const LOG_ACTION_DETAILS: Record<LogAction, { text: string; icon: React.ElementT
     client_created: { text: "Cliente Creado", icon: Briefcase },
     client_updated: { text: "Cliente Actualizado", icon: Briefcase },
     client_archived: { text: "Cliente Archivado", icon: Briefcase },
+    client_deleted_permanently: { text: "Cliente Eliminado (Per.)", icon: Trash2 },
     task_created: { text: "Tarea Creada", icon: PlusCircle },
     task_completed: { text: "Tarea Completada", icon: PlusCircle },
     task_updated: { text: "Tarea Actualizada", icon: PlusCircle },
+    task_deleted_permanently: { text: "Tarea Eliminada (Per.)", icon: Trash2 },
     document_uploaded: { text: "Documento Subido", icon: PlusCircle },
+    document_deleted_permanently: { text: "Documento Eliminado (Per.)", icon: Trash2 },
     note_created: { text: "Nota Creada", icon: MessageSquare },
+    note_deleted_permanently: { text: "Nota Eliminada (Per.)", icon: Trash2 },
     transaction_created: { text: "Transacción Registrada", icon: PlusCircle },
     user_invited: { text: "Usuario Invitado", icon: PlusCircle },
+    user_deleted_permanently: { text: "Usuario Eliminado (Per.)", icon: Trash2 },
+    service_deleted_permanently: { text: "Servicio Eliminado (Per.)", icon: Trash2 },
+    supplier_deleted_permanently: { text: "Proveedor Eliminado (Per.)", icon: Trash2 },
+    promoter_deleted_permanently: { text: "Promotor Eliminado (Per.)", icon: Trash2 },
+    entity_deleted_automatically: { text: "Entidad Eliminada (Auto)", icon: Trash2 },
 };
 
 type Period = 'day' | 'week' | 'month';
@@ -237,7 +246,7 @@ export function UserNav() {
     <Dialog open={isActivityDialogOpen} onOpenChange={setIsActivityDialogOpen}>
         <DialogContent className="sm:max-w-md">
             <DialogHeader>
-                <DialogTitle className="sr-only">Actividad Reciente</DialogTitle>
+                <DialogTitle>Actividad Reciente</DialogTitle>
              </DialogHeader>
             <Tabs value={activityPeriod} onValueChange={(v) => setActivityPeriod(v as Period)} className="w-full">
                 <TabsList className="grid w-full grid-cols-3">
@@ -261,7 +270,7 @@ export function UserNav() {
     <Dialog open={isFinanceDialogOpen} onOpenChange={setIsFinanceDialogOpen}>
         <DialogContent className="sm:max-w-md">
             <DialogHeader>
-                <DialogTitle className="sr-only">Resumen Financiero</DialogTitle>
+                <DialogTitle>Resumen Financiero</DialogTitle>
             </DialogHeader>
             <Tabs value={financePeriod} onValueChange={(v) => setFinancePeriod(v as Period)} className="w-full">
                 <TabsList className="grid w-full grid-cols-3">
@@ -285,7 +294,7 @@ export function UserNav() {
     <Dialog open={isTasksDialogOpen} onOpenChange={setIsTasksDialogOpen}>
         <DialogContent>
             <DialogHeader>
-                <DialogTitle className="sr-only">Resumen de Tareas</DialogTitle>
+                <DialogTitle>Resumen de Tareas del Equipo</DialogTitle>
             </DialogHeader>
             <TasksDialogContent teamMembers={teamMembers || []} allTasks={tasks || []} />
         </DialogContent>

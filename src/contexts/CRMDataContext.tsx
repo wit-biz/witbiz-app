@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import React, { createContext, useContext, useState, useMemo, type ReactNode, useCallback, useEffect } from 'react';
@@ -29,6 +30,7 @@ import {
     type Transaction,
     type Log,
     type LogAction,
+    type LogEntityType,
 } from '@/lib/types';
 import { useUser, useFirestore, useMemoFirebase, useCollection, useDoc, useAuth, addDocumentNonBlocking, setDocumentNonBlocking, deleteDocumentNonBlocking, useStorage, FirestorePermissionError, errorEmitter } from '@/firebase';
 import { collection, doc, writeBatch, serverTimestamp, query, where, updateDoc, runTransaction, getDoc } from 'firebase/firestore';
@@ -83,7 +85,7 @@ interface CRMContextType {
 
   logs: Log[];
   isLoadingLogs: boolean;
-  addLog: (action: LogAction, entityId: string, entityType: string, entityName?: string) => Promise<void>;
+  addLog: (action: LogAction, entityId: string, entityType: LogEntityType, entityName?: string) => Promise<void>;
 
   serviceWorkflows: ServiceWorkflow[];
   setServiceWorkflows: (workflows: ServiceWorkflow[]) => void;
@@ -192,7 +194,7 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
     const loansCollection = useMemoFirebase(() => user ? collection(firestore, 'users', user.uid, 'loans') : null, [firestore, user]);
     const logsCollection = useMemoFirebase(() => user ? collection(firestore, 'users', user.uid, 'logs') : null, [firestore, user]);
 
-    const addLog = useCallback(async (action: LogAction, entityId: string, entityType: string, entityName?: string) => {
+    const addLog = useCallback(async (action: LogAction, entityId: string, entityType: LogEntityType, entityName?: string) => {
         if (!logsCollection || !currentUser) return;
         const logEntry: Omit<Log, 'id'> = {
             authorId: currentUser.uid,
@@ -300,11 +302,12 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
     const deleteUser = async (userId: string, permanent: boolean = false): Promise<boolean> => {
         if (!firestore) return false;
         const docRef = doc(firestore, 'users', userId);
-        const data = { status: 'Archivado', archivedAt: serverTimestamp() };
+        const userName = teamMembers.find(m => m.id === userId)?.name;
         if (permanent) {
             deleteDocumentNonBlocking(docRef);
+            addLog('user_deleted_permanently', userId, 'user', userName);
         } else {
-            setDocumentNonBlocking(docRef, data, { merge: true });
+            setDocumentNonBlocking(docRef, { status: 'Archivado', archivedAt: serverTimestamp() }, { merge: true });
         }
         return true;
     };
@@ -363,11 +366,12 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
     const deleteClient = async (clientId: string, permanent: boolean = false): Promise<boolean> => {
         if (!user || !firestore) return false;
         const docRef = doc(firestore, 'users', user.uid, 'clients', clientId);
+        const clientName = clients.find(c => c.id === clientId)?.name;
         if (permanent) {
             deleteDocumentNonBlocking(docRef);
+            addLog('client_deleted_permanently', clientId, 'client', clientName);
         } else {
             setDocumentNonBlocking(docRef, { status: 'Archivado', archivedAt: serverTimestamp() }, { merge: true });
-            const clientName = clients.find(c => c.id === clientId)?.name;
             addLog('client_archived', clientId, 'client', clientName);
         }
         return true;
@@ -521,7 +525,9 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
         if (!user || !firestore) return false;
         const docRef = doc(firestore, 'users', user.uid, 'tasks', taskId);
         if (permanent) {
+            const taskName = tasks.find(t => t.id === taskId)?.title;
             deleteDocumentNonBlocking(docRef);
+            addLog('task_deleted_permanently', taskId, 'task', taskName);
         } else {
             setDocumentNonBlocking(docRef, { status: 'Archivado', archivedAt: serverTimestamp() }, { merge: true });
         }
@@ -582,8 +588,10 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
     const deleteDocument = async (id: string, permanent: boolean = false): Promise<boolean> => {
         if (!user || !firestore) return false;
         const docRef = doc(firestore, 'users', user.uid, 'documents', id);
+        const docName = documents.find(d => d.id === id)?.name;
         if (permanent) {
             deleteDocumentNonBlocking(docRef);
+            addLog('document_deleted_permanently', id, 'document', docName);
         } else {
             setDocumentNonBlocking(docRef, { status: 'Archivado', archivedAt: serverTimestamp() }, { merge: true });
         }
@@ -623,8 +631,10 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
     const deleteNote = async (noteId: string, permanent: boolean = false): Promise<boolean> => {
         if (!user || !firestore) return false;
         const docRef = doc(firestore, 'users', user.uid, 'notes', noteId);
+        const noteText = notes.find(n => n.id === noteId)?.text.substring(0, 30) + '...';
         if (permanent) {
             deleteDocumentNonBlocking(docRef);
+            addLog('note_deleted_permanently', noteId, 'note', noteText);
         } else {
             setDocumentNonBlocking(docRef, { status: 'Archivado', archivedAt: serverTimestamp() }, { merge: true });
         }
@@ -708,8 +718,10 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
     const deleteService = async (serviceId: string, permanent: boolean = false): Promise<boolean> => {
         if (!user || !firestore) return false;
         const docRef = doc(firestore, 'users', user.uid, 'serviceWorkflows', serviceId);
+        const serviceName = serviceWorkflows.find(s => s.id === serviceId)?.name;
         if (permanent) {
             deleteDocumentNonBlocking(docRef);
+            addLog('service_deleted_permanently', serviceId, 'service', serviceName);
         } else {
             setDocumentNonBlocking(docRef, { status: 'Archivado', archivedAt: serverTimestamp() }, { merge: true });
         }
@@ -742,8 +754,10 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
     const deletePromoter = async (promoterId: string, permanent: boolean = false): Promise<boolean> => {
         if (!promotersCollection) return false;
         const docRef = doc(promotersCollection, promoterId);
+        const promoterName = promoters.find(p => p.id === promoterId)?.name;
         if (permanent) {
             deleteDocumentNonBlocking(docRef);
+            addLog('promoter_deleted_permanently', promoterId, 'promoter', promoterName);
         } else {
             setDocumentNonBlocking(docRef, { status: 'Archivado', archivedAt: serverTimestamp() }, { merge: true });
         }
@@ -772,8 +786,10 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
     const deleteSupplier = async (supplierId: string, permanent: boolean = false): Promise<boolean> => {
         if (!user || !firestore) return false;
         const docRef = doc(firestore, 'users', user.uid, 'suppliers', supplierId);
+        const supplierName = suppliers.find(s => s.id === supplierId)?.name;
         if (permanent) {
             deleteDocumentNonBlocking(docRef);
+            addLog('supplier_deleted_permanently', supplierId, 'supplier', supplierName);
         } else {
             setDocumentNonBlocking(docRef, { status: 'Archivado', archivedAt: serverTimestamp() }, { merge: true });
         }
