@@ -230,7 +230,22 @@ export const serviceWorkflows: ServiceWorkflow[] = [
 
 
 export const clients: Client[] = [];
-export const tasks: Task[] = [];
+export const tasks: Task[] = [
+    {
+    id: 'task-demo-1',
+    title: 'Reunión de seguimiento con equipo de marketing',
+    dueDate: format(new Date(), 'yyyy-MM-dd'),
+    dueTime: '10:30',
+    status: 'Pendiente',
+    clientId: 'client-1',
+    clientName: 'Innovatech Solutions',
+    assignedToId: 'TycwLL3rn5Zny3R4aibDJuIbd2S2',
+    assignedToName: 'Isaac Golzarri',
+    assignedToPhotoURL: 'https://picsum.photos/seed/1/40/40',
+    description: 'Discutir los resultados de la campaña del Q2 y planificar las iniciativas para el Q3.',
+    location: 'Av. de los Insurgentes Sur 123, Roma Nte., 06700 Ciudad de México, CDMX',
+  },
+];
 export const documents: Document[] = [];
 export const promoters: Promoter[] = [];
 export const suppliers: Supplier[] = [];
