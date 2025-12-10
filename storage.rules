@@ -1,0 +1,14 @@
+
+rules_version = '2';
+
+service firebase.storage {
+  match /b/{bucket}/o {
+    // WARNING: This is a permissive rule. 
+    // It allows any authenticated user to read and write to any path.
+    // This is often suitable for development but should be reviewed and
+    // locked down for production environments.
+    match /{allPaths=**} {
+      allow read, write: if request.auth != null;
+    }
+  }
+}
