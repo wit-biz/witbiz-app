@@ -537,7 +537,7 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
 
     const addDocument = async (newDocumentData: Omit<Document, 'id' | 'uploadedAt' | 'downloadURL'>, file: File): Promise<Document | null> => {
         if (!documentsCollection || !user || !storage) return null;
-        
+
         const filePath = `users/${user.uid}/documents/${Date.now()}_${file.name}`;
         const storageRef = ref(storage, filePath);
         
@@ -545,12 +545,21 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
             const snapshot = await uploadBytes(storageRef, file);
             const downloadURL = await getDownloadURL(snapshot.ref);
 
+            // Clean the data object to remove undefined fields
+            const cleanData: { [key: string]: any } = {};
+            for (const key in newDocumentData) {
+                if (newDocumentData[key as keyof typeof newDocumentData] !== undefined) {
+                    cleanData[key] = newDocumentData[key as keyof typeof newDocumentData];
+                }
+            }
+
             const newDoc = { 
-                ...newDocumentData,
+                ...cleanData,
                 status: 'Activo' as const,
                 uploadedAt: serverTimestamp(),
                 downloadURL: downloadURL
             };
+
             const docRef = await addDocumentNonBlocking(documentsCollection, newDoc);
             addLog('document_uploaded', docRef.id, 'document', file.name);
             return { id: docRef.id, ...newDoc } as Document;
