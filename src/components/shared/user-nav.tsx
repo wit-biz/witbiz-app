@@ -27,6 +27,7 @@ import {
   ArrowUpCircle,
   ArrowDownCircle,
   ListTodo,
+  ArrowLeft,
 } from "lucide-react";
 import Link from "next/link";
 import { useUser } from "@/firebase/auth/use-user";
@@ -190,7 +191,7 @@ export function UserNav() {
           )}
         </DropdownMenuContent>
       </DropdownMenu>
-
+      
       <Button
           variant="ghost"
           size="icon"
@@ -225,7 +226,7 @@ export function UserNav() {
     
     <Dialog open={isActivityDialogOpen} onOpenChange={setIsActivityDialogOpen}>
         <DialogContent className="sm:max-w-md">
-             <DialogHeader>
+            <DialogHeader>
                 <DialogTitle className="sr-only">Actividad Reciente</DialogTitle>
              </DialogHeader>
             <Tabs value={activityPeriod} onValueChange={(v) => setActivityPeriod(v as Period)} className="w-full">
@@ -335,12 +336,22 @@ function renderFinanceSummary(summary: { totalBalance: number; totalIncome: numb
 
 function TasksDialogContent({ teamMembers, allTasks }: { teamMembers: AppUser[], allTasks: Task[] }) {
     const [mainTab, setMainTab] = useState<'member' | 'time'>('member');
-    const [selectedMemberId, setSelectedMemberId] = useState<string>(teamMembers[0]?.id || 'all');
+    const [selectedMemberId, setSelectedMemberId] = useState<string | null>(null);
     const [timePeriod, setTimePeriod] = useState<Period>('day');
+
+    const handleTabChange = (value: string) => {
+        setMainTab(value as any);
+        setSelectedMemberId(null); // Reset member selection when changing main tabs
+    };
+    
+    const selectedMember = useMemo(() => {
+        if (!selectedMemberId) return null;
+        return teamMembers.find(m => m.id === selectedMemberId);
+    }, [selectedMemberId, teamMembers]);
 
     const tasksToShow = useMemo(() => {
         if (mainTab === 'member') {
-            if (selectedMemberId === 'all') return [];
+            if (!selectedMemberId) return [];
             return allTasks.filter(task => task.assignedToId === selectedMemberId);
         } else { // time
             const now = new Date();
@@ -357,25 +368,37 @@ function TasksDialogContent({ teamMembers, allTasks }: { teamMembers: AppUser[],
     }, [mainTab, selectedMemberId, timePeriod, allTasks]);
 
     return (
-        <Tabs value={mainTab} onValueChange={(v) => setMainTab(v as any)} className="w-full">
+        <Tabs value={mainTab} onValueChange={handleTabChange} className="w-full">
             <TabsList className="grid w-full grid-cols-2">
                 <TabsTrigger value="member">Por Miembro</TabsTrigger>
                 <TabsTrigger value="time">Por Tiempo</TabsTrigger>
             </TabsList>
             <TabsContent value="member" className="mt-4">
-                <div className="max-h-40 overflow-y-auto space-y-1 pr-2">
-                    {teamMembers.map(member => (
-                        <Button
-                            key={member.id}
-                            variant={selectedMemberId === member.id ? 'default' : 'ghost'}
-                            className="w-full justify-start"
-                            onClick={() => setSelectedMemberId(member.id)}
-                        >
-                            {member.name}
-                        </Button>
-                    ))}
-                </div>
-                {renderTaskList(tasksToShow)}
+                {!selectedMemberId ? (
+                     <div className="max-h-96 overflow-y-auto space-y-1 pr-2">
+                        {teamMembers.map(member => (
+                            <Button
+                                key={member.id}
+                                variant={'ghost'}
+                                className="w-full justify-start"
+                                onClick={() => setSelectedMemberId(member.id)}
+                            >
+                                {member.name}
+                            </Button>
+                        ))}
+                    </div>
+                ) : (
+                    <div>
+                        <div className="flex items-center justify-between mb-4">
+                            <h3 className="font-semibold">Tareas de {selectedMember?.name}</h3>
+                            <Button variant="ghost" size="sm" onClick={() => setSelectedMemberId(null)}>
+                                <ArrowLeft className="mr-2 h-4 w-4"/>
+                                Volver
+                            </Button>
+                        </div>
+                        {renderTaskList(tasksToShow)}
+                    </div>
+                )}
             </TabsContent>
             <TabsContent value="time" className="mt-4">
                 <Tabs value={timePeriod} onValueChange={(v) => setTimePeriod(v as any)}>
