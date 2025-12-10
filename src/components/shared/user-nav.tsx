@@ -66,7 +66,7 @@ export function UserNav() {
             <span className="sr-only">Abrir menú de usuario</span>
           </Button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent side="left" align="center" sideOffset={8}>
+        <DropdownMenuContent side="left" align="start" sideOffset={8}>
           {user && currentUser ? (
             <>
               <DropdownMenuLabel>
@@ -83,8 +83,7 @@ export function UserNav() {
                   </div>
                 </div>
               </DropdownMenuLabel>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem asChild>
+              <DropdownMenuItem asChild className="mt-1 pt-1 border-t">
                 <Link href="/profile">
                   <UserCircle className="mr-2 h-4 w-4" />
                   <span>Perfil</span>
@@ -100,8 +99,7 @@ export function UserNav() {
                   </DropdownMenuItem>
                 </>
                )}
-              <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={() => initiateSignOut(auth)}>
+              <DropdownMenuItem onClick={() => initiateSignOut(auth)} className="mt-1 pt-1 border-t">
                 <LogOut className="mr-2 h-4 w-4" />
                 <span>Cerrar Sesión</span>
               </DropdownMenuItem>
@@ -111,8 +109,7 @@ export function UserNav() {
                 <DropdownMenuLabel>
                     <p>No autenticado</p>
                 </DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem asChild>
+                <DropdownMenuItem asChild className="mt-1 pt-1 border-t">
                     <Link href="/login">
                         <LogIn className="mr-2 h-4 w-4" />
                         <span>Iniciar Sesión</span>
