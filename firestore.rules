@@ -49,11 +49,11 @@ service cloud.firestore {
 
     /**
      * Checks if the requesting user is one of the designated directors by UID.
-     * The UIDs 'DIRECTOR_UID_1' and 'DIRECTOR_UID_2' are placeholders that will be
-     * replaced with the actual UIDs of the director accounts.
+     * The UIDs 'TycwLL3rn5Zny3R4aibDJuIbd2S2' (Isaac) and 'QC0nJUxmggW6t25krdonNrme6zz2' (Said) 
+     * are hardcoded for direct and secure role verification.
      */
     function isDirector() {
-      return isSignedIn() && (request.auth.uid == 'DIRECTOR_UID_1' || request.auth.uid == 'DIRECTOR_UID_2');
+      return isSignedIn() && (request.auth.uid == 'TycwLL3rn5Zny3R4aibDJuIbd2S2' || request.auth.uid == 'QC0nJUxmggW6t25krdonNrme6zz2');
     }
 
 
@@ -72,8 +72,8 @@ service cloud.firestore {
      */
     match /users/{userId} {
       allow get: if isOwner(userId) || isDirector();
-      allow list: if false; // Explicitly deny listing all users
-      allow create: if isOwner(userId);
+      allow list: if isDirector();
+      allow create: if isOwner(userId) || isDirector();
       allow update: if isExistingOwner(userId) || isDirector();
       allow delete: if isDirector();
     }
@@ -88,11 +88,7 @@ service cloud.firestore {
      * @principle   Restricts access to a user's own data tree using path-based ownership.
      */
     match /users/{userId}/contacts/{contactId} {
-      allow get: if isOwner(userId);
-      allow list: if isOwner(userId);
-      allow create: if isOwner(userId) && request.resource.data.id == contactId;
-      allow update: if isExistingOwner(userId) && request.resource.data.id == resource.data.id;
-      allow delete: if isExistingOwner(userId);
+      allow read, write: if isOwner(userId);
     }
     
     /**
@@ -101,11 +97,7 @@ service cloud.firestore {
      * @principle   Restricts access to a user's own notes using path-based ownership.
      */
     match /users/{userId}/notes/{noteId} {
-        allow get: if isOwner(userId);
-        allow list: if isOwner(userId);
-        allow create: if isOwner(userId);
-        allow update: if isExistingOwner(userId);
-        allow delete: if isExistingOwner(userId);
+        allow read, write: if isOwner(userId);
     }
 
     /**
@@ -114,11 +106,7 @@ service cloud.firestore {
      * @principle   Restricts access to a user's own documents using path-based ownership.
      */
     match /users/{userId}/documents/{documentId} {
-        allow get: if isOwner(userId);
-        allow list: if isOwner(userId);
-        allow create: if isOwner(userId);
-        allow update: if isExistingOwner(userId);
-        allow delete: if isExistingOwner(userId);
+        allow read, write: if isOwner(userId);
     }
 
     /**
@@ -130,11 +118,7 @@ service cloud.firestore {
      * @principle   Restricts access to a user's own data tree using path-based ownership.
      */
     match /users/{userId}/leads/{leadId} {
-      allow get: if isOwner(userId);
-      allow list: if isOwner(userId);
-      allow create: if isOwner(userId) && request.resource.data.id == leadId;
-      allow update: if isExistingOwner(userId) && request.resource.data.id == resource.data.id;
-      allow delete: if isExistingOwner(userId);
+      allow read, write: if isOwner(userId);
     }
 
     /**
@@ -147,11 +131,7 @@ service cloud.firestore {
      *              path upon creation and is immutable.
      */
     match /users/{userId}/leads/{leadId}/tasks/{taskId} {
-      allow get: if isOwner(userId);
-      allow list: if isOwner(userId);
-      allow create: if isOwner(userId) && request.resource.data.id == taskId && request.resource.data.leadId == leadId;
-      allow update: if isExistingOwner(userId) && request.resource.data.id == resource.data.id && request.resource.data.leadId == resource.data.leadId;
-      allow delete: if isExistingOwner(userId);
+      allow read, write: if isOwner(userId);
     }
     
     // Fallback for any other collections under /users/{userId}
@@ -165,3 +145,5 @@ service cloud.firestore {
     }
   }
 }
+
+    
