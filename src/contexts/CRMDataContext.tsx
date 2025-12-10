@@ -30,12 +30,12 @@ import {
     type Log,
     type LogAction,
 } from '@/lib/types';
-import { useUser, useFirestore, useMemoFirebase, useCollection, useDoc, useAuth, addDocumentNonBlocking, setDocumentNonBlocking, deleteDocumentNonBlocking, useStorage } from '@/firebase';
+import { useUser, useFirestore, useMemoFirebase, useCollection, useDoc, useAuth, addDocumentNonBlocking, setDocumentNonBlocking, deleteDocumentNonBlocking, useStorage, FirestorePermissionError } from '@/firebase';
 import { collection, doc, writeBatch, serverTimestamp, query, where, updateDoc, runTransaction, getDoc } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
 import { addDays, format } from 'date-fns';
-import { initialRoles, teamMembers as staticTeamMembers } from '@/lib/data';
+import { initialRoles } from '@/lib/data';
 
 type AnyStage = WorkflowStage | SubStage | SubSubStage;
 
@@ -157,21 +157,18 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
 
     const usersCollection = useMemoFirebase(() => {
         if (!firestore || !currentUser) return null;
-        // Only directors can fetch all users.
         if (currentUser.role === 'Director') {
             return collection(firestore, 'users');
         }
-        return null; // Non-directors will not fetch all users.
+        return null;
     }, [firestore, currentUser]);
 
-    // Fetch all users if director, otherwise this hook will return empty array
     const { data: allTeamMembers = [], isLoading: isLoadingAllTeamMembers } = useCollection<AppUser>(usersCollection);
 
     const teamMembers = useMemo(() => {
         if (currentUser?.role === 'Director') {
             return allTeamMembers;
         }
-        // For non-directors, return only their own profile data in the array.
         if (userProfile) {
             return [userProfile];
         }
@@ -211,7 +208,7 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
     
      useEffect(() => {
         const bootstrapDirectors = async () => {
-            if (!firestore) return;
+            if (!firestore || !auth) return;
     
             const directorUsers = [
                 { uid: 'TycwLL3rn5Zny3R4aibDJuIbd2S2', name: 'Isaac Golzarri', email: 'witbiz.mx@gmail.com', role: 'Director' },
@@ -222,7 +219,9 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
                 const userDocRef = doc(firestore, 'users', dir.uid);
                 const userDoc = await getDoc(userDocRef);
                 if (!userDoc.exists()) {
-                    try {
+                   try {
+                        // This only works if the user account already exists in Auth.
+                        // It will not create a new Auth user.
                         await setDocumentNonBlocking(userDocRef, {
                             id: dir.uid,
                             name: dir.name,
@@ -230,7 +229,7 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
                             role: dir.role,
                             status: 'Activo',
                         }, { merge: true });
-                        console.log(`Director profile for ${dir.name} created.`);
+                        console.log(`Director profile for ${dir.name} created/updated in Firestore.`);
                     } catch (error) {
                         console.error(`Failed to create director profile for ${dir.name}:`, error);
                     }
@@ -239,7 +238,7 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
         };
     
         bootstrapDirectors();
-    }, [firestore]);
+    }, [firestore, auth]);
 
 
     // --- Firestore Data ---
@@ -677,7 +676,15 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
           const docRef = doc(firestore, 'users', user.uid, 'serviceWorkflows', wf.id);
           batch.set(docRef, wf, { merge: true });
       });
-      batch.commit().catch(err => console.error("Error saving workflow order", err));
+      batch.commit().catch(error => {
+        // Here we emit the contextual error
+        const contextualError = new FirestorePermissionError({
+            operation: 'update',
+            path: `users/${user.uid}/serviceWorkflows`, 
+            requestResourceData: { workflows: "multiple documents updated" } 
+        });
+        showNotification('error', 'Error de Permisos', 'No se pudieron guardar los cambios en los roles.');
+      });
     };
 
 
