@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import React, { useState, useCallback, useEffect } from 'react';
@@ -110,16 +109,14 @@ export function SmartDocumentUploadDialog({
     maxFiles: 1,
   });
   
-  const finalDocumentType = isServiceResourceMode ? 'Descargable' : (documentType === 'Otro' ? customDocumentType : documentType);
+  const finalDocumentType = isServiceResourceMode 
+    ? 'Descargable' 
+    : (documentType === 'Otro' ? (customDocumentType.trim() || 'Otro') : documentType);
   
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!file) {
       toast({ variant: "destructive", title: 'Faltan datos', description: 'Por favor, suba un archivo.' });
-      return;
-    }
-    if (!isServiceResourceMode && !finalDocumentType.trim()) {
-      toast({ variant: "destructive", title: 'Faltan datos', description: 'Por favor, seleccione un tipo de documento.' });
       return;
     }
     
@@ -129,28 +126,12 @@ export function SmartDocumentUploadDialog({
     let finalSupplierId: string | undefined = undefined;
 
     if (associationType === 'client' && !isServiceResourceMode) {
-        if (!selectedId && !isNewClient) {
-            toast({ variant: "destructive", title: 'Faltan datos', description: 'Por favor, asocie el documento a un cliente.' });
-            return;
-        }
-        finalClientId = selectedId;
+        finalClientId = selectedId === 'new' ? undefined : selectedId;
     } else if (associationType === 'service') {
-        if (!selectedId) {
-            toast({ variant: "destructive", title: 'Faltan datos', description: 'Por favor, asocie el documento a un servicio.' });
-            return;
-        }
         finalServiceId = selectedId;
     } else if (associationType === 'promoter') {
-        if (!selectedId) {
-             toast({ variant: "destructive", title: 'Faltan datos', description: 'Por favor, asocie el documento a un promotor.' });
-            return;
-        }
         finalPromoterId = selectedId;
     } else if (associationType === 'supplier') {
-         if (!selectedId) {
-             toast({ variant: "destructive", title: 'Faltan datos', description: 'Por favor, asocie el documento a un proveedor.' });
-            return;
-        }
         finalSupplierId = selectedId;
     }
 
@@ -242,8 +223,8 @@ export function SmartDocumentUploadDialog({
             {file && !isServiceResourceMode && (
               <div className="space-y-4 pt-4 border-t">
                 <div>
-                  <Label htmlFor="association-type">Asociar a</Label>
-                  <Select value={associationType} onValueChange={(v) => setAssociationType(v as any)} required disabled={isSubmitting}>
+                  <Label htmlFor="association-type">Asociar a (Opcional)</Label>
+                  <Select value={associationType} onValueChange={(v) => setAssociationType(v as any)} disabled={isSubmitting}>
                       <SelectTrigger id="association-type">
                           <SelectValue />
                       </SelectTrigger>
@@ -257,10 +238,10 @@ export function SmartDocumentUploadDialog({
                 </div>
 
                 <div className="pl-4 border-l-2 ml-2">
-                  <Label htmlFor="entity-selector">Seleccionar Entidad</Label>
+                  <Label htmlFor="entity-selector">Seleccionar Entidad (Opcional)</Label>
                   {associationType === 'client' && (
                     <>
-                      <Select value={selectedId} onValueChange={handleClientSelection} required disabled={isSubmitting}>
+                      <Select value={selectedId} onValueChange={handleClientSelection} disabled={isSubmitting}>
                         <SelectTrigger id="entity-selector"><SelectValue placeholder="Seleccione un cliente..." /></SelectTrigger>
                         <SelectContent>
                           <SelectItem value="new">-- Crear Nuevo Cliente --</SelectItem>
@@ -270,25 +251,25 @@ export function SmartDocumentUploadDialog({
                       {isNewClient && (
                         <div className="pt-2">
                             <Label htmlFor="new-client-name" className="text-xs">Nombre del Nuevo Cliente</Label>
-                            <Input id="new-client-name" value={newClientName} onChange={(e) => setNewClientName(e.target.value)} placeholder="Ej. Acme Corp." required disabled={isSubmitting} className="mt-1"/>
+                            <Input id="new-client-name" value={newClientName} onChange={(e) => setNewClientName(e.target.value)} placeholder="Ej. Acme Corp." disabled={isSubmitting} className="mt-1"/>
                         </div>
                       )}
                     </>
                   )}
                   {associationType === 'service' && (
-                    <Select value={selectedId} onValueChange={setSelectedId} required disabled={isSubmitting}>
+                    <Select value={selectedId} onValueChange={setSelectedId} disabled={isSubmitting}>
                       <SelectTrigger id="entity-selector"><SelectValue placeholder="Seleccione un servicio..." /></SelectTrigger>
                       <SelectContent>{serviceWorkflows.map(item => <SelectItem key={item.id} value={item.id}>{item.name}</SelectItem>)}</SelectContent>
                     </Select>
                   )}
                   {associationType === 'promoter' && (
-                    <Select value={selectedId} onValueChange={setSelectedId} required disabled={isSubmitting}>
+                    <Select value={selectedId} onValueChange={setSelectedId} disabled={isSubmitting}>
                       <SelectTrigger id="entity-selector"><SelectValue placeholder="Seleccione un promotor..." /></SelectTrigger>
                       <SelectContent>{promoters.filter(p => p.status !== 'Archivado').map(item => <SelectItem key={item.id} value={item.id}>{item.name}</SelectItem>)}</SelectContent>
                     </Select>
                   )}
                   {associationType === 'supplier' && (
-                    <Select value={selectedId} onValueChange={setSelectedId} required disabled={isSubmitting}>
+                    <Select value={selectedId} onValueChange={setSelectedId} disabled={isSubmitting}>
                       <SelectTrigger id="entity-selector"><SelectValue placeholder="Seleccione un proveedor..." /></SelectTrigger>
                       <SelectContent>{suppliers.filter(s => s.status !== 'Archivado').map(item => <SelectItem key={item.id} value={item.id}>{item.name}</SelectItem>)}</SelectContent>
                     </Select>
@@ -296,8 +277,8 @@ export function SmartDocumentUploadDialog({
                 </div>
                 
                 <div>
-                    <Label htmlFor="doc-type-selector">Tipo de Documento</Label>
-                    <Select value={documentType} onValueChange={(value) => setDocumentType(value as DocumentType | 'Otro')} required disabled={isSubmitting}>
+                    <Label htmlFor="doc-type-selector">Tipo de Documento (Opcional)</Label>
+                    <Select value={documentType} onValueChange={(value) => setDocumentType(value as DocumentType | 'Otro')} disabled={isSubmitting}>
                         <SelectTrigger id="doc-type-selector"><SelectValue placeholder="Seleccione un tipo"/></SelectTrigger>
                         <SelectContent>
                             {documentTypes.map(type => (
@@ -309,13 +290,12 @@ export function SmartDocumentUploadDialog({
                 
                 {documentType === 'Otro' && (
                     <div className="pl-4 border-l-2 ml-2">
-                        <Label htmlFor="custom-doc-type">Especifique el Tipo de Documento</Label>
+                        <Label htmlFor="custom-doc-type">Especifique el Tipo (Opcional)</Label>
                         <Input
                             id="custom-doc-type"
                             value={customDocumentType}
                             onChange={(e) => setCustomDocumentType(e.target.value)}
                             placeholder="Ej. Acuerdo de Confidencialidad"
-                            required
                             disabled={isSubmitting}
                             className="mt-1"
                         />
@@ -338,3 +318,4 @@ export function SmartDocumentUploadDialog({
     </Dialog>
   );
 }
+
