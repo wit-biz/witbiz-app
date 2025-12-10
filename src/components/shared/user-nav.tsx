@@ -62,14 +62,7 @@ export function UserNav() {
             size="icon"
             className="h-9 w-9 rounded-full"
           >
-            {user && currentUser ? (
-              <Avatar className="h-8 w-8">
-                <AvatarImage src={currentUser.photoURL || user.photoURL || ''} alt={currentUser.displayName || 'User'}/>
-                <AvatarFallback>{currentUser.displayName?.charAt(0).toUpperCase() || user.email?.charAt(0).toUpperCase() || 'U'}</AvatarFallback>
-              </Avatar>
-            ) : (
-              <UserMenuIcon />
-            )}
+            <UserMenuIcon />
             <span className="sr-only">Abrir menú de usuario</span>
           </Button>
         </DropdownMenuTrigger>
