@@ -66,7 +66,7 @@ export function UserNav() {
             <span className="sr-only">Abrir menú de usuario</span>
           </Button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="start" sideOffset={8}>
+        <DropdownMenuContent side="left" align="center" sideOffset={8}>
           {user && currentUser ? (
             <>
               <DropdownMenuLabel>
