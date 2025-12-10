@@ -155,7 +155,7 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
     const userProfileRef = useMemoFirebase(() => user ? doc(firestore, 'users', user.uid) : null, [firestore, user]);
     const { data: userProfile, isLoading: isLoadingUserProfile } = useDoc<AppUser>(userProfileRef);
 
-    const [teamMembers, setTeamMembers] = useState<AppUser[]>([]);
+    const [teamMembers, setTeamMembers] = useState<AppUser[]>(staticTeamMembers);
     const isLoadingTeamMembers = false; // Data is now static or managed internally
 
 
@@ -222,7 +222,7 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
                 name: name,
                 email: newUser.email,
                 role: role,
-            }, {});
+            }, { merge: true });
             
             addLog('user_invited', newUser.uid, 'user', name);
     
@@ -231,40 +231,16 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
             // Special case: if user already exists in auth, just ensure the firestore doc is there.
             if (error.code === 'auth/email-already-in-use') {
                  // Try to set the Firestore document anyway.
-                 // We need to get the user's UID first, which we don't have here.
-                 // This part of the logic might need a backend function to securely get UID from email.
-                 // For now, we assume the bootstrap will run once.
-                 // Let's try to set the document for the *currently signed-in* user if their profile is missing.
-                 // This won't work for bootstrapping another user, but it's a safe client-side operation.
+                 // This might be for a user that exists in auth but not firestore.
+                 // We need a way to get the UID for an existing email, which is not directly possible on the client.
+                 // The best we can do is notify the user and maybe update the current user's profile if they are logged in.
+                 showNotification('warning', 'Usuario Existente', 'Este correo electrónico ya está registrado.');
             } else {
                  showNotification('error', 'Error de registro', error.message);
             }
             throw error; // Re-throw to be handled by caller if needed
         }
     }, [auth, firestore, showNotification, addLog]);
-
-    // Effect to bootstrap director users
-    useEffect(() => {
-        const bootstrapUsers = async () => {
-            try {
-                await registerUser('Isaac Golzarri', 'witbiz.mx@gmail.com', 'WitBiz!123', 'Director');
-            } catch (error: any) {
-                if (error.code !== 'auth/email-already-in-use') {
-                    console.error("Failed to bootstrap Isaac:", error);
-                }
-            }
-            try {
-                await registerUser('Said Saigar', 'saidsaigar@gmail.com', 'WitBiz!123', 'Director');
-            } catch (error: any) {
-                if (error.code !== 'auth/email-already-in-use') {
-                    console.error("Failed to bootstrap Said:", error);
-                }
-            }
-        };
-        bootstrapUsers();
-    }, [registerUser]);
-
-
 
     const updateUser = async (userId: string, updates: Partial<AppUser>): Promise<boolean> => {
         if (!firestore) return false;
@@ -819,42 +795,26 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
     
     // Final setup in a separate effect to ensure all functions are defined
     useEffect(() => {
-        if (user && userProfile) {
-            let userRoleName = userProfile.role || 'Colaborador';
-            let userName = userProfile.name || user.displayName;
+        if (user) {
+            const staticUser = staticTeamMembers.find(u => u.id === user.uid);
+            let userRoleName = staticUser?.role || 'Colaborador';
+            let userName = staticUser?.name || user.displayName;
+            let userPhoto = staticUser?.photoURL || user.photoURL;
 
-            // Special override for founders
-            if (['witbiz.mx@gmail.com', 'saidsaigar@gmail.com'].includes(user.email || '')) {
-                userRoleName = 'Director';
-                if (user.email === 'saidsaigar@gmail.com') userName = 'Said Saigar';
-                if (user.email === 'witbiz.mx@gmail.com') userName = 'Isaac Golzarri';
-            }
-            
             const userRole = roles.find(r => r.name === userRoleName) || roles.find(r => r.id === 'collaborator');
 
             setCurrentUser({
                 uid: user.uid,
                 email: user.email,
                 displayName: userName,
-                photoURL: userProfile.photoURL || user.photoURL,
+                photoURL: userPhoto,
                 role: userRole?.name,
                 permissions: userRole?.permissions || {},
             });
-
-        } else if (user && !isLoadingUserProfile) {
-            // First time user, profile doesn't exist yet. Create it.
-            const isFounder = ['witbiz.mx@gmail.com', 'saidsaigar@gmail.com'].includes(user.email || '');
-            const newUserProfile: AppUser = {
-                id: user.uid,
-                name: user.displayName || 'Nuevo Usuario',
-                email: user.email || '',
-                role: isFounder ? 'Director' : 'Colaborador', // Default to 'Colaborador'
-            };
-            setDocumentNonBlocking(doc(firestore, 'users', user.uid), newUserProfile, { merge: true });
         } else if (!user && !isUserLoading) {
             setCurrentUser(null);
         }
-    }, [user, userProfile, isUserLoading, isLoadingUserProfile, firestore, roles]);
+    }, [user, isUserLoading, roles]);
     
     const value = useMemo(() => ({
         currentUser, isLoadingCurrentUser: isUserLoading || isLoadingUserProfile, teamMembers, roles, setRoles,

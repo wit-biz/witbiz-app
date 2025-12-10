@@ -6,8 +6,10 @@ import { allPermissions } from '@/lib/permissions';
 
 
 export const teamMembers: AppUser[] = [
-    { id: '1', name: 'Andrea Admin', email: 'admin@witbiz.com', role: 'Administrador', photoURL: 'https://picsum.photos/seed/1/40/40' },
-    { id: '2', name: 'Carla Collaborator', email: 'carla@witbiz.com', role: 'Colaborador', photoURL: 'https://picsum.photos/seed/2/40/40' },
+    { id: 'TycwLL3rn5Zny3R4aibDJuIbd2S2', name: 'Isaac Golzarri', email: 'witbiz.mx@gmail.com', role: 'Director', photoURL: 'https://picsum.photos/seed/1/40/40' },
+    { id: 'GfHifOumHKVvmNcUg6W4iNJEYSj2', name: 'Said Saigar', email: 'saidsaigar@gmail.com', role: 'Director', photoURL: 'https://picsum.photos/seed/2/40/40' },
+    { id: '1', name: 'Andrea Admin', email: 'admin@witbiz.com', role: 'Administrador', photoURL: 'https://picsum.photos/seed/3/40/40' },
+    { id: '2', name: 'Carla Collaborator', email: 'carla@witbiz.com', role: 'Colaborador', photoURL: 'https://picsum.photos/seed/4/40/40' },
 ];
 
 export const initialRoles: UserRole[] = [
