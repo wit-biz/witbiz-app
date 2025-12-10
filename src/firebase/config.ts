@@ -1,8 +1,8 @@
 export const firebaseConfig = {
-  "projectId": "wit-biz-20840214-423fc",
-  "appId": "1:167489268583:web:627986979f10320573ddc2",
-  "apiKey": "AIzaSyDsz1VH_NVh-ZpSvdm7m1YQkrWeEVAXSQ8",
-  "authDomain": "wit-biz-20840214-423fc.firebaseapp.com",
+  "projectId": "wit-biz-07943714-b10c8",
+  "appId": "1:383875580444:web:4a30d780d90ad505cd55d9",
+  "apiKey": "AIzaSyDH54EjUgsjGQ4bfL62fLtomFSER4_W9WI",
+  "authDomain": "wit-biz-07943714-b10c8.firebaseapp.com",
   "measurementId": "",
-  "messagingSenderId": "167489268583"
+  "messagingSenderId": "383875580444"
 };

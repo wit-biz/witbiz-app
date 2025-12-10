@@ -1,37 +1,41 @@
-
 /**
- * This ruleset enforces a strict user-ownership model for a CRM application.
- * It is designed for rapid prototyping, focusing on strong authorization while
- * maintaining flexibility in data schemas.
+ * This Firestore Security Ruleset establishes a strict, user-centric data ownership model.
+ * It is designed for applications where data is siloed and private to each authenticated user,
+ * with no collaborative or public data access.
  *
  * Core Philosophy:
- * A user has complete control over their own data, and no access to anyone else's.
- * All operations require a user to be authenticated. There is no public data,
- * with the explicit exception of the `promoters` collection for login purposes.
+ * The security model is based on strict user ownership. All user-generated content is stored
+ * within a dedicated subcollection under their unique user ID (`/users/{userId}`). Access is
+ * granted only if the requesting user's authenticated UID matches the `userId` in the document path.
+ * This approach ensures that users can only ever access their own information.
  *
  * Data Structure:
- * All application data is hierarchically nested under a user-specific path:
- * /users/{userId}/...
- * This structure makes ownership clear and security rules efficient, as authorization
- * can be determined directly from the document path without needing extra database reads.
+ * All application data is hierarchically organized under the top-level `/users` collection.
+ *   - `/users/{userId}`: Root document for a user's data.
+ *   - `/users/{userId}/contacts/{contactId}`: Stores a user's private contacts.
+ *   - `/users/{userId}/leads/{leadId}`: Stores a user's private leads.
+ *   - `/users/{userId}/leads/{leadId}/tasks/{taskId}`: Stores tasks related to a specific lead,
+ *     inheriting ownership from the parent user.
  *
  * Key Security Decisions:
- * - User Isolation: All rules are scoped to the authenticated user's UID (`request.auth.uid`).
- * - No User Listing: It is forbidden to list the top-level `/users` collection to prevent
- *   data scraping and enumeration of all application users.
- * - Path-Based Security: Ownership is derived from the `{userId}` wildcard in the path,
- *   which is the most performant and secure way to handle user-owned data.
- * - Relational Integrity: On document creation, key identifiers (like `userId`, `clientId`)
- *   are validated to ensure they match the document's path, preventing data from being
- *   misfiled. These identifiers are immutable once created.
+ * - Default Deny: All access is denied by default. Rules explicitly grant permissions.
+ * - No Public Access: There are no publicly readable collections. A user must be signed in to
+ *   access any data.
+ * - No User Enumeration: Listing documents in the top-level `/users` collection is explicitly
+ *   disallowed to prevent leaking the user list.
+ * - Path-Based Authorization: Authorization is determined exclusively by the user ID in the
+ *   document path, which is fast, performant, and avoids costly `get()` calls to other documents.
+ * - Relational Integrity: On document creation, rules ensure that internal ID fields (e.g.,
+ *   `task.leadId`) match the corresponding IDs in the path, preventing data inconsistency. These
+ *   relational fields are immutable and cannot be changed on update.
  */
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    //-------------------------------------------------------------------------
-    //  Helper Functions
-    //-------------------------------------------------------------------------
+    // ----------------------------------------------------------------------
+    // Helper Functions
+    // ----------------------------------------------------------------------
 
     /**
      * Checks if the user is authenticated.
@@ -41,247 +45,88 @@ service cloud.firestore {
     }
 
     /**
-     * Checks if the currently authenticated user's UID matches the provided userId.
-     * This is the primary function for verifying document ownership.
+     * Checks if the requesting user is the owner of the document based on the userId in the path.
      */
     function isOwner(userId) {
       return isSignedIn() && request.auth.uid == userId;
     }
 
     /**
-     * Checks for ownership on an existing document. Used for update and delete
-     * operations to prevent acting on documents that don't exist.
+     * Checks for ownership on an existing document. Used for update and delete operations.
      */
     function isExistingOwner(userId) {
       return isOwner(userId) && resource != null;
     }
 
-    // --- Role-based Access Control ---
-    /**
-     * Retrieves the role of the requesting user from their profile document.
-     * @param uid The UID of the user whose role is being checked.
-     * @return The user's role string (e.g., 'Director', 'Admin', 'Collaborator').
-     */
-    function getRole(uid) {
-        return get(/databases/$(database)/documents/users/$(uid)).data.role;
-    }
+    // ----------------------------------------------------------------------
+    // User Data Tree
+    // ----------------------------------------------------------------------
 
     /**
-     * Checks if the requesting user has the 'Director' role.
-     */
-    function isDirector() {
-        return isSignedIn() && getRole(request.auth.uid) == 'Director';
-    }
-
-    /**
-     * Checks if the requesting user has the 'Admin' role.
-     */
-    function isAdmin() {
-        return isSignedIn() && getRole(request.auth.uid) == 'Administrador';
-    }
-
-
-    // --- Create Operation Validation ---
-
-    /**
-     * Validates that the new User document contains an `id` field that
-     * matches the user's auth UID.
-     */
-    function hasValidUserDataForCreate(userId) {
-      return request.resource.data.id == userId;
-    }
-
-    /**
-     * Validates that the new Client document's `id` matches the document ID.
-     */
-    function hasValidClientDataForCreate(clientId) {
-      return request.resource.data.id == clientId;
-    }
-
-    /**
-     * Validates that the new Lead document's IDs match their respective path segments.
-     */
-    function hasValidLeadDataForCreate(clientId, leadId) {
-      return request.resource.data.id == leadId
-          && request.resource.data.clientId == clientId;
-    }
-
-    /**
-     * Validates that the new Task document's IDs correctly reference its owner and parent lead.
-     * This is critical for maintaining relational integrity.
-     */
-    function hasValidTaskDataForCreate(userId, leadId, taskId) {
-      return request.resource.data.id == taskId
-          && request.resource.data.leadId == leadId
-          && request.resource.data.userId == userId;
-    }
-
-    /**
-     * Placeholder for Note creation validation. Currently allows any data as long as user is owner.
-     */
-    function hasValidNoteDataForCreate() {
-        return true;
-    }
-
-    // --- Update Operation Validation ---
-
-    /**
-     * Enforces immutability for the User's unique ID.
-     */
-    function hasImmutableUserFields() {
-      return request.resource.data.id == resource.data.id;
-    }
-
-    /**
-     * Enforces immutability for the Client's unique ID.
-     */
-    function hasImmutableClientFields() {
-      return request.resource.data.id == resource.data.id;
-    }
-
-    /**
-     * Enforces immutability for the Lead's relational IDs.
-     */
-    function hasImmutableLeadFields() {
-      return request.resource.data.id == resource.data.id
-          && request.resource.data.clientId == resource.data.clientId;
-    }
-
-    /**
-     * Enforces immutability for the Task's relational IDs.
-     */
-    function hasImmutableTaskFields() {
-      return request.resource.data.id == resource.data.id
-          && request.resource.data.leadId == resource.data.leadId
-          && request.resource.data.userId == resource.data.userId;
-    }
-
-    /**
-     * Placeholder for Note update validation. Currently allows any updates.
-     */
-    function hasValidNoteDataForUpdate() {
-      return request.resource.data.clientId == resource.data.clientId;
-    }
-
-
-    //-------------------------------------------------------------------------
-    //  Collection Rules
-    //-------------------------------------------------------------------------
-    
-    /**
-     * @description Public read access for the promoter login page.
-     *              Write access is restricted to admins/directors.
-     */
-    match /promoters/{promoterId} {
-        allow get, list: if true;
-        allow create, update, delete: if isDirector() || isAdmin();
-    }
-
-
-    /**
-     * @description Manages user profile documents.
-     * @path /users/{userId}
-     * @allow (get) A user can read their own profile.
-     * @allow (create) An authenticated user can create their own profile document.
-     * @allow (list) An authenticated user can list all users to see team members.
-     * @deny (update) An authenticated user cannot update another user's profile.
-     * @principle Restricts access to a user's own data tree and prevents user enumeration.
+     * @description Secures the user's root document. Allows a user to create and update their
+     *              own document, but prevents reading other users' documents or listing all users.
+     * @path        /users/{userId}
+     * @allow       A user with UID 'user_abc' can (create) their own document at `/users/user_abc`.
+     * @deny        A user with UID 'user_xyz' cannot (get) the document at `/users/user_abc`.
+     * @deny        Any user cannot (list) documents from the `/users` collection.
+     * @principle   Enforces self-creation of a root user document and prevents user enumeration.
      */
     match /users/{userId} {
-      allow get: if isOwner(userId) || isDirector() || isAdmin();
-      allow list: if isSignedIn();
-      allow create: if isOwner(userId) && hasValidUserDataForCreate(userId);
-      allow update: if (isOwner(userId) || isDirector()) && hasImmutableUserFields();
-      allow delete: if isOwner(userId) || isDirector();
+      allow get: if isOwner(userId);
+      allow list: if false;
+      allow create: if isOwner(userId);
+      allow update: if isExistingOwner(userId);
+      allow delete: if false;
+    }
 
-      /**
-       * @description Manages a user's clients.
-       * @path /users/{userId}/clients/{clientId}
-       * @allow (create, list) A user can create and list their own clients.
-       * @deny (get) A user cannot read another user's clients.
-       * @principle Enforces document ownership for all operations within a user's private subcollection.
-       */
-      match /clients/{clientId} {
-        allow get, list, create, update, delete: if isOwner(userId);
+    /**
+     * @description Secures a user's private contacts. Only the owner can read, list, or write
+     *              their own contacts.
+     * @path        /users/{userId}/contacts/{contactId}
+     * @allow       User 'user_abc' can (list) all documents in `/users/user_abc/contacts`.
+     * @allow       User 'user_abc' can (create) a new contact in `/users/user_abc/contacts`.
+     * @deny        User 'user_xyz' cannot (get) a document from `/users/user_abc/contacts/{contactId}`.
+     * @principle   Restricts access to a user's own data tree using path-based ownership.
+     */
+    match /users/{userId}/contacts/{contactId} {
+      allow get: if isOwner(userId);
+      allow list: if isOwner(userId);
+      allow create: if isOwner(userId) && request.resource.data.id == contactId;
+      allow update: if isExistingOwner(userId) && request.resource.data.id == resource.data.id;
+      allow delete: if isExistingOwner(userId);
+    }
 
-        /**
-         * @description Manages leads associated with a specific contact.
-         * @path /users/{userId}/clients/{clientId}/leads/{leadId}
-         * @allow (create, list) A user can create and list leads for their own contacts.
-         * @deny (get) A user cannot read another user's leads.
-         * @principle Enforces document ownership, inheriting access control from the parent user path.
-         */
-        match /leads/{leadId} {
-          allow get, list, create, update, delete: if isOwner(userId);
+    /**
+     * @description Secures a user's private leads. Only the owner can read, list, or write
+     *              their own leads.
+     * @path        /users/{userId}/leads/{leadId}
+     * @allow       User 'user_abc' can (update) a lead at `/users/user_abc/leads/{leadId}`.
+     * @deny        User 'user_xyz' cannot (delete) a lead at `/users/user_abc/leads/{leadId}`.
+     * @principle   Restricts access to a user's own data tree using path-based ownership.
+     */
+    match /users/{userId}/leads/{leadId} {
+      allow get: if isOwner(userId);
+      allow list: if isOwner(userId);
+      allow create: if isOwner(userId) && request.resource.data.id == leadId;
+      allow update: if isExistingOwner(userId) && request.resource.data.id == resource.data.id;
+      allow delete: if isExistingOwner(userId);
+    }
 
-        }
-      }
-
-      /**
-       * @description Manages documents associated with a specific user.
-       * @path /users/{userId}/documents/{documentId}
-       */
-      match /documents/{documentId} {
-          allow get, list, create, update, delete: if isOwner(userId);
-      }
-      
-      /**
-       * @description Manages service workflows templates for a user.
-       * @path /users/{userId}/serviceWorkflows/{serviceId}
-       */
-      match /serviceWorkflows/{serviceId} {
-          allow get, list, create, update, delete: if isOwner(userId);
-      }
-
-       
-      /**
-       * @description Manages suppliers for a user.
-       * @path /users/{userId}/suppliers/{supplierId}
-       */
-       match /suppliers/{supplierId} {
-            allow get, list, create, update, delete: if isOwner(userId);
-       }
-
-      /**
-       * @description Manages notes for a user.
-       * @path /users/{userId}/notes/{noteId}
-       */
-       match /notes/{noteId} {
-            allow get, list, create, update, delete: if isOwner(userId);
-       }
-       
-       /**
-       * @description Manages tasks for a user. This is a top-level collection under the user.
-       * @path /users/{userId}/tasks/{taskId}
-       */
-       match /tasks/{taskId} {
-            allow get, list, create, update, delete: if isOwner(userId);
-       }
-       
-       /**
-       * @description Manages logs for a user.
-       * @path /users/{userId}/logs/{logId}
-       */
-       match /logs/{logId} {
-            allow get, list, create, update, delete: if isOwner(userId);
-       }
-
-       // --- Accounting Collections ---
-       match /companies/{companyId} {
-            allow get, list, create, update, delete: if isOwner(userId);
-       }
-       match /bankAccounts/{accountId} {
-            allow get, list, create, update, delete: if isOwner(userId);
-       }
-       match /categories/{categoryId} {
-            allow get, list, create, update, delete: if isOwner(userId);
-       }
-       match /transactions/{transactionId} {
-            allow get, list, create, update, delete: if isOwner(userId);
-       }
-       match /loans/{loanId} {
-            allow get, list, create, update, delete: if isOwner(userId);
-       }
+    /**
+     * @description Secures tasks within a lead. Access is inherited from the parent user.
+     *              Ensures tasks are correctly associated with their parent lead.
+     * @path        /users/{userId}/leads/{leadId}/tasks/{taskId}
+     * @allow       User 'user_abc' can (create) a task at `/users/user_abc/leads/lead_123/tasks/{taskId}`.
+     * @deny        User 'user_xyz' cannot (list) tasks from `/users/user_abc/leads/lead_123/tasks`.
+     * @principle   Validates relational integrity by ensuring the task's `leadId` field matches the
+     *              path upon creation and is immutable.
+     */
+    match /users/{userId}/leads/{leadId}/tasks/{taskId} {
+      allow get: if isOwner(userId);
+      allow list: if isOwner(userId);
+      allow create: if isOwner(userId) && request.resource.data.id == taskId && request.resource.data.leadId == leadId;
+      allow update: if isExistingOwner(userId) && request.resource.data.id == resource.data.id && request.resource.data.leadId == resource.data.leadId;
+      allow delete: if isExistingOwner(userId);
     }
   }
 }

@@ -12,24 +12,24 @@
         },
         "firstName": {
           "type": "string",
-          "description": "The contact's first name."
+          "description": "The first name of the contact."
         },
         "lastName": {
           "type": "string",
-          "description": "The contact's last name."
+          "description": "The last name of the contact."
         },
         "email": {
           "type": "string",
-          "description": "The contact's email address.",
+          "description": "The email address of the contact.",
           "format": "email"
         },
         "phone": {
           "type": "string",
-          "description": "The contact's phone number."
+          "description": "The phone number of the contact."
         },
         "company": {
           "type": "string",
-          "description": "The contact's company."
+          "description": "The company the contact works for."
         }
       },
       "required": [
@@ -55,15 +55,15 @@
         },
         "status": {
           "type": "string",
-          "description": "The current status of the lead (e.g., New, Qualified, Contacted)."
+          "description": "The current status of the lead (e.g., New, Qualified, Opportunity, Customer)."
         },
         "source": {
           "type": "string",
           "description": "The source of the lead (e.g., Website, Referral, Advertisement)."
         },
-        "value": {
+        "estimatedValue": {
           "type": "number",
-          "description": "The potential value of the lead."
+          "description": "The estimated value of the lead."
         }
       },
       "required": [
@@ -76,19 +76,19 @@
       "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "Task",
       "type": "object",
-      "description": "Represents a task assigned to a user.",
+      "description": "Represents a task to be completed.",
       "properties": {
         "id": {
           "type": "string",
           "description": "Unique identifier for the Task entity."
         },
-        "userId": {
-          "type": "string",
-          "description": "Reference to User. (Relationship: User 1:N Task)"
-        },
         "leadId": {
           "type": "string",
           "description": "Reference to Lead. (Relationship: Lead 1:N Task)"
+        },
+        "assignedTo": {
+          "type": "string",
+          "description": "The user ID of the person assigned to the task."
         },
         "description": {
           "type": "string",
@@ -101,46 +101,15 @@
         },
         "completed": {
           "type": "boolean",
-          "description": "Indicates whether the task has been completed."
+          "description": "Whether the task is completed or not."
         }
       },
       "required": [
         "id",
-        "userId",
+        "leadId",
+        "assignedTo",
         "description",
-        "dueDate",
-        "completed"
-      ]
-    },
-    "User": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "User",
-      "type": "object",
-      "description": "Represents a user of the WitCRM system.  Note: Authentication information is not stored here.",
-      "properties": {
-        "id": {
-          "type": "string",
-          "description": "Unique identifier for the User entity."
-        },
-        "firstName": {
-          "type": "string",
-          "description": "User's first name."
-        },
-        "lastName": {
-          "type": "string",
-          "description": "User's last name."
-        },
-        "email": {
-          "type": "string",
-          "description": "User's email address.",
-          "format": "email"
-        }
-      },
-      "required": [
-        "id",
-        "firstName",
-        "lastName",
-        "email"
+        "dueDate"
       ]
     }
   },
@@ -153,94 +122,70 @@
   "firestore": {
     "structure": [
       {
-        "path": "/users/{userId}",
+        "path": "/users/{userId}/contacts/{contactId}",
         "definition": {
-          "entityName": "User",
-          "schema": {
-            "$ref": "#/backend/entities/User"
-          },
-          "description": "Stores user profiles.  Tasks and Contacts are owned by the user and accessible only to them.",
-          "params": [
-            {
-              "name": "userId",
-              "description": "The unique identifier for the user."
-            }
-          ]
-        }
-      },
-      {
-        "path": "/users/{userId}/clients/{clientId}",
-        "definition": {
-          "entityName": "Client",
+          "entityName": "Contact",
           "schema": {
             "$ref": "#/backend/entities/Contact"
           },
-          "description": "Stores clients associated with a specific user.  Owned by the user.",
+          "description": "Stores contact information for a user. Path-based ownership ensures only the user can access their contacts.",
           "params": [
             {
               "name": "userId",
-              "description": "The unique identifier for the user."
+              "description": "The ID of the user who owns the contact."
             },
             {
-              "name": "clientId",
-              "description": "The unique identifier for the client."
+              "name": "contactId",
+              "description": "The ID of the contact."
             }
           ]
         }
       },
       {
-        "path": "/users/{userId}/clients/{clientId}/leads/{leadId}",
+        "path": "/users/{userId}/leads/{leadId}",
         "definition": {
           "entityName": "Lead",
           "schema": {
             "$ref": "#/backend/entities/Lead"
           },
-          "description": "Stores leads associated with a specific client. Owned by the user.",
+          "description": "Stores lead information for a user. Path-based ownership ensures only the user can access their leads.",
           "params": [
             {
               "name": "userId",
-              "description": "The unique identifier for the user."
-            },
-            {
-              "name": "clientId",
-              "description": "The unique identifier for the client."
+              "description": "The ID of the user who owns the lead."
             },
             {
               "name": "leadId",
-              "description": "The unique identifier for the lead."
+              "description": "The ID of the lead."
             }
           ]
         }
       },
       {
-        "path": "/users/{userId}/clients/{clientId}/leads/{leadId}/tasks/{taskId}",
+        "path": "/users/{userId}/leads/{leadId}/tasks/{taskId}",
         "definition": {
           "entityName": "Task",
           "schema": {
             "$ref": "#/backend/entities/Task"
           },
-          "description": "Stores tasks associated with a specific lead. Owned by the user.",
+          "description": "Stores task information for a lead. Path-based ownership ensures only the user can access their tasks.",
           "params": [
             {
               "name": "userId",
-              "description": "The unique identifier for the user."
-            },
-            {
-              "name": "clientId",
-              "description": "The unique identifier for the client."
+              "description": "The ID of the user who owns the lead."
             },
             {
               "name": "leadId",
-              "description": "The unique identifier for the lead."
+              "description": "The ID of the lead."
             },
             {
               "name": "taskId",
-              "description": "The unique identifier for the task."
+              "description": "The ID of the task."
             }
           ]
         }
       }
     ],
-    "reasoning": "The Firestore structure is designed to support WitCRM's core features: Contact Management, Lead Tracking, and Task Management. The structure prioritizes authorization independence, clarity, and scalability. User-owned data is stored under `/users/{userId}`. Contacts are also stored under each user to keep the application clear. Leads are nested under Contacts, and Tasks are nested under Leads to facilitate easy querying and management. This structure also provides clear ownership and simplifies security rules.\n\n**Authorization Independence:**  Authorization is enforced at each level using path-based rules and explicit ownership. This avoids relying on `get()` calls in security rules, ensuring atomic operations and easier debugging.\n\n**QAPs Support:**  The structure supports secure list operations by segregating data based on ownership. Each user's data is stored under their respective `/users/{userId}` path, ensuring that only the user can access their contacts, leads, and tasks. The nested structure further simplifies querying and ensures that listing operations are scoped to the correct user and resource (e.g., listing all leads for a specific contact).\n\nHomogeneous security posture for Tasks and Leads is achieved by nesting them under their respective owners."
+    "reasoning": "The Firestore structure is designed to support WitCRM's core features: Contact, Lead, and Task Management. It prioritizes authorization independence, clarity, and scalability. User-owned data is stored under the `/users/{userId}` path, ensuring clear ownership and straightforward security rules. Collaborative access is not required based on the user request, so a simple path based approach will suffice.  The structure avoids hierarchical authorization dependencies, enabling atomic operations.  Each collection is designed with a homogeneous security posture, meaning all documents within a collection share the same security requirements.  This facilitates secure `list` operations (QAPs) because rules don't need to act as filters.  Denormalization is applied where appropriate to enforce authorization independence."
   }
 }
