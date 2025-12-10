@@ -35,7 +35,7 @@ import { collection, doc, writeBatch, serverTimestamp, query, where, updateDoc, 
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
 import { addDays, format } from 'date-fns';
-import { initialRoles as baseInitialRoles, teamMembers as staticTeamMembers } from '@/lib/data';
+import { initialRoles as baseInitialRoles } from '@/lib/data';
 
 type AnyStage = WorkflowStage | SubStage | SubSubStage;
 
@@ -155,8 +155,8 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
     const userProfileRef = useMemoFirebase(() => user ? doc(firestore, 'users', user.uid) : null, [firestore, user]);
     const { data: userProfile, isLoading: isLoadingUserProfile } = useDoc<AppUser>(userProfileRef);
 
-    const teamMembers = staticTeamMembers;
-    const isLoadingTeamMembers = false;
+    const [teamMembers, setTeamMembers] = useState<AppUser[]>([]);
+    const isLoadingTeamMembers = false; // Data is now static or managed internally
 
 
     // --- Collections ---
@@ -224,9 +224,7 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
                 role: role,
             }, {});
             
-            // This would require a backend function to set custom claims.
-            // For now, the rules will rely on the document.
-            // addLog('user_invited', newUser.uid, 'user', name);
+            addLog('user_invited', newUser.uid, 'user', name);
     
             return userCredential;
         } catch (error: any) {
@@ -236,7 +234,7 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
             }
             throw error; // Re-throw to be handled by caller if needed
         }
-    }, [auth, firestore, showNotification]);
+    }, [auth, firestore, showNotification, addLog]);
 
     useEffect(() => {
         if (user && userProfile) {
