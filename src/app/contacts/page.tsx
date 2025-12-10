@@ -5,7 +5,7 @@ import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { useSearchParams, useRouter } from "next/navigation";
 import { Header } from "@/components/header";
-import { Users, UserCheck, Truck, Settings } from "lucide-react";
+import { Users, UserCheck, Truck, Settings, FileText } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ClientsTab } from "@/components/shared/ClientsTab";
 import { PromotersTab } from "@/components/shared/PromotersTab";
@@ -16,6 +16,7 @@ import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { PromoterDetailView } from "@/components/shared/PromoterDetailView";
 import { SupplierDetailView } from "@/components/shared/SupplierDetailView";
+import { DocumentsTab } from "@/components/shared/DocumentsTab";
 
 type DetailEntityType = 'client' | 'promoter' | 'supplier';
 
@@ -24,6 +25,7 @@ export default function DirectoryPage() {
     clients, isLoadingClients,
     promoters, isLoadingPromoters,
     suppliers, isLoadingSuppliers,
+    documents, isLoadingDocuments,
   } = useCRMData();
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -101,7 +103,7 @@ export default function DirectoryPage() {
         </Header>
         <main className="flex-1 p-4 md:p-8">
             <Tabs defaultValue="suppliers" className="w-full">
-                <TabsList className="grid w-full grid-cols-3 mb-6">
+                <TabsList className="grid w-full grid-cols-4 mb-6">
                      <TabsTrigger value="suppliers">
                         <Truck className="mr-2 h-4 w-4"/>
                         Proveedores
@@ -113,6 +115,10 @@ export default function DirectoryPage() {
                     <TabsTrigger value="promoters">
                         <UserCheck className="mr-2 h-4 w-4" />
                         Promotores
+                    </TabsTrigger>
+                    <TabsTrigger value="documents">
+                        <FileText className="mr-2 h-4 w-4" />
+                        Documentos
                     </TabsTrigger>
                 </TabsList>
                 <TabsContent value="suppliers">
@@ -140,6 +146,12 @@ export default function DirectoryPage() {
                       onPromoterSelect={(promoter) => handleEntitySelect(promoter, 'promoter')}
                       selectedPromoterId={selectedEntity?.type === 'promoter' ? selectedEntity.data.id : null}
                       showActions={false} 
+                    />
+                </TabsContent>
+                <TabsContent value="documents">
+                    <DocumentsTab
+                      documents={documents || []}
+                      isLoading={isLoadingDocuments}
                     />
                 </TabsContent>
             </Tabs>
