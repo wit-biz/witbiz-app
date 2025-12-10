@@ -155,8 +155,8 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
     const userProfileRef = useMemoFirebase(() => user ? doc(firestore, 'users', user.uid) : null, [firestore, user]);
     const { data: userProfile, isLoading: isLoadingUserProfile } = useDoc<AppUser>(userProfileRef);
 
-    const usersCollection = useMemoFirebase(() => collection(firestore, 'users'), [firestore]);
-    const { data: teamMembers = [], isLoading: isLoadingTeamMembers } = useCollection<AppUser>(usersCollection);
+    const [teamMembers, setTeamMembers] = useState<AppUser[]>(staticTeamMembers);
+    const isLoadingTeamMembers = false; // Since it's static data
 
 
     // --- Collections ---
@@ -174,6 +174,20 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
     const loansCollection = useMemoFirebase(() => user ? collection(firestore, 'users', user.uid, 'loans') : null, [firestore, user]);
     const logsCollection = useMemoFirebase(() => user ? collection(firestore, 'users', user.uid, 'logs') : null, [firestore, user]);
 
+    const addLog = useCallback(async (action: LogAction, entityId: string, entityType: string, entityName?: string) => {
+        if (!logsCollection || !currentUser) return;
+        const logEntry: Omit<Log, 'id'> = {
+            authorId: currentUser.uid,
+            authorName: currentUser.displayName || 'Sistema',
+            action,
+            entityId,
+            entityType,
+            entityName,
+            createdAt: serverTimestamp(),
+        };
+        addDocumentNonBlocking(logsCollection, logEntry);
+    }, [logsCollection, currentUser]);
+    
     useEffect(() => {
         const bootstrapDirectors = async () => {
             if (!firestore) return;
@@ -194,7 +208,7 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
                             email: dir.email,
                             role: 'Director',
                             status: 'Activo',
-                        });
+                        }, { merge: true });
                         console.log(`Director profile for ${dir.name} created.`);
                     } catch (error) {
                         console.error(`Failed to create director profile for ${dir.name}:`, error);
@@ -221,20 +235,6 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
     const { data: transactions = [], isLoading: isLoadingTransactions } = useCollection<Transaction>(transactionsCollection);
     const { data: loans = [], isLoading: isLoadingLoans } = useCollection<InterCompanyLoan>(loansCollection);
     const { data: logs = [], isLoading: isLoadingLogs } = useCollection<Log>(logsCollection);
-    
-    const addLog = useCallback(async (action: LogAction, entityId: string, entityType: string, entityName?: string) => {
-        if (!logsCollection || !currentUser) return;
-        const logEntry: Omit<Log, 'id'> = {
-            authorId: currentUser.uid,
-            authorName: currentUser.displayName || 'Sistema',
-            action,
-            entityId,
-            entityType,
-            entityName,
-            createdAt: serverTimestamp(),
-        };
-        addDocumentNonBlocking(logsCollection, logEntry);
-    }, [logsCollection, currentUser]);
     
     const registerUser = useCallback(async (name: string, email: string, pass: string, role: string) => {
         if (!auth || !firestore) {

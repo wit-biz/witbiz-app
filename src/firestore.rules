@@ -81,11 +81,7 @@ service cloud.firestore {
      * @principle   Restricts access to a user's own data tree using path-based ownership.
      */
     match /users/{userId}/contacts/{contactId} {
-      allow get: if isOwner(userId);
-      allow list: if isOwner(userId);
-      allow create: if isOwner(userId) && request.resource.data.id == contactId;
-      allow update: if isExistingOwner(userId) && request.resource.data.id == resource.data.id;
-      allow delete: if isExistingOwner(userId);
+      allow read, write: if isOwner(userId);
     }
     
     /**
@@ -94,11 +90,7 @@ service cloud.firestore {
      * @principle   Restricts access to a user's own notes using path-based ownership.
      */
     match /users/{userId}/notes/{noteId} {
-        allow get: if isOwner(userId);
-        allow list: if isOwner(userId);
-        allow create: if isOwner(userId);
-        allow update: if isExistingOwner(userId);
-        allow delete: if isExistingOwner(userId);
+        allow read, write: if isOwner(userId);
     }
 
     /**
@@ -107,11 +99,7 @@ service cloud.firestore {
      * @principle   Restricts access to a user's own documents using path-based ownership.
      */
     match /users/{userId}/documents/{documentId} {
-        allow get: if isOwner(userId);
-        allow list: if isOwner(userId);
-        allow create: if isOwner(userId);
-        allow update: if isExistingOwner(userId);
-        allow delete: if isExistingOwner(userId);
+        allow read, write: if isOwner(userId);
     }
 
     /**
@@ -121,11 +109,7 @@ service cloud.firestore {
      * @principle   Restricts access to a user's own data tree using path-based ownership.
      */
     match /users/{userId}/leads/{leadId} {
-      allow get: if isOwner(userId);
-      allow list: if isOwner(userId);
-      allow create: if isOwner(userId) && request.resource.data.id == leadId;
-      allow update: if isExistingOwner(userId) && request.resource.data.id == resource.data.id;
-      allow delete: if isExistingOwner(userId);
+      allow read, write: if isOwner(userId);
     }
 
     /**
@@ -136,11 +120,7 @@ service cloud.firestore {
      *              path upon creation and is immutable.
      */
     match /users/{userId}/leads/{leadId}/tasks/{taskId} {
-      allow get: if isOwner(userId);
-      allow list: if isOwner(userId);
-      allow create: if isOwner(userId) && request.resource.data.id == taskId && request.resource.data.leadId == leadId;
-      allow update: if isExistingOwner(userId) && request.resource.data.id == resource.data.id && request.resource.data.leadId == resource.data.leadId;
-      allow delete: if isExistingOwner(userId);
+      allow read, write: if isOwner(userId);
     }
     
     // Fallback for any other collections under /users/{userId}
