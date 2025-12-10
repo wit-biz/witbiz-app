@@ -16,18 +16,6 @@
  *   - `/users/{userId}/leads/{leadId}`: Stores a user's private leads.
  *   - `/users/{userId}/leads/{leadId}/tasks/{taskId}`: Stores tasks related to a specific lead,
  *     inheriting ownership from the parent user.
- *
- * Key Security Decisions:
- * - Default Deny: All access is denied by default. Rules explicitly grant permissions.
- * - No Public Access: There are no publicly readable collections. A user must be signed in to
- *   access any data.
- * - No User Enumeration: Listing documents in the top-level `/users` collection is explicitly
- *   disallowed to prevent leaking the user list.
- * - Path-Based Authorization: Authorization is determined exclusively by the user ID in the
- *   document path, which is fast, performant, and avoids costly `get()` calls to other documents.
- * - Relational Integrity: On document creation, rules ensure that internal ID fields (e.g.,
- *   `task.leadId`) match the corresponding IDs in the path, preventing data inconsistency. These
- *   relational fields are immutable and cannot be changed on update.
  */
 rules_version = '2';
 service cloud.firestore {
@@ -94,6 +82,19 @@ service cloud.firestore {
       allow create: if isOwner(userId) && request.resource.data.id == contactId;
       allow update: if isExistingOwner(userId) && request.resource.data.id == resource.data.id;
       allow delete: if isExistingOwner(userId);
+    }
+    
+    /**
+     * @description Secures a user's private notes. Only the owner can manage their own notes.
+     * @path        /users/{userId}/notes/{noteId}
+     * @principle   Restricts access to a user's own notes using path-based ownership.
+     */
+    match /users/{userId}/notes/{noteId} {
+        allow get: if isOwner(userId);
+        allow list: if isOwner(userId);
+        allow create: if isOwner(userId);
+        allow update: if isExistingOwner(userId);
+        allow delete: if isExistingOwner(userId);
     }
 
     /**
