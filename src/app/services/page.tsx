@@ -36,15 +36,14 @@ function ServiceDocuments({ serviceId }: { serviceId: string }) {
       {documents.length > 0 ? (
         <ul className="space-y-2">
           {documents.map(doc => (
-            <li key={doc.id} className="flex items-center justify-between p-2 bg-secondary/30 rounded-md">
+            <li 
+              key={doc.id} 
+              className="flex items-center justify-between p-2 bg-secondary/30 rounded-md cursor-pointer hover:bg-secondary/60"
+              onClick={() => handleDownload(doc)}
+            >
               <div className="flex items-center gap-2 min-w-0">
                 <FileText className="h-4 w-4 text-muted-foreground flex-shrink-0" />
                 <p className="font-medium truncate text-sm" title={doc.name}>{doc.name}</p>
-              </div>
-              <div className="flex items-center">
-                  <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleDownload(doc)}>
-                    <Eye className="h-4 w-4" />
-                  </Button>
               </div>
             </li>
           ))}

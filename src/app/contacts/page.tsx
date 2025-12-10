@@ -102,7 +102,7 @@ export default function DirectoryPage() {
           </Button>
         </Header>
         <main className="flex-1 p-4 md:p-8">
-            <Tabs defaultValue="suppliers" className="w-full">
+            <Tabs defaultValue="clients" className="w-full">
                 <TabsList className="grid w-full grid-cols-4 mb-6">
                      <TabsTrigger value="suppliers">
                         <Truck className="mr-2 h-4 w-4"/>

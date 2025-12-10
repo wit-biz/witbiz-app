@@ -294,13 +294,13 @@ function ResourcesView({ promoterId }: { promoterId: string }) {
                 {resources.length > 0 ? (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                         {resources.map(resource => (
-                            <Card key={resource.id}>
+                            <Card key={resource.id} className="cursor-pointer hover:bg-muted/50" onClick={() => handleDownload(resource)}>
                                 <CardHeader>
                                     <CardTitle className="flex items-center gap-2"><BookText className="h-5 w-5 text-accent"/>{resource.name}</CardTitle>
                                     <CardDescription>{resource.type}</CardDescription>
                                 </CardHeader>
                                 <CardContent>
-                                    <Button className="w-full" onClick={() => handleDownload(resource)}>
+                                    <Button className="w-full">
                                         <Download className="mr-2 h-4 w-4" />
                                         Descargar
                                     </Button>

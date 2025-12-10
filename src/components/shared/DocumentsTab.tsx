@@ -151,7 +151,11 @@ export function DocumentsTab({ documents, isLoading }: DocumentsTabProps) {
                                 {filteredDocuments.length > 0 ? filteredDocuments.map((doc) => {
                                     const association = getAssociationName(doc);
                                     return (
-                                        <TableRow key={doc.id}>
+                                        <TableRow 
+                                            key={doc.id}
+                                            onClick={() => handleDownload(doc)}
+                                            className="cursor-pointer"
+                                        >
                                             <TableCell className="font-medium">{doc.name}</TableCell>
                                             <TableCell><Badge variant="secondary">{doc.type}</Badge></TableCell>
                                             <TableCell>
@@ -162,10 +166,10 @@ export function DocumentsTab({ documents, isLoading }: DocumentsTabProps) {
                                             </TableCell>
                                             <TableCell>{doc.uploadedAt ? formatDateString(doc.uploadedAt.toDate()) : 'N/A'}</TableCell>
                                             <TableCell className="text-right">
-                                                <div className="flex items-center justify-end">
-                                                    <Button variant="ghost" size="icon" onClick={() => handleDownload(doc)}>
-                                                        <Eye className="h-4 w-4" />
-                                                    </Button>
+                                                <div 
+                                                    className="flex items-center justify-end"
+                                                    onClick={(e) => e.stopPropagation()}
+                                                >
                                                     {canEdit && (
                                                         <Button variant="ghost" size="icon" onClick={() => setDocumentToEdit(doc)}>
                                                             <Edit3 className="h-4 w-4" />

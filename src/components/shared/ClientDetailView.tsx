@@ -364,7 +364,11 @@ export function ClientDetailView({ client, onClose }: ClientDetailViewProps) {
                             {clientDocuments.length > 0 ? (
                                 <ul className="space-y-2">
                                     {clientDocuments.map(doc => (
-                                        <li key={doc.id} className="flex items-center justify-between p-2 rounded-md bg-secondary/30">
+                                        <li 
+                                            key={doc.id} 
+                                            className="flex items-center justify-between p-2 rounded-md bg-secondary/30 cursor-pointer hover:bg-secondary/60"
+                                            onClick={() => handleDownload(doc)}
+                                        >
                                             <div className="flex items-center gap-2 min-w-0">
                                                 <FileText className="h-4 w-4 text-muted-foreground flex-shrink-0"/>
                                                 <div className="truncate">
@@ -372,9 +376,6 @@ export function ClientDetailView({ client, onClose }: ClientDetailViewProps) {
                                                     <p className="text-xs text-muted-foreground">{doc.type}</p>
                                                 </div>
                                             </div>
-                                            <Button variant="ghost" size="icon" onClick={() => handleDownload(doc)}>
-                                                <Eye className="h-4 w-4" />
-                                            </Button>
                                         </li>
                                     ))}
                                 </ul>
