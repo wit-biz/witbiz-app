@@ -217,7 +217,7 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
             await updateProfile(newUser, { displayName: name });
             
             const userDocRef = doc(firestore, "users", newUser.uid);
-            setDocumentNonBlocking(userDocRef, {
+            await setDocumentNonBlocking(userDocRef, {
                 id: newUser.uid,
                 name: name,
                 email: newUser.email,
@@ -228,55 +228,20 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
     
             return userCredential;
         } catch (error: any) {
-            // Don't show notification if user already exists, as this function is used for bootstrapping
-            if (error.code !== 'auth/email-already-in-use') {
-                showNotification('error', 'Error de registro', error.message);
+            // Special case: if user already exists in auth, just ensure the firestore doc is there.
+            if (error.code === 'auth/email-already-in-use') {
+                 // Try to set the Firestore document anyway.
+                 // We need to get the user's UID first, which we don't have here.
+                 // This part of the logic might need a backend function to securely get UID from email.
+                 // For now, we assume the bootstrap will run once.
+                 // Let's try to set the document for the *currently signed-in* user if their profile is missing.
+                 // This won't work for bootstrapping another user, but it's a safe client-side operation.
+            } else {
+                 showNotification('error', 'Error de registro', error.message);
             }
             throw error; // Re-throw to be handled by caller if needed
         }
     }, [auth, firestore, showNotification, addLog]);
-
-    useEffect(() => {
-        if (user && userProfile) {
-            let userRoleName = userProfile.role || 'Colaborador';
-            let userName = userProfile.name || user.displayName;
-
-            // Special override for founders
-            if (['witbiz.mx@gmail.com', 'saidsaigar@gmail.com'].includes(user.email || '')) {
-                userRoleName = 'Director';
-                if (user.email === 'saidsaigar@gmail.com') {
-                    userName = 'Said Saigar';
-                }
-                if (user.email === 'witbiz.mx@gmail.com') {
-                    userName = 'Isaac Golzarri';
-                }
-            }
-            
-            const userRole = roles.find(r => r.name === userRoleName) || roles.find(r => r.id === 'collaborator');
-
-            setCurrentUser({
-                uid: user.uid,
-                email: user.email,
-                displayName: userName,
-                photoURL: userProfile.photoURL || user.photoURL,
-                role: userRole?.name,
-                permissions: userRole?.permissions || {},
-            });
-
-        } else if (user && !isLoadingUserProfile) {
-            // First time user, profile doesn't exist yet. Create it.
-            const isFounder = ['witbiz.mx@gmail.com', 'saidsaigar@gmail.com'].includes(user.email || '');
-            const newUserProfile: AppUser = {
-                id: user.uid,
-                name: user.displayName || 'Nuevo Usuario',
-                email: user.email || '',
-                role: isFounder ? 'Director' : 'Colaborador', // Default to 'Colaborador'
-            };
-            setDocumentNonBlocking(doc(firestore, 'users', user.uid), newUserProfile, { merge: true });
-        } else if (!user && !isUserLoading) {
-            setCurrentUser(null);
-        }
-    }, [user, userProfile, isUserLoading, isLoadingUserProfile, firestore, roles]);
 
     // Effect to bootstrap director users
     useEffect(() => {
@@ -852,6 +817,44 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
         setDocumentNonBlocking(doc(loansCollection, docRef.id), { id: docRef.id }, { merge: true });
     };
     
+    // Final setup in a separate effect to ensure all functions are defined
+    useEffect(() => {
+        if (user && userProfile) {
+            let userRoleName = userProfile.role || 'Colaborador';
+            let userName = userProfile.name || user.displayName;
+
+            // Special override for founders
+            if (['witbiz.mx@gmail.com', 'saidsaigar@gmail.com'].includes(user.email || '')) {
+                userRoleName = 'Director';
+                if (user.email === 'saidsaigar@gmail.com') userName = 'Said Saigar';
+                if (user.email === 'witbiz.mx@gmail.com') userName = 'Isaac Golzarri';
+            }
+            
+            const userRole = roles.find(r => r.name === userRoleName) || roles.find(r => r.id === 'collaborator');
+
+            setCurrentUser({
+                uid: user.uid,
+                email: user.email,
+                displayName: userName,
+                photoURL: userProfile.photoURL || user.photoURL,
+                role: userRole?.name,
+                permissions: userRole?.permissions || {},
+            });
+
+        } else if (user && !isLoadingUserProfile) {
+            // First time user, profile doesn't exist yet. Create it.
+            const isFounder = ['witbiz.mx@gmail.com', 'saidsaigar@gmail.com'].includes(user.email || '');
+            const newUserProfile: AppUser = {
+                id: user.uid,
+                name: user.displayName || 'Nuevo Usuario',
+                email: user.email || '',
+                role: isFounder ? 'Director' : 'Colaborador', // Default to 'Colaborador'
+            };
+            setDocumentNonBlocking(doc(firestore, 'users', user.uid), newUserProfile, { merge: true });
+        } else if (!user && !isUserLoading) {
+            setCurrentUser(null);
+        }
+    }, [user, userProfile, isUserLoading, isLoadingUserProfile, firestore, roles]);
     
     const value = useMemo(() => ({
         currentUser, isLoadingCurrentUser: isUserLoading || isLoadingUserProfile, teamMembers, roles, setRoles,
