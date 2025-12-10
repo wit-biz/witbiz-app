@@ -26,6 +26,7 @@ import {
   MessageSquare,
   ArrowUpCircle,
   ArrowDownCircle,
+  ListTodo,
 } from "lucide-react";
 import Link from "next/link";
 import { useUser } from "@/firebase/auth/use-user";
@@ -33,11 +34,13 @@ import { initiateSignOut } from "@/firebase/non-blocking-login";
 import { useAuth } from "@/firebase/provider";
 import { useCRMData } from "@/contexts/CRMDataContext";
 import React, { useMemo, useState } from "react";
-import { LogAction, Log, Transaction } from "@/lib/types";
+import { LogAction, Log, Transaction, Task, AppUser } from "@/lib/types";
 import { format, subDays, isWithinInterval, startOfDay, endOfDay, startOfWeek, endOfWeek, startOfMonth, endOfMonth } from "date-fns";
 import { es } from "date-fns/locale";
 import { Badge } from "../ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
+import { parseDateString } from "@/lib/utils";
 
 
 const LOG_ACTION_DETAILS: Record<LogAction, { text: string; icon: React.ElementType }> = {
@@ -57,11 +60,13 @@ type Period = 'day' | 'week' | 'month';
 
 export function UserNav() {
   const { user, isUserLoading } = useUser();
-  const { currentUser, logs, bankAccounts, transactions } = useCRMData();
+  const { currentUser, logs, bankAccounts, transactions, teamMembers, tasks } = useCRMData();
   const auth = useAuth();
 
   const [isActivityDialogOpen, setIsActivityDialogOpen] = useState(false);
   const [isFinanceDialogOpen, setIsFinanceDialogOpen] = useState(false);
+  const [isTasksDialogOpen, setIsTasksDialogOpen] = useState(false);
+  
   const [activityPeriod, setActivityPeriod] = useState<Period>('day');
   const [financePeriod, setFinancePeriod] = useState<Period>('day');
 
@@ -205,6 +210,17 @@ export function UserNav() {
           <TrendingUp className="h-5 w-5" />
           <span className="sr-only">Ver resumen financiero</span>
       </Button>
+      
+      <Button
+          variant="ghost"
+          size="icon"
+          className="h-9 w-9 rounded-full"
+          onClick={() => setIsTasksDialogOpen(true)}
+      >
+          <ListTodo className="h-5 w-5" />
+          <span className="sr-only">Ver tareas del equipo</span>
+      </Button>
+
     </div>
     
     <Dialog open={isActivityDialogOpen} onOpenChange={setIsActivityDialogOpen}>
@@ -254,6 +270,16 @@ export function UserNav() {
             </Tabs>
         </DialogContent>
     </Dialog>
+
+    <Dialog open={isTasksDialogOpen} onOpenChange={setIsTasksDialogOpen}>
+        <DialogContent>
+            <DialogHeader>
+                <DialogTitle className="sr-only">Resumen de Tareas</DialogTitle>
+            </DialogHeader>
+            <TasksDialogContent teamMembers={teamMembers || []} allTasks={tasks || []} />
+        </DialogContent>
+    </Dialog>
+
     </>
   );
 }
@@ -306,3 +332,88 @@ function renderFinanceSummary(summary: { totalBalance: number; totalIncome: numb
         </div>
     );
 }
+
+function TasksDialogContent({ teamMembers, allTasks }: { teamMembers: AppUser[], allTasks: Task[] }) {
+    const [mainTab, setMainTab] = useState<'member' | 'time'>('member');
+    const [selectedMemberId, setSelectedMemberId] = useState<string | 'all'>(teamMembers[0]?.id || 'all');
+    const [timePeriod, setTimePeriod] = useState<Period>('day');
+
+    const tasksToShow = useMemo(() => {
+        if (mainTab === 'member') {
+            if (selectedMemberId === 'all') return [];
+            return allTasks.filter(task => task.assignedToId === selectedMemberId);
+        } else { // time
+            const now = new Date();
+            const interval = {
+                day: { start: startOfDay(now), end: endOfDay(now) },
+                week: { start: startOfWeek(now, { locale: es }), end: endOfWeek(now, { locale: es }) },
+                month: { start: startOfMonth(now), end: endOfMonth(now) },
+            }[timePeriod];
+            return allTasks.filter(task => {
+                const taskDate = parseDateString(task.dueDate);
+                return taskDate ? isWithinInterval(taskDate, interval) : false;
+            });
+        }
+    }, [mainTab, selectedMemberId, timePeriod, allTasks]);
+
+    return (
+        <Tabs value={mainTab} onValueChange={(v) => setMainTab(v as any)} className="w-full">
+            <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="member">Por Miembro</TabsTrigger>
+                <TabsTrigger value="time">Por Tiempo</TabsTrigger>
+            </TabsList>
+            <TabsContent value="member" className="mt-4">
+                <Select value={selectedMemberId} onValueChange={setSelectedMemberId}>
+                    <SelectTrigger>
+                        <SelectValue placeholder="Seleccione un miembro del equipo..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                        {teamMembers.map(member => (
+                            <SelectItem key={member.id} value={member.id}>{member.name}</SelectItem>
+                        ))}
+                    </SelectContent>
+                </Select>
+                {renderTaskList(tasksToShow)}
+            </TabsContent>
+            <TabsContent value="time" className="mt-4">
+                <Tabs value={timePeriod} onValueChange={(v) => setTimePeriod(v as any)}>
+                    <TabsList className="grid w-full grid-cols-3">
+                        <TabsTrigger value="day">Hoy</TabsTrigger>
+                        <TabsTrigger value="week">Esta Semana</TabsTrigger>
+                        <TabsTrigger value="month">Este Mes</TabsTrigger>
+                    </TabsList>
+                </Tabs>
+                {renderTaskList(tasksToShow)}
+            </TabsContent>
+        </Tabs>
+    );
+}
+
+function renderTaskList(tasks: Task[]) {
+     const getStatusColor = (task: Task) => {
+        if (task.status === 'Completada') return 'text-green-500';
+        if (task.status === 'Pospuesta') return 'text-amber-500';
+        const dueDate = parseDateString(task.dueDate);
+        if (dueDate && dueDate < startOfDay(new Date())) return 'text-red-500';
+        return 'text-blue-500';
+    }
+
+    return (
+        <div className="max-h-80 overflow-y-auto mt-4 space-y-2">
+            {tasks.length > 0 ? tasks.map(task => (
+                <div key={task.id} className="p-3 rounded-md border flex items-center gap-3">
+                    <ListTodo className={`h-5 w-5 shrink-0 ${getStatusColor(task)}`} />
+                    <div className="flex-grow">
+                        <p className="font-medium text-sm">{task.title}</p>
+                        <p className="text-xs text-muted-foreground">{task.clientName || 'Sin cliente'}</p>
+                    </div>
+                    <Badge variant="outline">{task.status}</Badge>
+                </div>
+            )) : (
+                <p className="text-center text-muted-foreground p-8">No hay tareas para mostrar.</p>
+            )}
+        </div>
+    );
+}
+
+    
