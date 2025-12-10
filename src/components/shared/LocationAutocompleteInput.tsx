@@ -17,7 +17,7 @@ interface LocationAutocompleteInputProps {
 
 const LocationAutocompleteInput: React.FC<LocationAutocompleteInputProps> = ({ value, onChange, disabled }) => {
   const { isLoaded, loadError } = useJsApiLoader({
-    googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || "",
+    googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY!,
     libraries,
   });
 
