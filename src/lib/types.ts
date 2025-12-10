@@ -287,10 +287,13 @@ export type AppPermissions = {
     intelligence_view: boolean;
     accounting_view: boolean;
     accounting_config: boolean;
-    // Administración
+    // Administración y Equipo
     admin_view: boolean;
     team_manage_members: boolean;
     team_manage_roles: boolean;
+    team_tasks_view: boolean;
+    team_activity_view: boolean;
+    team_finance_view: boolean;
 }
 
 export type UserRole = {

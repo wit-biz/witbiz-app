@@ -123,6 +123,10 @@ export function UserNav() {
   }
 
   const canViewAdmin = currentUser?.permissions.admin_view ?? false;
+  const canViewTeamTasks = currentUser?.permissions.team_tasks_view ?? false;
+  const canViewTeamActivity = currentUser?.permissions.team_activity_view ?? false;
+  const canViewTeamFinance = currentUser?.permissions.team_finance_view ?? false;
+
 
   return (
     <>
@@ -192,35 +196,41 @@ export function UserNav() {
         </DropdownMenuContent>
       </DropdownMenu>
       
-      <Button
-          variant="ghost"
-          size="icon"
-          className="h-9 w-9 rounded-full"
-          onClick={() => setIsTasksDialogOpen(true)}
-      >
-          <ListTodo className="h-5 w-5" />
-          <span className="sr-only">Ver tareas del equipo</span>
-      </Button>
+      {canViewTeamTasks && (
+        <Button
+            variant="ghost"
+            size="icon"
+            className="h-9 w-9 rounded-full"
+            onClick={() => setIsTasksDialogOpen(true)}
+        >
+            <ListTodo className="h-5 w-5" />
+            <span className="sr-only">Ver tareas del equipo</span>
+        </Button>
+      )}
       
-      <Button
-          variant="ghost"
-          size="icon"
-          className="h-9 w-9 rounded-full"
-          onClick={() => setIsActivityDialogOpen(true)}
-      >
-          <Activity className="h-5 w-5" />
-          <span className="sr-only">Ver actividad del equipo</span>
-      </Button>
+      {canViewTeamActivity && (
+        <Button
+            variant="ghost"
+            size="icon"
+            className="h-9 w-9 rounded-full"
+            onClick={() => setIsActivityDialogOpen(true)}
+        >
+            <Activity className="h-5 w-5" />
+            <span className="sr-only">Ver actividad del equipo</span>
+        </Button>
+      )}
 
-      <Button
-          variant="ghost"
-          size="icon"
-          className="h-9 w-9 rounded-full"
-          onClick={() => setIsFinanceDialogOpen(true)}
-      >
-          <TrendingUp className="h-5 w-5" />
-          <span className="sr-only">Ver resumen financiero</span>
-      </Button>
+      {canViewTeamFinance && (
+        <Button
+            variant="ghost"
+            size="icon"
+            className="h-9 w-9 rounded-full"
+            onClick={() => setIsFinanceDialogOpen(true)}
+        >
+            <TrendingUp className="h-5 w-5" />
+            <span className="sr-only">Ver resumen financiero</span>
+        </Button>
+      )}
 
     </div>
     
@@ -366,6 +376,35 @@ function TasksDialogContent({ teamMembers, allTasks }: { teamMembers: AppUser[],
             });
         }
     }, [mainTab, selectedMemberId, timePeriod, allTasks]);
+    
+    if (mainTab === 'member' && !selectedMemberId) {
+        return (
+             <Tabs value={mainTab} onValueChange={handleTabChange} className="w-full">
+                <TabsList className="grid w-full grid-cols-2">
+                    <TabsTrigger value="member">Por Miembro</TabsTrigger>
+                    <TabsTrigger value="time">Por Tiempo</TabsTrigger>
+                </TabsList>
+                <TabsContent value="member" className="mt-4">
+                     <div className="max-h-96 overflow-y-auto space-y-1 pr-2">
+                        {teamMembers.map(member => (
+                            <Button
+                                key={member.id}
+                                variant={'ghost'}
+                                className="w-full justify-start gap-2"
+                                onClick={() => setSelectedMemberId(member.id)}
+                            >
+                                <Avatar className="h-6 w-6">
+                                    <AvatarImage src={member.photoURL} />
+                                    <AvatarFallback>{member.name.charAt(0)}</AvatarFallback>
+                                </Avatar>
+                                {member.name}
+                            </Button>
+                        ))}
+                    </div>
+                </TabsContent>
+            </Tabs>
+        )
+    }
 
     return (
         <Tabs value={mainTab} onValueChange={handleTabChange} className="w-full">
@@ -374,31 +413,22 @@ function TasksDialogContent({ teamMembers, allTasks }: { teamMembers: AppUser[],
                 <TabsTrigger value="time">Por Tiempo</TabsTrigger>
             </TabsList>
             <TabsContent value="member" className="mt-4">
-                {!selectedMemberId ? (
-                     <div className="max-h-96 overflow-y-auto space-y-1 pr-2">
-                        {teamMembers.map(member => (
-                            <Button
-                                key={member.id}
-                                variant={'ghost'}
-                                className="w-full justify-start"
-                                onClick={() => setSelectedMemberId(member.id)}
-                            >
-                                {member.name}
-                            </Button>
-                        ))}
-                    </div>
-                ) : (
-                    <div>
-                        <div className="flex items-center justify-between mb-4">
+                <div>
+                    <div className="flex items-center justify-between mb-4">
+                        <div className="flex items-center gap-2">
+                            <Avatar className="h-7 w-7">
+                                <AvatarImage src={selectedMember?.photoURL} />
+                                <AvatarFallback>{selectedMember?.name.charAt(0)}</AvatarFallback>
+                            </Avatar>
                             <h3 className="font-semibold">Tareas de {selectedMember?.name}</h3>
-                            <Button variant="ghost" size="sm" onClick={() => setSelectedMemberId(null)}>
-                                <ArrowLeft className="mr-2 h-4 w-4"/>
-                                Volver
-                            </Button>
                         </div>
-                        {renderTaskList(tasksToShow)}
+                        <Button variant="ghost" size="sm" onClick={() => setSelectedMemberId(null)}>
+                            <ArrowLeft className="mr-2 h-4 w-4"/>
+                            Volver
+                        </Button>
                     </div>
-                )}
+                    {renderTaskList(tasksToShow)}
+                </div>
             </TabsContent>
             <TabsContent value="time" className="mt-4">
                 <Tabs value={timePeriod} onValueChange={(v) => setTimePeriod(v as any)}>

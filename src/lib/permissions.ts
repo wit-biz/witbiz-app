@@ -42,8 +42,11 @@ export const allPermissions: { key: keyof AppPermissions; label: string; section
     { key: "accounting_view", label: "Ver Módulo de Contabilidad", section: "Finanzas" },
     { key: "accounting_config", label: "Configurar Contabilidad (empresas, cuentas)", section: "Finanzas" },
 
-    // Administración
-    { key: "admin_view", label: "Ver Secciones de Administración (Equipo, Papelera, etc.)", section: "Administración" },
-    { key: "team_manage_members", label: "Invitar, Editar y Archivar Miembros", section: "Administración" },
-    { key: "team_manage_roles", label: "Gestionar Roles y Permisos", section: "Administración" },
+    // Administración y Equipo
+    { key: "admin_view", label: "Ver Secciones de Administración (Equipo, Papelera, etc.)", section: "Administración y Equipo" },
+    { key: "team_manage_members", label: "Invitar, Editar y Archivar Miembros", section: "Administración y Equipo" },
+    { key: "team_manage_roles", label: "Gestionar Roles y Permisos", section: "Administración y Equipo" },
+    { key: "team_tasks_view", label: "Ver Tareas de todo el equipo", section: "Administración y Equipo" },
+    { key: "team_activity_view", label: "Ver Actividad de todo el equipo", section: "Administración y Equipo" },
+    { key: "team_finance_view", label: "Ver Resumen financiero del equipo", section: "Administración y Equipo" },
 ];
