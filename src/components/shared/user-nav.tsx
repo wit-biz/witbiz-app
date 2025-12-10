@@ -415,5 +415,3 @@ function renderTaskList(tasks: Task[]) {
         </div>
     );
 }
-
-    
