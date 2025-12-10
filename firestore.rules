@@ -48,10 +48,12 @@ service cloud.firestore {
     }
 
     /**
-     * Checks if the requesting user has the 'Director' role by reading their own user document.
+     * Checks if the requesting user is one of the designated directors by UID.
+     * The UIDs 'DIRECTOR_UID_1' and 'DIRECTOR_UID_2' are placeholders that will be
+     * replaced with the actual UIDs of the director accounts.
      */
     function isDirector() {
-      return isSignedIn() && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'Director';
+      return isSignedIn() && (request.auth.uid == 'DIRECTOR_UID_1' || request.auth.uid == 'DIRECTOR_UID_2');
     }
 
 
@@ -70,7 +72,7 @@ service cloud.firestore {
      */
     match /users/{userId} {
       allow get: if isOwner(userId) || isDirector();
-      allow list: if false;
+      allow list: if false; // Explicitly deny listing all users
       allow create: if isOwner(userId);
       allow update: if isExistingOwner(userId) || isDirector();
       allow delete: if isDirector();
