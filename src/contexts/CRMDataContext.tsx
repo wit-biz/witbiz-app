@@ -155,9 +155,30 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
     const userProfileRef = useMemoFirebase(() => user ? doc(firestore, 'users', user.uid) : null, [firestore, user]);
     const { data: userProfile, isLoading: isLoadingUserProfile } = useDoc<AppUser>(userProfileRef);
 
-    const usersCollection = useMemoFirebase(() => user ? collection(firestore, 'users') : null, [firestore, user]);
-    const { data: teamMembers = [], isLoading: isLoadingTeamMembers } = useCollection<AppUser>(usersCollection);
+    const usersCollection = useMemoFirebase(() => {
+        if (!firestore || !currentUser) return null;
+        // Only directors can fetch all users.
+        if (currentUser.role === 'Director') {
+            return collection(firestore, 'users');
+        }
+        return null; // Non-directors will not fetch all users.
+    }, [firestore, currentUser]);
 
+    // Fetch all users if director, otherwise this hook will return empty array
+    const { data: allTeamMembers = [], isLoading: isLoadingAllTeamMembers } = useCollection<AppUser>(usersCollection);
+
+    const teamMembers = useMemo(() => {
+        if (currentUser?.role === 'Director') {
+            return allTeamMembers;
+        }
+        // For non-directors, return only their own profile data in the array.
+        if (userProfile) {
+            return [userProfile];
+        }
+        return [];
+    }, [currentUser, allTeamMembers, userProfile]);
+
+    const isLoadingTeamMembers = currentUser?.role === 'Director' ? isLoadingAllTeamMembers : isLoadingUserProfile;
 
     // --- Collections ---
     const clientsCollection = useMemoFirebase(() => user ? collection(firestore, 'users', user.uid, 'clients') : null, [firestore, user]);
@@ -188,13 +209,13 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
         addDocumentNonBlocking(logsCollection, logEntry);
     }, [logsCollection, currentUser]);
     
-    useEffect(() => {
+     useEffect(() => {
         const bootstrapDirectors = async () => {
             if (!firestore) return;
     
             const directorUsers = [
-                { uid: 'TycwLL3rn5Zny3R4aibDJuIbd2S2', name: 'Isaac Golzarri', email: 'witbiz.mx@gmail.com' },
-                { uid: 'QC0nJUxmggW6t25krdonNrme6zz2', name: 'Said Saigar', email: 'saidsaigar@gmail.com' },
+                { uid: 'TycwLL3rn5Zny3R4aibDJuIbd2S2', name: 'Isaac Golzarri', email: 'witbiz.mx@gmail.com', role: 'Director' },
+                { uid: 'QC0nJUxmggW6t25krdonNrme6zz2', name: 'Said Saigar', email: 'saidsaigar@gmail.com', role: 'Director' },
             ];
     
             for (const dir of directorUsers) {
@@ -206,7 +227,7 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
                             id: dir.uid,
                             name: dir.name,
                             email: dir.email,
-                            role: 'Director',
+                            role: dir.role,
                             status: 'Activo',
                         }, { merge: true });
                         console.log(`Director profile for ${dir.name} created.`);
