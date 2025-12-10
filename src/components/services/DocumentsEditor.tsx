@@ -5,7 +5,7 @@
 import React from "react";
 import { useCRMData } from "@/contexts/CRMDataContext";
 import { Button } from "@/components/ui/button";
-import { FileText, Trash2, UploadCloud, Download } from "lucide-react";
+import { FileText, Trash2, UploadCloud, Eye } from "lucide-react";
 import { Label } from "@/components/ui/label";
 import { useDialogs } from "@/contexts/DialogsContext";
 import { useToast } from "@/hooks/use-toast";
@@ -52,7 +52,7 @@ export function ServiceDocumentsEditor({ serviceId, canEdit }: ServiceDocumentsE
                             </div>
                             <div className="flex items-center">
                                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleDownload(doc)}>
-                                    <Download className="h-4 w-4" />
+                                    <Eye className="h-4 w-4" />
                                 </Button>
                                 {canEdit && (
                                     <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => deleteDocument(doc.id)}>

@@ -7,7 +7,7 @@ import Link from "next/link";
 import { Header } from "@/components/header";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { useCRMData } from "@/contexts/CRMDataContext";
-import { Loader2, FileText, Download, Briefcase, Workflow as WorkflowIcon } from "lucide-react";
+import { Loader2, FileText, Download, Briefcase, Workflow as WorkflowIcon, Eye } from "lucide-react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
@@ -43,7 +43,7 @@ function ServiceDocuments({ serviceId }: { serviceId: string }) {
               </div>
               <div className="flex items-center">
                   <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleDownload(doc)}>
-                    <Download className="h-4 w-4" />
+                    <Eye className="h-4 w-4" />
                   </Button>
               </div>
             </li>

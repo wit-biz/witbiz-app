@@ -6,7 +6,7 @@ import { type Client, type Document, type Task, type WorkflowAction, type Workfl
 import { useCRMData } from "@/contexts/CRMDataContext";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Edit, Trash2, Plus, Download, FileText, UploadCloud, Info, Users, Target, ListTodo, CheckCircle2, Briefcase, UserCheck, Smartphone, CalendarDays, Percent, Tag, FileCheck2, Save, MessageSquare } from "lucide-react";
+import { Edit, Trash2, Plus, Download, FileText, UploadCloud, Info, Users, Target, ListTodo, CheckCircle2, Briefcase, UserCheck, Smartphone, CalendarDays, Percent, Tag, FileCheck2, Save, MessageSquare, Eye } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { SmartDocumentUploadDialog } from "./SmartDocumentUploadDialog";
 import { DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
@@ -373,7 +373,7 @@ export function ClientDetailView({ client, onClose }: ClientDetailViewProps) {
                                                 </div>
                                             </div>
                                             <Button variant="ghost" size="icon" onClick={() => handleDownload(doc)}>
-                                                <Download className="h-4 w-4" />
+                                                <Eye className="h-4 w-4" />
                                             </Button>
                                         </li>
                                     ))}

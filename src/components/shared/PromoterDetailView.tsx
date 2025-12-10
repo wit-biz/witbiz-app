@@ -5,7 +5,7 @@ import React, { useState, useMemo } from "react";
 import { type Client, type Promoter, type Document } from "@/lib/types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { X, UserCheck, Users, CircleDollarSign, Mail, Phone, UploadCloud, FileText, Download, Info, CalendarDays } from "lucide-react";
+import { X, UserCheck, Users, CircleDollarSign, Mail, Phone, UploadCloud, FileText, Download, Info, CalendarDays, Eye } from "lucide-react";
 import { DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Badge } from "../ui/badge";
 import { useCRMData } from "@/contexts/CRMDataContext";
@@ -164,7 +164,7 @@ export function PromoterDetailView({ promoter, onClose }: PromoterDetailViewProp
                                                 </div>
                                             </div>
                                             <Button variant="ghost" size="icon" onClick={() => handleDownload(doc)}>
-                                                <Download className="h-4 w-4" />
+                                                <Eye className="h-4 w-4" />
                                             </Button>
                                         </li>
                                     ))}

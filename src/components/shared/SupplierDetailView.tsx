@@ -6,7 +6,7 @@ import { type Supplier, type Document } from "@/lib/types";
 import { useCRMData } from "@/contexts/CRMDataContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { X, Truck, UserCheck, Briefcase, Phone, Mail, UploadCloud, FileText, Download, Info, CalendarDays } from "lucide-react";
+import { X, Truck, UserCheck, Briefcase, Phone, Mail, UploadCloud, FileText, Download, Info, CalendarDays, Eye } from "lucide-react";
 import { DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Badge } from "../ui/badge";
 import { useDialogs } from "@/contexts/DialogsContext";
@@ -131,7 +131,7 @@ export function SupplierDetailView({ supplier, onClose }: SupplierDetailViewProp
                                                 </div>
                                             </div>
                                             <Button variant="ghost" size="icon" onClick={() => handleDownload(doc)}>
-                                                <Download className="h-4 w-4" />
+                                                <Eye className="h-4 w-4" />
                                             </Button>
                                         </li>
                                     ))}

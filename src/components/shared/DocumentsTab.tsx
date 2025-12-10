@@ -7,7 +7,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
-import { Loader2, Search, Download, FileText, Edit3, Trash2 } from "lucide-react";
+import { Loader2, Search, Eye, FileText, Edit3, Trash2 } from "lucide-react";
 import { type Document } from "@/lib/types";
 import { useCRMData } from "@/contexts/CRMDataContext";
 import { useToast } from "@/hooks/use-toast";
@@ -160,7 +160,7 @@ export function DocumentsTab({ documents, isLoading }: DocumentsTabProps) {
                                             <TableCell>{doc.uploadedAt ? formatDateString(doc.uploadedAt.toDate()) : 'N/A'}</TableCell>
                                             <TableCell className="text-right">
                                                 <Button variant="ghost" size="icon" onClick={() => handleDownload(doc)}>
-                                                    <Download className="h-4 w-4" />
+                                                    <Eye className="h-4 w-4" />
                                                 </Button>
                                                 <Button variant="ghost" size="icon" onClick={() => setDocumentToEdit(doc)}>
                                                     <Edit3 className="h-4 w-4" />
