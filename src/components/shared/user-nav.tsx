@@ -19,6 +19,8 @@ import {
   Users,
   Shield,
   Trash2,
+  Activity,
+  TrendingUp,
 } from "lucide-react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
@@ -53,6 +55,24 @@ export function UserNav() {
 
   return (
     <div className="fixed top-4 right-4 z-50 flex items-center gap-2">
+      <Button
+          variant="ghost"
+          size="icon"
+          className="h-9 w-9 rounded-full bg-background/80 backdrop-blur-sm hover:bg-muted/90"
+      >
+          <Activity className="h-5 w-5" />
+          <span className="sr-only">Ver actividad del equipo</span>
+      </Button>
+
+      <Button
+          variant="ghost"
+          size="icon"
+          className="h-9 w-9 rounded-full bg-background/80 backdrop-blur-sm hover:bg-muted/90"
+      >
+          <TrendingUp className="h-5 w-5" />
+          <span className="sr-only">Ver resumen financiero</span>
+      </Button>
+
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button
