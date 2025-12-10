@@ -35,7 +35,7 @@ import { collection, doc, writeBatch, serverTimestamp, query, where, updateDoc, 
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
 import { addDays, format } from 'date-fns';
-import { initialRoles as baseInitialRoles, teamMembers as staticTeamMembers } from '@/lib/data';
+import { initialRoles, teamMembers as staticTeamMembers } from '@/lib/data';
 
 type AnyStage = WorkflowStage | SubStage | SubSubStage;
 
@@ -147,7 +147,7 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
     const { user, isUserLoading } = useUser();
     
     // Simulating role management with local state for now
-    const [roles, setRoles] = useState<UserRole[]>(baseInitialRoles);
+    const [roles, setRoles] = useState<UserRole[]>(initialRoles);
     
     // LOADING STATES
     
@@ -155,8 +155,8 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
     const userProfileRef = useMemoFirebase(() => user ? doc(firestore, 'users', user.uid) : null, [firestore, user]);
     const { data: userProfile, isLoading: isLoadingUserProfile } = useDoc<AppUser>(userProfileRef);
 
-    const [teamMembers, setTeamMembers] = useState<AppUser[]>(staticTeamMembers);
-    const isLoadingTeamMembers = false; // Since it's static data
+    const usersCollection = useMemoFirebase(() => user ? collection(firestore, 'users') : null, [firestore, user]);
+    const { data: teamMembers = [], isLoading: isLoadingTeamMembers } = useCollection<AppUser>(usersCollection);
 
 
     // --- Collections ---
@@ -194,7 +194,7 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
     
             const directorUsers = [
                 { uid: 'TycwLL3rn5Zny3R4aibDJuIbd2S2', name: 'Isaac Golzarri', email: 'witbiz.mx@gmail.com' },
-                { uid: 'GfHifOumHKVvmNcUg6W4iNJEYSj2', name: 'Said Saigar', email: 'saidsaigar@gmail.com' },
+                { uid: 'QC0nJUxmggW6t25krdonNrme6zz2', name: 'Said Saigar', email: 'saidsaigar@gmail.com' },
             ];
     
             for (const dir of directorUsers) {
@@ -280,10 +280,11 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
     const deleteUser = async (userId: string, permanent: boolean = false): Promise<boolean> => {
         if (!firestore) return false;
         const docRef = doc(firestore, 'users', userId);
+        const data = { status: 'Archivado', archivedAt: serverTimestamp() };
         if (permanent) {
             deleteDocumentNonBlocking(docRef);
         } else {
-            setDocumentNonBlocking(docRef, { status: 'Archivado', archivedAt: serverTimestamp() }, { merge: true });
+            setDocumentNonBlocking(docRef, data, { merge: true });
         }
         return true;
     };
