@@ -35,7 +35,7 @@ import { collection, doc, writeBatch, serverTimestamp, query, where, updateDoc, 
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
 import { addDays, format } from 'date-fns';
-import { initialRoles as baseInitialRoles } from '@/lib/data';
+import { initialRoles as baseInitialRoles, teamMembers as staticTeamMembers } from '@/lib/data';
 
 type AnyStage = WorkflowStage | SubStage | SubSubStage;
 
@@ -278,6 +278,26 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
         }
     }, [user, userProfile, isUserLoading, isLoadingUserProfile, firestore, roles]);
 
+    // Effect to bootstrap director users
+    useEffect(() => {
+        const bootstrapUsers = async () => {
+            try {
+                await registerUser('Isaac Golzarri', 'witbiz.mx@gmail.com', 'WitBiz!123', 'Director');
+            } catch (error: any) {
+                if (error.code !== 'auth/email-already-in-use') {
+                    console.error("Failed to bootstrap Isaac:", error);
+                }
+            }
+            try {
+                await registerUser('Said Saigar', 'saidsaigar@gmail.com', 'WitBiz!123', 'Director');
+            } catch (error: any) {
+                if (error.code !== 'auth/email-already-in-use') {
+                    console.error("Failed to bootstrap Said:", error);
+                }
+            }
+        };
+        bootstrapUsers();
+    }, [registerUser]);
 
 
 
