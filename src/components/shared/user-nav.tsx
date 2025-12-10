@@ -190,6 +190,16 @@ export function UserNav() {
           )}
         </DropdownMenuContent>
       </DropdownMenu>
+
+      <Button
+          variant="ghost"
+          size="icon"
+          className="h-9 w-9 rounded-full"
+          onClick={() => setIsTasksDialogOpen(true)}
+      >
+          <ListTodo className="h-5 w-5" />
+          <span className="sr-only">Ver tareas del equipo</span>
+      </Button>
       
       <Button
           variant="ghost"
@@ -209,16 +219,6 @@ export function UserNav() {
       >
           <TrendingUp className="h-5 w-5" />
           <span className="sr-only">Ver resumen financiero</span>
-      </Button>
-      
-      <Button
-          variant="ghost"
-          size="icon"
-          className="h-9 w-9 rounded-full"
-          onClick={() => setIsTasksDialogOpen(true)}
-      >
-          <ListTodo className="h-5 w-5" />
-          <span className="sr-only">Ver tareas del equipo</span>
       </Button>
 
     </div>
