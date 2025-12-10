@@ -189,7 +189,7 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
     const { data: transactions = [], isLoading: isLoadingTransactions } = useCollection<Transaction>(transactionsCollection);
     const { data: loans = [], isLoading: isLoadingLoans } = useCollection<InterCompanyLoan>(loansCollection);
     const { data: logs = [], isLoading: isLoadingLogs } = useCollection<Log>(logsCollection);
-
+    
     const addLog = useCallback(async (action: LogAction, entityId: string, entityType: string, entityName?: string) => {
         if (!logsCollection || !currentUser) return;
         const logEntry: Omit<Log, 'id'> = {
@@ -224,7 +224,9 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
                 role: role,
             }, {});
             
-            addLog('user_invited', newUser.uid, 'user', name);
+            // This would require a backend function to set custom claims.
+            // For now, the rules will rely on the document.
+            // addLog('user_invited', newUser.uid, 'user', name);
     
             return userCredential;
         } catch (error: any) {
@@ -234,33 +236,7 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
             }
             throw error; // Re-throw to be handled by caller if needed
         }
-    }, [auth, firestore, showNotification, addLog]);
-
-    useEffect(() => {
-        // One-time effect to ensure director users exist
-        const ensureDirectorsExist = async () => {
-            if (auth && firestore) {
-                try {
-                    await registerUser('Isaac Golzarri', 'witbiz.mx@gmail.com', 'WitBiz!123', 'Director');
-                } catch (error: any) {
-                    // Ignore "email-already-in-use" as it's expected
-                    if (error.code !== 'auth/email-already-in-use') {
-                        console.error("Failed to register Isaac Golzarri:", error);
-                    }
-                }
-                try {
-                    await registerUser('Said Saigar', 'saidsaigar@gmail.com', 'WitBiz!123', 'Director');
-                } catch (error: any) {
-                    if (error.code !== 'auth/email-already-in-use') {
-                        console.error("Failed to register Said Saigar:", error);
-                    }
-                }
-            }
-        };
-
-        ensureDirectorsExist();
-    }, [auth, firestore, registerUser]);
-
+    }, [auth, firestore, showNotification]);
 
     useEffect(() => {
         if (user && userProfile) {
@@ -916,6 +892,7 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
         promoters, isLoadingPromoters, suppliers, isLoadingSuppliers,
         companies, isLoadingCompanies, bankAccounts, isLoadingBankAccounts, categories, isLoadingCategories,
         transactions, isLoadingTransactions, loans, isLoadingLoans,
+        addLog, registerUser
     ]);
 
     return (

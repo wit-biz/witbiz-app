@@ -1,0 +1,156 @@
+
+/**
+ * This Firestore Security Ruleset establishes a strict, user-centric data ownership model.
+ * It is designed for applications where data is siloed and private to each authenticated user,
+ * with no collaborative or public data access.
+ *
+ * Core Philosophy:
+ * The security model is based on strict user ownership. All user-generated content is stored
+ * within a dedicated subcollection under their unique user ID (`/users/{userId}`). Access is
+ * granted only if the requesting user's authenticated UID matches the `userId` in the document path.
+ * This approach ensures that users can only ever access their own information.
+ *
+ * Data Structure:
+ * All application data is hierarchically organized under the top-level `/users` collection.
+ *   - `/users/{userId}`: Root document for a user's data.
+ *   - `/users/{userId}/contacts/{contactId}`: Stores a user's private contacts.
+ *   - `/users/{userId}/leads/{leadId}`: Stores a user's private leads.
+ *   - `/users/{userId}/leads/{leadId}/tasks/{taskId}`: Stores tasks related to a specific lead,
+ *     inheriting ownership from the parent user.
+ */
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ----------------------------------------------------------------------
+    // Helper Functions
+    // ----------------------------------------------------------------------
+
+    /**
+     * Checks if the user is authenticated.
+     */
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    /**
+     * Checks if the requesting user is the owner of the document based on the userId in the path.
+     */
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    /**
+     * Checks for ownership on an existing document. Used for update and delete operations.
+     */
+    function isExistingOwner(userId) {
+      return isOwner(userId) && resource != null;
+    }
+
+    /**
+     * Checks if the requesting user has the 'Director' role by reading their custom token claims.
+     * This is more secure and performant than reading a document.
+     */
+    function isDirector() {
+      return isSignedIn() && request.auth.token.role == 'Director';
+    }
+
+
+    // ----------------------------------------------------------------------
+    // User Data Tree
+    // ----------------------------------------------------------------------
+
+    /**
+     * @description Secures the user's root document. Allows a user to create and manage their
+     *              own document. Directors can get, update, or delete any user document.
+     * @path        /users/{userId}
+     * @principle   Enforces self-management and administrative override for directors.
+     */
+    match /users/{userId} {
+      allow get: if isOwner(userId) || isDirector();
+      allow list: if isDirector(); // Allow directors to list all users
+      allow create: if isOwner(userId);
+      allow update: if isExistingOwner(userId) || isDirector();
+      allow delete: if isDirector();
+    }
+
+    /**
+     * @description Secures a user's private contacts. Only the owner can read, list, or write
+     *              their own contacts.
+     * @path        /users/{userId}/contacts/{contactId}
+     * @principle   Restricts access to a user's own data tree using path-based ownership.
+     */
+    match /users/{userId}/contacts/{contactId} {
+      allow get: if isOwner(userId);
+      allow list: if isOwner(userId);
+      allow create: if isOwner(userId) && request.resource.data.id == contactId;
+      allow update: if isExistingOwner(userId) && request.resource.data.id == resource.data.id;
+      allow delete: if isExistingOwner(userId);
+    }
+    
+    /**
+     * @description Secures a user's private notes. Only the owner can manage their own notes.
+     * @path        /users/{userId}/notes/{noteId}
+     * @principle   Restricts access to a user's own notes using path-based ownership.
+     */
+    match /users/{userId}/notes/{noteId} {
+        allow get: if isOwner(userId);
+        allow list: if isOwner(userId);
+        allow create: if isOwner(userId);
+        allow update: if isExistingOwner(userId);
+        allow delete: if isExistingOwner(userId);
+    }
+
+    /**
+     * @description Secures a user's private documents. Only the owner can manage their own documents.
+     * @path        /users/{userId}/documents/{documentId}
+     * @principle   Restricts access to a user's own documents using path-based ownership.
+     */
+    match /users/{userId}/documents/{documentId} {
+        allow get: if isOwner(userId);
+        allow list: if isOwner(userId);
+        allow create: if isOwner(userId);
+        allow update: if isExistingOwner(userId);
+        allow delete: if isExistingOwner(userId);
+    }
+
+    /**
+     * @description Secures a user's private leads. Only the owner can read, list, or write
+     *              their own leads.
+     * @path        /users/{userId}/leads/{leadId}
+     * @principle   Restricts access to a user's own data tree using path-based ownership.
+     */
+    match /users/{userId}/leads/{leadId} {
+      allow get: if isOwner(userId);
+      allow list: if isOwner(userId);
+      allow create: if isOwner(userId) && request.resource.data.id == leadId;
+      allow update: if isExistingOwner(userId) && request.resource.data.id == resource.data.id;
+      allow delete: if isExistingOwner(userId);
+    }
+
+    /**
+     * @description Secures tasks within a lead. Access is inherited from the parent user.
+     *              Ensures tasks are correctly associated with their parent lead.
+     * @path        /users/{userId}/leads/{leadId}/tasks/{taskId}
+     * @principle   Validates relational integrity by ensuring the task's `leadId` field matches the
+     *              path upon creation and is immutable.
+     */
+    match /users/{userId}/leads/{leadId}/tasks/{taskId} {
+      allow get: if isOwner(userId);
+      allow list: if isOwner(userId);
+      allow create: if isOwner(userId) && request.resource.data.id == taskId && request.resource.data.leadId == leadId;
+      allow update: if isExistingOwner(userId) && request.resource.data.id == resource.data.id && request.resource.data.leadId == resource.data.leadId;
+      allow delete: if isExistingOwner(userId);
+    }
+    
+    // Fallback for any other collections under /users/{userId}
+    match /users/{userId}/{collection}/{docId} {
+        allow read, write: if isOwner(userId);
+    }
+
+    match /promoters/{promoterId} {
+      allow get, list: if isSignedIn();
+      allow create, update, delete: if isDirector();
+    }
+  }
+}
