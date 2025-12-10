@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import React, { createContext, useContext, useState, useMemo, type ReactNode, useCallback, useEffect } from 'react';
@@ -36,7 +35,7 @@ import { collection, doc, writeBatch, serverTimestamp, query, where, updateDoc, 
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
 import { addDays, format } from 'date-fns';
-import { initialRoles as baseInitialRoles } from '@/lib/data';
+import { initialRoles as baseInitialRoles, teamMembers as staticTeamMembers } from '@/lib/data';
 
 type AnyStage = WorkflowStage | SubStage | SubSubStage;
 
@@ -156,8 +155,8 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
     const userProfileRef = useMemoFirebase(() => user ? doc(firestore, 'users', user.uid) : null, [firestore, user]);
     const { data: userProfile, isLoading: isLoadingUserProfile } = useDoc<AppUser>(userProfileRef);
 
-    const usersCollectionQuery = useMemoFirebase(() => user ? query(collection(firestore, 'users')) : null, [firestore, user]);
-    const { data: teamMembersData, isLoading: isLoadingTeamMembers } = useCollection<AppUser>(usersCollectionQuery);
+    const teamMembers = staticTeamMembers;
+    const isLoadingTeamMembers = false;
 
 
     // --- Collections ---
@@ -191,17 +190,19 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
     const { data: loans = [], isLoading: isLoadingLoans } = useCollection<InterCompanyLoan>(loansCollection);
     const { data: logs = [], isLoading: isLoadingLogs } = useCollection<Log>(logsCollection);
 
-    const teamMembers = useMemo(() => {
-        return (teamMembersData || []).map(member => {
-            if (member.email === 'saidsaigar@gmail.com') {
-                return { ...member, name: 'Said Saigar' };
-            }
-            if (member.email === 'witbiz.mx@gmail.com') {
-                return { ...member, name: 'Isaac Golzarri' };
-            }
-            return member;
-        });
-    }, [teamMembersData]);
+    const addLog = useCallback(async (action: LogAction, entityId: string, entityType: string, entityName?: string) => {
+        if (!logsCollection || !currentUser) return;
+        const logEntry: Omit<Log, 'id'> = {
+            authorId: currentUser.uid,
+            authorName: currentUser.displayName || 'Sistema',
+            action,
+            entityId,
+            entityType,
+            entityName,
+            createdAt: serverTimestamp(),
+        };
+        addDocumentNonBlocking(logsCollection, logEntry);
+    }, [logsCollection, currentUser]);
     
     const registerUser = useCallback(async (name: string, email: string, pass: string, role: string) => {
         if (!auth || !firestore) {
@@ -233,7 +234,7 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
             }
             throw error; // Re-throw to be handled by caller if needed
         }
-    }, [auth, firestore, showNotification]);
+    }, [auth, firestore, showNotification, addLog]);
 
     useEffect(() => {
         // One-time effect to ensure director users exist
@@ -304,19 +305,6 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
     }, [user, userProfile, isUserLoading, isLoadingUserProfile, firestore, roles]);
 
 
-    const addLog = useCallback(async (action: LogAction, entityId: string, entityType: string, entityName?: string) => {
-        if (!logsCollection || !currentUser) return;
-        const logEntry: Omit<Log, 'id'> = {
-            authorId: currentUser.uid,
-            authorName: currentUser.displayName || 'Sistema',
-            action,
-            entityId,
-            entityType,
-            entityName,
-            createdAt: serverTimestamp(),
-        };
-        addDocumentNonBlocking(logsCollection, logEntry);
-    }, [logsCollection, currentUser]);
 
 
     const updateUser = async (userId: string, updates: Partial<AppUser>): Promise<boolean> => {
