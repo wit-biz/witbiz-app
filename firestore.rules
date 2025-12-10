@@ -47,6 +47,14 @@ service cloud.firestore {
       return isOwner(userId) && resource != null;
     }
 
+    /**
+     * Checks if the requesting user has the 'Director' role by reading their own user document.
+     */
+    function isDirector() {
+      return isSignedIn() && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'Director';
+    }
+
+
     // ----------------------------------------------------------------------
     // User Data Tree
     // ----------------------------------------------------------------------
@@ -64,8 +72,8 @@ service cloud.firestore {
       allow get: if isOwner(userId);
       allow list: if false;
       allow create: if isOwner(userId);
-      allow update: if isExistingOwner(userId);
-      allow delete: if false;
+      allow update: if isExistingOwner(userId) || isDirector();
+      allow delete: if isDirector();
     }
 
     /**
@@ -151,7 +159,7 @@ service cloud.firestore {
 
     match /promoters/{promoterId} {
       allow get, list: if isSignedIn();
-      allow create, update, delete: if false; // Managed via Admin SDK or specific functions
+      allow create, update, delete: if isDirector();
     }
   }
 }
