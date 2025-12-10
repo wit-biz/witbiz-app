@@ -54,34 +54,13 @@ export function UserNav() {
   const canViewAdmin = currentUser?.permissions.admin_view ?? false;
 
   return (
-    <div className="fixed top-4 right-4 z-50 flex flex-col items-center gap-2">
-      <Button
-          variant="ghost"
-          size="icon"
-          className="h-9 w-9 rounded-full bg-background/80 backdrop-blur-sm hover:bg-muted/90"
-      >
-          <Activity className="h-5 w-5" />
-          <span className="sr-only">Ver actividad del equipo</span>
-      </Button>
-
-      <Button
-          variant="ghost"
-          size="icon"
-          className="h-9 w-9 rounded-full bg-background/80 backdrop-blur-sm hover:bg-muted/90"
-      >
-          <TrendingUp className="h-5 w-5" />
-          <span className="sr-only">Ver resumen financiero</span>
-      </Button>
-
+    <div className="fixed top-4 right-4 z-50 flex flex-col items-center gap-1 p-1 rounded-full bg-background/80 backdrop-blur-sm sidebar-glowing-border">
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button
             variant="ghost"
             size="icon"
-            className={cn(
-              "h-9 w-9 rounded-full bg-background/80 backdrop-blur-sm hover:bg-muted/90",
-              "sidebar-glowing-border"
-            )}
+            className="h-9 w-9 rounded-full"
           >
             {user && currentUser ? (
               <Avatar className="h-8 w-8">
@@ -150,6 +129,24 @@ export function UserNav() {
           )}
         </DropdownMenuContent>
       </DropdownMenu>
+      
+      <Button
+          variant="ghost"
+          size="icon"
+          className="h-9 w-9 rounded-full"
+      >
+          <Activity className="h-5 w-5" />
+          <span className="sr-only">Ver actividad del equipo</span>
+      </Button>
+
+      <Button
+          variant="ghost"
+          size="icon"
+          className="h-9 w-9 rounded-full"
+      >
+          <TrendingUp className="h-5 w-5" />
+          <span className="sr-only">Ver resumen financiero</span>
+      </Button>
     </div>
   );
 }
