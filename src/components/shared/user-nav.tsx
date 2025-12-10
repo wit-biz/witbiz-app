@@ -120,23 +120,45 @@ export function UserNav() {
         </DropdownMenuContent>
       </DropdownMenu>
       
-      <Button
-          variant="ghost"
-          size="icon"
-          className="h-9 w-9 rounded-full"
-      >
-          <Activity className="h-5 w-5" />
-          <span className="sr-only">Ver actividad del equipo</span>
-      </Button>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button
+              variant="ghost"
+              size="icon"
+              className="h-9 w-9 rounded-full"
+          >
+              <Activity className="h-5 w-5" />
+              <span className="sr-only">Ver actividad del equipo</span>
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent side="left" align="start" sideOffset={8}>
+            <DropdownMenuLabel>Actividad del Equipo</DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem>Tareas Completadas</DropdownMenuItem>
+            <DropdownMenuItem>Nuevos Clientes</DropdownMenuItem>
+            <DropdownMenuItem>Documentos Subidos</DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
 
-      <Button
-          variant="ghost"
-          size="icon"
-          className="h-9 w-9 rounded-full"
-      >
-          <TrendingUp className="h-5 w-5" />
-          <span className="sr-only">Ver resumen financiero</span>
-      </Button>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button
+              variant="ghost"
+              size="icon"
+              className="h-9 w-9 rounded-full"
+          >
+              <TrendingUp className="h-5 w-5" />
+              <span className="sr-only">Ver resumen financiero</span>
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent side="left" align="start" sideOffset={8}>
+            <DropdownMenuLabel>Resumen Financiero</DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem>Ingresos del Mes</DropdownMenuItem>
+            <DropdownMenuItem>Gastos del Mes</DropdownMenuItem>
+            <DropdownMenuItem>Utilidad Neta</DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
     </div>
   );
 }
