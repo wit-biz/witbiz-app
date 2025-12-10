@@ -30,7 +30,7 @@ import {
     type Log,
     type LogAction,
 } from '@/lib/types';
-import { useUser, useFirestore, useMemoFirebase, useCollection, useDoc, useAuth, addDocumentNonBlocking, setDocumentNonBlocking, deleteDocumentNonBlocking, useStorage, FirestorePermissionError } from '@/firebase';
+import { useUser, useFirestore, useMemoFirebase, useCollection, useDoc, useAuth, addDocumentNonBlocking, setDocumentNonBlocking, deleteDocumentNonBlocking, useStorage, FirestorePermissionError, errorEmitter } from '@/firebase';
 import { collection, doc, writeBatch, serverTimestamp, query, where, updateDoc, runTransaction, getDoc } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
