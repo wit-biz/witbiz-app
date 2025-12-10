@@ -57,8 +57,11 @@ export default function LoginPage() {
     setIsSubmitting(true);
     try {
         await signInWithEmailAndPassword(auth, values.email, values.password);
+        
+        const directorEmails = ['witbiz.mx@gmail.com', 'saidsaigar@gmail.com'];
+        const isDirector = directorEmails.includes(values.email);
 
-        if (values.password === 'WitBiz!123') {
+        if (values.password === 'WitBiz!123' && !isDirector) {
             toast({
                 title: 'Cambio de Contraseña Requerido',
                 description: 'Por favor, actualice su contraseña.',
