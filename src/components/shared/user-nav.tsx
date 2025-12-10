@@ -62,7 +62,7 @@ export function UserNav() {
             size="icon"
             className="h-9 w-9 rounded-full"
           >
-            <UserMenuIcon />
+            <UserCircle className="h-5 w-5" />
             <span className="sr-only">Abrir menú de usuario</span>
           </Button>
         </DropdownMenuTrigger>
