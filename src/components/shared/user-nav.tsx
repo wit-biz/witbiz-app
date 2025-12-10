@@ -6,9 +6,10 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuLabel,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
@@ -23,25 +24,25 @@ import {
   TrendingUp,
 } from "lucide-react";
 import Link from "next/link";
-import { cn } from "@/lib/utils";
 import { useUser } from "@/firebase/auth/use-user";
-import { SidebarTrigger } from "../ui/sidebar";
 import { initiateSignOut } from "@/firebase/non-blocking-login";
 import { useAuth } from "@/firebase/provider";
 import { useCRMData } from "@/contexts/CRMDataContext";
+import React from "react";
 
-const UserMenuIcon = () => (
-    <svg width="24" height="24" viewBox="0 0 24 24" className="user-nav-glow h-6 w-6">
-        <circle cx="12" cy="6" r="1.5" />
-        <circle cx="12" cy="12" r="1.5" />
-        <circle cx="12" cy="18" r="1.5" />
-    </svg>
-);
 
 export function UserNav() {
   const { user, isUserLoading } = useUser();
   const { currentUser } = useCRMData();
   const auth = useAuth();
+
+  const [isSummaryDialogOpen, setIsSummaryDialogOpen] = React.useState(false);
+  const [activeTab, setActiveTab] = React.useState("activity");
+
+  const openDialog = (tab: "activity" | "finance") => {
+    setActiveTab(tab);
+    setIsSummaryDialogOpen(true);
+  };
 
   if (isUserLoading || (user && !currentUser)) {
     return (
@@ -54,6 +55,7 @@ export function UserNav() {
   const canViewAdmin = currentUser?.permissions.admin_view ?? false;
 
   return (
+    <>
     <div className="fixed top-4 right-4 z-50 flex flex-col items-center gap-1 p-1 rounded-full bg-background/80 backdrop-blur-sm sidebar-glowing-border">
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
@@ -120,45 +122,50 @@ export function UserNav() {
         </DropdownMenuContent>
       </DropdownMenu>
       
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button
-              variant="ghost"
-              size="icon"
-              className="h-9 w-9 rounded-full"
-          >
-              <Activity className="h-5 w-5" />
-              <span className="sr-only">Ver actividad del equipo</span>
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent side="left" align="start" sideOffset={8}>
-            <DropdownMenuLabel>Actividad del Equipo</DropdownMenuLabel>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem>Tareas Completadas</DropdownMenuItem>
-            <DropdownMenuItem>Nuevos Clientes</DropdownMenuItem>
-            <DropdownMenuItem>Documentos Subidos</DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
+      <Button
+          variant="ghost"
+          size="icon"
+          className="h-9 w-9 rounded-full"
+          onClick={() => openDialog("activity")}
+      >
+          <Activity className="h-5 w-5" />
+          <span className="sr-only">Ver actividad del equipo</span>
+      </Button>
 
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button
-              variant="ghost"
-              size="icon"
-              className="h-9 w-9 rounded-full"
-          >
-              <TrendingUp className="h-5 w-5" />
-              <span className="sr-only">Ver resumen financiero</span>
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent side="left" align="start" sideOffset={8}>
-            <DropdownMenuLabel>Resumen Financiero</DropdownMenuLabel>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem>Ingresos del Mes</DropdownMenuItem>
-            <DropdownMenuItem>Gastos del Mes</DropdownMenuItem>
-            <DropdownMenuItem>Utilidad Neta</DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
+      <Button
+          variant="ghost"
+          size="icon"
+          className="h-9 w-9 rounded-full"
+          onClick={() => openDialog("finance")}
+      >
+          <TrendingUp className="h-5 w-5" />
+          <span className="sr-only">Ver resumen financiero</span>
+      </Button>
     </div>
+    
+    <Dialog open={isSummaryDialogOpen} onOpenChange={setIsSummaryDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+                <DialogTitle>Resumen Rápido</DialogTitle>
+            </DialogHeader>
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+                <TabsList className="grid w-full grid-cols-2">
+                    <TabsTrigger value="activity">Actividad</TabsTrigger>
+                    <TabsTrigger value="finance">Finanzas</TabsTrigger>
+                </TabsList>
+                <TabsContent value="activity">
+                    <div className="p-4 text-center">
+                        <p className="text-sm text-muted-foreground">Contenido de la actividad del equipo aquí...</p>
+                    </div>
+                </TabsContent>
+                <TabsContent value="finance">
+                     <div className="p-4 text-center">
+                        <p className="text-sm text-muted-foreground">Contenido del resumen financiero aquí...</p>
+                    </div>
+                </TabsContent>
+            </Tabs>
+        </DialogContent>
+    </Dialog>
+    </>
   );
 }
