@@ -36,6 +36,7 @@ import { useCRMData } from "@/contexts/CRMDataContext";
 import React, { useMemo } from "react";
 import { LogAction, Log } from "@/lib/types";
 import { format, subDays, isAfter } from "date-fns";
+import { es } from 'date-fns/locale';
 import { Badge } from "../ui/badge";
 
 
@@ -213,7 +214,7 @@ export function UserNav() {
                                    <Icon className="h-4 w-4 text-muted-foreground mt-0.5" />
                                    <div>
                                        <p><span className="font-semibold">{log.authorName}</span> {logDetails.text.toLowerCase()} <span className="font-semibold text-primary">{log.entityName}</span>.</p>
-                                       <p className="text-xs text-muted-foreground">{format(log.createdAt.toDate(), "Pp", { locale: require("date-fns/locale/es") })}</p>
+                                       <p className="text-xs text-muted-foreground">{format(log.createdAt.toDate(), "Pp", { locale: es })}</p>
                                    </div>
                                </div>
                            )
@@ -250,5 +251,3 @@ export function UserNav() {
     </>
   );
 }
-
-    
