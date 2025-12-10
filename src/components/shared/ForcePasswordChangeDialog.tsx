@@ -19,7 +19,7 @@ import {
 import { PasswordInput } from '@/components/shared/PasswordInput';
 import { Loader2, Save, LogOut, CheckCircle2, XCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { useUser } from '@/firebase';
+import { useUser } from '@/firebase/auth/use-user';
 import { updatePassword } from 'firebase/auth';
 import { initiateSignOut } from '@/firebase/non-blocking-login';
 import { Logo } from './logo';

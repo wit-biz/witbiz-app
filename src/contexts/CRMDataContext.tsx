@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import React, { createContext, useContext, useState, useMemo, type ReactNode, useCallback, useEffect } from 'react';
@@ -164,7 +165,7 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
     const tasksCollection = useMemoFirebase(() => user ? collection(firestore, 'users', user.uid, 'tasks') : null, [firestore, user]);
     const documentsCollection = useMemoFirebase(() => user ? collection(firestore, 'users', user.uid, 'documents') : null, [firestore, user]);
     const serviceWorkflowsCollection = useMemoFirebase(() => user ? collection(firestore, 'users', user.uid, 'serviceWorkflows') : null, [firestore, user]);
-    const promotersCollection = useMemoFirebase(() => firestore ? collection(firestore, 'promoters') : null, [firestore]);
+    const promotersCollection = useMemoFirebase(() => user ? collection(firestore, 'promoters') : null, [firestore, user]);
     const suppliersCollection = useMemoFirebase(() => user ? collection(firestore, 'users', user.uid, 'suppliers') : null, [firestore, user]);
     const notesCollection = useMemoFirebase(() => user ? collection(firestore, 'users', user.uid, 'notes') : null, [firestore, user]);
     const companiesCollection = useMemoFirebase(() => user ? collection(firestore, 'users', user.uid, 'companies') : null, [firestore, user]);
@@ -911,5 +912,3 @@ export function useCRMData() {
   }
   return context;
 }
-
-    

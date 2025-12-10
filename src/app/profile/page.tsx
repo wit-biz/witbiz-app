@@ -144,7 +144,7 @@ export default function ProfilePage() {
                         <UserCog className="h-5 w-5 text-muted-foreground" />
                          <div className="flex flex-col">
                            <span className="text-sm text-muted-foreground">Rol</span>
-                           <span className="font-medium">{currentUser.roleId}</span>
+                           <span className="font-medium">{currentUser.role}</span>
                         </div>
                     </div>
                 </div>

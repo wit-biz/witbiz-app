@@ -22,7 +22,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
-import { useUser } from "@/firebase";
+import { useUser } from "@/firebase/auth/use-user";
 import { SidebarTrigger } from "../ui/sidebar";
 import { initiateSignOut } from "@/firebase/non-blocking-login";
 import { useAuth } from "@/firebase/provider";
