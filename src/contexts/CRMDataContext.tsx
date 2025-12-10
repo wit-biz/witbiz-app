@@ -165,7 +165,7 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
     const tasksCollection = useMemoFirebase(() => user ? collection(firestore, 'users', user.uid, 'tasks') : null, [firestore, user]);
     const documentsCollection = useMemoFirebase(() => user ? collection(firestore, 'users', user.uid, 'documents') : null, [firestore, user]);
     const serviceWorkflowsCollection = useMemoFirebase(() => user ? collection(firestore, 'users', user.uid, 'serviceWorkflows') : null, [firestore, user]);
-    const promotersCollection = useMemoFirebase(() => user ? collection(firestore, 'promoters') : null, [firestore, user]);
+    const promotersCollection = useMemoFirebase(() => user ? query(collection(firestore, 'promoters')) : null, [firestore, user]);
     const suppliersCollection = useMemoFirebase(() => user ? collection(firestore, 'users', user.uid, 'suppliers') : null, [firestore, user]);
     const notesCollection = useMemoFirebase(() => user ? collection(firestore, 'users', user.uid, 'notes') : null, [firestore, user]);
     const companiesCollection = useMemoFirebase(() => user ? collection(firestore, 'users', user.uid, 'companies') : null, [firestore, user]);
@@ -202,6 +202,63 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
             return member;
         });
     }, [teamMembersData]);
+    
+    const registerUser = useCallback(async (name: string, email: string, pass: string, role: string) => {
+        if (!auth || !firestore) {
+            showNotification('error', 'Error de registro', 'Los servicios de autenticación no están listos.');
+            throw new Error('Los servicios de autenticación no están listos.');
+        }
+        
+        try {
+            const userCredential = await createUserWithEmailAndPassword(auth, email, pass);
+            const { user: newUser } = userCredential;
+    
+            await updateProfile(newUser, { displayName: name });
+            
+            const userDocRef = doc(firestore, "users", newUser.uid);
+            setDocumentNonBlocking(userDocRef, {
+                id: newUser.uid,
+                name: name,
+                email: newUser.email,
+                role: role,
+            }, {});
+            
+            addLog('user_invited', newUser.uid, 'user', name);
+    
+            return userCredential;
+        } catch (error: any) {
+            // Don't show notification if user already exists, as this function is used for bootstrapping
+            if (error.code !== 'auth/email-already-in-use') {
+                showNotification('error', 'Error de registro', error.message);
+            }
+            throw error; // Re-throw to be handled by caller if needed
+        }
+    }, [auth, firestore, showNotification]);
+
+    useEffect(() => {
+        // One-time effect to ensure director users exist
+        const ensureDirectorsExist = async () => {
+            if (auth && firestore) {
+                try {
+                    await registerUser('Isaac Golzarri', 'witbiz.mx@gmail.com', 'WitBiz!123', 'Director');
+                } catch (error: any) {
+                    // Ignore "email-already-in-use" as it's expected
+                    if (error.code !== 'auth/email-already-in-use') {
+                        console.error("Failed to register Isaac Golzarri:", error);
+                    }
+                }
+                try {
+                    await registerUser('Said Saigar', 'saidsaigar@gmail.com', 'WitBiz!123', 'Director');
+                } catch (error: any) {
+                    if (error.code !== 'auth/email-already-in-use') {
+                        console.error("Failed to register Said Saigar:", error);
+                    }
+                }
+            }
+        };
+
+        ensureDirectorsExist();
+    }, [auth, firestore, registerUser]);
 
 
     useEffect(() => {
@@ -262,31 +319,6 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
     }, [logsCollection, currentUser]);
 
 
-    const registerUser = async (name: string, email: string, pass: string, role: string) => {
-        if (!auth || !firestore) {
-            showNotification('error', 'Error de registro', 'Los servicios de autenticación no están listos.');
-            throw new Error('Los servicios de autenticación no están listos.');
-        }
-        
-        const tempAuth = auth;
-        const userCredential = await createUserWithEmailAndPassword(tempAuth, email, pass);
-        const { user: newUser } = userCredential;
-
-        await updateProfile(newUser, { displayName: name });
-        
-        const userDocRef = doc(firestore, "users", newUser.uid);
-        setDocumentNonBlocking(userDocRef, {
-            id: newUser.uid,
-            name: name,
-            email: newUser.email,
-            role: role,
-        }, {});
-        
-        addLog('user_invited', newUser.uid, 'user', name);
-
-        return userCredential;
-    };
-    
     const updateUser = async (userId: string, updates: Partial<AppUser>): Promise<boolean> => {
         if (!firestore) return false;
         const userDocRef = doc(firestore, 'users', userId);
