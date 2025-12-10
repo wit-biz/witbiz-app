@@ -98,6 +98,19 @@ service cloud.firestore {
     }
 
     /**
+     * @description Secures a user's private documents. Only the owner can manage their own documents.
+     * @path        /users/{userId}/documents/{documentId}
+     * @principle   Restricts access to a user's own documents using path-based ownership.
+     */
+    match /users/{userId}/documents/{documentId} {
+        allow get: if isOwner(userId);
+        allow list: if isOwner(userId);
+        allow create: if isOwner(userId);
+        allow update: if isExistingOwner(userId);
+        allow delete: if isExistingOwner(userId);
+    }
+
+    /**
      * @description Secures a user's private leads. Only the owner can read, list, or write
      *              their own leads.
      * @path        /users/{userId}/leads/{leadId}
