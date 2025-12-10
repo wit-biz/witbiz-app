@@ -232,7 +232,7 @@ export default function TeamPage() {
                                             <span>{member.name}</span>
                                         </div>
                                     </TableCell>
-                                    <TableCell>{member.email}</TableCell>
+                                    <TableCell>{member.email === 'witbiz.mx@gmail.com' ? 'N/A' : member.email}</TableCell>
                                     <TableCell><Badge variant="secondary">{member.role}</Badge></TableCell>
                                     <TableCell className="text-right">
                                       {canManageMembers && member.role !== 'Director' && (
@@ -418,3 +418,5 @@ export default function TeamPage() {
     </>
   );
 }
+
+    
