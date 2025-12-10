@@ -31,7 +31,7 @@ import {
     type LogAction,
 } from '@/lib/types';
 import { useUser, useFirestore, useMemoFirebase, useCollection, useDoc, useAuth, addDocumentNonBlocking, setDocumentNonBlocking, deleteDocumentNonBlocking, useStorage } from '@/firebase';
-import { collection, doc, writeBatch, serverTimestamp, query, where, updateDoc, runTransaction } from 'firebase/firestore';
+import { collection, doc, writeBatch, serverTimestamp, query, where, updateDoc, runTransaction, getDoc } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
 import { addDays, format } from 'date-fns';
@@ -155,8 +155,8 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
     const userProfileRef = useMemoFirebase(() => user ? doc(firestore, 'users', user.uid) : null, [firestore, user]);
     const { data: userProfile, isLoading: isLoadingUserProfile } = useDoc<AppUser>(userProfileRef);
 
-    const [teamMembers, setTeamMembers] = useState<AppUser[]>(staticTeamMembers);
-    const isLoadingTeamMembers = false; // Data is now static or managed internally
+    const usersCollection = useMemoFirebase(() => collection(firestore, 'users'), [firestore]);
+    const { data: teamMembers = [], isLoading: isLoadingTeamMembers } = useCollection<AppUser>(usersCollection);
 
 
     // --- Collections ---
@@ -173,6 +173,38 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
     const transactionsCollection = useMemoFirebase(() => user ? collection(firestore, 'users', user.uid, 'transactions') : null, [firestore, user]);
     const loansCollection = useMemoFirebase(() => user ? collection(firestore, 'users', user.uid, 'loans') : null, [firestore, user]);
     const logsCollection = useMemoFirebase(() => user ? collection(firestore, 'users', user.uid, 'logs') : null, [firestore, user]);
+
+    useEffect(() => {
+        const bootstrapDirectors = async () => {
+            if (!firestore) return;
+    
+            const directorUsers = [
+                { uid: 'TycwLL3rn5Zny3R4aibDJuIbd2S2', name: 'Isaac Golzarri', email: 'witbiz.mx@gmail.com' },
+                { uid: 'GfHifOumHKVvmNcUg6W4iNJEYSj2', name: 'Said Saigar', email: 'saidsaigar@gmail.com' },
+            ];
+    
+            for (const dir of directorUsers) {
+                const userDocRef = doc(firestore, 'users', dir.uid);
+                const userDoc = await getDoc(userDocRef);
+                if (!userDoc.exists()) {
+                    try {
+                        await setDocumentNonBlocking(userDocRef, {
+                            id: dir.uid,
+                            name: dir.name,
+                            email: dir.email,
+                            role: 'Director',
+                            status: 'Activo',
+                        });
+                        console.log(`Director profile for ${dir.name} created.`);
+                    } catch (error) {
+                        console.error(`Failed to create director profile for ${dir.name}:`, error);
+                    }
+                }
+            }
+        };
+    
+        bootstrapDirectors();
+    }, [firestore]);
 
 
     // --- Firestore Data ---
@@ -222,18 +254,14 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
                 name: name,
                 email: newUser.email,
                 role: role,
+                status: 'Activo',
             }, { merge: true });
             
-            addLog('user_invited', newUser.uid, 'user', name);
+            await addLog('user_invited', newUser.uid, 'user', name);
     
             return userCredential;
         } catch (error: any) {
-            // Special case: if user already exists in auth, just ensure the firestore doc is there.
             if (error.code === 'auth/email-already-in-use') {
-                 // Try to set the Firestore document anyway.
-                 // This might be for a user that exists in auth but not firestore.
-                 // We need a way to get the UID for an existing email, which is not directly possible on the client.
-                 // The best we can do is notify the user and maybe update the current user's profile if they are logged in.
                  showNotification('warning', 'Usuario Existente', 'Este correo electrónico ya está registrado.');
             } else {
                  showNotification('error', 'Error de registro', error.message);
@@ -795,26 +823,21 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
     
     // Final setup in a separate effect to ensure all functions are defined
     useEffect(() => {
-        if (user) {
-            const staticUser = staticTeamMembers.find(u => u.id === user.uid);
-            let userRoleName = staticUser?.role || 'Colaborador';
-            let userName = staticUser?.name || user.displayName;
-            let userPhoto = staticUser?.photoURL || user.photoURL;
-
-            const userRole = roles.find(r => r.name === userRoleName) || roles.find(r => r.id === 'collaborator');
+        if (user && userProfile) {
+            const userRole = roles.find(r => r.name === userProfile.role) || roles.find(r => r.id === 'collaborator');
 
             setCurrentUser({
                 uid: user.uid,
                 email: user.email,
-                displayName: userName,
-                photoURL: userPhoto,
+                displayName: userProfile.name || user.displayName,
+                photoURL: userProfile.photoURL || user.photoURL,
                 role: userRole?.name,
                 permissions: userRole?.permissions || {},
             });
         } else if (!user && !isUserLoading) {
             setCurrentUser(null);
         }
-    }, [user, isUserLoading, roles]);
+    }, [user, userProfile, isUserLoading, roles]);
     
     const value = useMemo(() => ({
         currentUser, isLoadingCurrentUser: isUserLoading || isLoadingUserProfile, teamMembers, roles, setRoles,
@@ -890,3 +913,5 @@ export function useCRMData() {
   }
   return context;
 }
+
+    

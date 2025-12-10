@@ -69,7 +69,7 @@ service cloud.firestore {
     match /users/{userId} {
       allow get: if isOwner(userId) || isDirector();
       allow list: if isDirector(); // Allow directors to list all users
-      allow create: if isOwner(userId);
+      allow create: if isOwner(userId) || isDirector(); // Allow Director to create profiles
       allow update: if isExistingOwner(userId) || isDirector();
       allow delete: if isDirector();
     }
@@ -154,3 +154,5 @@ service cloud.firestore {
     }
   }
 }
+
+    
