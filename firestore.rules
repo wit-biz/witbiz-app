@@ -69,7 +69,7 @@ service cloud.firestore {
      * @principle   Enforces self-creation of a root user document and prevents user enumeration.
      */
     match /users/{userId} {
-      allow get: if isOwner(userId);
+      allow get: if isOwner(userId) || isDirector();
       allow list: if false;
       allow create: if isOwner(userId);
       allow update: if isExistingOwner(userId) || isDirector();
