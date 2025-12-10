@@ -335,7 +335,7 @@ function renderFinanceSummary(summary: { totalBalance: number; totalIncome: numb
 
 function TasksDialogContent({ teamMembers, allTasks }: { teamMembers: AppUser[], allTasks: Task[] }) {
     const [mainTab, setMainTab] = useState<'member' | 'time'>('member');
-    const [selectedMemberId, setSelectedMemberId] = useState<string | 'all'>(teamMembers[0]?.id || 'all');
+    const [selectedMemberId, setSelectedMemberId] = useState<string>(teamMembers[0]?.id || 'all');
     const [timePeriod, setTimePeriod] = useState<Period>('day');
 
     const tasksToShow = useMemo(() => {
@@ -363,16 +363,18 @@ function TasksDialogContent({ teamMembers, allTasks }: { teamMembers: AppUser[],
                 <TabsTrigger value="time">Por Tiempo</TabsTrigger>
             </TabsList>
             <TabsContent value="member" className="mt-4">
-                <Select value={selectedMemberId} onValueChange={setSelectedMemberId}>
-                    <SelectTrigger>
-                        <SelectValue placeholder="Seleccione un miembro del equipo..." />
-                    </SelectTrigger>
-                    <SelectContent>
-                        {teamMembers.map(member => (
-                            <SelectItem key={member.id} value={member.id}>{member.name}</SelectItem>
-                        ))}
-                    </SelectContent>
-                </Select>
+                <div className="max-h-40 overflow-y-auto space-y-1 pr-2">
+                    {teamMembers.map(member => (
+                        <Button
+                            key={member.id}
+                            variant={selectedMemberId === member.id ? 'default' : 'ghost'}
+                            className="w-full justify-start"
+                            onClick={() => setSelectedMemberId(member.id)}
+                        >
+                            {member.name}
+                        </Button>
+                    ))}
+                </div>
                 {renderTaskList(tasksToShow)}
             </TabsContent>
             <TabsContent value="time" className="mt-4">
