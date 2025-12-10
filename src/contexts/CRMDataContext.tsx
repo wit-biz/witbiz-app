@@ -548,8 +548,9 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
             // Clean the data object to remove undefined fields
             const cleanData: { [key: string]: any } = {};
             for (const key in newDocumentData) {
-                if (newDocumentData[key as keyof typeof newDocumentData] !== undefined) {
-                    cleanData[key] = newDocumentData[key as keyof typeof newDocumentData];
+                const value = newDocumentData[key as keyof typeof newDocumentData];
+                if (value !== undefined) {
+                    cleanData[key] = value;
                 }
             }
 
@@ -569,6 +570,14 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
             return null;
         }
     }
+
+    const updateDocument = async (documentId: string, updates: Partial<Document>): Promise<boolean> => {
+        if (!user || !firestore) return false;
+        const docRef = doc(firestore, 'users', user.uid, 'documents', documentId);
+        setDocumentNonBlocking(docRef, updates, { merge: true });
+        showNotification('success', 'Documento Actualizado', 'La información del documento ha sido guardada.');
+        return true;
+    };
 
     const deleteDocument = async (id: string, permanent: boolean = false): Promise<boolean> => {
         if (!user || !firestore) return false;
@@ -889,7 +898,7 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
 
         documents, isLoadingDocuments,
         addDocument,
-        updateDocument: (id, d) => Promise.resolve(false),
+        updateDocument,
         deleteDocument, restoreDocument,
         getDocumentsByClientId: (id) => documents.filter(d => d.clientId === id),
         getDocumentsByServiceId: (id) => documents.filter(d => d.serviceId === id),
