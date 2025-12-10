@@ -275,7 +275,8 @@ export type AppPermissions = {
     // Documentos
     documents_view: boolean;
     documents_upload: boolean;
-    documents_delete: boolean;
+    documents_edit: boolean;
+    documents_archive: boolean;
     // Servicios y Flujos
     services_view: boolean;
     crm_view: boolean;

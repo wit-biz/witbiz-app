@@ -28,7 +28,8 @@ export const allPermissions: { key: keyof AppPermissions; label: string; section
     // Documentos
     { key: "documents_view", label: "Ver y Descargar Documentos", section: "Documentos" },
     { key: "documents_upload", label: "Subir Documentos", section: "Documentos" },
-    { key: "documents_delete", label: "Eliminar Documentos", section: "Documentos" },
+    { key: "documents_edit", label: "Editar información de documentos", section: "Documentos" },
+    { key: "documents_archive", label: "Archivar Documentos", section: "Documentos" },
 
     // Servicios y Flujos de Trabajo
     { key: "services_view", label: "Ver Página de Servicios", section: "Servicios y Flujos" },

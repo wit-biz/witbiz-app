@@ -23,7 +23,7 @@ interface DocumentsTabProps {
 }
 
 export function DocumentsTab({ documents, isLoading }: DocumentsTabProps) {
-    const { clients, promoters, suppliers, serviceWorkflows, deleteDocument: archiveDocument } = useCRMData();
+    const { clients, promoters, suppliers, serviceWorkflows, deleteDocument: archiveDocument, currentUser } = useCRMData();
     const { toast } = useToast();
     const [searchTerm, setSearchTerm] = useState('');
     const [typeFilter, setTypeFilter] = useState('all');
@@ -98,6 +98,9 @@ export function DocumentsTab({ documents, isLoading }: DocumentsTabProps) {
         setIsProcessing(false);
     };
 
+    const canEdit = currentUser?.permissions.documents_edit ?? false;
+    const canArchive = currentUser?.permissions.documents_archive ?? false;
+
     return (
         <>
         <Card>
@@ -163,12 +166,16 @@ export function DocumentsTab({ documents, isLoading }: DocumentsTabProps) {
                                                     <Button variant="ghost" size="icon" onClick={() => handleDownload(doc)}>
                                                         <Eye className="h-4 w-4" />
                                                     </Button>
-                                                    <Button variant="ghost" size="icon" onClick={() => setDocumentToEdit(doc)}>
-                                                        <Edit3 className="h-4 w-4" />
-                                                    </Button>
-                                                    <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive" onClick={() => setDocumentToDelete(doc)}>
-                                                        <Trash2 className="h-4 w-4" />
-                                                    </Button>
+                                                    {canEdit && (
+                                                        <Button variant="ghost" size="icon" onClick={() => setDocumentToEdit(doc)}>
+                                                            <Edit3 className="h-4 w-4" />
+                                                        </Button>
+                                                    )}
+                                                    {canArchive && (
+                                                        <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive" onClick={() => setDocumentToDelete(doc)}>
+                                                            <Trash2 className="h-4 w-4" />
+                                                        </Button>
+                                                    )}
                                                 </div>
                                             </TableCell>
                                         </TableRow>

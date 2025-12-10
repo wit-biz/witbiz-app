@@ -27,7 +27,7 @@ export const initialRoles: UserRole[] = [
             suppliers_view: true, suppliers_create: true, suppliers_edit: true, suppliers_delete: true,
             promoters_view: true, promoters_create: true, promoters_edit: true, promoters_delete: true,
             tasks_view: true, tasks_create: true, tasks_edit: true, tasks_delete: true,
-            documents_view: true, documents_upload: true, documents_delete: true,
+            documents_view: true, documents_upload: true, documents_edit: true, documents_archive: true,
             services_view: true, crm_view: true, workflow_edit: true, services_edit: true,
             intelligence_view: true, accounting_view: true, accounting_config: true,
             admin_view: true, team_manage_members: true, team_manage_roles: true,
@@ -43,7 +43,7 @@ export const initialRoles: UserRole[] = [
             suppliers_view: true, suppliers_create: false, suppliers_edit: false, suppliers_delete: false,
             promoters_view: true, promoters_create: false, promoters_edit: false, promoters_delete: false,
             tasks_view: true, tasks_create: true, tasks_edit: true, tasks_delete: false,
-            documents_view: true, documents_upload: true, documents_delete: false,
+            documents_view: true, documents_upload: true, documents_edit: false, documents_archive: false,
             services_view: true, crm_view: true, workflow_edit: false, services_edit: false,
             intelligence_view: false, accounting_view: false, accounting_config: false,
             admin_view: false, team_manage_members: false, team_manage_roles: false,
@@ -245,5 +245,3 @@ export const navItems: NavItem[] = [
     { href: '/accounting', label: 'Contabilidad', icon: 'DollarSign', requiredPermission: 'accounting_view' },
     { href: '/intelligence', label: 'Centro de inteligencia', icon: 'BarChartIcon', requiredPermission: 'intelligence_view' },
 ];
-
-    
