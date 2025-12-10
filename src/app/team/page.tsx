@@ -32,6 +32,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { EditMemberDialog } from "@/components/shared/EditMemberDialog";
 import { allPermissions } from "@/lib/permissions";
 import { PromptNameDialog } from "@/components/shared/PromptNameDialog";
+import { cn } from "@/lib/utils";
 
 
 export default function TeamPage() {
@@ -79,12 +80,24 @@ export default function TeamPage() {
             });
     }, [teamMembers]);
 
-    const handlePermissionChange = (roleId: string, permissionKey: keyof AppPermissions, value: boolean) => {
-        setLocalRoles(prevRoles => prevRoles.map(role => 
-            role.id === roleId 
-                ? { ...role, permissions: { ...role.permissions, [permissionKey]: value } }
-                : role
-        ));
+    const handlePermissionChange = (roleId: string, changedKey: keyof AppPermissions, value: boolean) => {
+        setLocalRoles(prevRoles => prevRoles.map(role => {
+            if (role.id !== roleId) return role;
+
+            const newPermissions = { ...role.permissions, [changedKey]: value };
+
+            // Cascading logic: if a "_view" permission is turned off, turn off all related permissions.
+            if (changedKey.endsWith('_view') && !value) {
+                const prefix = changedKey.split('_')[0];
+                allPermissions.forEach(p => {
+                    if (p.key.startsWith(prefix + '_') && p.key !== changedKey) {
+                        newPermissions[p.key as keyof AppPermissions] = false;
+                    }
+                });
+            }
+
+            return { ...role, permissions: newPermissions };
+        }));
     };
     
     const permissionsBySection = useMemo(() => {
@@ -257,7 +270,10 @@ export default function TeamPage() {
                  )}
               </div>
              <Accordion type="multiple" value={openAccordionItems} onValueChange={setOpenAccordionItems} className="w-full space-y-4">
-                {localRoles.filter(role => role.id !== 'director').map((role) => (
+                {localRoles.filter(role => role.id !== 'director').map((role) => {
+                    const viewPermissions = allPermissions.filter(p => p.key.endsWith('_view'));
+                    
+                    return (
                     <AccordionItem value={role.id} key={role.id} asChild>
                         <Card>
                              <CardHeader className="p-0">
@@ -286,29 +302,47 @@ export default function TeamPage() {
                             </CardHeader>
                             <AccordionContent>
                                 <CardContent className="space-y-6 max-h-[60vh] overflow-y-auto">
-                                    {Object.entries(permissionsBySection).map(([section, permissions]) => (
+                                    {Object.entries(permissionsBySection).map(([section, permissions]) => {
+                                        const mainViewPermissionKey = permissions.find(p => p.key.endsWith('_view'))?.key as keyof AppPermissions | undefined;
+                                        const mainViewPermissionEnabled = mainViewPermissionKey ? role.permissions[mainViewPermissionKey] : true;
+                                        
+                                        return (
                                         <div key={section}>
                                             <h4 className="font-semibold mb-2">{section}</h4>
                                             <div className="space-y-3 pl-4">
-                                            {permissions.map(permission => (
+                                            {permissions.map(permission => {
+                                                const isMainViewPermission = permission.key.endsWith('_view');
+                                                const isSubPermission = mainViewPermissionKey && permission.key.startsWith(mainViewPermissionKey.split('_')[0]) && !isMainViewPermission;
+
+                                                return (
                                                 <div key={permission.key} className="flex items-center justify-between">
-                                                    <Label htmlFor={`perm-${role.id}-${permission.key}`}>{permission.label}</Label>
+                                                    <Label 
+                                                      htmlFor={`perm-${role.id}-${permission.key}`}
+                                                      className={cn(
+                                                        isMainViewPermission && "text-green-600 dark:text-green-500 font-bold",
+                                                        isSubPermission && !mainViewPermissionEnabled && "text-muted-foreground/50"
+                                                      )}
+                                                    >
+                                                      {permission.label}
+                                                    </Label>
                                                     <Switch
                                                         id={`perm-${role.id}-${permission.key}`}
                                                         checked={role.permissions[permission.key as keyof AppPermissions] || false}
                                                         onCheckedChange={(value) => handlePermissionChange(role.id, permission.key as keyof AppPermissions, value)}
-                                                        disabled={!isRolesEditMode}
+                                                        disabled={!isRolesEditMode || (isSubPermission && !mainViewPermissionEnabled)}
                                                     />
                                                 </div>
-                                            ))}
+                                                );
+                                            })}
                                             </div>
                                         </div>
-                                    ))}
+                                        );
+                                    })}
                                 </CardContent>
                             </AccordionContent>
                         </Card>
                     </AccordionItem>
-                ))}
+                )})}
               </Accordion>
                 {isRolesEditMode && (
                     <div className="mt-4">
