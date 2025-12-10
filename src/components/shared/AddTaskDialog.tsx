@@ -14,7 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
 import { Slider } from '@/components/ui/slider';
-import { Loader2, Save, Calendar as CalendarIcon, PlusCircle, Trash2 } from 'lucide-react';
+import { Loader2, Save, Calendar as CalendarIcon, PlusCircle, Trash2, MapPin } from 'lucide-react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
@@ -38,6 +38,7 @@ const subTaskSchema = z.object({
 const baseSchema = z.object({
   title: z.string().min(3, "El título debe tener al menos 3 caracteres."),
   description: z.string().optional(),
+  location: z.string().optional(),
   requiredDocumentForCompletion: z.boolean().default(false),
   requiresInput: z.boolean().default(false),
   requiredDocuments: z.array(requiredDocSchema).optional(),
@@ -95,8 +96,8 @@ export function AddTaskDialog({
   const form = useForm<AddTaskFormValues>({
     resolver: zodResolver(combinedSchema),
     defaultValues: isWorkflowMode ?
-      { isWorkflowMode: true, title: '', description: '', requiredDocumentForCompletion: false, requiresInput: false, requiredDocuments: [], subTasks: [], assignedToId: currentUser?.uid } :
-      { isWorkflowMode: false, title: '', description: '', clientId: preselectedClientId || '', dueDate: new Date(), dueTime: '', requiredDocumentForCompletion: false, requiresInput: false, requiredDocuments: [], subTasks: [], assignedToId: currentUser?.uid },
+      { isWorkflowMode: true, title: '', description: '', location: '', requiredDocumentForCompletion: false, requiresInput: false, requiredDocuments: [], subTasks: [], assignedToId: currentUser?.uid } :
+      { isWorkflowMode: false, title: '', description: '', location: '', clientId: preselectedClientId || '', dueDate: new Date(), dueTime: '', requiredDocumentForCompletion: false, requiresInput: false, requiredDocuments: [], subTasks: [], assignedToId: currentUser?.uid },
   });
   
   const { fields: docFields, append: appendDoc, remove: removeDoc } = useFieldArray({
@@ -115,8 +116,8 @@ export function AddTaskDialog({
   useEffect(() => {
     if (isOpen) {
       form.reset(isWorkflowMode ?
-        { isWorkflowMode: true, title: '', description: '', requiredDocumentForCompletion: false, requiresInput: false, requiredDocuments: [], subTasks: [], assignedToId: currentUser?.uid } :
-        { isWorkflowMode: false, title: '', description: '', clientId: preselectedClientId || '', dueDate: new Date(), dueTime: '', requiredDocumentForCompletion: false, requiresInput: false, requiredDocuments: [], subTasks: [], assignedToId: currentUser?.uid }
+        { isWorkflowMode: true, title: '', description: '', location: '', requiredDocumentForCompletion: false, requiresInput: false, requiredDocuments: [], subTasks: [], assignedToId: currentUser?.uid } :
+        { isWorkflowMode: false, title: '', description: '', location: '', clientId: preselectedClientId || '', dueDate: new Date(), dueTime: '', requiredDocumentForCompletion: false, requiresInput: false, requiredDocuments: [], subTasks: [], assignedToId: currentUser?.uid }
       );
     }
   }, [isOpen, isWorkflowMode, preselectedClientId, form, currentUser]);
@@ -254,6 +255,22 @@ export function AddTaskDialog({
                           )}
                       />
                   </div>
+                   <FormField
+                        control={form.control}
+                        name="location"
+                        render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>Ubicación (Opcional)</FormLabel>
+                                <FormControl>
+                                    <div className="relative">
+                                        <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                                        <Input placeholder="Dirección de la cita o reunión" className="pl-10" {...field} />
+                                    </div>
+                                </FormControl>
+                                <FormMessage />
+                            </FormItem>
+                        )}
+                    />
                 </>
               )}
 

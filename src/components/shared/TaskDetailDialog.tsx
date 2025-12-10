@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import React, { useState, useEffect } from 'react';
@@ -16,7 +15,7 @@ import {
   DialogClose,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Edit, Trash, CheckCircle, Loader2, PlusCircle, UploadCloud, Calendar as CalendarIcon, Save, History, Redo, MessageSquare } from 'lucide-react';
+import { Edit, Trash, CheckCircle, Loader2, PlusCircle, UploadCloud, Calendar as CalendarIcon, Save, History, Redo, MessageSquare, MapPin } from 'lucide-react';
 import { Task, Client, SubTask } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
@@ -40,6 +39,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 const taskEditSchema = z.object({
   title: z.string().min(3, "El título debe tener al menos 3 caracteres."),
   description: z.string().optional(),
+  location: z.string().optional(),
   clientId: z.string().min(1, "Debe seleccionar un cliente."),
   assignedToId: z.string().optional(),
   dueDate: z.date({ required_error: "La fecha de vencimiento es requerida." }),
@@ -93,6 +93,7 @@ export function TaskDetailDialog({
         form.reset({
             title: initialTask.title,
             description: initialTask.description,
+            location: initialTask.location,
             clientId: initialTask.clientId,
             assignedToId: initialTask.assignedToId,
             dueDate: parseDateString(initialTask.dueDate) || new Date(),
@@ -372,6 +373,22 @@ export function TaskDetailDialog({
                         </div>
                         <FormField
                             control={form.control}
+                            name="location"
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Ubicación (Opcional)</FormLabel>
+                                    <FormControl>
+                                        <div className="relative">
+                                            <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                                            <Input placeholder="Dirección de la cita" className="pl-10" {...field} />
+                                        </div>
+                                    </FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+                        <FormField
+                            control={form.control}
                             name="description"
                             render={({ field }) => (
                                 <FormItem>
@@ -449,6 +466,34 @@ export function TaskDetailDialog({
                             <p>{task.assignedToName}</p>
                         </div>
                     </div>
+                    {task.location && (
+                        <div>
+                            <p className="font-semibold">Ubicación:</p>
+                            <div className="flex items-center gap-2 text-muted-foreground">
+                                <p>{task.location}</p>
+                                <Tooltip>
+                                    <TooltipTrigger asChild>
+                                        <a href={`https://waze.com/ul?q=${encodeURIComponent(task.location)}`} target="_blank" rel="noopener noreferrer">
+                                            <Button variant="ghost" size="icon" className="h-7 w-7">
+                                                <svg className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0c-4.4 0-8 3.6-8 8 0 6 8 16 8 16s8-10 8-16c0-4.4-3.6-8-8-8zm0 12c-2.2 0-4-1.8-4-4s1.8-4 4-4 4 1.8 4 4-1.8 4-4 4z" /></svg>
+                                            </Button>
+                                        </a>
+                                    </TooltipTrigger>
+                                    <TooltipContent><p>Abrir en Waze</p></TooltipContent>
+                                </Tooltip>
+                                <Tooltip>
+                                    <TooltipTrigger asChild>
+                                        <a href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(task.location)}`} target="_blank" rel="noopener noreferrer">
+                                             <Button variant="ghost" size="icon" className="h-7 w-7">
+                                                <MapPin className="h-4 w-4" />
+                                            </Button>
+                                        </a>
+                                    </TooltipTrigger>
+                                    <TooltipContent><p>Abrir en Google Maps</p></TooltipContent>
+                                </Tooltip>
+                            </div>
+                        </div>
+                    )}
                     <div>
                         <p className="font-semibold">Detalles:</p>
                         <p className="text-muted-foreground">{task.description || 'Sin detalles.'}</p>

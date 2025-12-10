@@ -87,6 +87,7 @@ export type Task = {
   assignedToName?: string;
   assignedToPhotoURL?: string;
   description?: string;
+  location?: string; // New field for location
   type?: 'Tarea' | 'Cita' | 'Operación Divisas';
   createdAt?: any;
   requiredDocumentForCompletion?: boolean;
