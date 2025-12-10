@@ -677,13 +677,12 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
           batch.set(docRef, wf, { merge: true });
       });
       batch.commit().catch(error => {
-        // Here we emit the contextual error
         const contextualError = new FirestorePermissionError({
-            operation: 'update',
+            operation: 'write',
             path: `users/${user.uid}/serviceWorkflows`, 
-            requestResourceData: { workflows: "multiple documents updated" } 
+            requestResourceData: { info: "Batch update for multiple service workflows." } 
         });
-        showNotification('error', 'Error de Permisos', 'No se pudieron guardar los cambios en los roles.');
+        errorEmitter.emit('permission-error', contextualError);
       });
     };
 
@@ -942,5 +941,3 @@ export function useCRMData() {
   }
   return context;
 }
-
-    
