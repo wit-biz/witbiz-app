@@ -36,7 +36,7 @@ import { useCRMData } from "@/contexts/CRMDataContext";
 import React, { useMemo } from "react";
 import { LogAction, Log } from "@/lib/types";
 import { format, subDays, isAfter } from "date-fns";
-import { es } from 'date-fns/locale';
+import { es } from "date-fns/locale";
 import { Badge } from "../ui/badge";
 
 
@@ -196,7 +196,9 @@ export function UserNav() {
     
     <Dialog open={isSummaryDialogOpen} onOpenChange={setIsSummaryDialogOpen}>
         <DialogContent className="sm:max-w-md">
-            
+            <DialogHeader>
+                <DialogTitle className="sr-only">Resumen Rápido</DialogTitle>
+            </DialogHeader>
             <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
                 <TabsList className="grid w-full grid-cols-2">
                     <TabsTrigger value="activity">Actividad Reciente</TabsTrigger>
