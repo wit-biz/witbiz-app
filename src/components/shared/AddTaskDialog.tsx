@@ -23,6 +23,7 @@ import { type Client, type AppUser } from '@/lib/types';
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Switch } from '@/components/ui/switch';
 import { useCRMData } from '@/contexts/CRMDataContext';
+import LocationAutocompleteInput from './LocationAutocompleteInput';
 
 
 const requiredDocSchema = z.object({
@@ -262,10 +263,10 @@ export function AddTaskDialog({
                             <FormItem>
                                 <FormLabel>Ubicación (Opcional)</FormLabel>
                                 <FormControl>
-                                    <div className="relative">
-                                        <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                                        <Input placeholder="Dirección de la cita o reunión" className="pl-10" {...field} />
-                                    </div>
+                                    <LocationAutocompleteInput
+                                        value={field.value || ''}
+                                        onChange={(address) => field.onChange(address)}
+                                    />
                                 </FormControl>
                                 <FormMessage />
                             </FormItem>

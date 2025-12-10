@@ -34,6 +34,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Checkbox } from '../ui/checkbox';
 import { Progress } from '../ui/progress';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '../ui/alert-dialog';
+import LocationAutocompleteInput from './LocationAutocompleteInput';
 
 
 const taskEditSchema = z.object({
@@ -378,10 +379,10 @@ export function TaskDetailDialog({
                                 <FormItem>
                                     <FormLabel>Ubicación (Opcional)</FormLabel>
                                     <FormControl>
-                                        <div className="relative">
-                                            <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                                            <Input placeholder="Dirección de la cita" className="pl-10" {...field} />
-                                        </div>
+                                       <LocationAutocompleteInput
+                                            value={field.value || ''}
+                                            onChange={(address) => field.onChange(address)}
+                                       />
                                     </FormControl>
                                     <FormMessage />
                                 </FormItem>
