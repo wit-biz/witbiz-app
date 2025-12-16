@@ -10,16 +10,16 @@ service cloud.firestore {
     }
 
     function isDirector() {
-      return isSignedIn() && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'Director';
+      return isSignedIn() && request.auth.token.role == 'Director';
     }
 
     function hasPermission(permission) {
-        return isSignedIn() && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.permissions[permission] == true;
+        return isSignedIn() && request.auth.token.permissions[permission] == true;
     }
 
     // Admins can do anything
     function isAdmin() {
-      return isSignedIn() && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'Administrador';
+      return isSignedIn() && request.auth.token.role == 'Administrador';
     }
 
     // Rules for top-level collections
@@ -83,10 +83,12 @@ service cloud.firestore {
         allow read, write: if hasPermission('accounting_config');
     }
     match /transactions/{transactionId} {
-        allow read, write: if hasPermission('accounting_view');
+        allow read: if hasPermission('accounting_view');
+        allow write: if hasPermission('accounting_view');
     }
     match /loans/{loanId} {
-        allow read, write: if hasPermission('accounting_view');
+        allow read: if hasPermission('accounting_view');
+        allow write: if hasPermission('accounting_view');
     }
     
     match /logs/{logId} {
