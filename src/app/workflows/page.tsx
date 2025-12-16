@@ -28,21 +28,18 @@ import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover
 import { ServiceDetailsEditor } from "@/components/services/DetailsEditor";
 import { ServiceDocumentsEditor } from "@/components/services/DocumentsEditor";
 import { ServiceCommissionsEditor } from "@/components/services/CommissionsEditor";
-import { serviceWorkflows as staticServiceWorkflows } from "@/lib/data";
-
 
 type AnyStage = WorkflowStage | SubStage | SubSubStage;
 
 const StageNumberIcon = ({ path }: { path: string }) => {
-    // path is like "stages.0.subStages.1.subSubStages.0"
     const numbers = path.split('.').filter(p => !isNaN(parseInt(p))).map(p => parseInt(p) + 1);
     const displayNumber = numbers.join('.');
     
     const level = numbers.length;
     const levelStyles = {
-        1: "text-3xl", // Largest
-        2: "text-2xl", // Medium
-        3: "text-xl", // Smallest
+        1: "text-3xl",
+        2: "text-2xl",
+        3: "text-xl",
     };
 
     return (
@@ -73,7 +70,7 @@ const StageCard = ({
 }) => {
     
     const { currentUser } = useCRMData();
-    const canEditWorkflow = true; // Force edit mode
+    const canEditWorkflow = true; 
     const [addTaskDialogState, setAddTaskDialogState] = useState<{isOpen: boolean, path: string | null}>({isOpen: false, path: null});
 
     const levelStyles = {
@@ -125,7 +122,6 @@ const StageCard = ({
                     )}
                 </div>
                 <AccordionContent className="border-t p-4 space-y-4">
-                    {/* ACCIONES / TAREAS */}
                     <div className="space-y-3">
                         <Label className="text-sm font-medium">Tareas Automáticas</Label>
                         {stage.actions && stage.actions.length > 0 ? (
@@ -177,7 +173,6 @@ const StageCard = ({
                         )}
                     </div>
                    
-                    {/* SUB-ETAPAS / SUB-SUB-ETAPAS */}
                     {'subStages' in stage && (
                         <div className={cn("border-l-2 ml-2 space-y-4", levelStyles[level].subStageContainer)}>
                              <Label className="text-sm font-medium">Sub-Etapas</Label>
@@ -213,7 +208,7 @@ const StageCard = ({
                                     path={`${path}.subSubStages.${i}`}
                                     onUpdate={onUpdate}
                                     onDelete={onDelete}
-                                    onAddSubStage={onAddSubStage} // This won't be called from level 3
+                                    onAddSubStage={onAddSubStage}
                                     onAddTask={onAddTask}
                                 />
                             ))}
@@ -233,7 +228,7 @@ const StageCard = ({
         <AddTaskDialog
             isOpen={addTaskDialogState.isOpen}
             onOpenChange={(isOpen) => setAddTaskDialogState({ isOpen, path: null })}
-            clients={[]} // Not needed in workflow mode
+            clients={[]}
             onTaskAdd={handleAddTaskToStage}
             isWorkflowMode={true}
         />
@@ -269,12 +264,12 @@ function SortableServiceItem({ service, onSelect, onDelete }: { service: Service
 export default function WorkflowConfigurationPage() {
   const { 
     currentUser,
+    serviceWorkflows: initialWorkflows,
     isLoadingWorkflows,
     addService,
     setServiceWorkflows,
     deleteService,
   } = useCRMData();
-  const initialWorkflows = staticServiceWorkflows; // Use static data
   const router = useRouter();
   const searchParams = useSearchParams();
   const { showNotification } = useGlobalNotification();
@@ -294,7 +289,7 @@ export default function WorkflowConfigurationPage() {
     inputPlaceholder?: string;
   } | null>(null);
   
-  const canEditWorkflow = true; // Force edit mode
+  const canEditWorkflow = true;
 
   const fromPage = searchParams.get('from') || 'services';
   const backLink = fromPage === 'crm' ? '/crm' : '/services';
@@ -341,7 +336,7 @@ export default function WorkflowConfigurationPage() {
           const updatedOrderWithFirestore = reorderedItems.map((wf, index) => ({...wf, order: index}));
           
           setServiceWorkflows(updatedOrderWithFirestore);
-          setOrderedWorkflows(updatedOrderWithFirestore); // Update local state immediately for smoother UI
+          setOrderedWorkflows(updatedOrderWithFirestore);
           
           showNotification('info', 'Orden guardado', 'El nuevo orden de los servicios ha sido guardado.');
       }
@@ -383,7 +378,6 @@ export default function WorkflowConfigurationPage() {
     if (!editableWorkflow) return;
     const updatedWorkflows = orderedWorkflows.map(wf => wf.id === editableWorkflow.id ? editableWorkflow : wf);
     
-    // Using a promise to ensure state updates before notification
     Promise.resolve(setServiceWorkflows(updatedWorkflows)).then(() => {
       showNotification('success', 'Flujo Guardado', 'Los cambios en el flujo de trabajo han sido guardados.');
     });
@@ -456,7 +450,6 @@ export default function WorkflowConfigurationPage() {
         if (!prev) return null;
         let newWorkflow = JSON.parse(JSON.stringify(prev));
 
-        // Navigate to the array that needs modification
         let parentArray = newWorkflow;
         if(arrayPath) {
             arrayPath.split('.').forEach(part => {
@@ -464,7 +457,6 @@ export default function WorkflowConfigurationPage() {
             });
         }
         
-        // Remove the item from the array
         if(Array.isArray(parentArray)) {
             parentArray.splice(indexToDelete, 1);
         }
@@ -498,7 +490,7 @@ export default function WorkflowConfigurationPage() {
 
   const handleAddSubStage = (path: string) => {
       const parts = path.split('.');
-      const parentIsStage = parts.length === 2; // e.g., "stages.0"
+      const parentIsStage = parts.length === 2;
 
       if (parentIsStage) {
           const newSubStage: SubStage = {
@@ -509,7 +501,7 @@ export default function WorkflowConfigurationPage() {
               subSubStages: []
           };
           updateNestedState(`${path}.subStages`, newSubStage, 'add');
-      } else { // Parent is a SubStage
+      } else { 
           const newSubSubStage: SubSubStage = {
               id: `subSubStage-${Date.now()}`,
               title: "Nueva Sub-Sub-Etapa",
@@ -524,7 +516,7 @@ export default function WorkflowConfigurationPage() {
       const newTask: WorkflowAction = {
         ...task,
         id: `action-${Date.now()}`,
-        order: 1, // Simplified
+        order: 1,
         subActions: [],
       };
       updateNestedState(`${path}.actions`, newTask, 'add');
@@ -627,14 +619,14 @@ export default function WorkflowConfigurationPage() {
                             <AccordionContent className="p-6 pt-0">
                                 <div className="grid md:grid-cols-2 gap-6">
                                     <ServiceDetailsEditor
-                                        key={editableWorkflow.id} // Re-mount when service changes
+                                        key={editableWorkflow.id}
                                         service={editableWorkflow}
                                         onUpdate={(updates) => setEditableWorkflow(prev => prev ? { ...prev, ...updates } : null)}
                                         canEdit={canEditWorkflow}
                                     />
                                     <div className="space-y-4">
                                         <ServiceCommissionsEditor
-                                            key={`${editableWorkflow.id}-commissions`} // Re-mount when service changes
+                                            key={`${editableWorkflow.id}-commissions`}
                                             initialCommissions={editableWorkflow.commissions || []}
                                             onUpdate={(commissions) => setEditableWorkflow(prev => prev ? { ...prev, commissions } : null)}
                                             canEdit={canEditWorkflow}

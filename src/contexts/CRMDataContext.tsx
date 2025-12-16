@@ -148,51 +148,32 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
     const storage = useStorage();
     const { user, isUserLoading } = useUser();
     
-    // Simulating role management with local state for now
     const [roles, setRoles] = useState<UserRole[]>(initialRoles);
-    
-    // LOADING STATES
     
     const [currentUser, setCurrentUser] = useState<AuthenticatedUser | null>(null);
     const userProfileRef = useMemoFirebase(() => user ? doc(firestore, 'users', user.uid) : null, [firestore, user]);
     const { data: userProfile, isLoading: isLoadingUserProfile } = useDoc<AppUser>(userProfileRef);
 
-    const usersCollection = useMemoFirebase(() => {
-        if (!firestore || !currentUser) return null;
-        if (currentUser.role === 'Director') {
-            return collection(firestore, 'users');
-        }
-        return null;
-    }, [firestore, currentUser]);
-
+    const usersCollection = useMemoFirebase(() => firestore ? collection(firestore, 'users') : null, [firestore]);
     const { data: allTeamMembers = [], isLoading: isLoadingAllTeamMembers } = useCollection<AppUser>(usersCollection);
 
-    const teamMembers = useMemo(() => {
-        if (currentUser?.role === 'Director') {
-            return allTeamMembers;
-        }
-        if (userProfile) {
-            return [userProfile];
-        }
-        return [];
-    }, [currentUser, allTeamMembers, userProfile]);
+    const teamMembers = useMemo(() => allTeamMembers, [allTeamMembers]);
+    const isLoadingTeamMembers = isLoadingAllTeamMembers;
 
-    const isLoadingTeamMembers = currentUser?.role === 'Director' ? isLoadingAllTeamMembers : isLoadingUserProfile;
-
-    // --- Collections ---
-    const clientsCollection = useMemoFirebase(() => user ? collection(firestore, 'users', user.uid, 'clients') : null, [firestore, user]);
-    const tasksCollection = useMemoFirebase(() => user ? collection(firestore, 'users', user.uid, 'tasks') : null, [firestore, user]);
-    const documentsCollection = useMemoFirebase(() => user ? collection(firestore, 'users', user.uid, 'documents') : null, [firestore, user]);
-    const serviceWorkflowsCollection = useMemoFirebase(() => user ? collection(firestore, 'users', user.uid, 'serviceWorkflows') : null, [firestore, user]);
-    const promotersCollection = useMemoFirebase(() => user ? query(collection(firestore, 'promoters')) : null, [firestore, user]);
-    const suppliersCollection = useMemoFirebase(() => user ? collection(firestore, 'users', user.uid, 'suppliers') : null, [firestore, user]);
-    const notesCollection = useMemoFirebase(() => user ? collection(firestore, 'users', user.uid, 'notes') : null, [firestore, user]);
-    const companiesCollection = useMemoFirebase(() => user ? collection(firestore, 'users', user.uid, 'companies') : null, [firestore, user]);
-    const bankAccountsCollection = useMemoFirebase(() => user ? collection(firestore, 'users', user.uid, 'bankAccounts') : null, [firestore, user]);
-    const categoriesCollection = useMemoFirebase(() => user ? collection(firestore, 'users', user.uid, 'categories') : null, [firestore, user]);
-    const transactionsCollection = useMemoFirebase(() => user ? collection(firestore, 'users', user.uid, 'transactions') : null, [firestore, user]);
-    const loansCollection = useMemoFirebase(() => user ? collection(firestore, 'users', user.uid, 'loans') : null, [firestore, user]);
-    const logsCollection = useMemoFirebase(() => user ? collection(firestore, 'users', user.uid, 'logs') : null, [firestore, user]);
+    // --- Centralized Collections ---
+    const clientsCollection = useMemoFirebase(() => firestore ? collection(firestore, 'clients') : null, [firestore]);
+    const tasksCollection = useMemoFirebase(() => firestore ? collection(firestore, 'tasks') : null, [firestore]);
+    const documentsCollection = useMemoFirebase(() => firestore ? collection(firestore, 'documents') : null, [firestore]);
+    const serviceWorkflowsCollection = useMemoFirebase(() => firestore ? collection(firestore, 'serviceWorkflows') : null, [firestore]);
+    const promotersCollection = useMemoFirebase(() => firestore ? collection(firestore, 'promoters') : null, [firestore]);
+    const suppliersCollection = useMemoFirebase(() => firestore ? collection(firestore, 'suppliers') : null, [firestore]);
+    const notesCollection = useMemoFirebase(() => firestore ? collection(firestore, 'notes') : null, [firestore]);
+    const companiesCollection = useMemoFirebase(() => firestore ? collection(firestore, 'companies') : null, [firestore]);
+    const bankAccountsCollection = useMemoFirebase(() => firestore ? collection(firestore, 'bankAccounts') : null, [firestore]);
+    const categoriesCollection = useMemoFirebase(() => firestore ? collection(firestore, 'categories') : null, [firestore]);
+    const transactionsCollection = useMemoFirebase(() => firestore ? collection(firestore, 'transactions') : null, [firestore]);
+    const loansCollection = useMemoFirebase(() => firestore ? collection(firestore, 'loans') : null, [firestore]);
+    const logsCollection = useMemoFirebase(() => firestore ? collection(firestore, 'logs') : null, [firestore]);
 
     const addLog = useCallback(async (action: LogAction, entityId: string, entityType: LogEntityType, entityName?: string) => {
         if (!logsCollection || !currentUser) return;
@@ -222,8 +203,6 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
                 const userDoc = await getDoc(userDocRef);
                 if (!userDoc.exists()) {
                    try {
-                        // This only works if the user account already exists in Auth.
-                        // It will not create a new Auth user.
                         await setDocumentNonBlocking(userDocRef, {
                             id: dir.uid,
                             name: dir.name,
@@ -242,8 +221,6 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
         bootstrapDirectors();
     }, [firestore, auth]);
 
-
-    // --- Firestore Data ---
     const { data: clients = [], isLoading: isLoadingClients } = useCollection<Client>(clientsCollection);
     const { data: tasks = [], isLoading: isLoadingTasks } = useCollection<Task>(tasksCollection);
     const { data: documents = [], isLoading: isLoadingDocuments } = useCollection<Document>(documentsCollection);
@@ -288,20 +265,20 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
             } else {
                  showNotification('error', 'Error de registro', error.message);
             }
-            throw error; // Re-throw to be handled by caller if needed
+            throw error;
         }
     }, [auth, firestore, showNotification, addLog]);
 
     const updateUser = async (userId: string, updates: Partial<AppUser>): Promise<boolean> => {
-        if (!firestore) return false;
-        const userDocRef = doc(firestore, 'users', userId);
+        if (!usersCollection) return false;
+        const userDocRef = doc(usersCollection, userId);
         setDocumentNonBlocking(userDocRef, updates, { merge: true });
         return true;
     };
 
     const deleteUser = async (userId: string, permanent: boolean = false): Promise<boolean> => {
-        if (!firestore) return false;
-        const docRef = doc(firestore, 'users', userId);
+        if (!usersCollection) return false;
+        const docRef = doc(usersCollection, userId);
         const userName = teamMembers.find(m => m.id === userId)?.name;
         if (permanent) {
             deleteDocumentNonBlocking(docRef);
@@ -313,14 +290,11 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
     };
 
     const restoreUser = async (userId: string): Promise<boolean> => {
-        if (!firestore) return false;
-        const docRef = doc(firestore, 'users', userId);
+        if (!usersCollection) return false;
+        const docRef = doc(usersCollection, userId);
         setDocumentNonBlocking(docRef, { status: 'Activo', archivedAt: undefined }, { merge: true });
         return true;
     };
-
-
-    // --- Data Handlers ---
 
     const addClient = async (newClientData: Omit<Client, 'id'>): Promise<Client | null> => {
         if (!clientsCollection || !serviceWorkflows) return null;
@@ -346,7 +320,7 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
                 await addTask({
                     ...action,
                     clientId: newClient.id,
-                    serviceId: service?.id, // Add serviceId here
+                    serviceId: service?.id,
                 });
             }
         }
@@ -355,8 +329,8 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
     };
 
     const updateClient = async (clientId: string, updates: Partial<Client>): Promise<boolean> => {
-        if (!user || !firestore) return false;
-        const docRef = doc(firestore, 'users', user.uid, 'clients', clientId);
+        if (!clientsCollection) return false;
+        const docRef = doc(clientsCollection, clientId);
         setDocumentNonBlocking(docRef, updates, { merge: true });
         const clientName = clients.find(c => c.id === clientId)?.name || updates.name;
         addLog('client_updated', clientId, 'client', clientName);
@@ -364,8 +338,8 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
     };
 
     const deleteClient = async (clientId: string, permanent: boolean = false): Promise<boolean> => {
-        if (!user || !firestore) return false;
-        const docRef = doc(firestore, 'users', user.uid, 'clients', clientId);
+        if (!clientsCollection) return false;
+        const docRef = doc(clientsCollection, clientId);
         const clientName = clients.find(c => c.id === clientId)?.name;
         if (permanent) {
             deleteDocumentNonBlocking(docRef);
@@ -378,8 +352,8 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
     };
 
     const restoreClient = async (clientId: string): Promise<boolean> => {
-        if (!user || !firestore) return false;
-        const docRef = doc(firestore, 'users', user.uid, 'clients', clientId);
+        if (!clientsCollection) return false;
+        const docRef = doc(clientsCollection, clientId);
         setDocumentNonBlocking(docRef, { status: 'Activo', archivedAt: undefined }, { merge: true });
         return true;
     };
@@ -398,7 +372,6 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
             finalDueDate = newTaskData.dueDate;
         }
         
-        // Find which of the client's subscribed services contains this task's action
         const serviceId = newTaskData.serviceId || client.subscribedServiceIds.find(subId => {
             const service = serviceWorkflows.find(s => s.id === subId);
             if (!service) return false;
@@ -413,7 +386,7 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
             dueDate: finalDueDate,
             status: 'Pendiente' as const, 
             clientName: client.name,
-            serviceId: serviceId, // Save the serviceId
+            serviceId: serviceId,
             assignedToId: assignedUser?.id || currentUser.uid,
             assignedToName: assignedUser?.name || currentUser.displayName || 'Usuario Actual',
             assignedToPhotoURL: assignedUser?.photoURL || currentUser.photoURL || '',
@@ -427,8 +400,8 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
     };
     
     const updateTask = async (taskId: string, updates: Partial<Task>): Promise<boolean> => {
-        if (!user || !firestore) return false;
-        const docRef = doc(firestore, 'users', user.uid, 'tasks', taskId);
+        if (!tasksCollection) return false;
+        const docRef = doc(tasksCollection, taskId);
         setDocumentNonBlocking(docRef, updates, { merge: true });
         
         if (updates.status === 'Completada') {
@@ -448,7 +421,6 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
         const client = clients.find(c => c.id === clientId);
         if (!client || !client.currentWorkflowStageId) return;
 
-        // Give Firestore a moment to update the task list after completion
         await new Promise(resolve => setTimeout(resolve, 1000));
 
         const clientTasks = tasks.filter(t => t.clientId === clientId);
@@ -457,7 +429,6 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
         const currentStage = allStagesForClient.find(s => s.id === client.currentWorkflowStageId);
         if (!currentStage) return;
 
-        // Check against the *latest* task list state
         const updatedTasks = (await (useCollection(tasksCollection)).data) || tasks;
         const pendingTasksForCurrentStage = (currentStage.actions || []).filter(action => {
             return updatedTasks.some(task => task.title === action.title && task.clientId === clientId && task.status === 'Pendiente');
@@ -522,8 +493,8 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
     };
 
     const deleteTask = async (taskId: string, permanent: boolean = false): Promise<boolean> => {
-        if (!user || !firestore) return false;
-        const docRef = doc(firestore, 'users', user.uid, 'tasks', taskId);
+        if (!tasksCollection) return false;
+        const docRef = doc(tasksCollection, taskId);
         if (permanent) {
             const taskName = tasks.find(t => t.id === taskId)?.title;
             deleteDocumentNonBlocking(docRef);
@@ -535,8 +506,8 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
     };
 
     const restoreTask = async (taskId: string): Promise<boolean> => {
-        if (!user || !firestore) return false;
-        const docRef = doc(firestore, 'users', user.uid, 'tasks', taskId);
+        if (!tasksCollection) return false;
+        const docRef = doc(tasksCollection, taskId);
         setDocumentNonBlocking(docRef, { status: 'Pendiente', archivedAt: undefined }, { merge: true });
         return true;
     };
@@ -544,14 +515,13 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
     const addDocument = async (newDocumentData: Omit<Document, 'id' | 'uploadedAt' | 'downloadURL'>, file: File): Promise<Document | null> => {
         if (!documentsCollection || !user || !storage) return null;
 
-        const filePath = `users/${user.uid}/documents/${Date.now()}_${file.name}`;
+        const filePath = `documents/${Date.now()}_${file.name}`;
         const storageRef = ref(storage, filePath);
         
         try {
             const snapshot = await uploadBytes(storageRef, file);
             const downloadURL = await getDownloadURL(snapshot.ref);
 
-            // Clean the data object to remove undefined fields
             const cleanData: { [key: string]: any } = {};
             for (const key in newDocumentData) {
                 const value = newDocumentData[key as keyof typeof newDocumentData];
@@ -578,16 +548,16 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
     }
 
     const updateDocument = async (documentId: string, updates: Partial<Document>): Promise<boolean> => {
-        if (!user || !firestore) return false;
-        const docRef = doc(firestore, 'users', user.uid, 'documents', documentId);
+        if (!documentsCollection) return false;
+        const docRef = doc(documentsCollection, documentId);
         setDocumentNonBlocking(docRef, updates, { merge: true });
         showNotification('success', 'Documento Actualizado', 'La información del documento ha sido guardada.');
         return true;
     };
 
     const deleteDocument = async (id: string, permanent: boolean = false): Promise<boolean> => {
-        if (!user || !firestore) return false;
-        const docRef = doc(firestore, 'users', user.uid, 'documents', id);
+        if (!documentsCollection) return false;
+        const docRef = doc(documentsCollection, id);
         const docName = documents.find(d => d.id === id)?.name;
         if (permanent) {
             deleteDocumentNonBlocking(docRef);
@@ -599,8 +569,8 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
     };
 
     const restoreDocument = async (documentId: string): Promise<boolean> => {
-        if (!user || !firestore) return false;
-        const docRef = doc(firestore, 'users', user.uid, 'documents', documentId);
+        if (!documentsCollection) return false;
+        const docRef = doc(documentsCollection, documentId);
         setDocumentNonBlocking(docRef, { status: 'Activo', archivedAt: undefined }, { merge: true });
         return true;
     };
@@ -611,7 +581,7 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
         const newNoteData = {
             clientId: clientId,
             text: text,
-            content: text, // Legado o para visualización
+            content: text,
             authorName: currentUser.displayName || "Usuario",
             createdAt: serverTimestamp(),
             status: 'Activo' as const,
@@ -622,15 +592,15 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
     };
 
     const updateNote = async (noteId: string, newText: string): Promise<boolean> => {
-        if (!user || !firestore) return false;
-        const docRef = doc(firestore, 'users', user.uid, 'notes', noteId);
+        if (!notesCollection) return false;
+        const docRef = doc(notesCollection, noteId);
         setDocumentNonBlocking(docRef, { text: newText, content: newText, updatedAt: serverTimestamp() }, { merge: true });
         return true;
     };
 
     const deleteNote = async (noteId: string, permanent: boolean = false): Promise<boolean> => {
-        if (!user || !firestore) return false;
-        const docRef = doc(firestore, 'users', user.uid, 'notes', noteId);
+        if (!notesCollection) return false;
+        const docRef = doc(notesCollection, noteId);
         const noteText = notes.find(n => n.id === noteId)?.text.substring(0, 30) + '...';
         if (permanent) {
             deleteDocumentNonBlocking(docRef);
@@ -642,8 +612,8 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
     };
 
     const restoreNote = async (noteId: string): Promise<boolean> => {
-        if (!user || !firestore) return false;
-        const docRef = doc(firestore, 'users', user.uid, 'notes', noteId);
+        if (!notesCollection) return false;
+        const docRef = doc(notesCollection, noteId);
         setDocumentNonBlocking(docRef, { status: 'Activo', archivedAt: undefined }, { merge: true });
         return true;
     };
@@ -672,8 +642,6 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
         return null;
     }, [serviceWorkflows]);
 
-    // --- Service / Workflow Handlers ---
-
     const addService = async (name: string): Promise<ServiceWorkflow | null> => {
         if (!serviceWorkflowsCollection) return null;
         const newServiceData: Omit<ServiceWorkflow, 'id'> = {
@@ -690,24 +658,24 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
     };
 
     const updateService = async (serviceId: string, updates: Partial<Omit<ServiceWorkflow, 'id' | 'stages' | 'subServices' | 'order'>>): Promise<boolean> => {
-        if (!user || !firestore) return false;
-        const docRef = doc(firestore, 'users', user.uid, 'serviceWorkflows', serviceId);
+        if (!serviceWorkflowsCollection) return false;
+        const docRef = doc(serviceWorkflowsCollection, serviceId);
         setDocumentNonBlocking(docRef, updates, { merge: true });
         showNotification('success', 'Servicio Guardado', 'Los cambios se han guardado correctamente.');
         return true;
     }
     
     const setServiceWorkflowsAndPersist = (workflows: ServiceWorkflow[]) => {
-      if (!user || !firestore) return;
+      if (!firestore) return;
       const batch = writeBatch(firestore);
       workflows.forEach(wf => {
-          const docRef = doc(firestore, 'users', user.uid, 'serviceWorkflows', wf.id);
+          const docRef = doc(firestore, 'serviceWorkflows', wf.id);
           batch.set(docRef, wf, { merge: true });
       });
       batch.commit().catch(error => {
         const contextualError = new FirestorePermissionError({
             operation: 'write',
-            path: `users/${user.uid}/serviceWorkflows`, 
+            path: `serviceWorkflows`, 
             requestResourceData: { info: "Batch update for multiple service workflows." } 
         });
         errorEmitter.emit('permission-error', contextualError);
@@ -716,8 +684,8 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
 
 
     const deleteService = async (serviceId: string, permanent: boolean = false): Promise<boolean> => {
-        if (!user || !firestore) return false;
-        const docRef = doc(firestore, 'users', user.uid, 'serviceWorkflows', serviceId);
+        if (!serviceWorkflowsCollection) return false;
+        const docRef = doc(serviceWorkflowsCollection, serviceId);
         const serviceName = serviceWorkflows.find(s => s.id === serviceId)?.name;
         if (permanent) {
             deleteDocumentNonBlocking(docRef);
@@ -730,13 +698,12 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
     }
 
     const restoreService = async (serviceId: string): Promise<boolean> => {
-        if (!user || !firestore) return false;
-        const docRef = doc(firestore, 'users', user.uid, 'serviceWorkflows', serviceId);
+        if (!serviceWorkflowsCollection) return false;
+        const docRef = doc(serviceWorkflowsCollection, serviceId);
         setDocumentNonBlocking(docRef, { status: 'Activo', archivedAt: undefined }, { merge: true });
         return true;
     };
 
-    // --- Promoter Handlers ---
     const addPromoter = async (promoterData: Omit<Promoter, 'id'>): Promise<Promoter | null> => {
         if (!promotersCollection) return null;
         const payload = { ...promoterData, status: 'Activo' as const, createdAt: serverTimestamp() };
@@ -770,7 +737,6 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
         return true;
     };
 
-    // --- Supplier Handlers ---
     const addSupplier = async (supplierData: Omit<Supplier, 'id'>): Promise<Supplier | null> => {
         if (!suppliersCollection) return null;
         const payload = { ...supplierData, status: 'Activo' as const, createdAt: serverTimestamp() };
@@ -778,14 +744,14 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
         return { ...payload, id: docRef.id };
     };
     const updateSupplier = async (supplierId: string, updates: Partial<Supplier>): Promise<boolean> => {
-        if (!user || !firestore) return false;
-        const docRef = doc(firestore, 'users', user.uid, 'suppliers', supplierId);
+        if (!suppliersCollection) return false;
+        const docRef = doc(suppliersCollection, supplierId);
         setDocumentNonBlocking(docRef, updates, { merge: true });
         return true;
     };
     const deleteSupplier = async (supplierId: string, permanent: boolean = false): Promise<boolean> => {
-        if (!user || !firestore) return false;
-        const docRef = doc(firestore, 'users', user.uid, 'suppliers', supplierId);
+        if (!suppliersCollection) return false;
+        const docRef = doc(suppliersCollection, supplierId);
         const supplierName = suppliers.find(s => s.id === supplierId)?.name;
         if (permanent) {
             deleteDocumentNonBlocking(docRef);
@@ -796,13 +762,12 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
         return true;
     };
     const restoreSupplier = async (supplierId: string): Promise<boolean> => {
-        if (!user || !firestore) return false;
-        const docRef = doc(firestore, 'users', user.uid, 'suppliers', supplierId);
+        if (!suppliersCollection) return false;
+        const docRef = doc(suppliersCollection, supplierId);
         setDocumentNonBlocking(docRef, { status: 'Activo', archivedAt: undefined }, { merge: true });
         return true;
     };
 
-    // --- Accounting Handlers ---
     const addCompany = async (data: Omit<Company, 'id'>) => {
         if (!companiesCollection) return;
         const docRef = await addDocumentNonBlocking(companiesCollection, data);
@@ -883,7 +848,6 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
         setDocumentNonBlocking(doc(loansCollection, docRef.id), { id: docRef.id }, { merge: true });
     };
     
-    // Final setup in a separate effect to ensure all functions are defined
     useEffect(() => {
         if (user && userProfile) {
             const userRole = roles.find(r => r.name === userProfile.role) || roles.find(r => r.id === 'collaborator');
