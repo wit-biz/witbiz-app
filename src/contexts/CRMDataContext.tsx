@@ -161,19 +161,19 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
     const isLoadingTeamMembers = isLoadingAllTeamMembers;
 
     // --- Centralized Collections ---
-    const clientsCollection = useMemoFirebase(() => firestore ? collection(firestore, 'clients') : null, [firestore]);
-    const tasksCollection = useMemoFirebase(() => firestore ? collection(firestore, 'tasks') : null, [firestore]);
-    const documentsCollection = useMemoFirebase(() => firestore ? collection(firestore, 'documents') : null, [firestore]);
-    const serviceWorkflowsCollection = useMemoFirebase(() => firestore ? collection(firestore, 'serviceWorkflows') : null, [firestore]);
-    const promotersCollection = useMemoFirebase(() => firestore ? collection(firestore, 'promoters') : null, [firestore]);
-    const suppliersCollection = useMemoFirebase(() => firestore ? collection(firestore, 'suppliers') : null, [firestore]);
-    const notesCollection = useMemoFirebase(() => firestore ? collection(firestore, 'notes') : null, [firestore]);
-    const companiesCollection = useMemoFirebase(() => firestore ? collection(firestore, 'companies') : null, [firestore]);
-    const bankAccountsCollection = useMemoFirebase(() => firestore ? collection(firestore, 'bankAccounts') : null, [firestore]);
-    const categoriesCollection = useMemoFirebase(() => firestore ? collection(firestore, 'categories') : null, [firestore]);
-    const transactionsCollection = useMemoFirebase(() => firestore ? collection(firestore, 'transactions') : null, [firestore]);
-    const loansCollection = useMemoFirebase(() => firestore ? collection(firestore, 'loans') : null, [firestore]);
-    const logsCollection = useMemoFirebase(() => firestore ? collection(firestore, 'logs') : null, [firestore]);
+    const clientsCollection = useMemoFirebase(() => (firestore && user) ? collection(firestore, 'clients') : null, [firestore, user]);
+    const tasksCollection = useMemoFirebase(() => (firestore && user) ? collection(firestore, 'tasks') : null, [firestore, user]);
+    const documentsCollection = useMemoFirebase(() => (firestore && user) ? collection(firestore, 'documents') : null, [firestore, user]);
+    const serviceWorkflowsCollection = useMemoFirebase(() => (firestore && user) ? collection(firestore, 'serviceWorkflows') : null, [firestore, user]);
+    const promotersCollection = useMemoFirebase(() => (firestore && user) ? collection(firestore, 'promoters') : null, [firestore, user]);
+    const suppliersCollection = useMemoFirebase(() => (firestore && user) ? collection(firestore, 'suppliers') : null, [firestore, user]);
+    const notesCollection = useMemoFirebase(() => (firestore && user) ? collection(firestore, 'notes') : null, [firestore, user]);
+    const companiesCollection = useMemoFirebase(() => (firestore && user) ? collection(firestore, 'companies') : null, [firestore, user]);
+    const bankAccountsCollection = useMemoFirebase(() => (firestore && user) ? collection(firestore, 'bankAccounts') : null, [firestore, user]);
+    const categoriesCollection = useMemoFirebase(() => (firestore && user) ? collection(firestore, 'categories') : null, [firestore, user]);
+    const transactionsCollection = useMemoFirebase(() => (firestore && user) ? collection(firestore, 'transactions') : null, [firestore, user]);
+    const loansCollection = useMemoFirebase(() => (firestore && user) ? collection(firestore, 'loans') : null, [firestore, user]);
+    const logsCollection = useMemoFirebase(() => (firestore && user) ? collection(firestore, 'logs') : null, [firestore, user]);
 
     const addLog = useCallback(async (action: LogAction, entityId: string, entityType: LogEntityType, entityName?: string) => {
         if (!logsCollection || !currentUser) return;
