@@ -154,7 +154,7 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
     const userProfileRef = useMemoFirebase(() => user ? doc(firestore, 'users', user.uid) : null, [firestore, user]);
     const { data: userProfile, isLoading: isLoadingUserProfile } = useDoc<AppUser>(userProfileRef);
 
-    const usersCollection = useMemoFirebase(() => firestore ? collection(firestore, 'users') : null, [firestore]);
+    const usersCollection = useMemoFirebase(() => (firestore && user) ? collection(firestore, 'users') : null, [firestore, user]);
     const { data: allTeamMembers = [], isLoading: isLoadingAllTeamMembers } = useCollection<AppUser>(usersCollection);
 
     const teamMembers = useMemo(() => allTeamMembers, [allTeamMembers]);
