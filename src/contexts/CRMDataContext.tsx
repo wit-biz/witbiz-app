@@ -495,8 +495,8 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
     const deleteTask = async (taskId: string, permanent: boolean = false): Promise<boolean> => {
         if (!tasksCollection) return false;
         const docRef = doc(tasksCollection, taskId);
+        const taskName = tasks.find(t => t.id === taskId)?.title;
         if (permanent) {
-            const taskName = tasks.find(t => t.id === taskId)?.title;
             deleteDocumentNonBlocking(docRef);
             addLog('task_deleted_permanently', taskId, 'task', taskName);
         } else {
@@ -939,3 +939,5 @@ export function useCRMData() {
   }
   return context;
 }
+
+    
