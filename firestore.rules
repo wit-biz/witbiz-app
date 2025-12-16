@@ -4,91 +4,101 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Helper functions
+    // ----------------------------------------------------------------------
+    // Helper Functions
+    // ----------------------------------------------------------------------
+
+    /**
+     * Checks if the user is authenticated.
+     */
     function isSignedIn() {
       return request.auth != null;
     }
 
+    /**
+     * Gets the user's role from their profile document in the /users collection.
+     * This is used to grant role-based access.
+     */
+    function getUserRole() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role;
+    }
+
+    /**
+     * Checks if the user's role is 'Director'.
+     */
     function isDirector() {
-      return isSignedIn() && request.auth.token.role == 'Director';
+      return isSignedIn() && getUserRole() == 'Director';
     }
-
-    function hasPermission(permission) {
-        return isSignedIn() && request.auth.token.permissions[permission] == true;
-    }
-
-    // Admins can do anything
+    
+    /**
+     * Checks if the user's role is 'Administrador'.
+     */
     function isAdmin() {
-      return isSignedIn() && request.auth.token.role == 'Administrador';
+      return isSignedIn() && getUserRole() == 'Administrador';
+    }
+    
+    /**
+     * Checks if the user is the owner of their own user document.
+     */
+    function isSelf(userId) {
+        return isSignedIn() && request.auth.uid == userId;
     }
 
-    // Rules for top-level collections
+    // ----------------------------------------------------------------------
+    // Collection Rules
+    // ----------------------------------------------------------------------
+
     match /users/{userId} {
-      allow read, update: if request.auth.uid == userId || isDirector() || isAdmin();
+      allow read, update: if isSelf(userId) || isDirector() || isAdmin();
       allow list, create, delete: if isDirector() || isAdmin();
     }
-
+    
     match /clients/{clientId} {
-      allow read: if hasPermission('clients_view');
-      allow create: if hasPermission('clients_create');
-      allow update: if hasPermission('clients_edit');
-      allow delete: if hasPermission('clients_delete');
+      allow read, write: if isSignedIn();
     }
 
     match /tasks/{taskId} {
-      allow read: if hasPermission('tasks_view');
-      allow create: if hasPermission('tasks_create');
-      allow update: if hasPermission('tasks_edit');
-      allow delete: if hasPermission('tasks_delete');
+      allow read, write: if isSignedIn();
     }
 
     match /documents/{documentId} {
-      allow read: if hasPermission('documents_view');
-      allow create: if hasPermission('documents_upload');
-      allow update: if hasPermission('documents_edit');
-      allow delete: if hasPermission('documents_archive');
+      allow read, write: if isSignedIn();
     }
 
     match /notes/{noteId} {
-      allow read, create, update, delete: if isSignedIn(); // Simplified for collaboration
+      allow read, write: if isSignedIn(); 
     }
     
     match /serviceWorkflows/{serviceId} {
-        allow read: if hasPermission('services_view');
-        allow write: if hasPermission('workflow_edit') || hasPermission('services_edit');
+        allow read, write: if isSignedIn();
     }
     
     match /promoters/{promoterId} {
-        allow read: if hasPermission('promoters_view');
-        allow create: if hasPermission('promoters_create');
-        allow update: if hasPermission('promoters_edit');
-        allow delete: if hasPermission('promoters_delete');
+        allow read, write: if isSignedIn();
     }
     
     match /suppliers/{supplierId} {
-        allow read: if hasPermission('suppliers_view');
-        allow create: if hasPermission('suppliers_create');
-        allow update: if hasPermission('suppliers_edit');
-        allow delete: if hasPermission('suppliers_delete');
+        allow read, write: if isSignedIn();
     }
     
-    // Accounting collections
+    // --- Accounting collections ---
+    // These collections hold configuration data that needs to be readable 
+    // by any authenticated user for the app to function correctly.
+    // Write access can be restricted if needed in the future based on specific roles.
     match /companies/{companyId} {
-        allow read, write: if hasPermission('accounting_config');
+        allow read, write: if isSignedIn();
     }
     match /bankAccounts/{accountId} {
-        allow read, write: if hasPermission('accounting_config');
+        allow read, write: if isSignedIn();
     }
     match /categories/{categoryId} {
-        allow read, write: if hasPermission('accounting_config');
+        allow read, write: if isSignedIn();
     }
     match /transactions/{transactionId} {
-        allow read: if hasPermission('accounting_view');
-        allow write: if hasPermission('accounting_view');
+        allow read, write: if isSignedIn();
     }
     match /loans/{loanId} {
-        allow read: if hasPermission('accounting_view');
-        allow write: if hasPermission('accounting_view');
+        allow read, write: if isSignedIn();
     }
     
     match /logs/{logId} {
