@@ -11,7 +11,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Users, Shield, PlusCircle, Edit3, Trash2, Save, X } from "lucide-react";
+import { Users, Shield, PlusCircle, Edit3, Trash2, Save, X, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
@@ -36,10 +36,20 @@ import { cn } from "@/lib/utils";
 
 
 export default function TeamPage() {
-    const [isInviteDialogOpen, setIsInviteDialogOpen] = useState(false);
-    const { currentUser, teamMembers, registerUser, updateUser, deleteUser, roles: serverRoles, setRoles: setServerRoles } = useCRMData();
+    const { 
+        currentUser, 
+        teamMembers, 
+        registerUser, 
+        updateUser, 
+        deleteUser, 
+        roles: serverRoles, 
+        setRoles: setServerRoles,
+        isLoadingCurrentUser,
+        isLoadingTeamMembers,
+    } = useCRMData();
     const { toast } = useToast();
 
+    const [isInviteDialogOpen, setIsInviteDialogOpen] = useState(false);
     const [userToEdit, setUserToEdit] = useState<AppUser | null>(null);
     const [userToDelete, setUserToDelete] = useState<AppUser | null>(null);
     
@@ -50,6 +60,8 @@ export default function TeamPage() {
     const [isPromptNameOpen, setIsPromptNameOpen] = useState(false);
     const [isProcessing, setIsProcessing] = useState(false);
     const [openAccordionItems, setOpenAccordionItems] = useState<string[]>([]);
+    
+    const isDataLoading = isLoadingCurrentUser || isLoadingTeamMembers;
 
     useEffect(() => {
         setLocalRoles(JSON.parse(JSON.stringify(serverRoles)));
@@ -183,6 +195,11 @@ export default function TeamPage() {
         description="Gestione los miembros de su equipo y configure los roles y permisos."
       />
       <main className="flex-1 p-4 md:p-8">
+        {isDataLoading ? (
+            <div className="flex items-center justify-center h-64">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            </div>
+        ) : (
         <Tabs defaultValue="members" className="w-full">
           <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="members">
@@ -354,6 +371,7 @@ export default function TeamPage() {
                 )}
           </TabsContent>
         </Tabs>
+        )}
       </main>
     </div>
     <InviteMemberDialog
@@ -418,5 +436,3 @@ export default function TeamPage() {
     </>
   );
 }
-
-    

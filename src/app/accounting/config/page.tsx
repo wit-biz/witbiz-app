@@ -357,9 +357,12 @@ export default function AccountingConfigPage() {
     companies, isLoadingCompanies, addCompany, deleteCompany,
     bankAccounts, isLoadingBankAccounts, addBankAccount, deleteBankAccount,
     categories, isLoadingCategories, addCategory, deleteCategory,
+    isLoadingCurrentUser, // <-- Import isLoadingCurrentUser
   } = useCRMData();
 
   const [isProcessing, setIsProcessing] = React.useState(false);
+  
+  const isDataLoading = isLoadingCompanies || isLoadingBankAccounts || isLoadingCategories || isLoadingCurrentUser;
 
   const handleDelete = async (action: () => Promise<boolean>) => {
       setIsProcessing(true);
@@ -375,6 +378,11 @@ export default function AccountingConfigPage() {
         </Button>
       </Header>
       <main className="flex-1 p-4 md:p-8">
+        {isDataLoading ? (
+            <div className="flex items-center justify-center h-64">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            </div>
+        ) : (
         <Tabs defaultValue="companies">
           <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="companies"><Building className="mr-2 h-4 w-4" />Empresas</TabsTrigger>
@@ -473,6 +481,7 @@ export default function AccountingConfigPage() {
             </div>
           </TabsContent>
         </Tabs>
+        )}
       </main>
     </div>
   );

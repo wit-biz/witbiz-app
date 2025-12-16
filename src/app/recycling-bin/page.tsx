@@ -69,11 +69,14 @@ export default function RecyclingBinPage() {
     serviceWorkflows, isLoadingWorkflows, restoreService, deleteService,
     notes, isLoadingNotes, restoreNote, deleteNote,
     teamMembers, isLoadingTeamMembers, restoreUser, deleteUser,
-    logs, isLoadingLogs
+    logs, isLoadingLogs, isLoadingCurrentUser,
   } = useCRMData();
 
   const [entityToDelete, setEntityToDelete] = useState<EntityToDelete | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
+  
+  const isInitialLoading = isLoadingClients || isLoadingTasks || isLoadingDocuments || isLoadingPromoters || isLoadingSuppliers || isLoadingWorkflows || isLoadingNotes || isLoadingTeamMembers || isLoadingLogs || isLoadingCurrentUser;
+
 
   const archivedContacts = useMemo(() => {
     const allContacts: ArchivedContact[] = [];
@@ -186,6 +189,9 @@ export default function RecyclingBinPage() {
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
+                    {isInitialLoading ? (
+                         <div className="flex items-center justify-center p-12"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>
+                    ) : (
                     <Tabs defaultValue="contact" className="w-full">
                         <TabsList className="grid w-full grid-cols-3 sm:grid-cols-3 md:grid-cols-6 mb-6">
                             {tabs.map(tab => (
@@ -310,6 +316,7 @@ export default function RecyclingBinPage() {
                             )}
                         </TabsContent>
                     </Tabs>
+                    )}
                 </CardContent>
             </Card>
         </main>
@@ -334,5 +341,3 @@ export default function RecyclingBinPage() {
     </>
   );
 }
-
-    

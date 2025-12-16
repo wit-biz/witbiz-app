@@ -115,7 +115,7 @@ export default function AccountingPage() {
       clients, 
       companies, bankAccounts, categories, transactions, loans, 
       isLoadingCompanies, isLoadingBankAccounts, isLoadingCategories, isLoadingTransactions, isLoadingLoans,
-      addTransaction, addLoan
+      addTransaction, addLoan, isLoadingCurrentUser
   } = useCRMData();
   
   const [isTransactionDialogOpen, setIsTransactionDialogOpen] = useState(false);
@@ -137,6 +137,8 @@ export default function AccountingPage() {
       description: `Se ha iniciado la descarga de "${reportName}".`
     })
   }
+  
+  const isDataLoading = isLoadingCompanies || isLoadingBankAccounts || isLoadingCategories || isLoadingTransactions || isLoadingLoans || isLoadingCurrentUser;
 
   const allCategories = useMemo(() => (categories || []).map(c => ({...c, groupName: c.type})), [categories]);
 
@@ -319,6 +321,20 @@ export default function AccountingPage() {
 
   const getCompanyName = (id: string) => (companies || []).find(c => c.id === id)?.name || 'Desconocido';
   
+    if (isDataLoading) {
+        return (
+            <div className="flex flex-col min-h-screen">
+                <Header
+                    title="Contabilidad"
+                    description="Centro de operaciones financieras y análisis de rentabilidad."
+                />
+                <div className="flex-1 flex items-center justify-center">
+                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                </div>
+            </div>
+        );
+    }
+
   return (
     <TooltipProvider>
       <div className="flex flex-col min-h-screen">
