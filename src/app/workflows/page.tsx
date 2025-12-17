@@ -309,7 +309,8 @@ export default function WorkflowConfigurationPage() {
         router.replace(`/workflows?serviceId=${firstId}&from=${fromPage}`, { scroll: false });
       }
     }
-  }, [initialWorkflows, searchParams, router, selectedWorkflowId, fromPage]);
+  }, [initialWorkflows]);
+
 
   const selectedWorkflow = useMemo(() => {
     if (!orderedWorkflows) return null;
