@@ -23,6 +23,7 @@ import { Switch } from "@/components/ui/switch";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { DndContext, closestCenter, type DragEndEvent } from "@dnd-kit/core";
 import { arrayMove, SortableContext, useSortable, verticalListSortingStrategy } from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
 import { ServiceDetailsEditor } from "@/components/services/DetailsEditor";
 import { ServiceDocumentsEditor } from "@/components/services/DocumentsEditor";
@@ -240,7 +241,7 @@ function SortableServiceItem({ service, onSelect, onDelete }: { service: Service
     const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: service.id });
     
     const style = {
-        transform: CSS.Transform.toString(transform),
+        transform: CSS.Translate.toString(transform),
         transition,
         zIndex: isDragging ? 10 : 'auto',
     };
@@ -294,19 +295,30 @@ export default function WorkflowConfigurationPage() {
   const backLink = fromPage === 'crm' ? '/crm' : '/services';
   const backLabel = fromPage === 'crm' ? 'Volver a CRM' : 'Volver a Servicios';
 
-  useEffect(() => {
+ useEffect(() => {
     if (initialWorkflows) {
       const sorted = [...initialWorkflows].sort((a,b) => (a.order || 0) - (b.order || 0));
       setOrderedWorkflows(sorted);
 
       const serviceIdFromUrl = searchParams.get('serviceId');
-      const firstActiveId = sorted.find(s => s.status !== 'Archivado')?.id;
-
-      if (serviceIdFromUrl && sorted.some(s => s.id === serviceIdFromUrl)) {
+      
+      if (selectedWorkflowId && !sorted.some(s => s.id === selectedWorkflowId)) {
+        // If the selected workflow was deleted, select the first available one
+        const firstActiveId = sorted.find(s => s.status !== 'Archivado')?.id;
+        setSelectedWorkflowId(firstActiveId || null);
+        if(firstActiveId) {
+            router.replace(`/workflows?serviceId=${firstActiveId}&from=${fromPage}`, { scroll: false });
+        } else {
+            router.replace(`/workflows?from=${fromPage}`, { scroll: false });
+        }
+      } else if (serviceIdFromUrl && sorted.some(s => s.id === serviceIdFromUrl)) {
         setSelectedWorkflowId(serviceIdFromUrl);
-      } else if (!selectedWorkflowId && firstActiveId) {
-        setSelectedWorkflowId(firstActiveId);
-        router.replace(`/workflows?serviceId=${firstActiveId}&from=${fromPage}`, { scroll: false });
+      } else if (!selectedWorkflowId) {
+        const firstActiveId = sorted.find(s => s.status !== 'Archivado')?.id;
+        if (firstActiveId) {
+            setSelectedWorkflowId(firstActiveId);
+            router.replace(`/workflows?serviceId=${firstActiveId}&from=${fromPage}`, { scroll: false });
+        }
       }
     }
   }, [initialWorkflows, fromPage, router, selectedWorkflowId, searchParams]);
@@ -356,10 +368,10 @@ export default function WorkflowConfigurationPage() {
       onSave: async (name) => {
         const newService = await addService(name);
         if (newService) {
-          // The useEffect for initialWorkflows will handle the state update and navigation
-          setIsSelectorOpen(false);
+          setSelectedWorkflowId(newService.id);
           router.push(`/workflows?serviceId=${newService.id}&from=${fromPage}`);
         }
+        setIsSelectorOpen(false);
       },
     });
     setIsPromptNameOpen(true);
@@ -473,20 +485,8 @@ export default function WorkflowConfigurationPage() {
   
   const confirmDeleteService = async () => {
     if (serviceToDelete) {
-        const success = await deleteService(serviceToDelete.id);
-        if (success) {
-            setServiceToDelete(null);
-            if (selectedWorkflowId === serviceToDelete.id) {
-                const firstActiveId = orderedWorkflows.find(s => s.status !== 'Archivado' && s.id !== serviceToDelete.id)?.id;
-                const nextId = firstActiveId || null;
-                setSelectedWorkflowId(nextId);
-                if (nextId) {
-                    router.push(`/workflows?serviceId=${nextId}&from=${fromPage}`);
-                } else {
-                    router.push('/workflows');
-                }
-            }
-        }
+        await deleteService(serviceToDelete.id);
+        setServiceToDelete(null);
     }
   };
 
