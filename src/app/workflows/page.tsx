@@ -23,7 +23,6 @@ import { Switch } from "@/components/ui/switch";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { DndContext, closestCenter, type DragEndEvent } from "@dnd-kit/core";
 import { arrayMove, SortableContext, useSortable, verticalListSortingStrategy } from "@dnd-kit/sortable";
-import { CSS } from "@dnd-kit/utilities";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
 import { ServiceDetailsEditor } from "@/components/services/DetailsEditor";
 import { ServiceDocumentsEditor } from "@/components/services/DocumentsEditor";
@@ -301,15 +300,21 @@ export default function WorkflowConfigurationPage() {
       setOrderedWorkflows(sorted);
 
       const serviceIdFromUrl = searchParams.get('serviceId');
+      const firstActiveId = sorted.find(s => s.status !== 'Archivado')?.id;
+
       if (serviceIdFromUrl && sorted.some(s => s.id === serviceIdFromUrl)) {
         setSelectedWorkflowId(serviceIdFromUrl);
-      } else if (!selectedWorkflowId && sorted.length > 0) {
-        const firstId = sorted[0].id;
-        setSelectedWorkflowId(firstId);
-        router.replace(`/workflows?serviceId=${firstId}&from=${fromPage}`, { scroll: false });
+      } else if (!selectedWorkflowId && firstActiveId) {
+        setSelectedWorkflowId(firstActiveId);
+        router.replace(`/workflows?serviceId=${firstActiveId}&from=${fromPage}`, { scroll: false });
       }
     }
-  }, [initialWorkflows]);
+  }, [initialWorkflows, fromPage, router, selectedWorkflowId, searchParams]);
+
+
+  const activeWorkflows = useMemo(() => {
+    return orderedWorkflows.filter(s => s.status !== 'Archivado');
+  }, [orderedWorkflows]);
 
 
   const selectedWorkflow = useMemo(() => {
@@ -333,7 +338,7 @@ export default function WorkflowConfigurationPage() {
   const handleDragEnd = (event: DragEndEvent) => {
       const { active, over } = event;
       if (over && active.id !== over.id) {
-          const reorderedItems = arrayMove(orderedWorkflows, orderedWorkflows.findIndex(item => item.id === active.id), orderedWorkflows.findIndex(item => item.id === over.id));
+          const reorderedItems = arrayMove(activeWorkflows, activeWorkflows.findIndex(item => item.id === active.id), activeWorkflows.findIndex(item => item.id === over.id));
           const updatedOrderWithFirestore = reorderedItems.map((wf, index) => ({...wf, order: index}));
           
           setServiceWorkflows(updatedOrderWithFirestore);
@@ -351,9 +356,9 @@ export default function WorkflowConfigurationPage() {
       onSave: async (name) => {
         const newService = await addService(name);
         if (newService) {
-          setSelectedWorkflowId(newService.id);
-          router.push(`/workflows?serviceId=${newService.id}&from=${fromPage}`);
+          // The useEffect for initialWorkflows will handle the state update and navigation
           setIsSelectorOpen(false);
+          router.push(`/workflows?serviceId=${newService.id}&from=${fromPage}`);
         }
       },
     });
@@ -468,11 +473,19 @@ export default function WorkflowConfigurationPage() {
   
   const confirmDeleteService = async () => {
     if (serviceToDelete) {
-        await deleteService(serviceToDelete.id);
-        setServiceToDelete(null);
-        if (selectedWorkflowId === serviceToDelete.id) {
-            setSelectedWorkflowId(null);
-            router.push('/workflows');
+        const success = await deleteService(serviceToDelete.id);
+        if (success) {
+            setServiceToDelete(null);
+            if (selectedWorkflowId === serviceToDelete.id) {
+                const firstActiveId = orderedWorkflows.find(s => s.status !== 'Archivado' && s.id !== serviceToDelete.id)?.id;
+                const nextId = firstActiveId || null;
+                setSelectedWorkflowId(nextId);
+                if (nextId) {
+                    router.push(`/workflows?serviceId=${nextId}&from=${fromPage}`);
+                } else {
+                    router.push('/workflows');
+                }
+            }
         }
     }
   };
@@ -568,6 +581,7 @@ export default function WorkflowConfigurationPage() {
                                 role="combobox"
                                 aria-expanded={isSelectorOpen}
                                 className="w-full max-w-sm justify-between"
+                                disabled={hasChanges}
                             >
                                 <span className="truncate">{selectedWorkflow?.name || "Seleccione un servicio..."}</span>
                                 <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
@@ -576,8 +590,8 @@ export default function WorkflowConfigurationPage() {
                         <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
                             <DndContext collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
                                 <div className="p-2 space-y-1">
-                                    <SortableContext items={orderedWorkflows.map(wf => wf.id)} strategy={verticalListSortingStrategy}>
-                                        {orderedWorkflows.map(service => (
+                                    <SortableContext items={activeWorkflows.map(wf => wf.id)} strategy={verticalListSortingStrategy}>
+                                        {activeWorkflows.map(service => (
                                             <SortableServiceItem
                                                 key={service.id}
                                                 service={service}
@@ -706,13 +720,13 @@ export default function WorkflowConfigurationPage() {
                 <AlertDialogHeader>
                     <AlertDialogTitle>¿Está seguro?</AlertDialogTitle>
                     <AlertDialogDescription>
-                        Esta acción no se puede deshacer. Esto eliminará permanentemente el servicio "{serviceToDelete?.name}" y todos sus flujos de trabajo asociados.
+                        Esta acción enviará el servicio "{serviceToDelete?.name}" a la papelera. Podrá restaurarlo más tarde.
                     </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
                     <AlertDialogCancel onClick={() => setServiceToDelete(null)}>Cancelar</AlertDialogCancel>
                     <AlertDialogAction onClick={confirmDeleteService} className="bg-destructive hover:bg-destructive/90">
-                        Eliminar
+                        Enviar a la papelera
                     </AlertDialogAction>
                 </AlertDialogFooter>
             </AlertDialogContent>

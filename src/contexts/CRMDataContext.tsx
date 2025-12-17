@@ -654,7 +654,8 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
             status: 'Activo',
         };
         const docRef = await addDocumentNonBlocking(serviceWorkflowsCollection, newServiceData);
-        return { ...newServiceData, id: docRef.id };
+        const newService = { ...newServiceData, id: docRef.id };
+        return newService;
     };
 
     const updateService = async (serviceId: string, updates: Partial<Omit<ServiceWorkflow, 'id' | 'stages' | 'subServices' | 'order'>>): Promise<boolean> => {
@@ -688,10 +689,9 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
         const docRef = doc(serviceWorkflowsCollection, serviceId);
         const serviceName = serviceWorkflows.find(s => s.id === serviceId)?.name;
         if (permanent) {
-            deleteDocumentNonBlocking(docRef);
-            addLog('service_deleted_permanently', serviceId, 'service', serviceName);
+            await deleteDocumentNonBlocking(docRef);
         } else {
-            setDocumentNonBlocking(docRef, { status: 'Archivado', archivedAt: serverTimestamp() }, { merge: true });
+            await setDocumentNonBlocking(docRef, { status: 'Archivado', archivedAt: serverTimestamp() }, { merge: true });
         }
         showNotification('success', 'Servicio Eliminado', 'El servicio ha sido enviado a la papelera.');
         return true;
@@ -939,5 +939,3 @@ export function useCRMData() {
   }
   return context;
 }
-
-    
