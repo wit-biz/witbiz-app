@@ -1,8 +1,7 @@
 
 "use client";
 
-import React, { useState, useMemo, useEffect, useCallback } from "react";
-import Link from "next/link";
+import React, { useState, useMemo, useCallback } from "react";
 import { Header } from "@/components/header";
 import {
   Card,
@@ -23,7 +22,6 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { Client, Task, WorkflowStage } from '@/lib/types';
-import { useTasksContext } from "@/contexts/TasksContext";
 import { TaskDetailDialog } from "@/components/shared/TaskDetailDialog";
 import { useCRMData } from "@/contexts/CRMDataContext";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
@@ -46,22 +44,13 @@ const StageNumberIcon = ({ index, variant = 'default' }: { index: number, varian
 
 export default function InicioPage() {
   const { clients, isLoadingClients, tasks, serviceWorkflows, isLoadingWorkflows, currentUser } = useCRMData();
-  const { setHasTasksForToday } = useTasksContext();
   const router = useRouter();
-
-  const [currentClientDateForDashboard, setCurrentClientDateForDashboard] = useState<Date | null>(null);
   
   const [selectedTaskDetail, setSelectedTaskDetail] = useState<Task | null>(null);
   const [isTaskDetailDialogOpen, setIsTaskDetailDialogOpen] = useState(false);
 
   const [selectedClientDetail, setSelectedClientDetail] = useState<Client | null>(null);
   const [isClientDetailDialogOpen, setIsClientDetailDialogOpen] = useState(false);
-
-  useEffect(() => {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    setCurrentClientDateForDashboard(today);
-  }, []);
 
   const [searchTermDashboard, setSearchTermDashboard] = useState("");
   const [highlightedClientId, setHighlightedClientId] = useState<string | null>(null);
@@ -117,8 +106,9 @@ export default function InicioPage() {
   }, []);
 
   const todaysTasks = useMemo(() => {
-    if (!tasks || !currentClientDateForDashboard || !currentUser) return [];
-    const today = currentClientDateForDashboard;
+    if (!tasks || !currentUser) return [];
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
     return tasks
       .filter(task => {
         if (task.status !== 'Pendiente' || task.assignedToId !== currentUser.uid) return false;
@@ -129,7 +119,7 @@ export default function InicioPage() {
         } catch { return false; }
       })
       .sort((a, b) => (a.title).localeCompare(b.title));
-  }, [tasks, currentClientDateForDashboard, currentUser]);
+  }, [tasks, currentUser]);
   
   const handleTaskClick = useCallback((task: Task) => { 
     setSelectedTaskDetail(task); 
