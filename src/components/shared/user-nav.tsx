@@ -224,7 +224,7 @@ export function UserNav() {
             className="h-9 w-9 rounded-full"
             onClick={() => setIsActivityDialogOpen(true)}
         >
-            <Activity className="h-5 w-5" />
+            <Users className="h-5 w-5" />
             <span className="sr-only">Ver actividad del equipo</span>
         </Button>
       )}
