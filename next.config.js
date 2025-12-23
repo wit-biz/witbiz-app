@@ -14,6 +14,7 @@ const nextConfig = {
     'firebase-admin',
     '@google-cloud/vertexai',
     '@google-cloud/documentai',
+    '@google/generative-ai',
   ],
   images: {
     remotePatterns: [

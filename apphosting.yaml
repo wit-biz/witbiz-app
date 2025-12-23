@@ -13,3 +13,5 @@ env:
     value: wit-biz-07943714-b10c8
   - variable: GOOGLE_CLOUD_PROJECT
     value: wit-biz-07943714-b10c8
+  - variable: GOOGLE_AI_API_KEY
+    secret: GOOGLE_AI_API_KEY

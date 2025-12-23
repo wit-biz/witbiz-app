@@ -2,7 +2,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { adminAuth, adminDb } from '@/lib/firebaseAdmin';
-import { VertexAI, FunctionDeclarationSchemaType } from '@google-cloud/vertexai';
+import { GoogleGenerativeAI, SchemaType } from '@google/generative-ai';
 
 interface ChatRequest {
   message: string;
@@ -241,12 +241,12 @@ Responde en español, sé útil y preciso.`;
       }
     }
 
-    const projectId = process.env.FIREBASE_PROJECT_ID || process.env.GOOGLE_CLOUD_PROJECT;
-    if (!projectId) {
-      return NextResponse.json({ response: 'Project ID no configurado' }, { status: 500 });
+    const apiKey = process.env.GOOGLE_AI_API_KEY;
+    if (!apiKey) {
+      return NextResponse.json({ response: 'GOOGLE_AI_API_KEY no configurado' }, { status: 500 });
     }
     
-    const vertexAI = new VertexAI({ project: projectId, location: 'us-central1' });
+    const genAI = new GoogleGenerativeAI(apiKey);
     
     const tools = [{
       functionDeclarations: [
@@ -254,15 +254,15 @@ Responde en español, sé útil y preciso.`;
           name: 'create_task',
           description: 'Crea tarea(s). Si mencionan varios nombres, crea una tarea para cada uno. Detecta direcciones/ubicaciones.',
           parameters: {
-            type: FunctionDeclarationSchemaType.OBJECT,
+            type: SchemaType.OBJECT,
             properties: {
-              title: { type: FunctionDeclarationSchemaType.STRING, description: 'Titulo SIN hora' },
-              clientName: { type: FunctionDeclarationSchemaType.STRING, description: 'Cliente si mencionan' },
-              dueDate: { type: FunctionDeclarationSchemaType.STRING, description: 'Fecha: mañana, pasado mañana, lunes, etc.' },
-              time: { type: FunctionDeclarationSchemaType.STRING, description: 'Hora HH:MM' },
-              description: { type: FunctionDeclarationSchemaType.STRING, description: 'Detalles opcionales' },
-              location: { type: FunctionDeclarationSchemaType.STRING, description: 'Direccion o ubicacion si mencionan. Ej: "Av. Constituyentes 123", "Plaza Comercial X", "oficina del cliente", "tonayan", etc.' },
-              assignToNames: { type: FunctionDeclarationSchemaType.ARRAY, items: { type: FunctionDeclarationSchemaType.STRING }, description: 'Lista de nombres si mencionan varios. Ej: ["isaac","carolina","said"]. NO incluir si no dicen nombres.' },
+              title: { type: SchemaType.STRING, description: 'Titulo SIN hora' },
+              clientName: { type: SchemaType.STRING, description: 'Cliente si mencionan' },
+              dueDate: { type: SchemaType.STRING, description: 'Fecha: mañana, pasado mañana, lunes, etc.' },
+              time: { type: SchemaType.STRING, description: 'Hora HH:MM' },
+              description: { type: SchemaType.STRING, description: 'Detalles opcionales' },
+              location: { type: SchemaType.STRING, description: 'Direccion o ubicacion si mencionan. Ej: "Av. Constituyentes 123", "Plaza Comercial X", "oficina del cliente", "tonayan", etc.' },
+              assignToNames: { type: SchemaType.ARRAY, items: { type: SchemaType.STRING }, description: 'Lista de nombres si mencionan varios. Ej: ["isaac","carolina","said"]. NO incluir si no dicen nombres.' },
             },
             required: ['title'],
           },
@@ -271,11 +271,11 @@ Responde en español, sé útil y preciso.`;
           name: 'create_client',
           description: 'Crea cliente nuevo.',
           parameters: {
-            type: FunctionDeclarationSchemaType.OBJECT,
+            type: SchemaType.OBJECT,
             properties: {
-              name: { type: FunctionDeclarationSchemaType.STRING, description: 'Nombre' },
-              email: { type: FunctionDeclarationSchemaType.STRING, description: 'Email' },
-              phone: { type: FunctionDeclarationSchemaType.STRING, description: 'Telefono' },
+              name: { type: SchemaType.STRING, description: 'Nombre' },
+              email: { type: SchemaType.STRING, description: 'Email' },
+              phone: { type: SchemaType.STRING, description: 'Telefono' },
             },
             required: ['name'],
           },
@@ -284,11 +284,11 @@ Responde en español, sé útil y preciso.`;
           name: 'create_supplier',
           description: 'Crea proveedor.',
           parameters: {
-            type: FunctionDeclarationSchemaType.OBJECT,
+            type: SchemaType.OBJECT,
             properties: {
-              name: { type: FunctionDeclarationSchemaType.STRING, description: 'Nombre' },
-              email: { type: FunctionDeclarationSchemaType.STRING, description: 'Email' },
-              phone: { type: FunctionDeclarationSchemaType.STRING, description: 'Telefono' },
+              name: { type: SchemaType.STRING, description: 'Nombre' },
+              email: { type: SchemaType.STRING, description: 'Email' },
+              phone: { type: SchemaType.STRING, description: 'Telefono' },
             },
             required: ['name'],
           },
@@ -296,8 +296,8 @@ Responde en español, sé útil y preciso.`;
       ],
     }];
 
-    const model = vertexAI.getGenerativeModel({ 
-      model: 'gemini-1.5-flash-002',
+    const model = genAI.getGenerativeModel({ 
+      model: 'gemini-1.5-flash',
       tools: tools as any,
     });
     
@@ -307,7 +307,7 @@ Responde en español, sé útil y preciso.`;
     let finalText = '';
     const { FieldValue } = await import('firebase-admin/firestore');
     
-    const functionCalls = result.response?.candidates?.[0]?.content?.parts?.filter((p: any) => p.functionCall)?.map((p: any) => ({ name: p.functionCall.name, args: p.functionCall.args })) || [];
+    const functionCalls = result.response?.functionCalls?.() || [];
     
     if (functionCalls && functionCalls.length > 0) {
       const results: string[] = [];
@@ -449,8 +449,7 @@ Responde en español, sé útil y preciso.`;
       finalText = results.length > 0 ? 'Creado: ' + results.join(', ') : 'Procesado.';
     } else {
       try {
-        const textPart = result.response?.candidates?.[0]?.content?.parts?.find((p: any) => p.text);
-        finalText = textPart?.text || 'Entendido.';
+        finalText = result.response.text() || 'Entendido.';
       } catch {
         finalText = 'Entendido.';
       }
