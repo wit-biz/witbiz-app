@@ -5,13 +5,3 @@ runConfig:
   # Increase this value if you'd like to automatically spin up
   # more instances in response to increased traffic.
   maxInstances: 1
-  cpu: 1
-  memoryMiB: 512
-
-env:
-  - variable: FIREBASE_PROJECT_ID
-    value: wit-biz-07943714-b10c8
-  - variable: GOOGLE_CLOUD_PROJECT
-    value: wit-biz-07943714-b10c8
-  - variable: GOOGLE_AI_API_KEY
-    value: AIzaSyCrjcFOL_Z-PPuVDcGKYQU41fRjnCVA6Rc

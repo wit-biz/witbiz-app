@@ -543,29 +543,47 @@ export function VertexAIChat() {
   };
 
   const selectConversation = async (conv: Conversation) => {
+    console.log("📂 Selecting conversation:", conv.id, conv.title);
     setShowSidebar(false);
-    setMessages([]); // Clear first
-    setCurrentConversation(conv);
     
+    // Always reload from Firestore to get fresh messages
     try {
       const db = getFirestore();
       const docSnap = await getDoc(doc(db, "chatConversations", conv.id));
+      console.log("📄 Document exists:", docSnap.exists());
       
       if (docSnap.exists()) {
         const data = docSnap.data();
-        const msgs = data.messages || [];
+        console.log("📋 Raw data:", { title: data.title, messagesCount: data.messages?.length || 0 });
         
-        const loadedMessages: Message[] = msgs.map((m: any) => ({
-          role: m.role,
+        const loadedMessages: Message[] = (data.messages || []).map((m: any) => ({
+          role: m.role as "user" | "assistant",
           content: m.content,
-          timestamp: m.timestamp?.toDate?.() || new Date(),
+          timestamp: m.timestamp?.toDate ? m.timestamp.toDate() : 
+                    m.timestamp?.seconds ? new Date(m.timestamp.seconds * 1000) : 
+                    new Date(m.timestamp),
         }));
         
+        console.log("✅ Loaded messages:", loadedMessages.length);
+        
+        const updatedConv = { 
+          ...conv, 
+          messages: loadedMessages,
+          title: data.title || conv.title 
+        };
+        setCurrentConversation(updatedConv);
         setMessages(loadedMessages);
-        setCurrentConversation({ ...conv, messages: loadedMessages, title: data.title || conv.title });
+        // Update local state
+        setConversations(prev => prev.map(c => c.id === conv.id ? updatedConv : c));
+      } else {
+        console.warn("⚠️ Document not found");
+        setCurrentConversation(conv);
+        setMessages([]);
       }
     } catch (error) {
-      console.error("Error loading:", error);
+      console.error("❌ Error loading conversation:", error);
+      setCurrentConversation(conv);
+      setMessages(conv.messages || []);
     }
   };
 
@@ -593,28 +611,32 @@ export function VertexAIChat() {
     }
   };
 
-  const saveMessages = async (msgs: Message[], convId: string) => {
-    if (!convId || convId.startsWith('temp-')) return;
+  const saveMessages = async (newMessages: Message[], convId?: string) => {
+    const targetId = convId || currentConversation?.id;
+    if (!targetId || targetId.startsWith('temp-')) return;
     
-    try {
-      const db = getFirestore();
-      const messagesForFirestore = msgs.map(m => ({
-        role: m.role,
-        content: m.content,
-        timestamp: Timestamp.fromDate(m.timestamp instanceof Date ? m.timestamp : new Date()),
-      }));
-      
-      console.log("💾 Guardando", msgs.length, "mensajes en", convId);
-      
-      await updateDoc(doc(db, "chatConversations", convId), {
-        messages: messagesForFirestore,
-        updatedAt: serverTimestamp(),
-      });
-      
-      console.log("✅ Mensajes guardados correctamente");
-    } catch (error) {
-      console.error("❌ Error guardando mensajes:", error);
-    }
+    // Simply copy first user message as title
+    const firstUserMsg = newMessages.find(m => m.role === 'user');
+    const title = firstUserMsg?.content.slice(0, 40) || "Chat";
+    
+    const db = getFirestore();
+    const messagesForFirestore = newMessages.map(m => ({
+      role: m.role,
+      content: m.content,
+      timestamp: Timestamp.fromDate(m.timestamp instanceof Date ? m.timestamp : new Date()),
+    }));
+    
+    // Update Firestore
+    await updateDoc(doc(db, "chatConversations", targetId), {
+      messages: messagesForFirestore,
+      title,
+      updatedAt: serverTimestamp(),
+    });
+    
+    // Update sidebar immediately
+    setConversations(prev => prev.map(c => 
+      c.id === targetId ? { ...c, title } : c
+    ));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -691,15 +713,27 @@ export function VertexAIChat() {
         timestamp: new Date(),
       };
 
-      // Add AI message and save immediately (no animation)
-      const finalMessages = [...newMessages, aiMessage];
-      setMessages(finalMessages);
+      // Typing animation effect
+      setIsTyping(true);
+      const fullText = aiMessage.content;
+      let currentIndex = 0;
       
-      // Save to Firestore
-      await saveMessages(finalMessages, conversationId);
-      
-      // Speak the response if voice is enabled
-      speakText(aiMessage.content);
+      const typingInterval = setInterval(() => {
+        if (currentIndex <= fullText.length) {
+          setTypingText(fullText.slice(0, currentIndex));
+          currentIndex += 2; // Speed up typing
+        } else {
+          clearInterval(typingInterval);
+          setIsTyping(false);
+          setTypingText("");
+          const updatedMessages = [...newMessages, aiMessage];
+          setMessages(updatedMessages);
+          // Pass conversation ID explicitly to avoid stale closure
+          saveMessages(updatedMessages, conversationId);
+          // Speak the response if voice is enabled
+          speakText(fullText);
+        }
+      }, 15);
     } catch (error) {
       console.error("Chat error:", error);
       const errorMsg: Message = {

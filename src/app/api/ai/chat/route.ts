@@ -1,8 +1,6 @@
-﻿export const runtime = 'nodejs';
-
-import { NextRequest, NextResponse } from 'next/server';
+﻿import { NextRequest, NextResponse } from 'next/server';
 import { adminAuth, adminDb } from '@/lib/firebaseAdmin';
-import { GoogleGenerativeAI, SchemaType } from '@google/generative-ai';
+import { GoogleGenerativeAI } from '@google/generative-ai';
 
 interface ChatRequest {
   message: string;
@@ -243,7 +241,7 @@ Responde en español, sé útil y preciso.`;
 
     const apiKey = process.env.GOOGLE_AI_API_KEY;
     if (!apiKey) {
-      return NextResponse.json({ response: 'GOOGLE_AI_API_KEY no configurado' }, { status: 500 });
+      return NextResponse.json({ response: 'API key no configurada' }, { status: 500 });
     }
     
     const genAI = new GoogleGenerativeAI(apiKey);
@@ -254,15 +252,15 @@ Responde en español, sé útil y preciso.`;
           name: 'create_task',
           description: 'Crea tarea(s). Si mencionan varios nombres, crea una tarea para cada uno. Detecta direcciones/ubicaciones.',
           parameters: {
-            type: SchemaType.OBJECT,
+            type: 'OBJECT',
             properties: {
-              title: { type: SchemaType.STRING, description: 'Titulo SIN hora' },
-              clientName: { type: SchemaType.STRING, description: 'Cliente si mencionan' },
-              dueDate: { type: SchemaType.STRING, description: 'Fecha: mañana, pasado mañana, lunes, etc.' },
-              time: { type: SchemaType.STRING, description: 'Hora HH:MM' },
-              description: { type: SchemaType.STRING, description: 'Detalles opcionales' },
-              location: { type: SchemaType.STRING, description: 'Direccion o ubicacion si mencionan. Ej: "Av. Constituyentes 123", "Plaza Comercial X", "oficina del cliente", "tonayan", etc.' },
-              assignToNames: { type: SchemaType.ARRAY, items: { type: SchemaType.STRING }, description: 'Lista de nombres si mencionan varios. Ej: ["isaac","carolina","said"]. NO incluir si no dicen nombres.' },
+              title: { type: 'STRING', description: 'Titulo SIN hora' },
+              clientName: { type: 'STRING', description: 'Cliente si mencionan' },
+              dueDate: { type: 'STRING', description: 'Fecha: mañana, pasado mañana, lunes, etc.' },
+              time: { type: 'STRING', description: 'Hora HH:MM' },
+              description: { type: 'STRING', description: 'Detalles opcionales' },
+              location: { type: 'STRING', description: 'Direccion o ubicacion si mencionan. Ej: "Av. Constituyentes 123", "Plaza Comercial X", "oficina del cliente", "tonayan", etc.' },
+              assignToNames: { type: 'ARRAY', items: { type: 'STRING' }, description: 'Lista de nombres si mencionan varios. Ej: ["isaac","carolina","said"]. NO incluir si no dicen nombres.' },
             },
             required: ['title'],
           },
@@ -271,11 +269,11 @@ Responde en español, sé útil y preciso.`;
           name: 'create_client',
           description: 'Crea cliente nuevo.',
           parameters: {
-            type: SchemaType.OBJECT,
+            type: 'OBJECT',
             properties: {
-              name: { type: SchemaType.STRING, description: 'Nombre' },
-              email: { type: SchemaType.STRING, description: 'Email' },
-              phone: { type: SchemaType.STRING, description: 'Telefono' },
+              name: { type: 'STRING', description: 'Nombre' },
+              email: { type: 'STRING', description: 'Email' },
+              phone: { type: 'STRING', description: 'Telefono' },
             },
             required: ['name'],
           },
@@ -284,11 +282,11 @@ Responde en español, sé útil y preciso.`;
           name: 'create_supplier',
           description: 'Crea proveedor.',
           parameters: {
-            type: SchemaType.OBJECT,
+            type: 'OBJECT',
             properties: {
-              name: { type: SchemaType.STRING, description: 'Nombre' },
-              email: { type: SchemaType.STRING, description: 'Email' },
-              phone: { type: SchemaType.STRING, description: 'Telefono' },
+              name: { type: 'STRING', description: 'Nombre' },
+              email: { type: 'STRING', description: 'Email' },
+              phone: { type: 'STRING', description: 'Telefono' },
             },
             required: ['name'],
           },
@@ -297,7 +295,7 @@ Responde en español, sé útil y preciso.`;
     }];
 
     const model = genAI.getGenerativeModel({ 
-      model: 'gemini-1.5-flash',
+      model: 'gemini-2.0-flash-lite',
       tools: tools as any,
     });
     
@@ -307,7 +305,7 @@ Responde en español, sé útil y preciso.`;
     let finalText = '';
     const { FieldValue } = await import('firebase-admin/firestore');
     
-    const functionCalls = result.response?.functionCalls?.() || [];
+    const functionCalls = result.response?.functionCalls?.();
     
     if (functionCalls && functionCalls.length > 0) {
       const results: string[] = [];
@@ -462,11 +460,9 @@ Responde en español, sé útil y preciso.`;
 
   } catch (error: any) {
     console.error('Chat Error:', error);
-    // Return detailed error in production for debugging
-    const errorDetails = error.message || 'Unknown error';
     return NextResponse.json({
-      response: `Error: ${errorDetails.substring(0, 100)}`,
-      error: errorDetails,
+      response: 'Error. Intenta de nuevo.',
+      error: error.message,
     }, { status: 500 });
   }
 }

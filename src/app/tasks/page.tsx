@@ -22,7 +22,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 // Tipo extendido para tareas agrupadas
 interface GroupedTask extends Task {
-  assignees?: Array<{ id?: string; name?: string; photoURL?: string }>;
+  assignees?: Array<{ id: string; name: string; photoURL?: string }>;
 }
 
 // Función para agrupar tareas por taskGroupId
