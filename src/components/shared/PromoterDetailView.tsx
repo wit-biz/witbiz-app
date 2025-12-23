@@ -48,7 +48,7 @@ const DetailItem = ({ icon: Icon, label, value, href }: { icon: React.ElementTyp
 
 export function PromoterDetailView({ promoter, onClose }: PromoterDetailViewProps) {
     const { getDocumentsByPromoterId, getClientsByPromoterId } = useCRMData();
-    const { setIsSmartUploadDialogOpen } = useDialogs();
+    const { openSmartUploadForPromoter } = useDialogs();
     const { toast } = useToast();
     
     if (!promoter) {
@@ -77,11 +77,7 @@ export function PromoterDetailView({ promoter, onClose }: PromoterDetailViewProp
     };
     
     const handleOpenUpload = () => {
-        // This functionality is not fully implemented yet in the dialogs context for promoters
-        toast({
-            title: "Próximamente",
-            description: "La carga de documentos para promotores estará disponible pronto."
-        })
+        openSmartUploadForPromoter(promoter.id);
     }
 
     return (

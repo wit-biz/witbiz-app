@@ -14,7 +14,7 @@ import { useToast } from "@/hooks/use-toast";
 import { formatDateString } from '@/lib/utils';
 import { Badge } from '../ui/badge';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { EditDocumentDialog } from './EditDocumentDialog';
+import { AIProposalModal } from './AIProposalModal';
 
 
 interface DocumentsTabProps {
@@ -199,10 +199,16 @@ export function DocumentsTab({ documents, isLoading }: DocumentsTabProps) {
         </Card>
         
         {documentToEdit && (
-            <EditDocumentDialog
+            <AIProposalModal
                 isOpen={!!documentToEdit}
                 onOpenChange={(open) => !open && setDocumentToEdit(null)}
-                document={documentToEdit}
+                documents={[{ 
+                    id: documentToEdit.id, 
+                    name: documentToEdit.name,
+                    savedProposal: documentToEdit.ai?.proposal // Pass saved proposal to avoid re-analyzing
+                }]}
+                clients={clients}
+                onProposalApplied={() => setDocumentToEdit(null)}
             />
         )}
         

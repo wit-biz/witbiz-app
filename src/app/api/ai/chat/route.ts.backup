@@ -1,0 +1,119 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { adminAuth, adminDb } from '@/lib/firebaseAdmin';
+import { GoogleGenerativeAI } from '@google/generative-ai';
+
+interface ChatRequest {
+  message: string;
+  history?: Array<{ role: string; content: string }>;
+}
+
+async function requireAuth(req: NextRequest) {
+  const authHeader = req.headers.get('authorization');
+  if (!authHeader?.startsWith('Bearer ')) {
+    return NextResponse.json({ error: 'missing_auth' }, { status: 401 });
+  }
+
+  const token = authHeader.substring(7);
+  try {
+    const decoded = await adminAuth.verifyIdToken(token);
+    return { uid: decoded.uid };
+  } catch {
+    return NextResponse.json({ error: 'invalid_auth' }, { status: 401 });
+  }
+}
+
+export async function POST(req: NextRequest) {
+  const authResult = await requireAuth(req);
+  if (authResult instanceof NextResponse) return authResult;
+
+  let body: ChatRequest;
+  try {
+    body = await req.json();
+  } catch {
+    return NextResponse.json({ error: 'invalid_json' }, { status: 400 });
+  }
+
+  if (!body.message?.trim()) {
+    return NextResponse.json({ error: 'missing_message' }, { status: 400 });
+  }
+
+  try {
+    // Get comprehensive context from Firestore (simplified queries to avoid index requirements)
+    const [userDoc, clientsSnap, tasksSnap, suppliersSnap, docsSnap] = await Promise.all([
+      adminDb.collection('users').doc(authResult.uid).get(),
+      adminDb.collection('clients').limit(50).get(),
+      adminDb.collection('tasks').limit(30).get(),
+      adminDb.collection('suppliers').limit(30).get(),
+      adminDb.collection('documents').limit(30).get(),
+    ]);
+    
+    const userData = userDoc.data();
+    
+    const clientsList = clientsSnap.docs.map(d => ({ id: d.id, name: d.data().name, category: d.data().category }));
+    const tasksList = tasksSnap.docs.map(d => ({ id: d.id, title: d.data().title, clientName: d.data().clientName, dueDate: d.data().dueDate }));
+    const suppliersList = suppliersSnap.docs.map(d => ({ id: d.id, name: d.data().name }));
+    const docsList = docsSnap.docs.map(d => ({ id: d.id, name: d.data().name, type: d.data().type, clientId: d.data().clientId, supplierId: d.data().supplierId }));
+
+    // Build optimized system prompt (reduced tokens)
+    const clientNames = clientsList.slice(0, 10).map(c => c.name).join(', ');
+    const taskTitles = tasksList.slice(0, 5).map(t => `${t.title} (${t.clientName})`).join(', ');
+    
+    const systemPrompt = `Eres WitBot, asistente de WitBiz. Usuario: ${userData?.name || 'Usuario'}.
+Clientes: ${clientNames || 'ninguno'}.
+Tareas pendientes: ${taskTitles || 'ninguna'}.
+Responde en español, sé conciso y útil.`;
+
+    // Build chat history from previous messages
+    const chatHistory: Array<{role: 'user' | 'model', parts: Array<{text: string}>}> = [
+      { role: 'user', parts: [{ text: systemPrompt }] },
+      { role: 'model', parts: [{ text: '¡Hola! Soy WitBot, tu asistente de WitBiz. Puedo ayudarte a:\n- Crear y buscar tareas\n- Gestionar clientes y proveedores\n- Buscar documentos\n- Responder preguntas sobre tu negocio\n\n¿En qué puedo ayudarte?' }] },
+    ];
+    
+    // Add previous conversation history if provided
+    if (body.history?.length) {
+      for (const msg of body.history) {
+        chatHistory.push({
+          role: msg.role === 'user' ? 'user' : 'model',
+          parts: [{ text: msg.content }],
+        });
+      }
+    }
+
+    // Initialize Google AI
+    const apiKey = process.env.GOOGLE_AI_API_KEY;
+    if (!apiKey) {
+      console.error('GOOGLE_AI_API_KEY not set');
+      return NextResponse.json({ response: 'API key no configurada', error: 'missing_key' }, { status: 500 });
+    }
+    
+    const genAI = new GoogleGenerativeAI(apiKey);
+    const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash-lite' });
+    
+    const chat = model.startChat({ history: chatHistory });
+    const result = await chat.sendMessage(body.message);
+    
+    // Extract text response
+    const finalText = result.response.text() || 'Lo siento, no pude generar una respuesta.';
+
+    return NextResponse.json({
+      response: finalText,
+      timestamp: new Date().toISOString(),
+    });
+
+  } catch (error: any) {
+    console.error('Chat AI Error:', error);
+    
+    // Handle rate limit error
+    if (error.status === 429) {
+      return NextResponse.json({
+        response: 'Demasiadas solicitudes. Por favor espera unos segundos e intenta de nuevo.',
+        error: 'rate_limit',
+      }, { status: 429 });
+    }
+    
+    return NextResponse.json({
+      response: 'Lo siento, hubo un error. Por favor intenta de nuevo.',
+      error: error.message,
+    }, { status: 500 });
+  }
+}

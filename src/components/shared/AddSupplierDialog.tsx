@@ -35,9 +35,11 @@ import { type Supplier } from '@/lib/types';
 const supplierSchema = z.object({
   id: z.string().optional(),
   name: z.string().min(2, { message: "El nombre debe tener al menos 2 caracteres." }),
+  rfc: z.string().optional(),
   email: z.string().email({ message: "Email inválido." }).optional().or(z.literal('')),
   phone: z.string().optional(),
   service: z.string().optional(),
+  address: z.string().optional(),
   status: z.enum(['Activo', 'Inactivo']),
 });
 
@@ -62,10 +64,12 @@ export function AddSupplierDialog({ isOpen, onClose, supplier, onAdd, onSave }: 
     defaultValues: {
       id: supplier?.id || '',
       name: supplier?.name || '',
+      rfc: supplier?.rfc || '',
       email: supplier?.email || '',
       phone: supplier?.phone || '',
       service: supplier?.service || '',
-      status: supplier?.status || 'Activo',
+      address: supplier?.address || '',
+      status: supplier?.status === 'Archivado' ? 'Activo' : (supplier?.status || 'Activo'),
     },
   });
   
@@ -74,10 +78,12 @@ export function AddSupplierDialog({ isOpen, onClose, supplier, onAdd, onSave }: 
         form.reset({
             id: supplier?.id || '',
             name: supplier?.name || '',
+            rfc: supplier?.rfc || '',
             email: supplier?.email || '',
             phone: supplier?.phone || '',
             service: supplier?.service || '',
-            status: supplier?.status || 'Activo',
+            address: supplier?.address || '',
+            status: supplier?.status === 'Archivado' ? 'Activo' : (supplier?.status || 'Activo'),
         });
     }
   }, [isOpen, supplier, form]);
@@ -93,7 +99,7 @@ export function AddSupplierDialog({ isOpen, onClose, supplier, onAdd, onSave }: 
             toast({ title: 'Proveedor Actualizado', description: `El proveedor "${values.name}" ha sido actualizado.` });
         } else if (onAdd) {
             const { id, ...addValues } = finalValues;
-            await onAdd(addValues as Omit<Supplier, 'id'>);
+            await onAdd(addValues as Omit<SupplierFormValues, 'id'>);
             toast({ title: 'Proveedor Creado', description: `El proveedor "${values.name}" ha sido creado.` });
         }
     } catch (error) {
@@ -128,6 +134,19 @@ export function AddSupplierDialog({ isOpen, onClose, supplier, onAdd, onSave }: 
                                 <FormLabel>Nombre del Proveedor <span className="text-destructive">*</span></FormLabel>
                                 <FormControl>
                                     <Input placeholder="Ej. Tech Solutions" {...field} disabled={isSubmitting}/>
+                                </FormControl>
+                                <FormMessage />
+                            </FormItem>
+                        )}
+                    />
+                    <FormField
+                        control={form.control}
+                        name="rfc"
+                        render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>RFC</FormLabel>
+                                <FormControl>
+                                    <Input placeholder="Ej. TSO123456ABC" {...field} disabled={isSubmitting}/>
                                 </FormControl>
                                 <FormMessage />
                             </FormItem>
@@ -188,6 +207,19 @@ export function AddSupplierDialog({ isOpen, onClose, supplier, onAdd, onSave }: 
                                 <FormLabel>Servicio / Producto</FormLabel>
                                 <FormControl>
                                     <Input placeholder="Soporte TI" {...field} disabled={isSubmitting}/>
+                                </FormControl>
+                                <FormMessage />
+                            </FormItem>
+                        )}
+                    />
+                    <FormField
+                        control={form.control}
+                        name="address"
+                        render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>Dirección</FormLabel>
+                                <FormControl>
+                                    <Input placeholder="Calle, Ciudad, CP" {...field} disabled={isSubmitting}/>
                                 </FormControl>
                                 <FormMessage />
                             </FormItem>

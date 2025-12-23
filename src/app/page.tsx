@@ -19,8 +19,19 @@ import {
   Briefcase,
   ListChecks,
   Users,
+  AlertTriangle,
+  Clock,
+  History,
+  ListTodo,
+  CheckCircle2,
+  Info,
 } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn, parseDateString, formatTimeString } from "@/lib/utils";
+import { differenceInDays } from "date-fns";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { Badge } from "@/components/ui/badge";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import type { Client, Task, WorkflowStage } from '@/lib/types';
 import { TaskDetailDialog } from "@/components/shared/TaskDetailDialog";
 import { useCRMData } from "@/contexts/CRMDataContext";
@@ -38,6 +49,61 @@ const StageNumberIcon = ({ index, variant = 'default' }: { index: number, varian
   return (
     <div className={cn("flex items-center justify-center font-bold flex-shrink-0", variants[variant])}>
       {index + 1}
+    </div>
+  );
+};
+
+// Componente para mostrar tareas en la página de inicio
+const TaskItemHome = ({ task, icon: Icon, iconColor, onClick, showDate = false, isTeamTask = false }: { 
+  task: Task; 
+  icon: React.ElementType; 
+  iconColor: string; 
+  onClick: (task: Task) => void;
+  showDate?: boolean;
+  isTeamTask?: boolean;
+}) => {
+  const taskDueDate = parseDateString(task.dueDate);
+  return (
+    <div 
+      className={cn(
+        "flex items-start gap-3 p-2 rounded-md hover:bg-secondary/50 cursor-pointer transition-colors border",
+        isTeamTask && "border-l-4 border-l-purple-500 bg-purple-50/30 dark:bg-purple-950/20"
+      )}
+      onClick={() => onClick(task)}
+      role="button"
+      tabIndex={0}
+      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') onClick(task); }}
+    >
+      <Icon className={cn("h-5 w-5 mt-0.5 flex-shrink-0", isTeamTask ? "text-purple-500" : iconColor)} />
+      <div className="flex-grow min-w-0">
+        <p className="text-sm font-medium truncate">{task.title}</p>
+        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+          {task.clientName && (
+            <span className="inline-flex items-center gap-1">
+              <Briefcase className="h-3 w-3" /> {task.clientName}
+            </span>
+          )}
+          {task.assignedToName && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Avatar className="h-4 w-4">
+                  <AvatarImage src={task.assignedToPhotoURL} />
+                  <AvatarFallback className="text-[8px]">{task.assignedToName.charAt(0)}</AvatarFallback>
+                </Avatar>
+              </TooltipTrigger>
+              <TooltipContent><p>Asignado a: {task.assignedToName}</p></TooltipContent>
+            </Tooltip>
+          )}
+          {showDate && taskDueDate && (
+            <span className="inline-flex items-center gap-1">
+              <Clock className="h-3 w-3" /> {taskDueDate.toLocaleDateString('es-MX', { day: 'numeric', month: 'short' })}
+            </span>
+          )}
+          {task.dueTime && (
+            <span>{formatTimeString(task.dueTime)}</span>
+          )}
+        </div>
+      </div>
     </div>
   );
 };
@@ -105,20 +171,70 @@ export default function InicioPage() {
     }, 2500);
   }, []);
 
-  const todaysTasks = useMemo(() => {
-    if (!tasks || !currentUser) return [];
+  // Calcular todas las secciones de tareas del usuario
+  const { overdueTasks, postponedTasks, todayTasks, upcomingWeekTasks } = useMemo(() => {
+    if (!tasks || !currentUser) {
+      return { overdueTasks: [], postponedTasks: [], todayTasks: [], upcomingWeekTasks: [] };
+    }
+    
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    return tasks
+    
+    const endOfWeek = new Date(today);
+    endOfWeek.setDate(today.getDate() + 7);
+    endOfWeek.setHours(23, 59, 59, 999);
+    
+    // Solo tareas asignadas al usuario actual
+    const userTasks = tasks.filter(task => task && task.assignedToId === currentUser.uid);
+    
+    const allPostponed = userTasks
+      .filter(task => task.status === 'Pospuesta')
+      .sort((a, b) => (parseDateString(a.reactivationDate || a.dueDate)?.getTime() || 0) - (parseDateString(b.reactivationDate || b.dueDate)?.getTime() || 0));
+    
+    const postponed = allPostponed.filter(t => {
+      const originalDueDate = parseDateString(t.dueDate);
+      if (!originalDueDate) return false;
+      const daysDiff = differenceInDays(today, originalDueDate);
+      return daysDiff < 10;
+    });
+    
+    const pendingTasks = userTasks.filter(task => task.status === 'Pendiente');
+    
+    const overdue = pendingTasks
       .filter(task => {
-        if (task.status !== 'Pendiente' || task.assignedToId !== currentUser.uid) return false;
-        try {
-          const taskDueDate = new Date(task.dueDate);
-          taskDueDate.setUTCHours(0,0,0,0);
-          return taskDueDate && taskDueDate.getTime() === today.getTime();
-        } catch { return false; }
+        const taskDueDate = parseDateString(task.dueDate);
+        return taskDueDate && taskDueDate < today;
       })
-      .sort((a, b) => (a.title).localeCompare(b.title));
+      .sort((a, b) => {
+        const dateA = parseDateString(a.dueDate);
+        const dateB = parseDateString(b.dueDate);
+        if (!dateA || !dateB) return 0;
+        return dateA.getTime() - dateB.getTime();
+      });
+    
+    const forToday = pendingTasks
+      .filter(task => {
+        const taskDueDate = parseDateString(task.dueDate);
+        return taskDueDate && taskDueDate.getTime() === today.getTime();
+      })
+      .sort((a, b) => (a.dueTime || "23:59").localeCompare(b.dueTime || "23:59"));
+    
+    const upcomingThisWeek = pendingTasks
+      .filter(task => {
+        const taskDueDate = parseDateString(task.dueDate);
+        if (!taskDueDate) return false;
+        const taskDayStart = new Date(taskDueDate);
+        taskDayStart.setHours(0, 0, 0, 0);
+        return taskDayStart > today && taskDayStart <= endOfWeek;
+      })
+      .sort((a, b) => {
+        const dateA = parseDateString(a.dueDate);
+        const dateB = parseDateString(b.dueDate);
+        if (!dateA || !dateB) return 0;
+        return dateA.getTime() - dateB.getTime();
+      });
+    
+    return { overdueTasks: overdue, postponedTasks: postponed, todayTasks: forToday, upcomingWeekTasks: upcomingThisWeek };
   }, [tasks, currentUser]);
   
   const handleTaskClick = useCallback((task: Task) => { 
@@ -132,8 +248,9 @@ export default function InicioPage() {
   };
   
   return (
-    <div className="w-full space-y-6 p-4 md:p-8">
-      <Header
+    <TooltipProvider>
+      <div className="w-full space-y-6 p-4 md:p-8">
+        <Header
         title="Inicio"
         description="Bienvenido a WitBiz. Aquí tienes un resumen y accesos rápidos."
       />
@@ -142,48 +259,114 @@ export default function InicioPage() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Activity className="h-5 w-5 text-accent" />
-            Mis Tareas Pendientes Para Hoy
+            Mis Tareas
           </CardTitle>
-          <CardDescription>Estas son las tareas que requieren su atención hoy.</CardDescription>
+          <CardDescription>Tus tareas pendientes organizadas por prioridad.</CardDescription>
         </CardHeader>
         <CardContent className="pt-0">
           {isLoadingWorkflows || !tasks ? (
               <div className="flex items-center justify-center p-12"><Loader2 className="h-8 w-8 animate-spin text-primary"/></div>
-          ) : todaysTasks.length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
-              {todaysTasks.map((task) => (
-                  <div
-                    key={task.id}
-                    className="flex items-start gap-3 p-2 rounded-md hover:bg-secondary transition-colors cursor-pointer"
-                    onClick={() => handleTaskClick(task)}
-                    onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') handleTaskClick(task); }}
-                    role="button"
-                    tabIndex={0}
-                    aria-label={`Ver detalles de la tarea: ${task.title}`}
-                  >
-                    <div className="bg-muted p-2 rounded-full flex-shrink-0 mt-1">
-                      <ListChecks className="h-5 w-5 text-accent" />
-                    </div>
-                    <div className="min-w-0">
-                      <p className="text-sm font-medium truncate">{task.title}</p>
-                      <div className="text-xs text-muted-foreground space-x-2">
-                        {task.clientName && (
-                          <span className="inline-flex items-center gap-1">
-                            <Briefcase className="h-3 w-3" />
-                            {task.clientName}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-              ))}
-            </div>
           ) : (
-             <div className="flex flex-col items-center justify-center text-center text-muted-foreground py-10">
-                <CheckSquare className="h-12 w-12 mb-4 text-green-500" />
-                <p className="text-lg font-semibold">¡Todo al día!</p>
-                <p className="text-sm mt-1">No tienes tareas pendientes asignadas para hoy.</p>
-              </div>
+            <Accordion type="single" collapsible className="w-full space-y-2" defaultValue="today-tasks">
+              {/* Tareas Para Hoy */}
+              <AccordionItem value="today-tasks" className="border-none">
+                <Card>
+                  <AccordionTrigger className="w-full hover:no-underline p-0 [&_svg]:ml-auto [&_svg]:mr-2">
+                    <CardHeader className="flex-1 p-3">
+                      <CardTitle className="grid grid-cols-[auto_1fr_auto] items-center gap-2 text-base">
+                        <CheckCircle2 className="h-5 w-5 text-green-500" />
+                        <span className="text-center">Tareas Para Hoy</span>
+                        <Badge className="ml-auto bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300">{todayTasks.length}</Badge>
+                      </CardTitle>
+                    </CardHeader>
+                  </AccordionTrigger>
+                  <AccordionContent>
+                    <CardContent className="space-y-2 pt-0 p-3">
+                      {todayTasks.length > 0 ? todayTasks.map(task => (
+                        <TaskItemHome key={task.id} task={task} icon={CheckCircle2} iconColor="text-green-500" onClick={handleTaskClick} isTeamTask={(task as any).createdById && (task as any).createdById !== currentUser?.uid} />
+                      )) : (
+                        <div className="text-sm text-muted-foreground p-4 text-center flex flex-col items-center">
+                          <CheckSquare className="h-8 w-8 text-green-500 mb-2" />
+                          <p>¡Sin tareas para hoy!</p>
+                        </div>
+                      )}
+                    </CardContent>
+                  </AccordionContent>
+                </Card>
+              </AccordionItem>
+              
+              {/* Próximas Tareas */}
+              <AccordionItem value="upcoming-tasks" className="border-none">
+                <Card>
+                  <AccordionTrigger className="w-full hover:no-underline p-0 [&_svg]:ml-auto [&_svg]:mr-2">
+                    <CardHeader className="flex-1 p-3">
+                      <CardTitle className="grid grid-cols-[auto_1fr_auto] items-center gap-2 text-base">
+                        <ListTodo className="h-5 w-5 text-blue-500" />
+                        <span className="text-center">Próximas Tareas</span>
+                        <Badge className="ml-auto bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-300">{upcomingWeekTasks.length}</Badge>
+                      </CardTitle>
+                    </CardHeader>
+                  </AccordionTrigger>
+                  <AccordionContent>
+                    <CardContent className="space-y-2 pt-0 p-3">
+                      {upcomingWeekTasks.length > 0 ? upcomingWeekTasks.map(task => (
+                        <TaskItemHome key={task.id} task={task} icon={ListTodo} iconColor="text-blue-500" onClick={handleTaskClick} showDate isTeamTask={(task as any).createdById && (task as any).createdById !== currentUser?.uid} />
+                      )) : (
+                        <div className="text-sm text-muted-foreground p-4 text-center"><Info className="h-8 w-8 mb-2 mx-auto" /><p>No hay tareas próximas.</p></div>
+                      )}
+                    </CardContent>
+                  </AccordionContent>
+                </Card>
+              </AccordionItem>
+              
+              {/* Tareas Atrasadas */}
+              <AccordionItem value="overdue-tasks" className="border-none">
+                <Card>
+                  <AccordionTrigger className="w-full hover:no-underline p-0 [&_svg]:ml-auto [&_svg]:mr-2">
+                    <CardHeader className="flex-1 p-3">
+                      <CardTitle className="grid grid-cols-[auto_1fr_auto] items-center gap-2 text-base">
+                        <AlertTriangle className="h-5 w-5 text-destructive" />
+                        <span className="text-center">Tareas Atrasadas</span>
+                        <Badge className="ml-auto bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-300">{overdueTasks.length}</Badge>
+                      </CardTitle>
+                    </CardHeader>
+                  </AccordionTrigger>
+                  <AccordionContent>
+                    <CardContent className="space-y-2 pt-0 p-3">
+                      {overdueTasks.length > 0 ? overdueTasks.map(task => (
+                        <TaskItemHome key={task.id} task={task} icon={AlertTriangle} iconColor="text-destructive" onClick={handleTaskClick} showDate isTeamTask={(task as any).createdById && (task as any).createdById !== currentUser?.uid} />
+                      )) : (
+                        <div className="text-sm text-muted-foreground p-4 text-center"><CheckSquare className="h-8 w-8 text-green-500 mb-2 mx-auto" /><p>¡Sin tareas atrasadas!</p></div>
+                      )}
+                    </CardContent>
+                  </AccordionContent>
+                </Card>
+              </AccordionItem>
+              
+              {/* Tareas Pospuestas */}
+              <AccordionItem value="postponed-tasks" className="border-none">
+                <Card>
+                  <AccordionTrigger className="w-full hover:no-underline p-0 [&_svg]:ml-auto [&_svg]:mr-2">
+                    <CardHeader className="flex-1 p-3">
+                      <CardTitle className="grid grid-cols-[auto_1fr_auto] items-center gap-2 text-base">
+                        <History className="h-5 w-5 text-amber-500" />
+                        <span className="text-center">Tareas Pospuestas</span>
+                        <Badge className="ml-auto bg-amber-100 text-amber-800 dark:bg-amber-900/50 dark:text-amber-300">{postponedTasks.length}</Badge>
+                      </CardTitle>
+                    </CardHeader>
+                  </AccordionTrigger>
+                  <AccordionContent>
+                    <CardContent className="space-y-2 pt-0 p-3">
+                      {postponedTasks.length > 0 ? postponedTasks.map(task => (
+                        <TaskItemHome key={task.id} task={task} icon={History} iconColor="text-amber-500" onClick={handleTaskClick} showDate isTeamTask={(task as any).createdById && (task as any).createdById !== currentUser?.uid} />
+                      )) : (
+                        <div className="text-sm text-muted-foreground p-4 text-center"><Info className="h-8 w-8 mb-2 mx-auto" /><p>Sin tareas pospuestas.</p></div>
+                      )}
+                    </CardContent>
+                  </AccordionContent>
+                </Card>
+              </AccordionItem>
+            </Accordion>
           )}
         </CardContent>
       </Card>
@@ -283,5 +466,6 @@ export default function InicioPage() {
         </DialogContent>
       </Dialog>
     </div>
+    </TooltipProvider>
   );
 }

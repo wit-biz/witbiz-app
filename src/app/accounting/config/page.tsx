@@ -83,7 +83,7 @@ function CompanyForm({ onAddCompany }: { onAddCompany: (data: Omit<Company, 'id'
     setIsSubmitting(true);
     await onAddCompany({ 
         name: data.name,
-        taxes: data.taxes || [],
+        taxes: (data.taxes || []).map(t => ({ ...t, id: t.id || `tax-${Date.now()}-${Math.random()}` })),
     });
     form.reset();
     setIsSubmitting(false);

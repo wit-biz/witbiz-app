@@ -6,7 +6,8 @@ import Link from "next/link";
 import { useSearchParams, useRouter } from "next/navigation";
 import { Header } from "@/components/header";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import { useCRMData, type WorkflowStage, type ServiceWorkflow, type WorkflowAction, type SubStage, type SubSubStage, type Commission } from "@/contexts/CRMDataContext"; 
+import { useCRMData } from "@/contexts/CRMDataContext";
+import type { WorkflowStage, ServiceWorkflow, WorkflowAction, SubStage, SubSubStage, Commission } from "@/lib/types";
 import { Edit, Save, Trash2, Plus, X, Loader2, UploadCloud, ChevronsRight, FileText, ListTodo, Workflow as WorkflowIcon, ArrowLeft, PlusCircle, Layers, FolderCog, Redo, AlertTriangle, GripVertical, ChevronsUpDown } from "lucide-react";
 import { Card, CardHeader, CardTitle, CardContent, CardDescription, CardFooter } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
@@ -74,18 +75,18 @@ const StageCard = ({
     const [addTaskDialogState, setAddTaskDialogState] = useState<{isOpen: boolean, path: string | null}>({isOpen: false, path: null});
 
     const levelStyles = {
-        1: { card: "bg-card", trigger: "text-lg", subStageContainer: "", subStageButton: "default", subSubStageButton: "default" },
-        2: { card: "bg-muted/40", trigger: "text-md", subStageContainer: "pl-4", subStageButton: "default", subSubStageButton: "default" },
-        3: { card: "bg-muted/20", trigger: "text-base", subStageContainer: "pl-8", subStageButton: "default", subSubStageButton: "default" }
+        1: { card: "bg-card", trigger: "text-lg", subStageContainer: "", subSubStageContainer: "", subStageButton: "default", subSubStageButton: "default" },
+        2: { card: "bg-muted/40", trigger: "text-md", subStageContainer: "pl-4", subSubStageContainer: "pl-4", subStageButton: "default", subSubStageButton: "default" },
+        3: { card: "bg-muted/20", trigger: "text-base", subStageContainer: "pl-8", subSubStageContainer: "pl-8", subStageButton: "default", subSubStageButton: "default" }
     }
 
     const handleUpdateAction = (actionId: string, updates: Partial<WorkflowAction>) => {
-        const newActions = stage.actions.map(a => a.id === actionId ? { ...a, ...updates } : a);
+        const newActions = stage.actions.map((a: WorkflowAction) => a.id === actionId ? { ...a, ...updates } : a);
         onUpdate(path, { actions: newActions });
     };
     
     const handleDeleteAction = (actionId: string) => {
-        const newActions = stage.actions.filter(a => a.id !== actionId);
+        const newActions = stage.actions.filter((a: WorkflowAction) => a.id !== actionId);
         onUpdate(path, { actions: newActions });
     };
     
@@ -126,7 +127,7 @@ const StageCard = ({
                         <Label className="text-sm font-medium">Tareas Automáticas</Label>
                         {stage.actions && stage.actions.length > 0 ? (
                             <div className="space-y-3">
-                            {stage.actions.map(action => (
+                            {stage.actions.map((action: WorkflowAction) => (
                                 <div key={action.id} className="flex flex-col gap-3 p-3 rounded-md border bg-background">
                                     <div className="flex items-center justify-between">
                                         <Input 
@@ -176,7 +177,7 @@ const StageCard = ({
                     {'subStages' in stage && (
                         <div className={cn("border-l-2 ml-2 space-y-4", levelStyles[level].subStageContainer)}>
                              <Label className="text-sm font-medium">Sub-Etapas</Label>
-                            {stage.subStages && stage.subStages.map((sub, i) => (
+                            {((stage as any).subStages as SubStage[] | undefined)?.map((sub: SubStage, i: number) => (
                                 <StageCard
                                     key={sub.id}
                                     stage={sub}
@@ -199,7 +200,7 @@ const StageCard = ({
                     {'subSubStages' in stage && (
                          <div className={cn("border-l-2 ml-2 space-y-4", levelStyles[level].subSubStageContainer)}>
                             <Label className="text-sm font-medium">Sub-Sub-Etapas</Label>
-                            {stage.subSubStages && stage.subSubStages.map((sub, i) => (
+                            {((stage as any).subSubStages as SubSubStage[] | undefined)?.map((sub: SubSubStage, i: number) => (
                                 <StageCard
                                     key={sub.id}
                                     stage={sub}
@@ -404,7 +405,7 @@ export default function WorkflowConfigurationPage() {
 
 
   const updateNestedState = (path: string, value: any, operation: 'update' | 'add' | 'delete') => {
-      setEditableWorkflow(prev => {
+      setEditableWorkflow((prev: ServiceWorkflow | null) => {
           if (!prev) return null;
           const newWorkflow = JSON.parse(JSON.stringify(prev));
           const parts = path.split('.').filter(p => p !== '');
@@ -445,7 +446,7 @@ export default function WorkflowConfigurationPage() {
       const index = parseInt(pathParts.pop()!, 10);
       const parentPath = pathParts.join('.');
       
-      setEditableWorkflow(prev => {
+      setEditableWorkflow((prev: ServiceWorkflow | null) => {
           if (!prev) return null;
           const newWorkflow = JSON.parse(JSON.stringify(prev));
           let parent = newWorkflow;
@@ -464,7 +465,7 @@ export default function WorkflowConfigurationPage() {
     const indexToDelete = parseInt(pathParts.pop()!, 10);
     const arrayPath = pathParts.join('.');
 
-    setEditableWorkflow(prev => {
+    setEditableWorkflow((prev: ServiceWorkflow | null) => {
         if (!prev) return null;
         let newWorkflow = JSON.parse(JSON.stringify(prev));
 
@@ -636,14 +637,14 @@ export default function WorkflowConfigurationPage() {
                                     <ServiceDetailsEditor
                                         key={editableWorkflow.id}
                                         service={editableWorkflow}
-                                        onUpdate={(updates) => setEditableWorkflow(prev => prev ? { ...prev, ...updates } : null)}
+                                        onUpdate={(updates) => setEditableWorkflow((prev: ServiceWorkflow | null) => prev ? { ...prev, ...updates } : null)}
                                         canEdit={canEditWorkflow}
                                     />
                                     <div className="space-y-4">
                                         <ServiceCommissionsEditor
                                             key={`${editableWorkflow.id}-commissions`}
                                             initialCommissions={editableWorkflow.commissions || []}
-                                            onUpdate={(commissions) => setEditableWorkflow(prev => prev ? { ...prev, commissions } : null)}
+                                            onUpdate={(commissions) => setEditableWorkflow((prev: ServiceWorkflow | null) => prev ? { ...prev, commissions } : null)}
                                             canEdit={canEditWorkflow}
                                         />
                                         <ServiceDocumentsEditor serviceId={editableWorkflow.id} canEdit={canEditWorkflow} />
@@ -668,9 +669,9 @@ export default function WorkflowConfigurationPage() {
                                             <Plus className="mr-2 h-4 w-4"/>Añadir Etapa Principal
                                         </Button>
                                     )}
-                                    <Accordion type="multiple" className="w-full space-y-4" defaultValue={editableWorkflow.stages?.map(s => s.id) || []}>
+                                    <Accordion type="multiple" className="w-full space-y-4" defaultValue={editableWorkflow.stages?.map((s: WorkflowStage) => s.id) || []}>
                                         {editableWorkflow.stages && editableWorkflow.stages.length > 0 ? (
-                                            editableWorkflow.stages.map((stage, i) => (
+                                            editableWorkflow.stages.map((stage: WorkflowStage, i: number) => (
                                                 <StageCard
                                                     key={stage.id}
                                                     stage={stage}

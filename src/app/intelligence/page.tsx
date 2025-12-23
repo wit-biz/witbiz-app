@@ -27,7 +27,7 @@ import { DateRangeFilter } from '@/components/shared/DateRangeFilter';
 import { Transaction, Log, LogAction } from '@/lib/types';
 
 
-const LOG_ACTION_DETAILS: Record<LogAction, { text: string; icon: React.ElementType }> = {
+const LOG_ACTION_DETAILS: Partial<Record<LogAction, { text: string; icon: React.ElementType }>> = {
     client_created: { text: "Cliente Creado", icon: Briefcase },
     client_updated: { text: "Cliente Actualizado", icon: Briefcase },
     client_archived: { text: "Cliente Archivado", icon: Briefcase },

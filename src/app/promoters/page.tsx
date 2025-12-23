@@ -439,7 +439,7 @@ function PromoterPageContent() {
     const navItems = [
         { id: 'clients', label: 'Clientes', icon: Users, component: () => <ClientsView promoterId={currentPromoter.id} /> },
         { id: 'commissions', label: 'Comisiones', icon: CircleDollarSign, component: CommissionsView },
-        { id: 'charts', label: 'Gráficos', icon: BarChart, component: DateRangeChartsTab },
+        { id: 'charts', label: 'Gráficos', icon: BarChart, component: () => <DateRangeChartsTab transactions={[]} /> },
         { id: 'resources', label: 'Recursos', icon: BookText, component: () => <ResourcesView promoterId={currentPromoter.id} /> },
     ];
     const profileNavItem = { id: 'profile', label: 'Perfil', icon: User, component: () => <ProfileView promoter={currentPromoter} /> };

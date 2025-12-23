@@ -121,7 +121,7 @@ export function AddEditClientDialog({ client, isOpen, onClose }: AddEditClientDi
             promoters: client?.promoters || [],
             subscribedServiceIds: validSubscribedServiceIds,
             customCommissionServiceIds: validCustomCommissionServiceIds,
-            status: client?.status || 'Activo',
+            status: client?.status === 'Archivado' ? 'Inactivo' : (client?.status || 'Activo'),
             hasPosTerminals: !!client?.posTerminals && client.posTerminals.length > 0,
             posTerminals: client?.posTerminals || [],
             customCommissions: client?.customCommissions || [],
@@ -168,14 +168,19 @@ export function AddEditClientDialog({ client, isOpen, onClose }: AddEditClientDi
     setIsSubmitting(true);
     let success = false;
     
-    const finalCustomCommissions = values.customCommissions?.filter(
-        cc => values.customCommissionServiceIds?.includes(cc.serviceId)
-    );
+    const finalCustomCommissions = values.customCommissions
+        ?.filter(cc => values.customCommissionServiceIds?.includes(cc.serviceId))
+        .map(cc => ({ ...cc, rate: cc.rate ?? 0 }));
 
     const finalValues = {
         ...values,
-        customCommissions: finalCustomCommissions,
-        posTerminals: values.hasPosTerminals ? values.posTerminals : [],
+        customCommissions: finalCustomCommissions as any,
+        posTerminals: values.hasPosTerminals
+          ? (values.posTerminals || []).map((t) => ({
+              ...t,
+              id: t.id || `pos-${Date.now()}-${Math.random()}`,
+            }))
+          : [],
     };
     
     if (isEditMode && client) {

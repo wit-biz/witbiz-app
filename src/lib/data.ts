@@ -1,5 +1,5 @@
 
-import type { Client, Task, Document, Note, WorkflowStage, NavItem, Promoter, ServiceWorkflow, SubService, AppUser, Supplier, UserRole } from './types';
+import type { Client, Task, Document, Note, WorkflowStage, NavItem, Promoter, ServiceWorkflow, AppUser, Supplier, UserRole } from './types';
 import { addDays, format, subDays } from 'date-fns';
 import { Trash2 } from 'lucide-react';
 import { allPermissions } from '@/lib/permissions';

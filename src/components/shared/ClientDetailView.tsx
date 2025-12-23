@@ -261,7 +261,7 @@ export function ClientDetailView({ client, onClose }: ClientDetailViewProps) {
                                                                 <Percent className="h-3 w-3 mr-2 text-muted-foreground" />
                                                                 <span className="text-muted-foreground">{commission.name}:</span>
                                                                 <span className="font-medium ml-1.5">{rate}%</span>
-                                                                {isCustom && <Tag className="h-3 w-3 ml-2 text-primary" title="Tasa personalizada"/>}
+                                                                {isCustom && <Tag className="h-3 w-3 ml-2 text-primary"/>}
                                                             </li>
                                                          )
                                                     })}

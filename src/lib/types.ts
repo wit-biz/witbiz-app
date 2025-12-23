@@ -25,6 +25,7 @@ export type SubmittedRequirement = {
 export type Client = {
   id: string;
   name: string;
+  rfc?: string;
   owner: string;
   category: string;
   stage?: string; // Opcional, legado
@@ -60,9 +61,11 @@ export type Promoter = {
 export type Supplier = {
   id: string;
   name: string;
+  rfc?: string;
   email?: string;
   phone?: string;
   service?: string;
+  address?: string;
   status: 'Activo' | 'Inactivo' | 'Archivado';
   createdAt?: any;
   archivedAt?: any;
@@ -110,9 +113,23 @@ export type Document = {
   promoterId?: string;
   supplierId?: string;
   downloadURL?: string;
+  storagePath?: string;
   uploadDate?: string; // ISO String YYYY-MM-DD
   status?: 'Activo' | 'Archivado';
   archivedAt?: any;
+  ai?: {
+    status?: 'analyzing' | 'proposed' | 'applied' | 'failed';
+    proposal?: any;
+    audit?: {
+      proposedAt?: any;
+      proposedBy?: string;
+      approvedAt?: any;
+      approvedBy?: string;
+    };
+    error?: {
+      message?: string;
+    };
+  };
 };
 
 export type Tax = {

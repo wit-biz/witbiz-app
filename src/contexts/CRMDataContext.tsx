@@ -15,7 +15,6 @@ import {
     type AppUser,
     type UserRole,
     type AppPermissions,
-    type SubService,
     type ClientRequirement,
     type WorkflowStage,
     type SubStage,
@@ -41,10 +40,15 @@ import { initialRoles } from '@/lib/data';
 
 type AnyStage = WorkflowStage | SubStage | SubSubStage;
 
+type NewTaskInput = Omit<Task, 'id' | 'status' | 'dueDate'> & {
+  dueDate?: string | Date;
+};
+
 interface CRMContextType {
   currentUser: AuthenticatedUser | null;
   isLoadingCurrentUser: boolean;
   teamMembers: AppUser[];
+  isLoadingTeamMembers: boolean;
   roles: UserRole[];
   setRoles: (roles: UserRole[]) => void;
 
@@ -59,7 +63,7 @@ interface CRMContextType {
   
   tasks: Task[];
   isLoadingTasks: boolean;
-  addTask: (newTaskData: Omit<Task, 'id' | 'status' >) => Promise<Task | null>;
+  addTask: (newTaskData: NewTaskInput) => Promise<Task | null>;
   updateTask: (taskId: string, updates: Partial<Task>) => Promise<boolean>;
   deleteTask: (taskId: string, permanent?: boolean) => Promise<boolean>;
   restoreTask: (taskId: string) => Promise<boolean>;
@@ -358,7 +362,7 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
         return true;
     };
     
-    const addTask = async (newTaskData: Omit<Task, 'id' | 'status'>): Promise<Task | null> => {
+    const addTask = async (newTaskData: NewTaskInput): Promise<Task | null> => {
         if (!currentUser || !tasksCollection) return null;
         const client = clients.find(c => c.id === newTaskData.clientId);
         if (!client) return null;
@@ -376,7 +380,7 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
             const service = serviceWorkflows.find(s => s.id === subId);
             if (!service) return false;
             return getAllStages(service.id).some(stage => stage.actions.some(action => action.title === newTaskData.title));
-        });
+        }) || '';
 
         const assignedUserId = newTaskData.assignedToId || currentUser.uid;
         const assignedUser = teamMembers.find(m => m.id === assignedUserId);
@@ -386,7 +390,7 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
             dueDate: finalDueDate,
             status: 'Pendiente' as const, 
             clientName: client.name,
-            serviceId: serviceId,
+            serviceId: serviceId || '',
             assignedToId: assignedUser?.id || currentUser.uid,
             assignedToName: assignedUser?.name || currentUser.displayName || 'Usuario Actual',
             assignedToPhotoURL: assignedUser?.photoURL || currentUser.photoURL || '',
@@ -401,17 +405,33 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
     
     const updateTask = async (taskId: string, updates: Partial<Task>): Promise<boolean> => {
         if (!tasksCollection) return false;
-        const docRef = doc(tasksCollection, taskId);
-        setDocumentNonBlocking(docRef, updates, { merge: true });
+        
+        const currentTask = tasks.find(t => t.id === taskId);
+        const taskGroupId = (currentTask as any)?.taskGroupId;
+        
+        // If task has a group, update all tasks in the group
+        if (taskGroupId) {
+            const groupTasks = tasks.filter(t => (t as any).taskGroupId === taskGroupId);
+            for (const groupTask of groupTasks) {
+                const docRef = doc(tasksCollection, groupTask.id);
+                // Don't update assignedTo fields - each task keeps its own assignee
+                const { assignedToId, assignedToName, assignedToPhotoURL, ...sharedUpdates } = updates as any;
+                setDocumentNonBlocking(docRef, sharedUpdates, { merge: true });
+            }
+            addLog('task_updated', taskId, 'task', currentTask?.title);
+        } else {
+            const docRef = doc(tasksCollection, taskId);
+            setDocumentNonBlocking(docRef, updates, { merge: true });
+        }
         
         if (updates.status === 'Completada') {
-            const completedTask = { ...tasks.find(t => t.id === taskId), ...updates } as Task | undefined;
+            const completedTask = { ...currentTask, ...updates } as Task | undefined;
             if (completedTask) {
                 addLog('task_completed', taskId, 'task', completedTask.title);
                 await checkAndAdvanceWorkflow(completedTask.clientId);
             }
         } else {
-            const taskName = tasks.find(t => t.id === taskId)?.title || updates.title;
+            const taskName = currentTask?.title || updates.title;
             addLog('task_updated', taskId, 'task', taskName);
         }
         return true;
@@ -494,21 +514,52 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
 
     const deleteTask = async (taskId: string, permanent: boolean = false): Promise<boolean> => {
         if (!tasksCollection) return false;
-        const docRef = doc(tasksCollection, taskId);
-        const taskName = tasks.find(t => t.id === taskId)?.title;
-        if (permanent) {
-            deleteDocumentNonBlocking(docRef);
-            addLog('task_deleted_permanently', taskId, 'task', taskName);
+        
+        const currentTask = tasks.find(t => t.id === taskId);
+        const taskGroupId = (currentTask as any)?.taskGroupId;
+        const taskName = currentTask?.title;
+        
+        // If task has a group, delete/archive all tasks in the group
+        if (taskGroupId) {
+            const groupTasks = tasks.filter(t => (t as any).taskGroupId === taskGroupId);
+            for (const groupTask of groupTasks) {
+                const docRef = doc(tasksCollection, groupTask.id);
+                if (permanent) {
+                    deleteDocumentNonBlocking(docRef);
+                } else {
+                    setDocumentNonBlocking(docRef, { status: 'Archivado', archivedAt: serverTimestamp() }, { merge: true });
+                }
+            }
+            addLog(permanent ? 'task_deleted_permanently' : 'task_updated', taskId, 'task', taskName);
         } else {
-            setDocumentNonBlocking(docRef, { status: 'Archivado', archivedAt: serverTimestamp() }, { merge: true });
+            const docRef = doc(tasksCollection, taskId);
+            if (permanent) {
+                deleteDocumentNonBlocking(docRef);
+                addLog('task_deleted_permanently', taskId, 'task', taskName);
+            } else {
+                setDocumentNonBlocking(docRef, { status: 'Archivado', archivedAt: serverTimestamp() }, { merge: true });
+            }
         }
         return true;
     };
 
     const restoreTask = async (taskId: string): Promise<boolean> => {
         if (!tasksCollection) return false;
-        const docRef = doc(tasksCollection, taskId);
-        setDocumentNonBlocking(docRef, { status: 'Pendiente', archivedAt: undefined }, { merge: true });
+        
+        const currentTask = tasks.find(t => t.id === taskId);
+        const taskGroupId = (currentTask as any)?.taskGroupId;
+        
+        // If task has a group, restore all tasks in the group
+        if (taskGroupId) {
+            const groupTasks = tasks.filter(t => (t as any).taskGroupId === taskGroupId);
+            for (const groupTask of groupTasks) {
+                const docRef = doc(tasksCollection, groupTask.id);
+                setDocumentNonBlocking(docRef, { status: 'Pendiente', archivedAt: undefined }, { merge: true });
+            }
+        } else {
+            const docRef = doc(tasksCollection, taskId);
+            setDocumentNonBlocking(docRef, { status: 'Pendiente', archivedAt: undefined }, { merge: true });
+        }
         return true;
     };
 
@@ -534,7 +585,8 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
                 ...cleanData,
                 status: 'Activo' as const,
                 uploadedAt: serverTimestamp(),
-                downloadURL: downloadURL
+                downloadURL: downloadURL,
+                storagePath: filePath,
             };
 
             const docRef = await addDocumentNonBlocking(documentsCollection, newDoc);
@@ -866,7 +918,7 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
     }, [user, userProfile, isUserLoading, roles]);
     
     const value = useMemo(() => ({
-        currentUser, isLoadingCurrentUser: isUserLoading || isLoadingUserProfile, teamMembers, roles, setRoles,
+        currentUser, isLoadingCurrentUser: isUserLoading || isLoadingUserProfile, teamMembers, isLoadingTeamMembers, roles, setRoles,
         clients, isLoadingClients, 
         addClient, updateClient, deleteClient, restoreClient,
         getClientById: (id: string) => clients?.find(c => c.id === id),
@@ -880,10 +932,10 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
         addDocument,
         updateDocument,
         deleteDocument, restoreDocument,
-        getDocumentsByClientId: (id) => documents.filter(d => d.clientId === id),
-        getDocumentsByServiceId: (id) => documents.filter(d => d.serviceId === id),
-        getDocumentsByPromoterId: (id) => documents.filter(d => d.promoterId === id),
-        getDocumentsBySupplierId: (id) => documents.filter(d => d.supplierId === id),
+        getDocumentsByClientId: (id: string) => documents.filter(d => d.clientId === id),
+        getDocumentsByServiceId: (id: string) => documents.filter(d => d.serviceId === id),
+        getDocumentsByPromoterId: (id: string) => documents.filter(d => d.promoterId === id),
+        getDocumentsBySupplierId: (id: string) => documents.filter(d => d.supplierId === id),
 
         notes, isLoadingNotes,
         addNote,

@@ -32,18 +32,17 @@ export function formatTimeString(timeString?: string): string {
 }
 
 // Handles both 'YYYY-MM-DD' and 'DD/MM/YYYY' and date objects
+// Returns date in LOCAL timezone at midnight for correct comparisons
 export function parseDateString(dateString: string | Date): Date | null {
     if (!dateString) return null;
 
     if (dateString instanceof Date) {
-        // If it's already a Date object, just return it.
-        // Create a new Date object to avoid potential mutation issues.
-        return new Date(dateString);
+        const d = new Date(dateString);
+        d.setHours(0, 0, 0, 0);
+        return d;
     }
 
-    // Ensure it's a string before calling split
     if (typeof dateString !== 'string') {
-        // If for any reason it's not a string or Date, return null
         return null;
     }
 
@@ -51,8 +50,8 @@ export function parseDateString(dateString: string | Date): Date | null {
     let parts = dateString.split('-');
     if (parts.length === 3 && parts[0].length === 4) {
         const [year, month, day] = parts.map(Number);
-        // Using UTC to prevent timezone shifts.
-        const date = new Date(Date.UTC(year, month - 1, day));
+        // Use LOCAL timezone, not UTC, for correct date comparisons
+        const date = new Date(year, month - 1, day, 0, 0, 0, 0);
         if (!isNaN(date.getTime())) return date;
     }
     
@@ -60,17 +59,16 @@ export function parseDateString(dateString: string | Date): Date | null {
     parts = dateString.split('/');
     if (parts.length === 3) {
         const [day, month, year] = parts.map(Number);
-         // Using UTC to prevent timezone shifts.
-        const date = new Date(Date.UTC(year, month - 1, day));
+        // Use LOCAL timezone
+        const date = new Date(year, month - 1, day, 0, 0, 0, 0);
         if (!isNaN(date.getTime())) return date;
     }
     
-    // Fallback for other potential Date.parse compatible formats
+    // Fallback
     const date = new Date(dateString);
     if (!isNaN(date.getTime())) {
-      // It might be off by one day due to timezone, so let's adjust to UTC
-      const userTimezoneOffset = date.getTimezoneOffset() * 60000;
-      return new Date(date.getTime() + userTimezoneOffset);
+      date.setHours(0, 0, 0, 0);
+      return date;
     }
 
     return null;

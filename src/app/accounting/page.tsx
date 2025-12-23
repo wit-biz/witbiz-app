@@ -183,7 +183,7 @@ export default function AccountingPage() {
 
   const trialBalanceData = useMemo(() => {
     const balances = allCategories.reduce((acc, category) => {
-        if(category.type === 'Transferencia') return acc; // Ignore internal transfers for trial balance
+        if((category.type as string) === 'Transferencia') return acc; // Ignore internal transfers for trial balance
         const total = filteredTransactions
             .filter(t => t.categoryId === category.id)
             .reduce((sum, t) => sum + Math.abs(t.amount), 0);
@@ -229,7 +229,7 @@ export default function AccountingPage() {
       const totalRevenue = Object.values(revenueByCategory).reduce((sum, amount) => sum + amount, 0);
 
       const expensesByCategory = filteredTransactions
-          .filter(t => t.type === 'expense' && (categories || []).find(c => c.id === t.categoryId)?.type !== 'Transferencia')
+          .filter(t => t.type === 'expense' && ((categories || []).find(c => c.id === t.categoryId)?.type as string) !== 'Transferencia')
           .reduce((acc, t) => {
               const categoryName = (categories || []).find(c => c.id === t.categoryId)?.name || 'Desconocido';
               acc[categoryName] = (acc[categoryName] || 0) + Math.abs(t.amount);

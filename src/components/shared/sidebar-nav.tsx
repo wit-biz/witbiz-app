@@ -35,7 +35,7 @@ import {
 import { cn } from "@/lib/utils";
 import React from "react";
 import { useCRMData } from "@/contexts/CRMDataContext";
-import { NavItem } from "@/lib/types";
+import { type AppPermissions, NavItem } from "@/lib/types";
 import { navItems as navData } from "@/lib/data";
 
 const icons: { [key: string]: LucideIcon } = {
@@ -66,13 +66,13 @@ export function SidebarNav() {
   const { currentUser, isLoadingCurrentUser } = useCRMData();
 
   const navItems: NavItem[] = [
-    { href: '/', label: 'Inicio', icon: 'LayoutDashboard', exactMatch: true, requiredPermission: 'dashboard_view' },
+    { href: '/', label: 'Inicio', icon: 'LayoutDashboard', exactMatch: true, requiredPermission: 'dashboard_view' as keyof AppPermissions },
     { href: '/contacts', label: 'Base de Datos', icon: 'Database' },
-    { href: '/tasks', label: 'Tareas', icon: 'ListTodo', requiredPermission: 'tasks_view' },
-    { href: '/crm', label: 'CRM', icon: 'Workflow', requiredPermission: 'crm_view' },
-    { href: '/services', label: 'Servicios', icon: 'Briefcase', requiredPermission: 'services_view' },
-    { href: '/accounting', label: 'Contabilidad', icon: 'DollarSign', requiredPermission: 'accounting_view' },
-    { href: '/intelligence', label: 'Centro de inteligencia', icon: 'BarChartIcon', requiredPermission: 'intelligence_view' },
+    { href: '/tasks', label: 'Tareas del Equipo', icon: 'ListTodo', requiredPermission: 'tasks_view' as keyof AppPermissions },
+    { href: '/crm', label: 'CRM', icon: 'Workflow', requiredPermission: 'crm_view' as keyof AppPermissions },
+    { href: '/services', label: 'Servicios', icon: 'Briefcase', requiredPermission: 'services_view' as keyof AppPermissions },
+    { href: '/accounting', label: 'Contabilidad', icon: 'DollarSign', requiredPermission: 'accounting_view' as keyof AppPermissions },
+    { href: '/intelligence', label: 'Centro de inteligencia', icon: 'BarChartIcon', requiredPermission: 'intelligence_view' as keyof AppPermissions },
   ].map(item => ({
       ...item,
       icon: icons[item.icon as string] || LayoutDashboard

@@ -15,7 +15,8 @@ import {
   DialogClose,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Edit, Trash, CheckCircle, Loader2, PlusCircle, UploadCloud, Calendar as CalendarIcon, Save, History, Redo, MessageSquare, MapPin } from 'lucide-react';
+import { Edit, Trash, CheckCircle, Loader2, PlusCircle, UploadCloud, Calendar as CalendarIcon, Save, History, Redo, MessageSquare, MapPin, Navigation, ExternalLink } from 'lucide-react';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Task, Client, SubTask } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
@@ -25,8 +26,9 @@ import { parseDateString, formatTimeString, cn } from '@/lib/utils';
 import { useCRMData } from '@/contexts/CRMDataContext';
 import { useDialogs } from '@/contexts/DialogsContext';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Input } from '../ui/input';
 import { Textarea } from '../ui/textarea';
+import { Input } from '../ui/input';
+import { Label } from '../ui/label';
 import { Popover, PopoverTrigger, PopoverContent } from '../ui/popover';
 import { Calendar } from '../ui/calendar';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
@@ -69,10 +71,31 @@ export function TaskDetailDialog({
   onDeleteTask,
 }: TaskDetailDialogProps) {
   const { toast } = useToast();
-  const { clients, teamMembers, addNote } = useCRMData();
+  const { clients, teamMembers, addNote, tasks: allTasks } = useCRMData();
   const { setIsSmartUploadDialogOpen } = useDialogs();
   
   const [task, setTask] = useState(initialTask);
+  
+  // Get all assignees if this is a group task
+  const groupAssignees = React.useMemo(() => {
+    if (!task || !allTasks) return [];
+    const taskGroupId = (task as any).taskGroupId;
+    if (!taskGroupId) return [{ id: task.assignedToId, name: task.assignedToName, photoURL: task.assignedToPhotoURL }];
+    
+    const groupTasks = allTasks.filter(t => (t as any).taskGroupId === taskGroupId);
+    const assignees = groupTasks.map(t => ({
+      id: t.assignedToId,
+      name: t.assignedToName,
+      photoURL: t.assignedToPhotoURL
+    }));
+    
+    // Remove duplicates by id
+    const uniqueAssignees = assignees.filter((assignee, index, self) => 
+      index === self.findIndex(a => a.id === assignee.id)
+    );
+    
+    return uniqueAssignees;
+  }, [task, allTasks]);
   const [isEditing, setIsEditing] = useState(false);
   const [isPostponing, setIsPostponing] = useState(false);
   const [isAddingNote, setIsAddingNote] = useState(false);
@@ -460,39 +483,70 @@ export function TaskDetailDialog({
                     <div className="flex items-center gap-2">
                         <p className="font-semibold">Asignada a:</p>
                         <div className="flex items-center gap-2">
-                            <Avatar className="h-6 w-6">
-                                <AvatarImage src={task.assignedToPhotoURL} />
-                                <AvatarFallback>{task.assignedToName?.charAt(0)}</AvatarFallback>
-                            </Avatar>
-                            <p>{task.assignedToName}</p>
+                            <div className="flex -space-x-2">
+                                {groupAssignees.map((assignee, idx) => (
+                                    <Tooltip key={assignee.id || idx}>
+                                        <TooltipTrigger asChild>
+                                            <Avatar className="h-6 w-6 border-2 border-background">
+                                                <AvatarImage src={assignee.photoURL} />
+                                                <AvatarFallback>{assignee.name?.charAt(0)}</AvatarFallback>
+                                            </Avatar>
+                                        </TooltipTrigger>
+                                        <TooltipContent>
+                                            <p>{assignee.name}</p>
+                                        </TooltipContent>
+                                    </Tooltip>
+                                ))}
+                            </div>
+                            {groupAssignees.length > 1 ? (
+                                <p className="text-sm text-muted-foreground">
+                                    {groupAssignees.map(a => a.name).join(', ')}
+                                </p>
+                            ) : (
+                                <p>{task.assignedToName}</p>
+                            )}
                         </div>
                     </div>
                     {task.location && (
                         <div>
                             <p className="font-semibold">Ubicación:</p>
-                            <div className="flex items-center gap-2 text-muted-foreground">
-                                <p>{task.location}</p>
-                                <Tooltip>
-                                    <TooltipTrigger asChild>
-                                        <a href={`https://waze.com/ul?q=${encodeURIComponent(task.location)}`} target="_blank" rel="noopener noreferrer">
-                                            <Button variant="ghost" size="icon" className="h-7 w-7">
-                                                <svg className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0c-4.4 0-8 3.6-8 8 0 6 8 16 8 16s8-10 8-16c0-4.4-3.6-8-8-8zm0 12c-2.2 0-4-1.8-4-4s1.8-4 4-4 4 1.8 4 4-1.8 4-4 4z" /></svg>
-                                            </Button>
+                            <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                    <button className="flex items-center gap-2 text-muted-foreground hover:text-primary transition-colors cursor-pointer group text-left">
+                                        <MapPin className="h-4 w-4 text-primary flex-shrink-0" />
+                                        <span className="underline decoration-dashed underline-offset-2 group-hover:decoration-solid">{task.location}</span>
+                                        <ExternalLink className="h-3 w-3 opacity-0 group-hover:opacity-100 transition-opacity" />
+                                    </button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="start" className="w-56">
+                                    <DropdownMenuItem asChild>
+                                        <a 
+                                            href={`https://waze.com/ul?q=${encodeURIComponent(task.location)}`} 
+                                            target="_blank" 
+                                            rel="noopener noreferrer"
+                                            className="flex items-center gap-2 cursor-pointer"
+                                        >
+                                            <svg className="h-4 w-4 text-[#33CCFF]" viewBox="0 0 24 24" fill="currentColor">
+                                                <path d="M20.54 6.63c-.67-3.19-4.41-5.56-9.54-5.56-5.13 0-8.87 2.37-9.54 5.56-.42 2 .22 4.02 1.79 5.65.17.18.36.37.57.58.09.09.19.2.3.32.69.72 1.35 1.35 1.7 1.77.79.93 1.56 2.11 2.18 3.33.17.33.52.54.9.54h4.2c.38 0 .73-.21.9-.54.62-1.22 1.39-2.4 2.18-3.33.35-.42 1.01-1.05 1.7-1.77.11-.12.21-.23.3-.32.21-.21.4-.4.57-.58 1.57-1.63 2.21-3.65 1.79-5.65zM8.5 10c-.83 0-1.5-.67-1.5-1.5S7.67 7 8.5 7s1.5.67 1.5 1.5S9.33 10 8.5 10zm7 0c-.83 0-1.5-.67-1.5-1.5S14.67 7 15.5 7s1.5.67 1.5 1.5-.67 1.5-1.5 1.5z"/>
+                                            </svg>
+                                            <span>Abrir en Waze</span>
                                         </a>
-                                    </TooltipTrigger>
-                                    <TooltipContent><p>Abrir en Waze</p></TooltipContent>
-                                </Tooltip>
-                                <Tooltip>
-                                    <TooltipTrigger asChild>
-                                        <a href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(task.location)}`} target="_blank" rel="noopener noreferrer">
-                                             <Button variant="ghost" size="icon" className="h-7 w-7">
-                                                <MapPin className="h-4 w-4" />
-                                            </Button>
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem asChild>
+                                        <a 
+                                            href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(task.location)}`} 
+                                            target="_blank" 
+                                            rel="noopener noreferrer"
+                                            className="flex items-center gap-2 cursor-pointer"
+                                        >
+                                            <svg className="h-4 w-4 text-[#EA4335]" viewBox="0 0 24 24" fill="currentColor">
+                                                <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
+                                            </svg>
+                                            <span>Abrir en Google Maps</span>
                                         </a>
-                                    </TooltipTrigger>
-                                    <TooltipContent><p>Abrir en Google Maps</p></TooltipContent>
-                                </Tooltip>
-                            </div>
+                                    </DropdownMenuItem>
+                                </DropdownMenuContent>
+                            </DropdownMenu>
                         </div>
                     )}
                     <div>

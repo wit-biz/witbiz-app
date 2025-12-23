@@ -72,7 +72,7 @@ export function AddPromoterDialog({ isOpen, onClose, promoter, onAdd, onSave }: 
             name: promoter?.name || '',
             email: promoter?.email || '',
             phone: promoter?.phone || '',
-            status: promoter?.status || 'Activo',
+            status: promoter?.status === 'Archivado' ? 'Activo' : (promoter?.status || 'Activo'),
             accessCode: promoter?.accessCode || generateAccessCode(),
         });
     }

@@ -32,6 +32,19 @@ interface DialogsContextType {
 
   preselectedServiceId: string | null;
   setPreselectedServiceId: (serviceId: string | null) => void;
+  
+  preselectedClientId: string | null;
+  setPreselectedClientId: (clientId: string | null) => void;
+  
+  preselectedSupplierId: string | null;
+  setPreselectedSupplierId: (supplierId: string | null) => void;
+  
+  preselectedPromoterId: string | null;
+  setPreselectedPromoterId: (promoterId: string | null) => void;
+  
+  openSmartUploadForSupplier: (supplierId: string) => void;
+  openSmartUploadForClient: (clientId: string) => void;
+  openSmartUploadForPromoter: (promoterId: string) => void;
 }
 
 const DialogsContext = createContext<DialogsContextType | undefined>(undefined);
@@ -45,6 +58,9 @@ export function DialogsProvider({ children }: { children: ReactNode }) {
   const [isAddSupplierDialogOpen, setIsAddSupplierDialogOpen] = useState(false);
 
   const [preselectedServiceId, setPreselectedServiceId] = useState<string | null>(null);
+  const [preselectedClientId, setPreselectedClientId] = useState<string | null>(null);
+  const [preselectedSupplierId, setPreselectedSupplierId] = useState<string | null>(null);
+  const [preselectedPromoterId, setPreselectedPromoterId] = useState<string | null>(null);
   const router = useRouter();
   const { clients, addTask, addPromoter, addSupplier } = useCRMData();
 
@@ -59,6 +75,21 @@ export function DialogsProvider({ children }: { children: ReactNode }) {
   const handleAddSupplier = async (data: any) => {
       await addSupplier(data);
   }
+
+  const openSmartUploadForSupplier = (supplierId: string) => {
+    setPreselectedSupplierId(supplierId);
+    setIsSmartUploadDialogOpen(true);
+  };
+  
+  const openSmartUploadForClient = (clientId: string) => {
+    setPreselectedClientId(clientId);
+    setIsSmartUploadDialogOpen(true);
+  };
+  
+  const openSmartUploadForPromoter = (promoterId: string) => {
+    setPreselectedPromoterId(promoterId);
+    setIsSmartUploadDialogOpen(true);
+  };
 
   const value = useMemo(() => ({
     isSmartUploadDialogOpen,
@@ -75,11 +106,23 @@ export function DialogsProvider({ children }: { children: ReactNode }) {
     setIsAddSupplierDialogOpen,
     preselectedServiceId,
     setPreselectedServiceId,
-  }), [isSmartUploadDialogOpen, isAddClientDialogOpen, editingClient, preselectedServiceId, isAddTaskDialogOpen, isAddPromoterDialogOpen, isAddSupplierDialogOpen]);
+    preselectedClientId,
+    setPreselectedClientId,
+    preselectedSupplierId,
+    setPreselectedSupplierId,
+    preselectedPromoterId,
+    setPreselectedPromoterId,
+    openSmartUploadForSupplier,
+    openSmartUploadForClient,
+    openSmartUploadForPromoter,
+  }), [isSmartUploadDialogOpen, isAddClientDialogOpen, editingClient, preselectedServiceId, preselectedClientId, preselectedSupplierId, preselectedPromoterId, isAddTaskDialogOpen, isAddPromoterDialogOpen, isAddSupplierDialogOpen]);
 
   const handleSmartUploadClose = (isOpen: boolean) => {
       if(!isOpen) {
           setPreselectedServiceId(null);
+          setPreselectedClientId(null);
+          setPreselectedSupplierId(null);
+          setPreselectedPromoterId(null);
       }
       setIsSmartUploadDialogOpen(isOpen);
   }
@@ -102,6 +145,9 @@ export function DialogsProvider({ children }: { children: ReactNode }) {
                 router.push(`/contacts?openClient=${client.id}`);
             }}
             preselectedServiceId={preselectedServiceId || undefined}
+            preselectedClientId={preselectedClientId || undefined}
+            preselectedSupplierId={preselectedSupplierId || undefined}
+            preselectedPromoterId={preselectedPromoterId || undefined}
         />
        <AddTaskDialog
           isOpen={isAddTaskDialogOpen}

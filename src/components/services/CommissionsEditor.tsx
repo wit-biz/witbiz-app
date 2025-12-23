@@ -36,14 +36,14 @@ export function ServiceCommissionsEditor({ initialCommissions, onUpdate, canEdit
         onUpdate(updated);
     };
 
-    const handleCommissionChange = (index: number, field: keyof Commission, value: string | number) => {
+    const handleCommissionChange = (index: number, field: 'name' | 'rate', value: string | number) => {
         const updated = [...localCommissions];
         const commissionToUpdate = { ...updated[index] };
 
         if (field === 'rate') {
-            commissionToUpdate[field] = Number(value);
+            commissionToUpdate.rate = Number(value);
         } else {
-            commissionToUpdate[field] = value as string;
+            commissionToUpdate.name = String(value);
         }
         updated[index] = commissionToUpdate;
         setLocalCommissions(updated);

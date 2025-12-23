@@ -20,19 +20,77 @@ import { Task } from "@/lib/types";
 import { AddTaskDialog } from "@/components/shared/AddTaskDialog";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
+// Tipo extendido para tareas agrupadas
+interface GroupedTask extends Task {
+  assignees?: Array<{ id: string; name: string; photoURL?: string }>;
+}
 
-const MemoizedTaskItemDisplay = React.memo(function TaskItemDisplay({ task, icon: Icon, iconColor = "text-gray-500", showDate = true, isClient, onClickHandler }: { task: Task; icon?: React.ElementType; iconColor?: string, showDate?: boolean, isClient: boolean, onClickHandler: (task: Task) => void }) {
+// Función para agrupar tareas por taskGroupId
+function groupTasksByGroupId(tasks: Task[]): GroupedTask[] {
+  const groupMap = new Map<string, GroupedTask>();
+  const result: GroupedTask[] = [];
+  
+  for (const task of tasks) {
+    const groupId = (task as any).taskGroupId;
+    
+    if (groupId) {
+      if (groupMap.has(groupId)) {
+        // Agregar asignado al grupo existente
+        const existingGroup = groupMap.get(groupId)!;
+        if (!existingGroup.assignees?.find(a => a.id === task.assignedToId)) {
+          existingGroup.assignees?.push({
+            id: task.assignedToId,
+            name: task.assignedToName,
+            photoURL: task.assignedToPhotoURL
+          });
+        }
+      } else {
+        // Crear nuevo grupo
+        const groupedTask: GroupedTask = {
+          ...task,
+          assignees: [{
+            id: task.assignedToId,
+            name: task.assignedToName,
+            photoURL: task.assignedToPhotoURL
+          }]
+        };
+        groupMap.set(groupId, groupedTask);
+        result.push(groupedTask);
+      }
+    } else {
+      // Tarea individual (sin grupo)
+      result.push({
+        ...task,
+        assignees: [{
+          id: task.assignedToId,
+          name: task.assignedToName,
+          photoURL: task.assignedToPhotoURL
+        }]
+      });
+    }
+  }
+  
+  return result;
+}
+
+const MemoizedTaskItemDisplay = React.memo(function TaskItemDisplay({ task, icon: Icon, iconColor = "text-gray-500", showDate = true, isClient, onClickHandler, isTeamTask = false }: { task: GroupedTask; icon?: React.ElementType; iconColor?: string, showDate?: boolean, isClient: boolean, onClickHandler: (task: Task) => void, isTeamTask?: boolean }) {
   const taskDueDate = parseDateString(task.dueDate);
+  const assignees = task.assignees || [{ id: task.assignedToId, name: task.assignedToName, photoURL: task.assignedToPhotoURL }];
+  const isGroupTask = assignees.length > 1;
+  
   return ( 
     <div 
-      className="flex items-start gap-3 p-3 bg-background hover:bg-secondary/50 rounded-md border cursor-pointer transition-colors" 
+      className={cn(
+        "flex items-start gap-3 p-3 bg-background hover:bg-secondary/50 rounded-md border cursor-pointer transition-colors",
+        (isTeamTask || isGroupTask) && "border-l-4 border-l-purple-500 bg-purple-50/30 dark:bg-purple-950/20"
+      )}
       onClick={() => onClickHandler(task)} 
       role="button" 
       tabIndex={0} 
       onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') onClickHandler(task); }} 
       aria-label={`Ver detalles de la tarea: ${task.title}`} 
     > 
-      {Icon && <Icon className={`h-5 w-5 mt-1 flex-shrink-0 ${iconColor}`} />}
+      {Icon && <Icon className={`h-5 w-5 mt-1 flex-shrink-0 ${(isTeamTask || isGroupTask) ? "text-purple-500" : iconColor}`} />}
       <div className="flex-grow min-w-0"> 
         <p className="font-semibold text-card-foreground truncate">{task.title}</p> 
         <div className="flex items-center gap-2 text-xs text-muted-foreground mt-1">
@@ -41,19 +99,28 @@ const MemoizedTaskItemDisplay = React.memo(function TaskItemDisplay({ task, icon
                 <Briefcase className="h-3 w-3" /> {task.clientName} 
               </span> 
             )} 
-            {task.clientName && task.assignedToName && <span className="text-muted-foreground/50">|</span>}
-            {task.assignedToName && (
-                <Tooltip>
-                    <TooltipTrigger asChild>
-                        <Avatar className="h-4 w-4">
-                            <AvatarImage src={task.assignedToPhotoURL} />
-                            <AvatarFallback>{task.assignedToName.charAt(0)}</AvatarFallback>
+            {task.clientName && assignees.length > 0 && <span className="text-muted-foreground/50">|</span>}
+            {assignees.length > 0 && (
+              <div className="flex items-center gap-1">
+                <div className="flex -space-x-1">
+                  {assignees.slice(0, 4).map((assignee, idx) => (
+                    <Tooltip key={assignee.id || idx}>
+                      <TooltipTrigger asChild>
+                        <Avatar className="h-5 w-5 border-2 border-background">
+                          <AvatarImage src={assignee.photoURL} />
+                          <AvatarFallback className="text-[9px]">{assignee.name?.charAt(0)}</AvatarFallback>
                         </Avatar>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                        <p>Asignado a: {task.assignedToName}</p>
-                    </TooltipContent>
-                </Tooltip>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>{assignee.name}</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  ))}
+                </div>
+                {assignees.length > 4 && (
+                  <span className="text-xs text-muted-foreground">+{assignees.length - 4}</span>
+                )}
+              </div>
             )}
         </div>
         {showDate && taskDueDate && isClient && ( 
@@ -113,7 +180,15 @@ export default function TasksPage() {
     endOfWeek.setDate(today.getDate() + 7);
     endOfWeek.setHours(23, 59, 59, 999);
   
-    const userTasks = allTasks.filter(task => task && task.assignedToId === currentUser.uid);
+    // Tareas asignadas al usuario O creadas por el usuario para otros
+    const userTasks = allTasks.filter(task => {
+      if (!task) return false;
+      // Tareas asignadas a mí
+      if (task.assignedToId === currentUser.uid) return true;
+      // Tareas que yo creé para otros (tienen createdById)
+      if ((task as any).createdById === currentUser.uid && task.assignedToId !== currentUser.uid) return true;
+      return false;
+    });
   
     const allPostponed = userTasks.filter(task => task.status === 'Pospuesta')
         .sort((a,b) => (parseDateString(a.reactivationDate || a.dueDate)?.getTime() || 0) - (parseDateString(b.reactivationDate || b.dueDate)?.getTime() || 0));
@@ -180,7 +255,16 @@ export default function TasksPage() {
         return dateA.getTime() - dateB.getTime() || (a.dueTime || "23:59").localeCompare(b.dueTime || "23:59");
       });
   
-    return { overdueTasks: overdue, postponedTasks: postponed, todayTasks: forToday, upcomingWeekTasks: upcomingThisWeek, postponedTasks10: postponed10, postponedTasks20: postponed20, postponedTasks30: postponed30 };
+    // Agrupar tareas por taskGroupId antes de retornar
+    return { 
+      overdueTasks: groupTasksByGroupId(overdue), 
+      postponedTasks: groupTasksByGroupId(postponed), 
+      todayTasks: groupTasksByGroupId(forToday), 
+      upcomingWeekTasks: groupTasksByGroupId(upcomingThisWeek), 
+      postponedTasks10: groupTasksByGroupId(postponed10), 
+      postponedTasks20: groupTasksByGroupId(postponed20), 
+      postponedTasks30: groupTasksByGroupId(postponed30) 
+    };
   }, [allTasks, currentClientDate, currentUser]);
     
   
@@ -234,34 +318,34 @@ export default function TasksPage() {
       postponed_highlight: 'calendar-day--postponed-bg'
   };
   
+  // Calendario: mostrar TODAS las tareas del equipo para la fecha seleccionada (agrupadas)
   const tasksForSelectedDate = useMemo(() => {
-    if (!selectedDate || !Array.isArray(allTasks) || !currentUser) return [];
+    if (!selectedDate || !Array.isArray(allTasks)) return [];
 
     const selectedDayStart = new Date(selectedDate);
     selectedDayStart.setHours(0, 0, 0, 0);
 
-    return allTasks.filter(task => {
-        if (!task || task.status === 'Completada' || task.assignedToId !== currentUser.uid) {
-            return false;
-        }
+    const filtered = allTasks.filter(task => {
+        if (!task || task.status === 'Completada') return false;
 
         const taskDueDate = parseDateString(task.dueDate);
         if (!taskDueDate) return false;
         
-        // Normalize task due date to the start of the day for comparison
         const taskDayStart = new Date(taskDueDate);
         taskDayStart.setHours(0, 0, 0, 0);
         
         return taskDayStart.getTime() === selectedDayStart.getTime();
     }).sort((a,b) => (a.dueTime || "23:59").localeCompare(b.dueTime || "23:59"));
-  }, [selectedDate, allTasks, currentUser]);
+    
+    return groupTasksByGroupId(filtered);
+  }, [selectedDate, allTasks]);
   
   const handleTaskClick = useCallback((task: Task) => { setSelectedTaskDetail(task); setIsDetailDialogOpen(true); }, []);
   
   const taskSections = [
     { id: "upcoming-tasks", title: "Próximas Tareas", tasks: upcomingWeekTasks, icon: ListTodo, color: "text-blue-500", badgeClass: "bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-300", emptyMsg: "No hay más tareas para esta semana." },
     { id: "today-tasks", title: "Tareas Para Hoy", tasks: todayTasks, icon: CheckCircle2, color: "text-green-500", badgeClass: "bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300", emptyMsg: "No hay tareas programadas para hoy." },
-    { id: "overdue-tasks", title: "Tareas Atrasadas", tasks: overdueTasks, icon: AlertTriangle, color: "text-destructive", badgeClass: "bg-destructive text-destructive-foreground", emptyMsg: "¡Ninguna tarea atrasada! Buen trabajo." },
+    { id: "overdue-tasks", title: "Tareas Atrasadas", tasks: overdueTasks, icon: AlertTriangle, color: "text-red-500", badgeClass: "bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-300", emptyMsg: "¡Ninguna tarea atrasada! Buen trabajo." },
     { id: "postponed-tasks", title: "Tareas Pospuestas", tasks: postponedTasks, icon: History, color: "text-amber-500", badgeClass: "bg-amber-100 text-amber-800 dark:bg-amber-900/50 dark:text-amber-300", emptyMsg: "No tienes tareas pospuestas recientemente." }
   ];
 
@@ -286,8 +370,8 @@ export default function TasksPage() {
     <TooltipProvider>
       <div className="flex flex-col min-h-screen">
         <Header
-          title="Mis Tareas"
-          description="Organiza y sigue tus actividades y compromisos diarios y semanales."
+          title="Tareas del Equipo"
+          description="Calendario y gestión de tareas de todo el equipo."
         >
           {canCreateTask && (
             <Button onClick={() => setIsAddTaskDialogOpen(true)}>
@@ -335,7 +419,7 @@ export default function TasksPage() {
                   )}
                 </CardContent> 
               </Card>
-              {selectedDate && ( <Card> <CardHeader> <CardTitle>Tareas para el {isClient ? format(selectedDate, 'PPP', { locale: es }) : '...'}</CardTitle> </CardHeader> <CardContent className="space-y-3"> {tasksForSelectedDate.length > 0 ? ( tasksForSelectedDate.map(task => <MemoizedTaskItemDisplay key={task.id} task={task} showDate={false} icon={Clock} iconColor={task.status === 'Pospuesta' ? 'text-amber-500' : 'text-blue-500'} isClient={isClient} onClickHandler={handleTaskClick} />) ) : ( <div className="text-sm text-muted-foreground p-4 text-center flex flex-col items-center"> <Info className="h-8 w-8 text-muted-foreground mb-2"/> No hay tareas para esta fecha. </div> )} </CardContent> </Card> )}
+              {selectedDate && ( <Card> <CardHeader> <CardTitle>Tareas para el {isClient ? format(selectedDate, 'PPP', { locale: es }) : '...'}</CardTitle> </CardHeader> <CardContent className="space-y-3"> {tasksForSelectedDate.length > 0 ? ( tasksForSelectedDate.map(task => <MemoizedTaskItemDisplay key={task.id} task={task} showDate={false} icon={Clock} iconColor={task.status === 'Pospuesta' ? 'text-amber-500' : 'text-blue-500'} isClient={isClient} onClickHandler={handleTaskClick} isTeamTask={task.assignedToId !== currentUser?.uid} />) ) : ( <div className="text-sm text-muted-foreground p-4 text-center flex flex-col items-center"> <Info className="h-8 w-8 text-muted-foreground mb-2"/> No hay tareas para esta fecha. </div> )} </CardContent> </Card> )}
             </div>
             <div className="lg:col-span-2 space-y-1">
               <Accordion type="single" collapsible className="w-full space-y-4" value={openAccordionItem} onValueChange={handleAccordionChange} >
@@ -355,7 +439,7 @@ export default function TasksPage() {
                         <CardContent className="space-y-3 pt-0 p-4"> 
                           {isLoadingTasks ? (
                              <div className="flex items-center justify-center p-12"><Loader2 className="h-8 w-8 animate-spin text-primary"/></div>
-                          ) : section.tasks.length > 0 ? ( section.tasks.map(task => <MemoizedTaskItemDisplay key={task.id} task={task} icon={section.icon} iconColor={section.color} showDate={section.id !== 'today-tasks'} isClient={isClient} onClickHandler={handleTaskClick} />) ) : ( <div className="text-sm text-muted-foreground p-4 text-center flex flex-col items-center justify-center h-full"> <Info className="h-8 w-8 text-muted-foreground mb-2"/> <p>{section.emptyMsg}</p> </div> )} 
+                          ) : section.tasks.length > 0 ? ( section.tasks.map(task => <MemoizedTaskItemDisplay key={task.id} task={task} icon={section.icon} iconColor={section.color} showDate={section.id !== 'today-tasks'} isClient={isClient} onClickHandler={handleTaskClick} isTeamTask={task.assignedToId !== currentUser?.uid} />) ) : ( <div className="text-sm text-muted-foreground p-4 text-center flex flex-col items-center justify-center h-full"> <Info className="h-8 w-8 text-muted-foreground mb-2"/> <p>{section.emptyMsg}</p> </div> )} 
                           {section.id === 'postponed-tasks' && (
                             <Accordion type="multiple" className="w-full space-y-2 mt-4">
                               {postponedSections.map(pSection => (
@@ -372,7 +456,7 @@ export default function TasksPage() {
                                      </AccordionTrigger>
                                      <AccordionContent>
                                         <CardContent className="space-y-3 pt-0 p-3">
-                                            {pSection.tasks.map(task => <MemoizedTaskItemDisplay key={task.id} task={task} icon={History} iconColor="text-amber-500" showDate isClient={isClient} onClickHandler={handleTaskClick} />)}
+                                            {pSection.tasks.map(task => <MemoizedTaskItemDisplay key={task.id} task={task} icon={History} iconColor="text-amber-500" showDate isClient={isClient} onClickHandler={handleTaskClick} isTeamTask={task.assignedToId !== currentUser?.uid} />)}
                                         </CardContent>
                                      </AccordionContent>
                                   </Card>

@@ -11,7 +11,7 @@ const ChartLegend = RechartsPrimitive.Legend
 
 const ChartTooltip = RechartsPrimitive.Tooltip
 
-const ChartTooltipContent = RechartsPrimitive.Tooltip.Content
+const ChartTooltipContent = (_props: any) => null
 
 const ChartXAxis = RechartsPrimitive.XAxis
 

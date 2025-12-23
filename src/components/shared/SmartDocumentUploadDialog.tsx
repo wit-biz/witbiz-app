@@ -15,10 +15,13 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Loader2, UploadCloud, File, X } from 'lucide-react';
+import { Loader2, UploadCloud, File as FileIcon, X, Sparkles, CheckCircle2 } from 'lucide-react';
 import { useDropzone } from 'react-dropzone';
-import { useCRMData, type DocumentType, type Client } from '@/contexts/CRMDataContext';
+import { useCRMData } from '@/contexts/CRMDataContext';
 import { useToast } from '@/hooks/use-toast';
+import type { Client, Document as AppDocument, DocumentType } from '@/lib/types';
+import { AIProposalModal } from './AIProposalModal';
+import { Checkbox } from '@/components/ui/checkbox';
 
 const documentTypes: DocumentType[] = ["Contrato", "Factura", "Propuesta", "Informe", "Otro"];
 
@@ -46,27 +49,26 @@ export function SmartDocumentUploadDialog({
   const { clients, serviceWorkflows, promoters, suppliers, addClient, addDocument } = useCRMData();
   const { toast } = useToast();
 
-  const [file, setFile] = useState<File | null>(null);
+  const [files, setFiles] = useState<File[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [associationType, setAssociationType] = useState<'client' | 'service' | 'promoter' | 'supplier' | 'none'>('client');
-  const [selectedId, setSelectedId] = useState<string>('');
-  const [documentType, setDocumentType] = useState<DocumentType | 'Otro' | 'Descargable'>('Otro');
-  const [customDocumentType, setCustomDocumentType] = useState('');
-  const [isNewClient, setIsNewClient] = useState(false);
-  const [newClientName, setNewClientName] = useState('');
+  // Removed manual association options - AI will handle associations
+  
+  // AI Analysis state
+  const [enableAIAnalysis, setEnableAIAnalysis] = useState(true);
+  const [showAIModal, setShowAIModal] = useState(false);
+  const [uploadedDocs, setUploadedDocs] = useState<Array<{ id: string; name: string }>>([]);
+  
+  // Upload progress tracking
+  const [uploadProgress, setUploadProgress] = useState<{ current: number; total: number; uploading: boolean }>({ current: 0, total: 0, uploading: false });
   
   const isServiceResourceMode = !!preselectedServiceId;
 
   const resetState = useCallback(() => {
-    setFile(null);
+    setFiles([]);
     setIsSubmitting(false);
-    setAssociationType(preselectedServiceId ? 'service' : 'client');
-    setSelectedId(preselectedClientId || preselectedServiceId || preselectedPromoterId || preselectedSupplierId || '');
-    setDocumentType(preselectedServiceId ? 'Descargable' : 'Otro');
-    setCustomDocumentType('');
-    setIsNewClient(false);
-    setNewClientName('');
-  }, [preselectedClientId, preselectedServiceId, preselectedPromoterId, preselectedSupplierId]);
+    setUploadedDocs([]);
+    setUploadProgress({ current: 0, total: 0, uploading: false });
+  }, []);
 
   const handleDialogChange = (open: boolean) => {
     if (!open) {
@@ -77,122 +79,84 @@ export function SmartDocumentUploadDialog({
   
   useEffect(() => {
       if (isOpen) {
-          if (preselectedClientId) {
-              setAssociationType('client');
-              setSelectedId(preselectedClientId);
-          } else if (preselectedServiceId) {
-              setAssociationType('service');
-              setSelectedId(preselectedServiceId);
-              setDocumentType('Descargable');
-          } else if (preselectedPromoterId) {
-              setAssociationType('promoter');
-              setSelectedId(preselectedPromoterId);
-          } else if (preselectedSupplierId) {
-              setAssociationType('supplier');
-              setSelectedId(preselectedSupplierId);
-          } else {
-              setAssociationType('client'); // Default
-          }
+          setEnableAIAnalysis(true); // Default to AI analysis enabled
       }
-  }, [isOpen, preselectedClientId, preselectedServiceId, preselectedPromoterId, preselectedSupplierId]);
+  }, [isOpen]);
 
   const onDrop = useCallback(async (acceptedFiles: File[]) => {
-    const droppedFile = acceptedFiles[0];
-    if (droppedFile) {
-      setFile(droppedFile);
+    if (acceptedFiles.length > 0) {
+      setFiles(prev => [...prev, ...acceptedFiles]);
     }
   }, []);
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
-    accept: { 'application/pdf': ['.pdf'], 'application/vnd.openxmlformats-officedocument.wordprocessingml.document': ['.docx'], 'image/*': [] },
-    maxFiles: 1,
+    accept: { 
+      'application/pdf': ['.pdf'], 
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document': ['.docx'], 
+      'image/*': [],
+      'application/xml': ['.xml'],
+      'text/xml': ['.xml'],
+    },
+    multiple: true,
   });
   
-  const finalDocumentType = isServiceResourceMode 
-    ? 'Descargable' 
-    : (documentType === 'Otro' ? (customDocumentType.trim() || 'Otro') : documentType);
+  const removeFile = (index: number) => {
+    setFiles(prev => prev.filter((_, i) => i !== index));
+  };
   
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!file) {
-      toast({ variant: "destructive", title: 'Faltan datos', description: 'Por favor, suba un archivo.' });
+  const handleSubmit = async (e?: React.FormEvent) => {
+    e?.preventDefault();
+    if (files.length === 0) {
+      toast({ variant: "destructive", title: 'Faltan datos', description: 'Por favor, suba al menos un archivo.' });
       return;
     }
     
-    let finalClientId: string | undefined = undefined;
-    let finalServiceId: string | undefined = undefined;
-    let finalPromoterId: string | undefined = undefined;
-    let finalSupplierId: string | undefined = undefined;
-
-    if (associationType === 'client' && !isServiceResourceMode) {
-        finalClientId = selectedId === 'new' ? undefined : selectedId;
-    } else if (associationType === 'service') {
-        finalServiceId = selectedId;
-    } else if (associationType === 'promoter') {
-        finalPromoterId = selectedId;
-    } else if (associationType === 'supplier') {
-        finalSupplierId = selectedId;
-    }
-
     setIsSubmitting(true);
     
-    if (isNewClient && associationType === 'client' && !isServiceResourceMode) {
-        if (!newClientName.trim()) {
-             toast({ variant: "destructive", title: 'Faltan datos', description: 'Por favor, ingrese el nombre del nuevo cliente.' });
-             setIsSubmitting(false);
-             return;
-        }
-        const newClient = await addClient({
-            name: newClientName.trim(),
-            owner: '',
-            category: 'General',
-            status: 'Activo',
-            subscribedServiceIds: [],
-        });
-        if (newClient) {
-            finalClientId = newClient.id;
-            onClientAdded?.(newClient);
-        } else {
-            toast({ variant: 'destructive', title: 'Error al crear cliente', description: 'No se pudo crear el nuevo cliente.' });
-            setIsSubmitting(false);
-            return;
-        }
+    // Upload all files without any manual associations
+    const uploadedDocsTemp: Array<{ id: string; name: string }> = [];
+    setUploadProgress({ current: 0, total: files.length, uploading: true });
+    
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
+      setUploadProgress(prev => ({ ...prev, current: i + 1 }));
+      
+      const newDocData: Omit<AppDocument, 'id' | 'uploadedAt' | 'downloadURL'> = {
+          name: file.name,
+          type: 'Otro' as DocumentType, // Default type, AI will suggest better classification
+      };
+
+      const newDoc = await addDocument(newDocData, file);
+      if (newDoc) {
+          onDocumentUploaded?.(newDoc.id);
+          // Add to AI analysis if enabled
+          if (enableAIAnalysis) {
+            uploadedDocsTemp.push({ id: newDoc.id, name: file.name });
+          }
+      }
     }
     
-    const newDocData: Omit<Document, 'id' | 'uploadedAt' | 'downloadURL'> = {
-        name: file.name,
-        type: finalDocumentType as DocumentType,
-        clientId: finalClientId,
-        serviceId: finalServiceId,
-        promoterId: finalPromoterId,
-        supplierId: finalSupplierId,
-    };
-
-    const newDoc = await addDocument(newDocData, file);
-    if (newDoc) {
-        toast({ title: 'Documento subido', description: `${file.name} ha sido subido correctamente.` });
-        onDocumentUploaded?.(newDoc.id);
-        handleDialogChange(false);
+    setUploadProgress(prev => ({ ...prev, uploading: false }));
+    
+    toast({ 
+      title: 'Documentos subidos', 
+      description: `${files.length} archivo(s) subido(s) correctamente.` 
+    });
+    
+    // If AI analysis is enabled and we have documents to analyze
+    if (enableAIAnalysis && uploadedDocsTemp.length > 0) {
+        setUploadedDocs(uploadedDocsTemp);
+        setShowAIModal(true);
     } else {
-        // Error toast is handled inside addDocument
+        handleDialogChange(false);
     }
 
     setIsSubmitting(false);
   };
   
-  const handleClientSelection = (value: string) => {
-      if (value === 'new') {
-          setIsNewClient(true);
-          setSelectedId('new');
-      } else {
-          setIsNewClient(false);
-          setSelectedId(value);
-      }
-  };
-
-
   return (
+    <>
     <Dialog open={isOpen} onOpenChange={handleDialogChange}>
       <DialogContent className="sm:max-w-lg">
         <form onSubmit={handleSubmit}>
@@ -203,119 +167,87 @@ export function SmartDocumentUploadDialog({
             </DialogDescription>
           </DialogHeader>
           <div className="py-4 space-y-4">
-            {!file ? (
-              <div {...getRootProps()} className={`w-full h-40 border-2 border-dashed rounded-lg flex flex-col items-center justify-center cursor-pointer transition-colors ${isDragActive ? 'border-primary bg-primary/10' : 'border-border hover:border-primary/50'}`}>
-                <input {...getInputProps()} />
-                <UploadCloud className="h-10 w-10 text-muted-foreground mb-2" />
-                <p className="text-sm text-muted-foreground">{isDragActive ? 'Suelte el archivo aquí...' : 'Arrastre un archivo o haga clic para seleccionar'}</p>
-                <p className="text-xs text-muted-foreground/80">PDF, DOCX, JPG, PNG (Máx 1)</p>
-              </div>
-            ) : (
-              <div className="p-3 border rounded-md bg-secondary/50 flex items-center justify-between">
-                <div className="flex items-center gap-2 min-w-0">
-                  <File className="h-5 w-5 text-accent flex-shrink-0" />
-                  <span className="truncate font-medium text-sm">{file.name}</span>
-                </div>
-                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setFile(null)}><X className="h-4 w-4" /></Button>
+            {/* Dropzone - always visible to allow adding more files */}
+            <div {...getRootProps()} className={`w-full ${files.length > 0 ? 'h-24' : 'h-40'} border-2 border-dashed rounded-lg flex flex-col items-center justify-center cursor-pointer transition-colors ${isDragActive ? 'border-primary bg-primary/10' : 'border-border hover:border-primary/50'}`}>
+              <input {...getInputProps()} />
+              <UploadCloud className={`${files.length > 0 ? 'h-6 w-6' : 'h-10 w-10'} text-muted-foreground mb-2`} />
+              <p className="text-sm text-muted-foreground">{isDragActive ? 'Suelte los archivos aquí...' : 'Arrastre archivos o haga clic para seleccionar'}</p>
+              <p className="text-xs text-muted-foreground/80">PDF, DOCX, XML, JPG, PNG</p>
+            </div>
+            
+            {/* File list */}
+            {files.length > 0 && (
+              <div className="space-y-2 max-h-40 overflow-y-auto">
+                {files.map((file, index) => (
+                  <div key={index} className="p-2 border rounded-md bg-secondary/50 flex items-center justify-between">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <FileIcon className="h-4 w-4 text-accent flex-shrink-0" />
+                      <span className="truncate font-medium text-sm">{file.name}</span>
+                      <span className="text-xs text-muted-foreground">({(file.size / 1024).toFixed(1)} KB)</span>
+                    </div>
+                    <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => removeFile(index)} disabled={isSubmitting}>
+                      <X className="h-3 w-3" />
+                    </Button>
+                  </div>
+                ))}
               </div>
             )}
             
-            {file && !isServiceResourceMode && (
-              <div className="space-y-4 pt-4 border-t">
-                <div>
-                  <Label htmlFor="association-type">Asociar a (Opcional)</Label>
-                  <Select value={associationType} onValueChange={(v) => setAssociationType(v as any)} disabled={isSubmitting}>
-                      <SelectTrigger id="association-type">
-                          <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                          <SelectItem value="client">Cliente</SelectItem>
-                          <SelectItem value="service">Servicio</SelectItem>
-                          <SelectItem value="promoter">Promotor</SelectItem>
-                          <SelectItem value="supplier">Proveedor</SelectItem>
-                      </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="pl-4 border-l-2 ml-2">
-                  <Label htmlFor="entity-selector">Seleccionar Entidad (Opcional)</Label>
-                  {associationType === 'client' && (
-                    <>
-                      <Select value={selectedId} onValueChange={handleClientSelection} disabled={isSubmitting}>
-                        <SelectTrigger id="entity-selector"><SelectValue placeholder="Seleccione un cliente..." /></SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="new">-- Crear Nuevo Cliente --</SelectItem>
-                          {clients.filter(c => c.status !== 'Archivado').map(item => <SelectItem key={item.id} value={item.id}>{item.name}</SelectItem>)}
-                        </SelectContent>
-                      </Select>
-                      {isNewClient && (
-                        <div className="pt-2">
-                            <Label htmlFor="new-client-name" className="text-xs">Nombre del Nuevo Cliente</Label>
-                            <Input id="new-client-name" value={newClientName} onChange={(e) => setNewClientName(e.target.value)} placeholder="Ej. Acme Corp." disabled={isSubmitting} className="mt-1"/>
-                        </div>
-                      )}
-                    </>
-                  )}
-                  {associationType === 'service' && (
-                    <Select value={selectedId} onValueChange={setSelectedId} disabled={isSubmitting}>
-                      <SelectTrigger id="entity-selector"><SelectValue placeholder="Seleccione un servicio..." /></SelectTrigger>
-                      <SelectContent>{serviceWorkflows.map(item => <SelectItem key={item.id} value={item.id}>{item.name}</SelectItem>)}</SelectContent>
-                    </Select>
-                  )}
-                  {associationType === 'promoter' && (
-                    <Select value={selectedId} onValueChange={setSelectedId} disabled={isSubmitting}>
-                      <SelectTrigger id="entity-selector"><SelectValue placeholder="Seleccione un promotor..." /></SelectTrigger>
-                      <SelectContent>{promoters.filter(p => p.status !== 'Archivado').map(item => <SelectItem key={item.id} value={item.id}>{item.name}</SelectItem>)}</SelectContent>
-                    </Select>
-                  )}
-                  {associationType === 'supplier' && (
-                    <Select value={selectedId} onValueChange={setSelectedId} disabled={isSubmitting}>
-                      <SelectTrigger id="entity-selector"><SelectValue placeholder="Seleccione un proveedor..." /></SelectTrigger>
-                      <SelectContent>{suppliers.filter(s => s.status !== 'Archivado').map(item => <SelectItem key={item.id} value={item.id}>{item.name}</SelectItem>)}</SelectContent>
-                    </Select>
-                  )}
-                </div>
-                
-                <div>
-                    <Label htmlFor="doc-type-selector">Tipo de Documento (Opcional)</Label>
-                    <Select value={documentType} onValueChange={(value) => setDocumentType(value as DocumentType | 'Otro')} disabled={isSubmitting}>
-                        <SelectTrigger id="doc-type-selector"><SelectValue placeholder="Seleccione un tipo"/></SelectTrigger>
-                        <SelectContent>
-                            {documentTypes.map(type => (
-                                <SelectItem key={type} value={type}>{type}</SelectItem>
-                            ))}
-                        </SelectContent>
-                    </Select>
-                </div>
-                
-                {documentType === 'Otro' && (
-                    <div className="pl-4 border-l-2 ml-2">
-                        <Label htmlFor="custom-doc-type">Especifique el Tipo (Opcional)</Label>
-                        <Input
-                            id="custom-doc-type"
-                            value={customDocumentType}
-                            onChange={(e) => setCustomDocumentType(e.target.value)}
-                            placeholder="Ej. Acuerdo de Confidencialidad"
-                            disabled={isSubmitting}
-                            className="mt-1"
-                        />
-                    </div>
-                )}
+            {/* Upload progress */}
+            {uploadProgress.uploading && (
+              <div className="p-3 border rounded-md bg-blue-50 dark:bg-blue-950 flex items-center gap-3">
+                <Loader2 className="h-5 w-5 animate-spin text-blue-500" />
+                <span className="text-sm">Subiendo {uploadProgress.current} de {uploadProgress.total}...</span>
               </div>
             )}
+            
           </div>
-          <DialogFooter>
+          <DialogFooter className="flex-col sm:flex-row gap-2">
             <DialogClose asChild>
               <Button type="button" variant="outline" disabled={isSubmitting}>Cancelar</Button>
             </DialogClose>
-            <Button type="submit" disabled={!file || isSubmitting}>
-              {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <UploadCloud className="mr-2 h-4 w-4"/>}
-              Subir y Guardar
+            <Button 
+              type="button" 
+              variant="secondary"
+              disabled={files.length === 0 || isSubmitting}
+              onClick={() => { setEnableAIAnalysis(false); handleSubmit(); }}
+            >
+              {isSubmitting && !enableAIAnalysis ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <UploadCloud className="mr-2 h-4 w-4"/>}
+              Subir sin analizar
+            </Button>
+            <Button 
+              type="button"
+              disabled={files.length === 0 || isSubmitting}
+              onClick={() => { setEnableAIAnalysis(true); handleSubmit(); }}
+            >
+              {isSubmitting && enableAIAnalysis ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Sparkles className="mr-2 h-4 w-4"/>}
+              Analizar con IA
             </Button>
           </DialogFooter>
         </form>
       </DialogContent>
     </Dialog>
+      
+      {/* AI Proposal Modal - supports multiple documents */}
+      {uploadedDocs.length > 0 && (
+        <AIProposalModal
+          isOpen={showAIModal}
+          onOpenChange={(open) => {
+            setShowAIModal(open);
+            if (!open) {
+              handleDialogChange(false);
+              setUploadedDocs([]);
+            }
+          }}
+          documents={uploadedDocs}
+          clients={clients}
+          onProposalApplied={() => {
+            handleDialogChange(false);
+            setUploadedDocs([]);
+          }}
+        />
+      )}
+    </>
   );
 }
 

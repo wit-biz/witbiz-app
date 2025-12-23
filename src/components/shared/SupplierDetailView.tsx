@@ -74,12 +74,10 @@ export function SupplierDetailView({ supplier, onClose }: SupplierDetailViewProp
         }
     };
 
+     const { openSmartUploadForSupplier } = useDialogs();
+     
      const handleOpenUpload = () => {
-        // This functionality is not fully implemented yet in the dialogs context for suppliers
-        toast({
-            title: "Próximamente",
-            description: "La carga de documentos para proveedores estará disponible pronto."
-        })
+        openSmartUploadForSupplier(supplier.id);
     }
 
     return (

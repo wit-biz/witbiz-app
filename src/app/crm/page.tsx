@@ -115,7 +115,7 @@ export default function CrmPage() {
   const { clients, isLoadingClients, serviceWorkflows, isLoadingWorkflows } = useCRMData();
 
   const [selectedClientForDialog, setSelectedClientForDialog] = useState<Client | null>(null);
-  const [selectedStageForDialog, setSelectedStageForDialog] = useState<AnyStage | null>(null);
+  const [selectedStageForDialog, setSelectedStageForDialog] = useState<WorkflowStage | null>(null);
   const [isDetailDialogOpen, setIsDetailDialogOpen] = useState(false);
 
   const clientsByStage = useMemo(() => {
@@ -155,7 +155,7 @@ export default function CrmPage() {
     const stage = allStages.find(s => s.id === client.currentWorkflowStageId);
     if (stage) {
         setSelectedClientForDialog(client);
-        setSelectedStageForDialog(stage);
+        setSelectedStageForDialog(stage as WorkflowStage);
         setIsDetailDialogOpen(true);
     }
   };

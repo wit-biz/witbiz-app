@@ -66,7 +66,7 @@ export default function RegisterPage() {
   const onSubmit = async (values: z.infer<typeof registerSchema>) => {
     setIsSubmitting(true);
     try {
-      const userCredential = await registerUser(values.name, values.email, values.password);
+      const userCredential = await registerUser(values.name, values.email, values.password, 'user');
       if (userCredential) {
         // After successful creation, sign in the user
         await signInWithEmailAndPassword(auth, values.email, values.password);
