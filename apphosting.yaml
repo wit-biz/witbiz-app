@@ -7,9 +7,3 @@ runConfig:
   maxInstances: 1
   cpu: 1
   memoryMiB: 512
-  
-env:
-  - variable: FIREBASE_PROJECT_ID
-    secret: FIREBASE_PROJECT_ID
-  - variable: GOOGLE_CLOUD_PROJECT
-    secret: FIREBASE_PROJECT_ID
