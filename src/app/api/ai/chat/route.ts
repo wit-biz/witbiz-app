@@ -463,9 +463,11 @@ Responde en español, sé útil y preciso.`;
 
   } catch (error: any) {
     console.error('Chat Error:', error);
+    // Return detailed error in production for debugging
+    const errorDetails = error.message || 'Unknown error';
     return NextResponse.json({
-      response: 'Error. Intenta de nuevo.',
-      error: error.message,
+      response: `Error: ${errorDetails.substring(0, 100)}`,
+      error: errorDetails,
     }, { status: 500 });
   }
 }
