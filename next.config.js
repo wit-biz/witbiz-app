@@ -9,6 +9,12 @@ const nextConfig = {
   eslint: {
     ignoreDuringBuilds: true,
   },
+  // Required for Firebase App Hosting - don't bundle these Node.js packages
+  serverExternalPackages: [
+    'firebase-admin',
+    '@google-cloud/vertexai',
+    '@google-cloud/documentai',
+  ],
   images: {
     remotePatterns: [
       {
