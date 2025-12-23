@@ -2,7 +2,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { adminAuth, adminDb } from '@/lib/firebaseAdmin';
-import { GoogleGenerativeAI } from '@google/generative-ai';
+import { GoogleGenerativeAI, SchemaType } from '@google/generative-ai';
 
 interface ChatRequest {
   message: string;
@@ -254,15 +254,15 @@ Responde en español, sé útil y preciso.`;
           name: 'create_task',
           description: 'Crea tarea(s). Si mencionan varios nombres, crea una tarea para cada uno. Detecta direcciones/ubicaciones.',
           parameters: {
-            type: 'OBJECT',
+            type: SchemaType.OBJECT,
             properties: {
-              title: { type: 'STRING', description: 'Titulo SIN hora' },
-              clientName: { type: 'STRING', description: 'Cliente si mencionan' },
-              dueDate: { type: 'STRING', description: 'Fecha: mañana, pasado mañana, lunes, etc.' },
-              time: { type: 'STRING', description: 'Hora HH:MM' },
-              description: { type: 'STRING', description: 'Detalles opcionales' },
-              location: { type: 'STRING', description: 'Direccion o ubicacion si mencionan. Ej: "Av. Constituyentes 123", "Plaza Comercial X", "oficina del cliente", "tonayan", etc.' },
-              assignToNames: { type: 'ARRAY', items: { type: 'STRING' }, description: 'Lista de nombres si mencionan varios. Ej: ["isaac","carolina","said"]. NO incluir si no dicen nombres.' },
+              title: { type: SchemaType.STRING, description: 'Titulo SIN hora' },
+              clientName: { type: SchemaType.STRING, description: 'Cliente si mencionan' },
+              dueDate: { type: SchemaType.STRING, description: 'Fecha: mañana, pasado mañana, lunes, etc.' },
+              time: { type: SchemaType.STRING, description: 'Hora HH:MM' },
+              description: { type: SchemaType.STRING, description: 'Detalles opcionales' },
+              location: { type: SchemaType.STRING, description: 'Direccion o ubicacion si mencionan. Ej: "Av. Constituyentes 123", "Plaza Comercial X", "oficina del cliente", "tonayan", etc.' },
+              assignToNames: { type: SchemaType.ARRAY, items: { type: SchemaType.STRING }, description: 'Lista de nombres si mencionan varios. Ej: ["isaac","carolina","said"]. NO incluir si no dicen nombres.' },
             },
             required: ['title'],
           },
@@ -271,11 +271,11 @@ Responde en español, sé útil y preciso.`;
           name: 'create_client',
           description: 'Crea cliente nuevo.',
           parameters: {
-            type: 'OBJECT',
+            type: SchemaType.OBJECT,
             properties: {
-              name: { type: 'STRING', description: 'Nombre' },
-              email: { type: 'STRING', description: 'Email' },
-              phone: { type: 'STRING', description: 'Telefono' },
+              name: { type: SchemaType.STRING, description: 'Nombre' },
+              email: { type: SchemaType.STRING, description: 'Email' },
+              phone: { type: SchemaType.STRING, description: 'Telefono' },
             },
             required: ['name'],
           },
@@ -284,11 +284,11 @@ Responde en español, sé útil y preciso.`;
           name: 'create_supplier',
           description: 'Crea proveedor.',
           parameters: {
-            type: 'OBJECT',
+            type: SchemaType.OBJECT,
             properties: {
-              name: { type: 'STRING', description: 'Nombre' },
-              email: { type: 'STRING', description: 'Email' },
-              phone: { type: 'STRING', description: 'Telefono' },
+              name: { type: SchemaType.STRING, description: 'Nombre' },
+              email: { type: SchemaType.STRING, description: 'Email' },
+              phone: { type: SchemaType.STRING, description: 'Telefono' },
             },
             required: ['name'],
           },
