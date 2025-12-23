@@ -7,3 +7,9 @@ runConfig:
   maxInstances: 1
   cpu: 1
   memoryMiB: 512
+
+env:
+  - variable: FIREBASE_PROJECT_ID
+    value: wit-biz-07943714-b10c8
+  - variable: GOOGLE_CLOUD_PROJECT
+    value: wit-biz-07943714-b10c8
