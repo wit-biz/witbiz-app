@@ -410,6 +410,46 @@ export function VertexAIChat() {
     synthRef.current.speak(utterance);
   };
 
+  // Cleanup old conversations (older than 1 month) - runs on the 1st of each month
+  const cleanupOldConversations = async (userId: string) => {
+    const today = new Date();
+    const isFirstOfMonth = today.getDate() === 1;
+    
+    // Check localStorage to see if cleanup was already done this month
+    const lastCleanup = localStorage.getItem(`chat_cleanup_${userId}`);
+    const lastCleanupDate = lastCleanup ? new Date(lastCleanup) : null;
+    const alreadyCleanedThisMonth = lastCleanupDate && 
+      lastCleanupDate.getMonth() === today.getMonth() && 
+      lastCleanupDate.getFullYear() === today.getFullYear();
+    
+    if (!isFirstOfMonth || alreadyCleanedThisMonth) return;
+    
+    console.log("🧹 Running monthly conversation cleanup...");
+    
+    try {
+      const db = getFirestore();
+      const oneMonthAgo = new Date();
+      oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
+      
+      const oldConvsQuery = query(
+        collection(db, "chatConversations"),
+        where("userId", "==", userId),
+        where("updatedAt", "<", Timestamp.fromDate(oneMonthAgo))
+      );
+      
+      const oldSnapshot = await getDocs(oldConvsQuery);
+      const deletePromises = oldSnapshot.docs.map(doc => deleteDoc(doc.ref));
+      await Promise.all(deletePromises);
+      
+      console.log(`✅ Deleted ${oldSnapshot.size} old conversations`);
+      
+      // Mark cleanup as done for this month
+      localStorage.setItem(`chat_cleanup_${userId}`, today.toISOString());
+    } catch (error) {
+      console.error("Error cleaning up old conversations:", error);
+    }
+  };
+
   const loadConversations = async () => {
     try {
       const auth = getAuth();
@@ -417,6 +457,10 @@ export function VertexAIChat() {
       if (!user) return;
 
       const db = getFirestore();
+      
+      // Run cleanup on the 1st of each month
+      await cleanupOldConversations(user.uid);
+      
       const q = query(
         collection(db, "chatConversations"),
         where("userId", "==", user.uid),
@@ -499,47 +543,29 @@ export function VertexAIChat() {
   };
 
   const selectConversation = async (conv: Conversation) => {
-    console.log("📂 Selecting conversation:", conv.id, conv.title);
     setShowSidebar(false);
+    setMessages([]); // Clear first
+    setCurrentConversation(conv);
     
-    // Always reload from Firestore to get fresh messages
     try {
       const db = getFirestore();
       const docSnap = await getDoc(doc(db, "chatConversations", conv.id));
-      console.log("📄 Document exists:", docSnap.exists());
       
       if (docSnap.exists()) {
         const data = docSnap.data();
-        console.log("📋 Raw data:", { title: data.title, messagesCount: data.messages?.length || 0 });
+        const msgs = data.messages || [];
         
-        const loadedMessages: Message[] = (data.messages || []).map((m: any) => ({
-          role: m.role as "user" | "assistant",
+        const loadedMessages: Message[] = msgs.map((m: any) => ({
+          role: m.role,
           content: m.content,
-          timestamp: m.timestamp?.toDate ? m.timestamp.toDate() : 
-                    m.timestamp?.seconds ? new Date(m.timestamp.seconds * 1000) : 
-                    new Date(m.timestamp),
+          timestamp: m.timestamp?.toDate?.() || new Date(),
         }));
         
-        console.log("✅ Loaded messages:", loadedMessages.length);
-        
-        const updatedConv = { 
-          ...conv, 
-          messages: loadedMessages,
-          title: data.title || conv.title 
-        };
-        setCurrentConversation(updatedConv);
         setMessages(loadedMessages);
-        // Update local state
-        setConversations(prev => prev.map(c => c.id === conv.id ? updatedConv : c));
-      } else {
-        console.warn("⚠️ Document not found");
-        setCurrentConversation(conv);
-        setMessages([]);
+        setCurrentConversation({ ...conv, messages: loadedMessages, title: data.title || conv.title });
       }
     } catch (error) {
-      console.error("❌ Error loading conversation:", error);
-      setCurrentConversation(conv);
-      setMessages(conv.messages || []);
+      console.error("Error loading:", error);
     }
   };
 
@@ -567,60 +593,27 @@ export function VertexAIChat() {
     }
   };
 
-  const saveMessages = async (newMessages: Message[], convId?: string) => {
-    const targetId = convId || currentConversation?.id;
-    console.log("💾 saveMessages called, targetId:", targetId, "messages:", newMessages.length);
-    
-    if (!targetId) {
-      console.error("❌ No conversation ID to save to");
-      return;
-    }
-    
-    // Skip temp conversations
-    if (targetId.startsWith('temp-')) {
-      console.warn("⚠️ Cannot save to temp conversation");
-      return;
-    }
+  const saveMessages = async (msgs: Message[], convId: string) => {
+    if (!convId || convId.startsWith('temp-')) return;
     
     try {
       const db = getFirestore();
-      // Get first user message for title
-      const firstUserMsg = newMessages.find(m => m.role === 'user');
-      const title = firstUserMsg 
-        ? firstUserMsg.content.slice(0, 40) + (firstUserMsg.content.length > 40 ? "..." : "")
-        : "Sin titulo";
-      
-      console.log("📝 Saving with title:", title);
-      
-      // Convert messages for Firestore (serialize timestamps properly)
-      const messagesForFirestore = newMessages.map(m => ({
+      const messagesForFirestore = msgs.map(m => ({
         role: m.role,
         content: m.content,
         timestamp: Timestamp.fromDate(m.timestamp instanceof Date ? m.timestamp : new Date()),
       }));
       
-      await updateDoc(doc(db, "chatConversations", targetId), {
+      console.log("💾 Guardando", msgs.length, "mensajes en", convId);
+      
+      await updateDoc(doc(db, "chatConversations", convId), {
         messages: messagesForFirestore,
-        title,
         updatedAt: serverTimestamp(),
       });
       
-      console.log("✅ Messages saved successfully");
-      
-      // Update current conversation in state
-      const updatedConv = { 
-        id: targetId,
-        messages: newMessages, 
-        title, 
-        updatedAt: new Date(),
-        createdAt: currentConversation?.createdAt || new Date()
-      };
-      setCurrentConversation(updatedConv);
-      setConversations(prev => prev.map(c => 
-        c.id === targetId ? updatedConv : c
-      ));
+      console.log("✅ Mensajes guardados correctamente");
     } catch (error) {
-      console.error("❌ Error saving messages:", error);
+      console.error("❌ Error guardando mensajes:", error);
     }
   };
 
@@ -643,15 +636,28 @@ export function VertexAIChat() {
     
     // Store the conversation ID to use in callbacks (avoid stale closure)
     const conversationId = activeConversation.id;
-    console.log("📨 Submitting to conversation:", conversationId);
+    const userText = input.trim();
+    
+    // UPDATE TITLE IMMEDIATELY with user's first message
+    const newTitle = userText.slice(0, 40);
+    setConversations(prev => prev.map(c => 
+      c.id === conversationId ? { ...c, title: newTitle } : c
+    ));
+    
+    // Also update in Firestore immediately
+    const db = getFirestore();
+    updateDoc(doc(db, "chatConversations", conversationId), { 
+      title: newTitle,
+      updatedAt: serverTimestamp() 
+    }).catch(err => console.error("Title update error:", err));
 
     const userMessage: Message = {
       role: "user",
-      content: input,
+      content: userText,
       timestamp: new Date(),
     };
 
-    const currentInput = input;
+    const currentInput = userText;
     const newMessages = [...messages, userMessage];
     setMessages(newMessages);
     setInput("");
@@ -685,27 +691,15 @@ export function VertexAIChat() {
         timestamp: new Date(),
       };
 
-      // Typing animation effect
-      setIsTyping(true);
-      const fullText = aiMessage.content;
-      let currentIndex = 0;
+      // Add AI message and save immediately (no animation)
+      const finalMessages = [...newMessages, aiMessage];
+      setMessages(finalMessages);
       
-      const typingInterval = setInterval(() => {
-        if (currentIndex <= fullText.length) {
-          setTypingText(fullText.slice(0, currentIndex));
-          currentIndex += 2; // Speed up typing
-        } else {
-          clearInterval(typingInterval);
-          setIsTyping(false);
-          setTypingText("");
-          const updatedMessages = [...newMessages, aiMessage];
-          setMessages(updatedMessages);
-          // Pass conversation ID explicitly to avoid stale closure
-          saveMessages(updatedMessages, conversationId);
-          // Speak the response if voice is enabled
-          speakText(fullText);
-        }
-      }, 15);
+      // Save to Firestore
+      await saveMessages(finalMessages, conversationId);
+      
+      // Speak the response if voice is enabled
+      speakText(aiMessage.content);
     } catch (error) {
       console.error("Chat error:", error);
       const errorMsg: Message = {
