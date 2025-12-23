@@ -2,7 +2,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { adminAuth, adminDb } from '@/lib/firebaseAdmin';
-import { GoogleGenerativeAI, SchemaType } from '@google/generative-ai';
+import { GoogleGenerativeAI, SchemaType, FunctionDeclarationsTool } from '@google/generative-ai';
 
 interface ChatRequest {
   message: string;
@@ -248,7 +248,7 @@ Responde en español, sé útil y preciso.`;
     
     const genAI = new GoogleGenerativeAI(apiKey);
     
-    const tools = [{
+    const tools: FunctionDeclarationsTool[] = [{
       functionDeclarations: [
         {
           name: 'create_task',
@@ -294,11 +294,11 @@ Responde en español, sé útil y preciso.`;
           },
         },
       ],
-    }];
+    } as FunctionDeclarationsTool];
 
     const model = genAI.getGenerativeModel({ 
       model: 'gemini-2.0-flash-lite',
-      tools: tools,
+      tools,
     });
     
     const chat = model.startChat({ history: chatHistory });
