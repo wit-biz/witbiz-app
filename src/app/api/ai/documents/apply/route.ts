@@ -177,58 +177,103 @@ export async function POST(req: NextRequest) {
   // Construir objeto de actualización del documento
   // Guardar la propuesta editada para futuras ediciones (evita re-analizar con Document AI)
   
-  // Helper function to remove undefined values recursively (Firestore doesn't accept undefined)
-  const cleanUndefined = (obj: any): any => {
-    if (obj === null || obj === undefined) return null;
-    if (typeof obj !== 'object') return obj;
-    if (Array.isArray(obj)) return obj.map(cleanUndefined);
+  // Helper function to deeply clean object for Firestore (remove undefined, functions, symbols)
+  const cleanForFirestore = (obj: any, depth = 0): any => {
+    // Prevent infinite recursion
+    if (depth > 10) return null;
     
-    const cleaned: any = {};
-    for (const [key, value] of Object.entries(obj)) {
-      if (value !== undefined) {
-        cleaned[key] = cleanUndefined(value);
-      }
+    // Handle null/undefined
+    if (obj === null || obj === undefined) return null;
+    
+    // Handle primitives
+    if (typeof obj === 'string' || typeof obj === 'number' || typeof obj === 'boolean') {
+      return obj;
     }
-    return cleaned;
+    
+    // Skip functions and symbols
+    if (typeof obj === 'function' || typeof obj === 'symbol') {
+      return null;
+    }
+    
+    // Handle Date objects
+    if (obj instanceof Date) {
+      return obj.toISOString();
+    }
+    
+    // Handle arrays
+    if (Array.isArray(obj)) {
+      return obj.map(item => cleanForFirestore(item, depth + 1)).filter(item => item !== undefined);
+    }
+    
+    // Handle objects
+    if (typeof obj === 'object') {
+      const cleaned: Record<string, any> = {};
+      for (const [key, value] of Object.entries(obj)) {
+        if (value !== undefined && typeof value !== 'function' && typeof value !== 'symbol') {
+          const cleanedValue = cleanForFirestore(value, depth + 1);
+          if (cleanedValue !== undefined) {
+            cleaned[key] = cleanedValue;
+          }
+        }
+      }
+      return cleaned;
+    }
+    
+    return null;
   };
 
+  // Build a minimal, clean update object
   const docUpdate: any = {
     ai: {
       status: "applied",
-      proposal: cleanUndefined({
-        // Guardar la propuesta completa con los campos editados
-        suggestedType: proposal.documentType || proposal.suggestedType || null,
-        confidence: proposal.confidence || null,
-        extracted: proposal.rawExtracted || proposal.extracted || null,
-        summary: proposal.summary || null,
-        suggested: {
-          transaction: tx ? {
-            type: tx.type || null,
-            amount: tx.amount || null,
-            description: tx.description || null,
-          } : null,
-          task: taskData ? {
-            title: taskData.title || null,
-            description: taskData.description || null,
-            clientId: taskData.clientId || finalClientId || null,
-            dueDate: taskData.dueDate || null,
-            dueTime: taskData.dueTime || null,
-            location: taskData.location || null,
-          } : null,
-        },
-        associations: {
-          supplier: finalSupplierId ? { matched: true, id: finalSupplierId } : (proposal.associations?.supplier || null),
-          client: finalClientId ? { matched: true, id: finalClientId } : (proposal.associations?.client || null),
-          availableSuppliers: proposal.associations?.availableSuppliers || null,
-          availableClients: proposal.associations?.availableClients || null,
-        },
-      }),
+      proposal: {
+        suggestedType: String(proposal.documentType || proposal.suggestedType || "unknown"),
+        confidence: typeof proposal.confidence === 'number' ? proposal.confidence : 0,
+        summary: String(proposal.summary || ""),
+      },
       audit: {
         approvedAt: FieldValue.serverTimestamp(),
-        approvedBy: auth.uid,
+        approvedBy: String(auth.uid),
       },
     },
   };
+
+  // Add optional extracted data if present
+  if (proposal.rawExtracted || proposal.extracted) {
+    docUpdate.ai.proposal.extracted = cleanForFirestore(proposal.rawExtracted || proposal.extracted);
+  }
+
+  // Add optional suggested transaction
+  if (tx) {
+    docUpdate.ai.proposal.suggested = docUpdate.ai.proposal.suggested || {};
+    docUpdate.ai.proposal.suggested.transaction = {
+      type: String(tx.type || ""),
+      amount: typeof tx.amount === 'number' ? tx.amount : parseFloat(tx.amount) || 0,
+      description: String(tx.description || ""),
+    };
+  }
+
+  // Add optional suggested task
+  if (taskData) {
+    docUpdate.ai.proposal.suggested = docUpdate.ai.proposal.suggested || {};
+    docUpdate.ai.proposal.suggested.task = {
+      title: String(taskData.title || ""),
+      description: String(taskData.description || ""),
+      clientId: String(taskData.clientId || finalClientId || ""),
+    };
+    if (taskData.dueDate) docUpdate.ai.proposal.suggested.task.dueDate = String(taskData.dueDate);
+    if (taskData.dueTime) docUpdate.ai.proposal.suggested.task.dueTime = String(taskData.dueTime);
+    if (taskData.location) docUpdate.ai.proposal.suggested.task.location = String(taskData.location);
+  }
+
+  // Add associations info
+  docUpdate.ai.proposal.associations = {};
+  if (finalSupplierId) {
+    docUpdate.ai.proposal.associations.supplier = { matched: true, id: String(finalSupplierId) };
+  }
+  if (finalClientId) {
+    docUpdate.ai.proposal.associations.client = { matched: true, id: String(finalClientId) };
+  }
 
   // Agregar asociaciones al documento si existen
   if (finalSupplierId) {
