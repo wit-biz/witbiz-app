@@ -1,7 +1,8 @@
-
+/* stylelint-disable at-rule-no-unknown */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+/* stylelint-enable at-rule-no-unknown */
 
 @layer base {
   :root {
@@ -140,10 +141,12 @@
   /* Hide number input arrows */
   input[type=number]::-webkit-inner-spin-button,
   input[type=number]::-webkit-outer-spin-button {
+    appearance: none;
     -webkit-appearance: none;
     margin: 0;
   }
   input[type=number] {
+    appearance: textfield;
     -moz-appearance: textfield; /* Firefox */
   }
 
