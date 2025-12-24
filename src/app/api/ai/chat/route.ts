@@ -146,15 +146,21 @@ export async function POST(req: NextRequest) {
 
   try {
     // Load ALL context data for comprehensive knowledge
-    const [userDoc, clientsSnap, usersSnap, suppliersSnap, tasksSnap, servicesSnap, promotersSnap, docsSnap] = await Promise.all([
+    const [userDoc, clientsSnap, usersSnap, suppliersSnap, tasksSnap, servicesSnap, promotersSnap, docsSnap, transactionsSnap, companiesSnap, bankAccountsSnap, categoriesSnap, loansSnap, notesSnap] = await Promise.all([
       adminDb.collection('users').doc(authResult.uid).get(),
       adminDb.collection('clients').get(),
       adminDb.collection('users').get(),
       adminDb.collection('suppliers').get(),
-      adminDb.collection('tasks').orderBy('createdAt', 'desc').limit(50).get(),
+      adminDb.collection('tasks').orderBy('createdAt', 'desc').limit(100).get(),
       adminDb.collection('serviceWorkflows').get(),
       adminDb.collection('promoters').get(),
-      adminDb.collection('documents').orderBy('uploadedAt', 'desc').limit(30).get(),
+      adminDb.collection('documents').orderBy('uploadedAt', 'desc').limit(50).get(),
+      adminDb.collection('transactions').orderBy('date', 'desc').limit(100).get(),
+      adminDb.collection('companies').get(),
+      adminDb.collection('bankAccounts').get(),
+      adminDb.collection('categories').get(),
+      adminDb.collection('loans').get(),
+      adminDb.collection('notes').orderBy('createdAt', 'desc').limit(50).get(),
     ]);
     
     const userData = userDoc.data();
@@ -168,6 +174,12 @@ export async function POST(req: NextRequest) {
     const servicesList = servicesSnap.docs.map(d => ({ id: d.id, ...d.data() }));
     const promotersList = promotersSnap.docs.map(d => ({ id: d.id, ...d.data() }));
     const documentsList = docsSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+    const transactionsList = transactionsSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+    const companiesList = companiesSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+    const bankAccountsList = bankAccountsSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+    const categoriesList = categoriesSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+    const loansList = loansSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+    const notesList = notesSnap.docs.map(d => ({ id: d.id, ...d.data() }));
     
     // Stats
     const totalClients = clientsList.length;
@@ -183,51 +195,97 @@ export async function POST(req: NextRequest) {
     const supplierNames = suppliersList.map((s: any) => s.name).filter(Boolean).join(', ');
     const serviceNames = servicesList.map((s: any) => s.name).filter(Boolean).join(', ');
     const promoterNames = promotersList.map((p: any) => p.name).filter(Boolean).join(', ');
+    const companyNames = companiesList.map((c: any) => c.name).filter(Boolean).join(', ');
+    const categoryNames = categoriesList.map((c: any) => `${c.name} (${c.type})`).filter(Boolean).join(', ');
+    
+    // Accounting stats
+    const totalIncome = transactionsList.filter((t: any) => t.type === 'income').reduce((sum: number, t: any) => sum + (t.amount || 0), 0);
+    const totalExpense = transactionsList.filter((t: any) => t.type === 'expense').reduce((sum: number, t: any) => sum + (t.amount || 0), 0);
+    const totalBalance = bankAccountsList.reduce((sum: number, a: any) => sum + (a.balance || 0), 0);
+    const activeLoans = loansList.filter((l: any) => l.status === 'En Curso').length;
+    
+    // Recent transactions summary
+    const recentTransactions = transactionsList.slice(0, 10).map((t: any) => {
+      const typeEmoji = t.type === 'income' ? '💰' : t.type === 'expense' ? '💸' : '↔️';
+      return `${typeEmoji} $${t.amount?.toLocaleString() || 0} - ${t.description || 'Sin descripción'} (${t.date})`;
+    }).join('\n');
+    
+    // Bank accounts summary
+    const bankAccountsSummary = bankAccountsList.map((a: any) => {
+      const company = companiesList.find((c: any) => c.id === a.companyId);
+      return `- ${a.bankName}: $${a.balance?.toLocaleString() || 0} ${a.currency || 'MXN'} (${company?.name || 'Sin empresa'})`;
+    }).join('\n');
     
     // Recent tasks summary
     const recentTasksSummary = myPendingTasks.slice(0, 5).map((t: any) => `- ${t.title} (${t.dueDate})`).join('\n');
     
+    // Services with details
+    const servicesDetails = servicesList.filter((s: any) => s.status !== 'Archivado').map((s: any) => {
+      const stagesCount = s.stages?.length || 0;
+      return `- ${s.name}: ${stagesCount} etapas`;
+    }).join('\n');
+    
     const todayStr = new Date().toISOString().slice(0, 10);
     
-    const systemPrompt = `Eres WitBot, asistente IA de WitBiz. Usuario actual: ${currentUserName}.
+    const systemPrompt = `Eres Donna, asistente IA de WitBiz. Usuario actual: ${currentUserName}.
 
-PUEDES RESPONDER CUALQUIER PREGUNTA sobre la plataforma WitBiz:
-- CRM: clientes, prospectos, seguimiento
-- Tareas: crear, asignar, consultar pendientes
-- Servicios y workflows configurados
-- Documentos subidos
-- Equipo y miembros
-- Proveedores y promotores
-- Contabilidad y finanzas (si preguntan)
-- Centro de inteligencia y reportes
+PUEDES RESPONDER CUALQUIER PREGUNTA sobre la plataforma WitBiz. Tienes acceso a TODOS los datos en tiempo real.
 
-DATOS EN TIEMPO REAL:
-- Clientes: ${totalClients} total (${activeClients} activos): ${clientNames || 'ninguno'}
-- Equipo: ${membersList.length} miembros: ${memberNames || 'ninguno'}
-- Proveedores: ${suppliersList.length}: ${supplierNames || 'ninguno'}
-- Promotores: ${promotersList.length}: ${promoterNames || 'ninguno'}
-- Servicios: ${servicesList.length}: ${serviceNames || 'ninguno'}
+=== DATOS EN TIEMPO REAL ===
+
+📊 RESUMEN GENERAL:
+- Clientes: ${totalClients} total (${activeClients} activos)
 - Tareas: ${totalTasks} total, ${pendingTasks} pendientes, ${completedTasks} completadas
 - Documentos: ${documentsList.length} recientes
+- Notas: ${notesList.length} recientes
 
-TUS TAREAS PENDIENTES:
+👥 CLIENTES: ${clientNames || 'ninguno registrado'}
+
+👤 EQUIPO (${membersList.length}): ${memberNames || 'ninguno'}
+
+🏭 PROVEEDORES (${suppliersList.length}): ${supplierNames || 'ninguno'}
+
+🤝 PROMOTORES (${promotersList.length}): ${promoterNames || 'ninguno'}
+
+📋 SERVICIOS ACTIVOS:
+${servicesDetails || 'Ninguno configurado'}
+
+💼 CONTABILIDAD:
+- Empresas: ${companyNames || 'ninguna'}
+- Ingresos totales: $${totalIncome.toLocaleString()}
+- Egresos totales: $${totalExpense.toLocaleString()}
+- Balance neto: $${(totalIncome - totalExpense).toLocaleString()}
+- Préstamos activos: ${activeLoans}
+
+🏦 CUENTAS BANCARIAS:
+${bankAccountsSummary || 'Ninguna registrada'}
+Balance total: $${totalBalance.toLocaleString()}
+
+📂 CATEGORÍAS: ${categoryNames || 'ninguna'}
+
+💰 TRANSACCIONES RECIENTES:
+${recentTransactions || 'Ninguna registrada'}
+
+📝 TUS TAREAS PENDIENTES:
 ${recentTasksSummary || 'Ninguna pendiente'}
 
-REGLAS PARA CREAR:
+=== CAPACIDADES ===
+Puedo responder sobre: CRM, clientes, tareas, servicios, documentos, equipo, proveedores, promotores, contabilidad (ingresos, egresos, balances, cuentas), préstamos, y cualquier dato de la app.
+
+=== REGLAS PARA CREAR ===
 1) USA FUNCIONES inmediatamente. NUNCA preguntes, SOLO EJECUTA.
 2) Titulo SIN hora. Ej: "llamar 11am" -> title:"llamar", time:"11:00"
-3) Fechas flexibles: "mañana", "pasado mañana", "el lunes", "en 3 días", "próxima semana", "fin de mes"
-4) Si NO dicen a quién asignar, NO pongas assignToNames (se asigna al usuario actual automáticamente)
-5) Si mencionan VARIOS nombres como "tarea isaac carolina said", usa assignToNames:["isaac","carolina","said"] para crear una tarea para CADA uno
-6) SOLO usa assignToNames si EXPLICITAMENTE mencionan nombres
-7) Si mencionan una DIRECCION o UBICACION (calle, avenida, colonia, plaza, lugar, "en X"), usa el campo location
+3) Fechas: "mañana", "pasado mañana", "el lunes", "en 3 días", "próxima semana", "fin de mes"
+4) Si NO dicen a quién asignar, NO pongas assignToNames
+5) Si mencionan VARIOS nombres, usa assignToNames:["nombre1","nombre2"]
+6) Si mencionan DIRECCION o UBICACION, usa el campo location
 
 HOY: ${todayStr}
-Responde en español, sé útil y preciso.`;
+Responde en español, sé útil, precisa y amigable.`;
 
     const chatHistory: Array<{role: 'user' | 'model', parts: Array<{text: string}>}> = [
       { role: 'user', parts: [{ text: systemPrompt }] },
-      { role: 'model', parts: [{ text: 'Soy WitBot. Puedo ayudarte con cualquier cosa de WitBiz: crear tareas, consultar clientes, ver pendientes, información de servicios, equipo, proveedores, contabilidad y más. ¿Qué necesitas?' }] },
+      { role: 'model', parts: [{ text: 'Hola, soy Donna. Tengo acceso a todos los datos de WitBiz en tiempo real: clientes, tareas, contabilidad, servicios, equipo y más. ¿En qué te puedo ayudar?' }] },
     ];
     
     if (body.history?.length) {

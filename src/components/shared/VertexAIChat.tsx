@@ -795,9 +795,9 @@ export function VertexAIChat() {
     <div className="w-full max-w-3xl mx-auto flex gap-3">
       {/* Sidebar for conversations - Left Panel */}
       {showSidebar && (
-        <div className="w-56 flex-shrink-0 bg-gradient-to-br from-background via-lime-950/5 to-background rounded-xl border border-lime-500/20 p-3 backdrop-blur-sm shadow-lg shadow-lime-500/5 flex flex-col max-h-[500px]">
+        <div className="w-56 flex-shrink-0 bg-card rounded-xl border border-border p-3 shadow-lg flex flex-col max-h-[500px]">
           <div className="flex items-center justify-between mb-3">
-            <div className="text-xs font-medium text-lime-400/70 flex items-center gap-1">
+            <div className="text-xs font-medium text-primary flex items-center gap-1">
               <Sparkles className="h-3 w-3" />
               Chats
             </div>
@@ -806,7 +806,7 @@ export function VertexAIChat() {
               variant="ghost" 
               size="icon"
               onClick={() => createNewConversation()} 
-              className="h-6 w-6 text-lime-400/80 hover:text-lime-400 hover:bg-lime-500/10"
+              className="h-6 w-6 text-primary hover:text-primary hover:bg-primary/10"
               title="Nueva conversación"
             >
               <Plus className="h-4 w-4" />
@@ -856,24 +856,24 @@ export function VertexAIChat() {
               size="sm" 
               onClick={() => setShowSidebar(!showSidebar)} 
               className={cn(
-                "text-lime-400/80 hover:text-lime-400 hover:bg-lime-500/10 border border-lime-500/20",
-                showSidebar && "bg-lime-500/10"
+                "text-primary hover:text-primary hover:bg-primary/10 border border-border",
+                showSidebar && "bg-primary/10"
               )}
             >
               <FolderOpen className="h-4 w-4 mr-1" />
               Chats
             </Button>
-            <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-gradient-to-r from-lime-500/20 via-green-500/15 to-emerald-500/20 rounded-full border border-lime-400/40 shadow-lg shadow-lime-500/10 backdrop-blur-sm">
+            <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-primary/10 rounded-full border border-primary/30 shadow-lg">
               <div className="relative">
                 <img 
                   src={DONNA_IMAGE} 
                   alt="Donna" 
-                  className="h-5 w-5 rounded-full object-cover ring-2 ring-lime-400/50"
+                  className="h-5 w-5 rounded-full object-cover ring-2 ring-primary/50"
                 />
-                <div className="absolute -bottom-0.5 -right-0.5 w-2 h-2 bg-lime-500 rounded-full border-2 border-background animate-pulse" />
+                <div className="absolute -bottom-0.5 -right-0.5 w-2 h-2 bg-primary rounded-full border-2 border-background animate-pulse" />
               </div>
-              <span className="font-semibold text-sm bg-gradient-to-r from-lime-400 to-green-400 bg-clip-text text-transparent">Donna</span>
-              <Zap className="h-3 w-3 text-lime-400 animate-pulse" />
+              <span className="font-semibold text-sm text-primary">Donna</span>
+              <Zap className="h-3 w-3 text-primary animate-pulse" />
             </div>
           </div>
           <Button 
@@ -881,7 +881,7 @@ export function VertexAIChat() {
             variant="ghost" 
             size="sm" 
             onClick={() => createNewConversation()} 
-            className="text-lime-400/80 hover:text-lime-400 hover:bg-lime-500/10 border border-lime-500/20"
+            className="text-primary hover:text-primary hover:bg-primary/10 border border-border"
           >
             <Plus className="h-4 w-4 mr-1" />
             Nuevo
@@ -889,7 +889,7 @@ export function VertexAIChat() {
         </div>
 
       {/* Messages Container - Futuristic */}
-      <div className="relative bg-gradient-to-br from-background via-lime-950/5 to-background rounded-xl border border-lime-500/20 shadow-2xl shadow-lime-500/5 overflow-hidden backdrop-blur-sm">
+      <div className="relative bg-card rounded-xl border border-border shadow-xl overflow-hidden">
         <FuturisticBackground />
         <div ref={scrollRef} className="relative h-96 overflow-y-auto p-4 space-y-4">
           {messages.length === 0 ? (
@@ -897,28 +897,28 @@ export function VertexAIChat() {
               <div className="text-center space-y-4">
                 {/* Donna Avatar with glow effect */}
                 <div className="relative inline-block">
-                  <div className="absolute inset-0 bg-lime-500/30 rounded-full blur-xl animate-pulse" />
+                  <div className="absolute inset-0 bg-primary/30 rounded-full blur-xl animate-pulse" />
                   <img 
                     src={DONNA_IMAGE} 
                     alt="Donna" 
-                    className="relative h-24 w-24 mx-auto rounded-full object-cover shadow-2xl ring-4 ring-lime-400/30"
+                    className="relative h-24 w-24 mx-auto rounded-full object-cover shadow-2xl ring-4 ring-primary/30"
                   />
-                  <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-lime-500 rounded-full border-3 border-background flex items-center justify-center">
+                  <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-primary rounded-full border-3 border-background flex items-center justify-center">
                     <Zap className="h-3 w-3 text-white" />
                   </div>
                 </div>
                 <div>
-                  <p className="text-lg font-bold bg-gradient-to-r from-lime-400 via-green-400 to-emerald-400 bg-clip-text text-transparent">
+                  <p className="text-lg font-bold text-primary">
                     Hola! Soy Donna
                   </p>
                   <p className="text-sm text-muted-foreground mt-1">Tu asistente virtual con IA</p>
-                  <p className="text-xs text-lime-500/60 mt-0.5">Puedo crear tareas, clientes y proveedores</p>
+                  <p className="text-xs text-primary/60 mt-0.5">Puedo responder cualquier pregunta de WitBiz</p>
                 </div>
                 <div className="grid grid-cols-2 gap-2 text-xs">
-                  <div className="p-2.5 bg-lime-500/10 hover:bg-lime-500/20 rounded-lg border border-lime-500/20 cursor-pointer transition-all hover:scale-105 text-lime-400/80">"Crea cliente X"</div>
-                  <div className="p-2.5 bg-lime-500/10 hover:bg-lime-500/20 rounded-lg border border-lime-500/20 cursor-pointer transition-all hover:scale-105 text-lime-400/80">"Nueva tarea..."</div>
-                  <div className="p-2.5 bg-lime-500/10 hover:bg-lime-500/20 rounded-lg border border-lime-500/20 cursor-pointer transition-all hover:scale-105 text-lime-400/80">"Crea proveedor Y"</div>
-                  <div className="p-2.5 bg-lime-500/10 hover:bg-lime-500/20 rounded-lg border border-lime-500/20 cursor-pointer transition-all hover:scale-105 text-lime-400/80">"Ayuda"</div>
+                  <div className="p-2.5 bg-primary/10 hover:bg-primary/20 rounded-lg border border-primary/20 cursor-pointer transition-all hover:scale-105 text-primary/80">"¿Cuánto dinero hay?"</div>
+                  <div className="p-2.5 bg-primary/10 hover:bg-primary/20 rounded-lg border border-primary/20 cursor-pointer transition-all hover:scale-105 text-primary/80">"Crea tarea..."</div>
+                  <div className="p-2.5 bg-primary/10 hover:bg-primary/20 rounded-lg border border-primary/20 cursor-pointer transition-all hover:scale-105 text-primary/80">"¿Cuántos clientes?"</div>
+                  <div className="p-2.5 bg-primary/10 hover:bg-primary/20 rounded-lg border border-primary/20 cursor-pointer transition-all hover:scale-105 text-primary/80">"Mis tareas"</div>
                 </div>
               </div>
             </div>
@@ -926,7 +926,7 @@ export function VertexAIChat() {
             messages.map((message, index) => (
               <div key={index} className={cn("flex gap-3 animate-in slide-in-from-bottom-2 duration-300", message.role === "user" ? "justify-end" : "justify-start")}>
                 {message.role === "assistant" && (
-                  <div className="w-9 h-9 bg-gradient-to-br from-lime-500/20 to-green-500/20 rounded-full flex items-center justify-center flex-shrink-0 border border-lime-400/30 shadow-sm shadow-lime-500/20">
+                  <div className="w-9 h-9 bg-primary/10 rounded-full flex items-center justify-center flex-shrink-0 border border-primary/30 shadow-sm">
                     <img src={DONNA_IMAGE} alt="Donna" className="h-7 w-7 rounded-full object-cover" />
                   </div>
                 )}
@@ -934,12 +934,12 @@ export function VertexAIChat() {
                   <div className={cn(
                     "rounded-2xl px-4 py-2.5 backdrop-blur-sm",
                     message.role === "user" 
-                      ? "bg-gradient-to-r from-lime-500 to-green-600 text-white shadow-lg shadow-lime-500/20" 
-                      : "bg-gradient-to-br from-muted/80 to-muted/50 border border-lime-500/10 shadow-sm"
+                      ? "bg-primary text-primary-foreground shadow-lg" 
+                      : "bg-muted border border-border shadow-sm"
                   )}>
                     <p className="text-sm whitespace-pre-wrap">{message.content}</p>
                   </div>
-                  <p className="text-xs text-lime-500/50 px-1 mt-1">
+                  <p className="text-xs text-muted-foreground px-1 mt-1">
                     {message.timestamp.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
                   </p>
                 </div>
@@ -950,13 +950,13 @@ export function VertexAIChat() {
           {/* Loading indicator */}
           {isLoading && !isTyping && (
             <div className="flex gap-3 justify-start animate-in slide-in-from-bottom-2 duration-300">
-              <div className="w-9 h-9 bg-gradient-to-br from-lime-500/20 to-green-500/20 rounded-full flex items-center justify-center border border-lime-400/30 shadow-sm shadow-lime-500/20">
-                <Zap className="h-4 w-4 text-lime-500 animate-pulse" />
+              <div className="w-9 h-9 bg-primary/10 rounded-full flex items-center justify-center border border-primary/30 shadow-sm">
+                <Zap className="h-4 w-4 text-primary animate-pulse" />
               </div>
-              <div className="bg-gradient-to-br from-muted/80 to-muted/50 border border-lime-500/10 rounded-2xl px-4 py-3 shadow-sm">
+              <div className="bg-muted border border-border rounded-2xl px-4 py-3 shadow-sm">
                 <div className="flex items-center gap-2">
                   <TypingIndicator />
-                  <p className="text-sm text-lime-400/70">Donna está pensando...</p>
+                  <p className="text-sm text-muted-foreground">Donna está pensando...</p>
                 </div>
               </div>
             </div>
@@ -965,13 +965,13 @@ export function VertexAIChat() {
           {/* Typing animation */}
           {isTyping && (
             <div className="flex gap-3 justify-start animate-in slide-in-from-bottom-2 duration-300">
-              <div className="w-9 h-9 bg-gradient-to-br from-lime-500/20 to-green-500/20 rounded-full flex items-center justify-center border border-lime-400/30 shadow-sm shadow-lime-500/20">
+              <div className="w-9 h-9 bg-primary/10 rounded-full flex items-center justify-center border border-primary/30 shadow-sm">
                 <img src={DONNA_IMAGE} alt="Donna" className="h-7 w-7 rounded-full object-cover" />
               </div>
-              <div className="bg-gradient-to-br from-muted/80 to-muted/50 border border-lime-500/10 rounded-2xl px-4 py-2.5 shadow-sm backdrop-blur-sm max-w-[80%]">
+              <div className="bg-muted border border-border rounded-2xl px-4 py-2.5 shadow-sm max-w-[80%]">
                 <p className="text-sm whitespace-pre-wrap">
                   {typingText}
-                  <span className="inline-block w-0.5 h-4 bg-lime-500 ml-0.5 animate-pulse" />
+                  <span className="inline-block w-0.5 h-4 bg-primary ml-0.5 animate-pulse" />
                 </p>
               </div>
             </div>
@@ -980,8 +980,8 @@ export function VertexAIChat() {
 
         {/* Input - Futuristic with Voice Controls */}
         <div className={cn(
-          "border-t border-lime-500/20 bg-gradient-to-r from-background via-lime-950/5 to-background p-3",
-          conversationMode && "bg-gradient-to-r from-purple-950/20 via-purple-900/10 to-purple-950/20 border-purple-500/30"
+          "border-t border-border bg-card p-3",
+          conversationMode && "bg-purple-500/10 border-purple-500/30"
         )}>
           <form onSubmit={handleSubmit} data-voice-form className="flex gap-2 items-end">
             {/* Voice Toggle Button (only when not in conversation mode) */}
@@ -994,7 +994,7 @@ export function VertexAIChat() {
                 className={cn(
                   "h-11 w-11 flex-shrink-0 transition-all",
                   voiceEnabled 
-                    ? "text-lime-500 hover:text-lime-400 hover:bg-lime-500/10" 
+                    ? "text-primary hover:text-primary hover:bg-primary/10" 
                     : "text-muted-foreground hover:text-foreground hover:bg-muted"
                 )}
                 title={voiceEnabled ? "Desactivar voz de Donna" : "Activar voz de Donna"}
@@ -1017,7 +1017,7 @@ export function VertexAIChat() {
                     ? "bg-purple-500/30 text-purple-400 hover:bg-purple-500/40 ring-2 ring-purple-500/50" 
                     : isListening
                       ? "bg-red-500/20 text-red-500 hover:bg-red-500/30 animate-pulse"
-                      : "text-lime-500 hover:text-lime-400 hover:bg-lime-500/10"
+                      : "text-primary hover:text-primary hover:bg-primary/10"
                 )}
                 title={conversationMode ? "Terminar conversación de voz" : "Iniciar conversación de voz"}
               >
@@ -1047,7 +1047,7 @@ export function VertexAIChat() {
                     : "Escribe o habla con Donna..."
                 }
                 className={cn(
-                  "flex-1 min-h-[44px] max-h-[120px] resize-none text-sm bg-background/50 border-lime-500/20 focus:border-lime-500/40 focus:ring-lime-500/20 placeholder:text-lime-500/30",
+                  "flex-1 min-h-[44px] max-h-[120px] resize-none text-sm bg-background border-border focus:border-primary focus:ring-primary/20",
                   conversationMode && "border-purple-500/30 focus:border-purple-500/50",
                   isListening && "border-red-500/50 focus:border-red-500/70"
                 )}
@@ -1062,7 +1062,7 @@ export function VertexAIChat() {
                 type="submit" 
                 size="icon" 
                 disabled={isLoading || !input.trim()} 
-                className="h-11 w-11 bg-gradient-to-r from-lime-500 to-green-600 hover:from-lime-600 hover:to-green-700 shadow-lg shadow-lime-500/30 border-0 transition-all hover:scale-105 disabled:opacity-50"
+                className="h-11 w-11 bg-primary hover:bg-primary/90 shadow-lg border-0 transition-all hover:scale-105 disabled:opacity-50"
               >
                 {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
               </Button>
@@ -1072,9 +1072,9 @@ export function VertexAIChat() {
           {/* Donna Speaking Indicator (when typing text and voice enabled) */}
           {!conversationMode && isSpeaking && (
             <div className="flex items-center justify-center gap-3 mt-3">
-              <span className="text-xs text-lime-400 font-medium">Donna</span>
+              <span className="text-xs text-primary font-medium">Donna</span>
               <VoiceWaveformEnhanced variant="donna" />
-              <span className="text-xs text-lime-400">🔊 Hablando...</span>
+              <span className="text-xs text-primary">🔊 Hablando...</span>
             </div>
           )}
           
