@@ -176,37 +176,53 @@ export async function POST(req: NextRequest) {
 
   // Construir objeto de actualización del documento
   // Guardar la propuesta editada para futuras ediciones (evita re-analizar con Document AI)
+  
+  // Helper function to remove undefined values recursively (Firestore doesn't accept undefined)
+  const cleanUndefined = (obj: any): any => {
+    if (obj === null || obj === undefined) return null;
+    if (typeof obj !== 'object') return obj;
+    if (Array.isArray(obj)) return obj.map(cleanUndefined);
+    
+    const cleaned: any = {};
+    for (const [key, value] of Object.entries(obj)) {
+      if (value !== undefined) {
+        cleaned[key] = cleanUndefined(value);
+      }
+    }
+    return cleaned;
+  };
+
   const docUpdate: any = {
     ai: {
       status: "applied",
-      proposal: {
+      proposal: cleanUndefined({
         // Guardar la propuesta completa con los campos editados
-        suggestedType: proposal.documentType || proposal.suggestedType,
-        confidence: proposal.confidence,
-        extracted: proposal.rawExtracted || proposal.extracted,
-        summary: proposal.summary,
+        suggestedType: proposal.documentType || proposal.suggestedType || null,
+        confidence: proposal.confidence || null,
+        extracted: proposal.rawExtracted || proposal.extracted || null,
+        summary: proposal.summary || null,
         suggested: {
           transaction: tx ? {
-            type: tx.type,
-            amount: tx.amount,
-            description: tx.description,
+            type: tx.type || null,
+            amount: tx.amount || null,
+            description: tx.description || null,
           } : null,
           task: taskData ? {
-            title: taskData.title,
-            description: taskData.description,
-            clientId: taskData.clientId || finalClientId,
-            dueDate: taskData.dueDate,
-            dueTime: taskData.dueTime,
-            location: taskData.location,
+            title: taskData.title || null,
+            description: taskData.description || null,
+            clientId: taskData.clientId || finalClientId || null,
+            dueDate: taskData.dueDate || null,
+            dueTime: taskData.dueTime || null,
+            location: taskData.location || null,
           } : null,
         },
         associations: {
-          supplier: finalSupplierId ? { matched: true, id: finalSupplierId } : proposal.associations?.supplier,
-          client: finalClientId ? { matched: true, id: finalClientId } : proposal.associations?.client,
-          availableSuppliers: proposal.associations?.availableSuppliers,
-          availableClients: proposal.associations?.availableClients,
+          supplier: finalSupplierId ? { matched: true, id: finalSupplierId } : (proposal.associations?.supplier || null),
+          client: finalClientId ? { matched: true, id: finalClientId } : (proposal.associations?.client || null),
+          availableSuppliers: proposal.associations?.availableSuppliers || null,
+          availableClients: proposal.associations?.availableClients || null,
         },
-      },
+      }),
       audit: {
         approvedAt: FieldValue.serverTimestamp(),
         approvedBy: auth.uid,
@@ -222,12 +238,15 @@ export async function POST(req: NextRequest) {
     docUpdate.clientId = finalClientId;
   }
 
+  console.log("📝 Document update payload:", JSON.stringify(docUpdate, null, 2));
+
   // Update document with error handling
   try {
     await docRef.set(docUpdate, { merge: true });
     console.log("✅ Documento aplicado:", body.docId, { supplierId: finalSupplierId, clientId: finalClientId });
   } catch (error) {
     console.error("❌ Error updating document:", error);
+    console.error("❌ Error stack:", error instanceof Error ? error.stack : "No stack");
     return NextResponse.json({ 
       error: "Error updating document", 
       details: error instanceof Error ? error.message : "Unknown error"
