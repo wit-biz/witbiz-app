@@ -464,7 +464,6 @@ export function VertexAIChat() {
       const q = query(
         collection(db, "chatConversations"),
         where("userId", "==", user.uid),
-        orderBy("updatedAt", "desc"),
         limit(50)
       );
       
@@ -483,6 +482,8 @@ export function VertexAIChat() {
         };
       });
       
+      // Sort locally instead of in query
+      convs.sort((a, b) => b.updatedAt.getTime() - a.updatedAt.getTime());
       setConversations(convs);
     } catch (error) {
       console.error("Error loading conversations:", error);
