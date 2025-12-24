@@ -527,7 +527,9 @@ function ResourcesView({ promoterId }: { promoterId: string }) {
 
 function ProfileView({ promoter, onUpdateCode }: { promoter: Promoter; onUpdateCode: (newCode: string) => Promise<boolean> }) {
     const { toast } = useToast();
-    const { referredClients, totalCommissions, clientCount } = usePromoterData(promoter.id);
+    // Use promoter data directly from props (no auth required)
+    const clientCount = promoter.referredClients || 0;
+    const totalCommissions = promoter.totalCommissions || 0;
     
     const [currentCode, setCurrentCode] = useState('');
     const [newCode, setNewCode] = useState('');
@@ -607,7 +609,7 @@ function ProfileView({ promoter, onUpdateCode }: { promoter: Promoter; onUpdateC
                         </div>
                         <div>
                             <h3 className="text-lg font-bold">{promoter.name}</h3>
-                            <p className="text-sm text-muted-foreground">Promotor desde {promoter.createdAt ? format(promoter.createdAt.toDate(), 'MMMM yyyy', { locale: es }) : 'N/A'}</p>
+                            <p className="text-sm text-muted-foreground">Promotor desde {promoter.createdAt ? format(typeof promoter.createdAt.toDate === 'function' ? promoter.createdAt.toDate() : new Date(promoter.createdAt._seconds * 1000), 'MMMM yyyy', { locale: es }) : 'N/A'}</p>
                         </div>
                     </div>
                     
@@ -739,33 +741,46 @@ function ProfileView({ promoter, onUpdateCode }: { promoter: Promoter; onUpdateC
 function PromoterPageContent() {
     const router = useRouter();
     const searchParams = useSearchParams();
-    const { promoters, isLoadingPromoters, updatePromoter } = useCRMData();
     const { toast } = useToast();
 
     const [activeView, setActiveView] = useState('dashboard');
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const [isValidPromoter, setIsValidPromoter] = useState<boolean | null>(null);
     const [currentPromoter, setCurrentPromoter] = useState<Promoter | null>(null);
+    const [isLoading, setIsLoading] = useState(true);
     const promoterId = searchParams.get('promoterId');
     
+    // Fetch promoter data via API (no auth required)
     useEffect(() => {
-        if (!isLoadingPromoters) {
-            if (promoterId) {
-                const promoter = promoters.find(p => p.id === promoterId);
-                if (promoter && promoter.status === 'Activo') {
-                    setCurrentPromoter(promoter);
+        const fetchPromoter = async () => {
+            if (!promoterId) {
+                setIsValidPromoter(false);
+                setIsLoading(false);
+                return;
+            }
+            
+            try {
+                const response = await fetch(`/api/promoter-data?id=${promoterId}`);
+                const data = await response.json();
+                
+                if (data.success && data.promoter) {
+                    setCurrentPromoter(data.promoter);
                     setIsValidPromoter(true);
                 } else {
                     setIsValidPromoter(false);
                 }
-            } else {
+            } catch (error) {
+                console.error('Error fetching promoter:', error);
                 setIsValidPromoter(false);
             }
-        }
-    }, [promoterId, promoters, isLoadingPromoters]);
+            setIsLoading(false);
+        };
+        
+        fetchPromoter();
+    }, [promoterId]);
     
     useEffect(() => {
-        if (isValidPromoter === false) {
+        if (!isLoading && isValidPromoter === false) {
             toast({
                 variant: 'destructive',
                 title: 'Acceso Denegado',
@@ -773,7 +788,7 @@ function PromoterPageContent() {
             });
             router.replace('/promoter-login');
         }
-    }, [isValidPromoter, router, toast]);
+    }, [isValidPromoter, isLoading, router, toast]);
 
     const handleLogout = () => {
         router.push('/promoter-login');
@@ -781,11 +796,22 @@ function PromoterPageContent() {
     
     const handleUpdateCode = async (newCode: string): Promise<boolean> => {
         if (!currentPromoter) return false;
-        const success = await updatePromoter(currentPromoter.id, { accessCode: newCode });
-        if (success) {
-            setCurrentPromoter(prev => prev ? { ...prev, accessCode: newCode } : null);
+        try {
+            const response = await fetch('/api/promoter-data', {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ promoterId: currentPromoter.id, accessCode: newCode }),
+            });
+            const data = await response.json();
+            if (data.success) {
+                setCurrentPromoter(prev => prev ? { ...prev, accessCode: newCode } : null);
+                return true;
+            }
+            return false;
+        } catch (error) {
+            console.error('Error updating code:', error);
+            return false;
         }
-        return success;
     };
     
     if (isValidPromoter === null || !currentPromoter) {

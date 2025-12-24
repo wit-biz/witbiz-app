@@ -92,7 +92,7 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="relative flex min-h-screen items-center justify-center bg-background p-4 overflow-hidden">
+    <div className="relative flex min-h-screen items-center justify-center bg-black p-4 overflow-hidden">
         <div className="animated-gradient-bg"></div>
         <Card className="w-full max-w-sm z-10">
         <CardHeader className="text-center">

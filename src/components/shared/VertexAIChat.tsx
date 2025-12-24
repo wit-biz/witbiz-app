@@ -15,21 +15,21 @@ const DONNA_IMAGE = "https://firebasestorage.googleapis.com/v0/b/wit-biz-0794371
 function FuturisticBackground() {
   return (
     <div className="absolute inset-0 overflow-hidden pointer-events-none">
-      {/* Grid pattern */}
-      <div className="absolute inset-0 bg-[linear-gradient(rgba(132,204,22,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(132,204,22,0.03)_1px,transparent_1px)] bg-[size:50px_50px] [mask-image:radial-gradient(ellipse_80%_50%_at_50%_0%,#000_70%,transparent_110%)]" />
+      {/* Grid pattern - theme aware */}
+      <div className="absolute inset-0 bg-[linear-gradient(hsl(var(--primary)/0.05)_1px,transparent_1px),linear-gradient(90deg,hsl(var(--primary)/0.05)_1px,transparent_1px)] bg-[size:50px_50px] [mask-image:radial-gradient(ellipse_80%_50%_at_50%_0%,#000_70%,transparent_110%)]" />
       
-      {/* Floating particles */}
-      <div className="absolute top-1/4 left-1/4 w-2 h-2 bg-lime-500/30 rounded-full animate-pulse" style={{animationDelay: '0s', animationDuration: '3s'}} />
-      <div className="absolute top-1/3 right-1/4 w-1.5 h-1.5 bg-green-500/40 rounded-full animate-pulse" style={{animationDelay: '1s', animationDuration: '4s'}} />
-      <div className="absolute bottom-1/3 left-1/3 w-1 h-1 bg-lime-400/50 rounded-full animate-pulse" style={{animationDelay: '2s', animationDuration: '2.5s'}} />
-      <div className="absolute top-1/2 right-1/3 w-2 h-2 bg-emerald-500/30 rounded-full animate-pulse" style={{animationDelay: '0.5s', animationDuration: '3.5s'}} />
+      {/* Floating particles - theme aware */}
+      <div className="absolute top-1/4 left-1/4 w-2 h-2 bg-primary/30 rounded-full animate-pulse" style={{animationDelay: '0s', animationDuration: '3s'}} />
+      <div className="absolute top-1/3 right-1/4 w-1.5 h-1.5 bg-primary/40 rounded-full animate-pulse" style={{animationDelay: '1s', animationDuration: '4s'}} />
+      <div className="absolute bottom-1/3 left-1/3 w-1 h-1 bg-primary/50 rounded-full animate-pulse" style={{animationDelay: '2s', animationDuration: '2.5s'}} />
+      <div className="absolute top-1/2 right-1/3 w-2 h-2 bg-primary/30 rounded-full animate-pulse" style={{animationDelay: '0.5s', animationDuration: '3.5s'}} />
       
-      {/* Gradient orbs */}
-      <div className="absolute -top-20 -right-20 w-40 h-40 bg-lime-500/10 rounded-full blur-3xl animate-pulse" style={{animationDuration: '4s'}} />
-      <div className="absolute -bottom-10 -left-10 w-32 h-32 bg-green-500/10 rounded-full blur-3xl animate-pulse" style={{animationDuration: '5s', animationDelay: '1s'}} />
+      {/* Gradient orbs - theme aware */}
+      <div className="absolute -top-20 -right-20 w-40 h-40 bg-primary/10 rounded-full blur-3xl animate-pulse" style={{animationDuration: '4s'}} />
+      <div className="absolute -bottom-10 -left-10 w-32 h-32 bg-primary/10 rounded-full blur-3xl animate-pulse" style={{animationDuration: '5s', animationDelay: '1s'}} />
       
-      {/* Scanning line */}
-      <div className="absolute inset-x-0 h-px bg-gradient-to-r from-transparent via-lime-500/50 to-transparent animate-scan" />
+      {/* Scanning line - theme aware */}
+      <div className="absolute inset-x-0 h-px bg-gradient-to-r from-transparent via-primary/50 to-transparent animate-scan" />
     </div>
   );
 }
@@ -38,9 +38,9 @@ function FuturisticBackground() {
 function TypingIndicator() {
   return (
     <div className="flex items-center gap-1.5 px-2">
-      <div className="w-2 h-2 bg-lime-500 rounded-full animate-bounce" style={{animationDelay: '0ms', animationDuration: '600ms'}} />
-      <div className="w-2 h-2 bg-lime-500 rounded-full animate-bounce" style={{animationDelay: '150ms', animationDuration: '600ms'}} />
-      <div className="w-2 h-2 bg-lime-500 rounded-full animate-bounce" style={{animationDelay: '300ms', animationDuration: '600ms'}} />
+      <div className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{animationDelay: '0ms', animationDuration: '600ms'}} />
+      <div className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{animationDelay: '150ms', animationDuration: '600ms'}} />
+      <div className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{animationDelay: '300ms', animationDuration: '600ms'}} />
     </div>
   );
 }
@@ -48,13 +48,13 @@ function TypingIndicator() {
 // Voice waveform animation component
 function VoiceWaveform({ variant = 'user', isActive = true }: { variant?: 'user' | 'donna'; isActive?: boolean }) {
   const barCount = 5;
-  const baseColor = variant === 'user' ? 'bg-lime-500' : 'bg-purple-500';
-  const glowColor = variant === 'user' ? 'shadow-lime-500/50' : 'shadow-purple-500/50';
+  const baseColor = variant === 'user' ? 'bg-purple-500 dark:bg-purple-400' : 'bg-primary';
+  const glowColor = variant === 'user' ? 'shadow-purple-500/50' : 'shadow-primary/50';
   
   return (
     <div className={cn(
       "flex items-center justify-center gap-1 h-8 px-3 rounded-full",
-      variant === 'user' ? 'bg-lime-500/10' : 'bg-purple-500/10'
+      variant === 'user' ? 'bg-purple-500/10' : 'bg-primary/10'
     )}>
       {Array.from({ length: barCount }).map((_, i) => (
         <div
@@ -92,10 +92,10 @@ function VoiceWaveformEnhanced({ variant = 'user' }: { variant?: 'user' | 'donna
     { delay: 0.25, minH: 4, maxH: 20 },
   ];
   
-  // Donna = green (lime), User = purple
-  const colorClass = variant === 'donna' ? 'bg-lime-400' : 'bg-purple-400';
-  const bgClass = variant === 'donna' ? 'bg-lime-950/30' : 'bg-purple-950/30';
-  const borderClass = variant === 'donna' ? 'border-lime-500/30' : 'border-purple-500/30';
+  // Donna = primary (theme), User = purple
+  const colorClass = variant === 'donna' ? 'bg-primary' : 'bg-purple-500 dark:bg-purple-400';
+  const bgClass = variant === 'donna' ? 'bg-primary/10' : 'bg-purple-500/10';
+  const borderClass = variant === 'donna' ? 'border-primary/30' : 'border-purple-500/30';
   
   return (
     <div className={cn(
@@ -908,17 +908,17 @@ export function VertexAIChat() {
                   </div>
                 </div>
                 <div>
-                  <p className="text-lg font-bold text-primary">
+                  <p className="text-lg font-bold text-lime-700 dark:text-primary">
                     Hola! Soy Donna
                   </p>
                   <p className="text-sm text-muted-foreground mt-1">Tu asistente virtual con IA</p>
-                  <p className="text-xs text-primary/60 mt-0.5">Puedo responder cualquier pregunta de WitBiz</p>
+                  <p className="text-xs text-lime-600 dark:text-primary/60 mt-0.5">Puedo responder cualquier pregunta de WitBiz</p>
                 </div>
                 <div className="grid grid-cols-2 gap-2 text-xs">
-                  <div className="p-2.5 bg-primary/10 hover:bg-primary/20 rounded-lg border border-primary/20 cursor-pointer transition-all hover:scale-105 text-primary/80">"¿Cuánto dinero hay?"</div>
-                  <div className="p-2.5 bg-primary/10 hover:bg-primary/20 rounded-lg border border-primary/20 cursor-pointer transition-all hover:scale-105 text-primary/80">"Crea tarea..."</div>
-                  <div className="p-2.5 bg-primary/10 hover:bg-primary/20 rounded-lg border border-primary/20 cursor-pointer transition-all hover:scale-105 text-primary/80">"¿Cuántos clientes?"</div>
-                  <div className="p-2.5 bg-primary/10 hover:bg-primary/20 rounded-lg border border-primary/20 cursor-pointer transition-all hover:scale-105 text-primary/80">"Mis tareas"</div>
+                  <div className="p-2.5 bg-lime-50 dark:bg-primary/10 hover:bg-lime-100 dark:hover:bg-primary/20 rounded-lg border border-lime-400 dark:border-primary/20 cursor-pointer transition-all hover:scale-105 text-lime-800 dark:text-primary/80 font-medium">"¿Cuánto dinero hay?"</div>
+                  <div className="p-2.5 bg-lime-50 dark:bg-primary/10 hover:bg-lime-100 dark:hover:bg-primary/20 rounded-lg border border-lime-400 dark:border-primary/20 cursor-pointer transition-all hover:scale-105 text-lime-800 dark:text-primary/80 font-medium">"Crea tarea..."</div>
+                  <div className="p-2.5 bg-lime-50 dark:bg-primary/10 hover:bg-lime-100 dark:hover:bg-primary/20 rounded-lg border border-lime-400 dark:border-primary/20 cursor-pointer transition-all hover:scale-105 text-lime-800 dark:text-primary/80 font-medium">"¿Cuántos clientes?"</div>
+                  <div className="p-2.5 bg-lime-50 dark:bg-primary/10 hover:bg-lime-100 dark:hover:bg-primary/20 rounded-lg border border-lime-400 dark:border-primary/20 cursor-pointer transition-all hover:scale-105 text-lime-800 dark:text-primary/80 font-medium">"Mis tareas"</div>
                 </div>
               </div>
             </div>
@@ -1085,13 +1085,13 @@ export function VertexAIChat() {
               <div className="flex items-center gap-3">
                 {isListening && (
                   <>
-                    <span className="text-xs text-purple-400 font-medium">Tú</span>
+                    <span className="text-xs text-purple-500 dark:text-purple-400 font-medium">Tú</span>
                     <VoiceWaveformEnhanced variant="user" />
                   </>
                 )}
                 {isSpeaking && (
                   <>
-                    <span className="text-xs text-lime-400 font-medium">Donna</span>
+                    <span className="text-xs text-primary font-medium">Donna</span>
                     <VoiceWaveformEnhanced variant="donna" />
                   </>
                 )}
@@ -1103,7 +1103,7 @@ export function VertexAIChat() {
               {/* Status text and end button */}
               <div className="flex items-center gap-2 text-xs">
                 <span className={cn(
-                  isListening ? "text-purple-400" : isSpeaking ? "text-lime-400" : "text-muted-foreground"
+                  isListening ? "text-purple-500 dark:text-purple-400" : isSpeaking ? "text-primary" : "text-muted-foreground"
                 )}>
                   {isListening ? "🎤 Escuchando..." : isSpeaking ? "🔊 Donna hablando..." : "⏳ Procesando..."}
                 </span>

@@ -195,7 +195,7 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
     
      useEffect(() => {
         const bootstrapDirectors = async () => {
-            if (!firestore || !auth) return;
+            if (!firestore || !auth || !user) return;
     
             const directorUsers = [
                 { uid: 'TycwLL3rn5Zny3R4aibDJuIbd2S2', name: 'Isaac Golzarri', email: 'witbiz.mx@gmail.com', role: 'Director' },
@@ -223,7 +223,7 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
         };
     
         bootstrapDirectors();
-    }, [firestore, auth]);
+    }, [firestore, auth, user]);
 
     const { data: clients = [], isLoading: isLoadingClients } = useCollection<Client>(clientsCollection);
     const { data: tasks = [], isLoading: isLoadingTasks } = useCollection<Task>(tasksCollection);

@@ -14,71 +14,69 @@ import { Label } from '@/components/ui/label';
 import { Logo } from '@/components/shared/logo';
 import { ArrowLeft, KeyRound, Loader2 } from 'lucide-react';
 import Link from 'next/link';
-import { useState, type FormEvent, useEffect } from 'react';
+import { useState, type FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
-import { useCRMData } from '@/contexts/CRMDataContext';
 
 export default function PromoterLoginPage() {
   const [accessCode, setAccessCode] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const router = useRouter();
   const { toast } = useToast();
-  const { promoters, isLoadingPromoters } = useCRMData();
-  const [isClient, setIsClient] = useState(false);
-
-  // Asegura que el componente ya está montado en el cliente
-  useEffect(() => {
-    setIsClient(true);
-  }, []);
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
 
     if (isSubmitting) return;
-
-    setIsSubmitting(true);
-
-    if (isLoadingPromoters || !promoters) {
-        toast({
-            variant: "destructive",
-            title: "Datos no disponibles",
-            description: "Espere un momento, se están cargando los datos de los promotores.",
-        });
-        setIsSubmitting(false);
-        return;
-    }
-
-    const normalizedCode = String(accessCode).trim();
-    const validPromoter = promoters.find(
-      (p) =>
-        String(p.accessCode).trim() === normalizedCode &&
-        String(p.status).trim().toLowerCase() === 'activo'
-    );
-
-    if (validPromoter) {
+    if (accessCode.length !== 6) {
       toast({
-        title: 'Acceso concedido',
-        description: `Bienvenido, ${validPromoter.name}. Redirigiendo...`,
+        variant: 'destructive',
+        title: 'Código inválido',
+        description: 'El código debe tener 6 dígitos.',
       });
-      router.push(`/promoters?promoterId=${validPromoter.id}`);
-      // No necesitamos `setIsSubmitting(false)` aquí porque la página va a cambiar.
       return;
     }
 
-    // Si llega aquí, no coincide
-    toast({
-      variant: 'destructive',
-      title: 'Código incorrecto',
-      description: 'El código de acceso no es válido o el promotor está inactivo.',
-    });
+    setIsSubmitting(true);
+
+    try {
+      const response = await fetch('/api/promoter-auth', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ accessCode: accessCode.trim() }),
+      });
+
+      const data = await response.json();
+
+      if (data.success && data.promoter) {
+        toast({
+          title: 'Acceso concedido',
+          description: `Bienvenido, ${data.promoter.name}. Redirigiendo...`,
+        });
+        router.push(`/promoters?promoterId=${data.promoter.id}`);
+        return;
+      }
+
+      toast({
+        variant: 'destructive',
+        title: 'Código incorrecto',
+        description: data.error || 'El código de acceso no es válido o el promotor está inactivo.',
+      });
+    } catch (error) {
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: 'No se pudo verificar el código. Intente de nuevo.',
+      });
+    }
+
     setIsSubmitting(false);
   };
 
-  const isDisabled = !isClient || isLoadingPromoters || isSubmitting;
+  const isDisabled = isSubmitting;
 
   return (
-    <div className="relative flex min-h-screen items-center justify-center bg-background p-4 overflow-hidden">
+    <div className="relative flex min-h-screen items-center justify-center bg-black p-4 overflow-hidden">
       <div className="animated-gradient-bg"></div>
 
       <Card className="w-full max-w-sm z-10">
