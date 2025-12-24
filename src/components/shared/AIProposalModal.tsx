@@ -589,8 +589,15 @@ export function AIProposalModal({
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Error al aplicar la propuesta');
+        let errorMessage = 'Error al aplicar la propuesta';
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.error || errorMessage;
+        } catch {
+          // Response body might be empty or not JSON
+          errorMessage = `Error ${response.status}: ${response.statusText || errorMessage}`;
+        }
+        throw new Error(errorMessage);
       }
 
       toast({
