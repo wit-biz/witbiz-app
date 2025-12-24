@@ -91,7 +91,14 @@ export function AppSidebar() {
         </div>
         <div className="p-2 flex justify-center">
 {isSearching && (
-                <div className={cn(
+                <div 
+                onClick={(e) => {
+                  if (e.target === e.currentTarget && !isMinimized) {
+                    setIsSearching(false);
+                    setIsMinimized(false);
+                  }
+                }}
+                className={cn(
                   "fixed z-50 transition-all duration-300",
                   isMinimized 
                     ? "bottom-4 right-4 w-80" 

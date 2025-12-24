@@ -85,7 +85,12 @@ type AddEditClientDialogProps = {
 };
 
 export function AddEditClientDialog({ client, isOpen, onClose }: AddEditClientDialogProps) {
-  const { addClient, updateClient, serviceWorkflows = [], promoters } = useCRMData();
+  const { addClient, updateClient, serviceWorkflows: allServiceWorkflows = [], promoters } = useCRMData();
+  // Filter out archived services
+  const serviceWorkflows = React.useMemo(() => 
+    allServiceWorkflows.filter(s => s.status !== 'Archivado'), 
+    [allServiceWorkflows]
+  );
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = React.useState(false);
 

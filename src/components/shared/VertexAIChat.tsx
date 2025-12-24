@@ -213,8 +213,29 @@ export function VertexAIChat() {
       
       recognition.onend = () => {
         setIsListening(false);
-        // In conversation mode, if there's no pending input, restart listening
-        // (this handles cases where user didn't say anything)
+        // In conversation mode, always restart listening unless Donna is speaking
+        if (conversationModeRef.current) {
+          setTimeout(() => {
+            if (conversationModeRef.current && recognitionRef.current && !synthRef.current?.speaking) {
+              try {
+                recognitionRef.current.start();
+                setIsListening(true);
+              } catch (e) {
+                // Already started or other error, try again shortly
+                setTimeout(() => {
+                  if (conversationModeRef.current && recognitionRef.current) {
+                    try {
+                      recognitionRef.current.start();
+                      setIsListening(true);
+                    } catch (e2) {
+                      console.error('Failed to restart recognition:', e2);
+                    }
+                  }
+                }, 500);
+              }
+            }
+          }, 300);
+        }
       };
       
       recognition.onerror = (event: any) => {
@@ -369,16 +390,30 @@ export function VertexAIChat() {
     const allVoices = synthRef.current.getVoices();
     const spanishVoices = allVoices.filter(v => v.lang.startsWith('es'));
     
-    // Prefer Spanish female voices
-    const preferredVoice = spanishVoices.find(v => 
-      v.name.toLowerCase().includes('female') || 
-      v.name.toLowerCase().includes('paulina') ||
-      v.name.toLowerCase().includes('monica') ||
-      v.name.toLowerCase().includes('sabina') ||
-      v.name.toLowerCase().includes('helena')
-    ) || spanishVoices.find(v => 
-      v.name.toLowerCase().includes('google') 
-    ) || spanishVoices[0];
+    // Prefer Spanish female voices - be more specific to avoid male voices
+    const femaleVoiceNames = ['paulina', 'monica', 'sabina', 'helena', 'female', 'mujer', 'francisca', 'angelica', 'lupe'];
+    const maleVoiceNames = ['jorge', 'diego', 'male', 'hombre', 'carlos', 'juan'];
+    
+    // First try to find an explicit female voice
+    let preferredVoice = spanishVoices.find(v => {
+      const name = v.name.toLowerCase();
+      return femaleVoiceNames.some(fn => name.includes(fn));
+    });
+    
+    // If no explicit female, exclude male voices and pick first remaining
+    if (!preferredVoice) {
+      preferredVoice = spanishVoices.find(v => {
+        const name = v.name.toLowerCase();
+        return !maleVoiceNames.some(mn => name.includes(mn));
+      });
+    }
+    
+    // Last resort: any Spanish voice
+    if (!preferredVoice) {
+      preferredVoice = spanishVoices[0];
+    }
+    
+    console.log('🔊 Using voice:', preferredVoice?.name || 'default');
     
     if (preferredVoice) {
       utterance.voice = preferredVoice;
