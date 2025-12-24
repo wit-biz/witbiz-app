@@ -301,35 +301,75 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
     };
 
     const addClient = async (newClientData: Omit<Client, 'id'>): Promise<Client | null> => {
-        if (!clientsCollection || !serviceWorkflows) return null;
-        
-        const firstServiceId = newClientData.subscribedServiceIds[0];
-        const service = serviceWorkflows.find(s => s.id === firstServiceId);
-        const initialStage = service?.stages?.[0];
-
-        const payload = {
-            ...newClientData,
-            status: 'Activo' as const,
-            currentWorkflowStageId: initialStage?.id,
-            createdAt: serverTimestamp(),
-        };
-
-        const docRef = await addDocumentNonBlocking(clientsCollection, payload);
-        addLog('client_created', docRef.id, 'client', newClientData.name);
-        
-        const newClient = { id: docRef.id, ...payload } as Client;
-
-        if (initialStage?.actions) {
-            for (const action of initialStage.actions) {
-                await addTask({
-                    ...action,
-                    clientId: newClient.id,
-                    serviceId: service?.id,
-                });
+        try {
+            console.log('🔍 Starting addClient with data:', newClientData);
+            
+            if (!clientsCollection || !serviceWorkflows) {
+                console.error('❌ Missing clientsCollection or serviceWorkflows');
+                return null;
             }
+            
+            // Validate required fields
+            if (!newClientData.subscribedServiceIds || newClientData.subscribedServiceIds.length === 0) {
+                console.error('❌ No service IDs provided');
+                throw new Error('Debe seleccionar al menos un servicio');
+            }
+            
+            if (!newClientData.name || newClientData.name.trim().length < 2) {
+                console.error('❌ Invalid client name');
+                throw new Error('El nombre del cliente debe tener al menos 2 caracteres');
+            }
+            
+            const firstServiceId = newClientData.subscribedServiceIds[0];
+            const service = serviceWorkflows.find(s => s.id === firstServiceId);
+            
+            if (!service) {
+                console.error('❌ Service not found:', firstServiceId);
+                throw new Error('Servicio no encontrado');
+            }
+            
+            const initialStage = service?.stages?.[0];
+            console.log('🔍 Found service:', service.name, 'Initial stage:', initialStage?.name);
+
+            const payload = {
+                ...newClientData,
+                status: 'Activo' as const,
+                currentWorkflowStageId: initialStage?.id,
+                createdAt: serverTimestamp(),
+            };
+
+            console.log('🔍 Creating client document with payload:', payload);
+            const docRef = await addDocumentNonBlocking(clientsCollection, payload);
+            console.log('✅ Client document created with ID:', docRef.id);
+            
+            addLog('client_created', docRef.id, 'client', newClientData.name);
+            
+            const newClient = { id: docRef.id, ...payload } as Client;
+
+            // Create initial tasks if service has actions
+            if (initialStage?.actions && initialStage.actions.length > 0) {
+                console.log('🔍 Creating initial tasks:', initialStage.actions.length, 'tasks');
+                for (const action of initialStage.actions) {
+                    try {
+                        await addTask({
+                            ...action,
+                            clientId: newClient.id,
+                            serviceId: service?.id,
+                        });
+                        console.log('✅ Task created:', action.title);
+                    } catch (taskError) {
+                        console.error('❌ Error creating task:', taskError);
+                        // Continue with other tasks even if one fails
+                    }
+                }
+            }
+            
+            console.log('✅ Client creation completed successfully');
+            return newClient;
+        } catch (error) {
+            console.error('❌ Error in addClient:', error);
+            throw error;
         }
-        
-        return newClient;
     };
 
     const updateClient = async (clientId: string, updates: Partial<Client>): Promise<boolean> => {

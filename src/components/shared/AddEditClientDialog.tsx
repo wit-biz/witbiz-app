@@ -173,26 +173,44 @@ export function AddEditClientDialog({ client, isOpen, onClose }: AddEditClientDi
     setIsSubmitting(true);
     let success = false;
     
-    const finalCustomCommissions = values.customCommissions
-        ?.filter(cc => values.customCommissionServiceIds?.includes(cc.serviceId))
-        .map(cc => ({ ...cc, rate: cc.rate ?? 0 }));
+    try {
+      console.log('🔍 Submitting client form:', values);
+      
+      const finalCustomCommissions = values.customCommissions
+          ?.filter(cc => values.customCommissionServiceIds?.includes(cc.serviceId))
+          .map(cc => ({ ...cc, rate: cc.rate ?? 0 }));
 
-    const finalValues = {
-        ...values,
-        customCommissions: finalCustomCommissions as any,
-        posTerminals: values.hasPosTerminals
-          ? (values.posTerminals || []).map((t) => ({
-              ...t,
-              id: t.id || `pos-${Date.now()}-${Math.random()}`,
-            }))
-          : [],
-    };
-    
-    if (isEditMode && client) {
-        success = await updateClient(client.id, finalValues);
-    } else {
-        const newClient = await addClient(finalValues as Omit<Client, 'id'>);
-        success = !!newClient;
+      const finalValues = {
+          ...values,
+          customCommissions: finalCustomCommissions as any,
+          posTerminals: values.hasPosTerminals
+            ? (values.posTerminals || []).map((t) => ({
+                ...t,
+                id: t.id || `pos-${Date.now()}-${Math.random()}`,
+              }))
+            : [],
+      };
+      
+      console.log('🔍 Final values to save:', finalValues);
+      
+      if (isEditMode && client) {
+          console.log('🔍 Updating existing client:', client.id);
+          success = await updateClient(client.id, finalValues);
+      } else {
+          console.log('🔍 Creating new client');
+          const newClient = await addClient(finalValues as Omit<Client, 'id'>);
+          success = !!newClient;
+          console.log('🔍 Client creation result:', newClient);
+      }
+    } catch (error) {
+      console.error('❌ Error in client form submission:', error);
+      toast({
+        title: 'Error',
+        description: error instanceof Error ? error.message : 'Error desconocido al guardar el cliente',
+        variant: 'destructive',
+      });
+      setIsSubmitting(false);
+      return;
     }
     
     setIsSubmitting(false);

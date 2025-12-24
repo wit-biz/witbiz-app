@@ -162,7 +162,17 @@ export async function POST(req: NextRequest) {
     writes.push(adminDb.collection("tasks").add(clean));
   }
 
-  await Promise.all(writes);
+  // Execute all writes with error handling
+  try {
+    const results = await Promise.all(writes);
+    console.log("✅ Writes completed:", results.length, "operations");
+  } catch (error) {
+    console.error("❌ Error executing writes:", error);
+    return NextResponse.json({ 
+      error: "Error creating associated records", 
+      details: error instanceof Error ? error.message : "Unknown error"
+    }, { status: 500 });
+  }
 
   // Construir objeto de actualización del documento
   // Guardar la propuesta editada para futuras ediciones (evita re-analizar con Document AI)
@@ -212,9 +222,17 @@ export async function POST(req: NextRequest) {
     docUpdate.clientId = finalClientId;
   }
 
-  await docRef.set(docUpdate, { merge: true });
-
-  console.log("✅ Documento aplicado:", body.docId, { supplierId: finalSupplierId, clientId: finalClientId });
+  // Update document with error handling
+  try {
+    await docRef.set(docUpdate, { merge: true });
+    console.log("✅ Documento aplicado:", body.docId, { supplierId: finalSupplierId, clientId: finalClientId });
+  } catch (error) {
+    console.error("❌ Error updating document:", error);
+    return NextResponse.json({ 
+      error: "Error updating document", 
+      details: error instanceof Error ? error.message : "Unknown error"
+    }, { status: 500 });
+  }
 
   return NextResponse.json({ 
     ok: true,
