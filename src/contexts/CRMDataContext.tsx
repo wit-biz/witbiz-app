@@ -331,12 +331,16 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
             const initialStage = service?.stages?.[0];
             console.log('🔍 Found service:', service.name, 'Initial stage:', initialStage?.name);
 
-            const payload = {
+            const payload: any = {
                 ...newClientData,
                 status: 'Activo' as const,
-                currentWorkflowStageId: initialStage?.id,
                 createdAt: serverTimestamp(),
             };
+            
+            // Only add currentWorkflowStageId if it exists (some services may not have stages)
+            if (initialStage?.id) {
+                payload.currentWorkflowStageId = initialStage.id;
+            }
 
             console.log('🔍 Creating client document with payload:', payload);
             const docRef = await addDocumentNonBlocking(clientsCollection, payload);
