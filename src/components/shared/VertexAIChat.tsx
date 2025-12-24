@@ -383,40 +383,85 @@ export function VertexAIChat() {
     const utterance = new SpeechSynthesisUtterance(cleanText);
     utterance.lang = 'es-MX';
     utterance.rate = 1.0;
-    utterance.pitch = 1.05;
+    utterance.pitch = 1.1; // Slightly higher pitch for feminine voice
     utterance.volume = 1.0;
     
     // Get voices fresh from synthesis (more reliable than state)
     const allVoices = synthRef.current.getVoices();
+    
+    // FEMALE VOICE SELECTION - Priority order for best female voices across all platforms
+    // These are known female Spanish voices on various platforms (iOS, Android, Chrome, Edge, Windows, macOS)
+    const priorityFemaleVoices = [
+      // Google/Chrome voices (high quality)
+      'google español',
+      'google español de estados unidos',
+      // iOS/macOS voices (high quality)
+      'paulina', // Mexican Spanish female - BEST
+      'mónica', 'monica', // Spanish female
+      'angelica', 'angélica', // Mexican female
+      'francisca', // Chilean female  
+      'lupe', // Mexican female (Siri)
+      // Microsoft/Edge voices
+      'sabina', // Mexican female
+      'helena', // Spanish female
+      'dalia', // Mexican female
+      'larissa', // Brazilian but works
+      // Android voices
+      'es-mx-x-sfb', 'es-mx-x-sfc', // Google TTS female variants
+      'es-us-x-sfb', // US Spanish female
+      // Generic indicators
+      'female', 'mujer', 'femenino', 'femenina',
+    ];
+    
+    // Known MALE voices to ALWAYS exclude
+    const maleVoiceNames = [
+      'jorge', 'diego', 'carlos', 'juan', 'andrés', 'andres',
+      'enrique', 'miguel', 'pedro', 'male', 'hombre', 'masculino',
+      'es-mx-x-sma', 'es-mx-x-smb', 'es-us-x-sma', // Google TTS male variants
+    ];
+    
+    // Get Spanish voices (es-MX, es-ES, es-US, es-419, etc.)
     const spanishVoices = allVoices.filter(v => v.lang.startsWith('es'));
     
-    // Prefer Spanish female voices - be more specific to avoid male voices
-    const femaleVoiceNames = ['paulina', 'monica', 'sabina', 'helena', 'female', 'mujer', 'francisca', 'angelica', 'lupe'];
-    const maleVoiceNames = ['jorge', 'diego', 'male', 'hombre', 'carlos', 'juan'];
+    // Also get English voices as fallback (some have good female Spanish pronunciation)
+    const englishVoices = allVoices.filter(v => v.lang.startsWith('en'));
     
-    // First try to find an explicit female voice
-    let preferredVoice = spanishVoices.find(v => {
-      const name = v.name.toLowerCase();
-      return femaleVoiceNames.some(fn => name.includes(fn));
-    });
+    let selectedVoice: SpeechSynthesisVoice | undefined;
     
-    // If no explicit female, exclude male voices and pick first remaining
-    if (!preferredVoice) {
-      preferredVoice = spanishVoices.find(v => {
+    // STEP 1: Try to find a priority female voice in Spanish
+    for (const priorityName of priorityFemaleVoices) {
+      selectedVoice = spanishVoices.find(v => 
+        v.name.toLowerCase().includes(priorityName.toLowerCase())
+      );
+      if (selectedVoice) break;
+    }
+    
+    // STEP 2: If no priority female found, exclude all known male voices
+    if (!selectedVoice) {
+      selectedVoice = spanishVoices.find(v => {
         const name = v.name.toLowerCase();
-        return !maleVoiceNames.some(mn => name.includes(mn));
+        // Must NOT contain any male indicators
+        return !maleVoiceNames.some(male => name.includes(male));
       });
     }
     
-    // Last resort: any Spanish voice
-    if (!preferredVoice) {
-      preferredVoice = spanishVoices[0];
+    // STEP 3: If still no voice, try Google's default Spanish (usually female)
+    if (!selectedVoice) {
+      selectedVoice = spanishVoices.find(v => 
+        v.name.toLowerCase().includes('google') || v.name.toLowerCase().includes('español')
+      );
     }
     
-    console.log('🔊 Using voice:', preferredVoice?.name || 'default');
+    // STEP 4: Last resort - any Spanish voice (adjust pitch to sound more feminine)
+    if (!selectedVoice && spanishVoices.length > 0) {
+      selectedVoice = spanishVoices[0];
+      utterance.pitch = 1.3; // Higher pitch if we can't guarantee female voice
+    }
     
-    if (preferredVoice) {
-      utterance.voice = preferredVoice;
+    console.log('🔊 Donna voice:', selectedVoice?.name || 'default', '| Lang:', selectedVoice?.lang);
+    
+    if (selectedVoice) {
+      utterance.voice = selectedVoice;
     }
     
     // When Donna starts speaking
