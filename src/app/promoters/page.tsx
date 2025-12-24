@@ -1,10 +1,9 @@
-
 'use client';
 
 import React, { useState, useMemo, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { DateRange } from 'react-day-picker';
-import { format, isWithinInterval, startOfDay } from 'date-fns';
+import { format, isWithinInterval, startOfDay, endOfDay, subDays } from 'date-fns';
 import { es } from 'date-fns/locale';
 
 import { Button } from '@/components/ui/button';
@@ -12,15 +11,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Calendar } from '@/components/ui/calendar';
 import { Badge } from '@/components/ui/badge';
-import { LogOut, Users, CircleDollarSign, BookText, Download, BarChart, User, Save, Lock, Mail, UserCircle, PanelLeft, Loader2 } from 'lucide-react';
+import { LogOut, Users, CircleDollarSign, BookText, Download, BarChart, User, Save, KeyRound, PanelLeft, Loader2, TrendingUp, DollarSign, UserCheck, Home, Eye, EyeOff } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { Logo } from '@/components/shared/logo';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
-import { DateRangeChartsTab } from '@/components/shared/DateRangeChartsTab';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
-import { PasswordInput } from '@/components/shared/PasswordInput';
 import { Separator } from '@/components/ui/separator';
 import {
   Sheet,
@@ -29,15 +26,186 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { useCRMData } from '@/contexts/CRMDataContext';
-import { type Document, type Promoter } from '@/lib/types';
+import { type Document, type Promoter, type Client, type Transaction } from '@/lib/types';
 
-// --- Components for each view ---
-
-function ClientsView({ promoterId }: { promoterId: string }) {
-    const { getClientsByPromoterId, promoters } = useCRMData();
-    const [isClient, setIsClient] = useState(false);
+// --- Helper to calculate promoter commissions from transactions ---
+function usePromoterData(promoterId: string) {
+    const { getClientsByPromoterId, transactions, serviceWorkflows } = useCRMData();
     
     const referredClients = getClientsByPromoterId(promoterId);
+    const clientIds = referredClients.map(c => c.id);
+    
+    // Get all transactions related to this promoter's clients
+    const promoterTransactions = useMemo(() => {
+        if (!transactions) return [];
+        return transactions.filter(t => 
+            t.clientId && clientIds.includes(t.clientId) && t.type === 'income'
+        );
+    }, [transactions, clientIds]);
+    
+    // Calculate commissions (assuming 10% default commission rate)
+    const commissions = useMemo(() => {
+        return promoterTransactions.map(t => {
+            const client = referredClients.find(c => c.id === t.clientId);
+            const promoterRef = client?.promoters?.find(p => p.promoterId === promoterId);
+            const commissionRate = promoterRef?.percentage || 10;
+            const commissionAmount = (t.amount * commissionRate) / 100;
+            
+            return {
+                id: t.id,
+                date: t.date,
+                clientId: t.clientId,
+                clientName: t.clientName || client?.name || 'Cliente',
+                transactionAmount: t.amount,
+                commissionRate,
+                commissionAmount,
+                description: t.description,
+            };
+        });
+    }, [promoterTransactions, referredClients, promoterId]);
+    
+    const totalCommissions = commissions.reduce((sum, c) => sum + c.commissionAmount, 0);
+    const totalTransactions = promoterTransactions.reduce((sum, t) => sum + t.amount, 0);
+    
+    return {
+        referredClients,
+        commissions,
+        totalCommissions,
+        totalTransactions,
+        clientCount: referredClients.length,
+        activeClientCount: referredClients.filter(c => c.status === 'Activo').length,
+    };
+}
+
+// --- Dashboard View ---
+function DashboardView({ promoterId, promoterName }: { promoterId: string; promoterName: string }) {
+    const { referredClients, commissions, totalCommissions, totalTransactions, clientCount, activeClientCount } = usePromoterData(promoterId);
+    const [isClient, setIsClient] = useState(false);
+    
+    useEffect(() => {
+        setIsClient(true);
+    }, []);
+    
+    // Recent commissions (last 5)
+    const recentCommissions = commissions.slice(0, 5);
+    
+    // This month stats
+    const thisMonth = new Date();
+    const thisMonthCommissions = commissions.filter(c => {
+        const date = new Date(c.date);
+        return date.getMonth() === thisMonth.getMonth() && date.getFullYear() === thisMonth.getFullYear();
+    });
+    const thisMonthTotal = thisMonthCommissions.reduce((sum, c) => sum + c.commissionAmount, 0);
+
+    return (
+        <div className="space-y-6">
+            {/* Welcome Banner */}
+            <Card className="bg-gradient-to-r from-primary/10 via-primary/5 to-background border-primary/20">
+                <CardContent className="pt-6">
+                    <div className="flex items-center gap-4">
+                        <div className="h-16 w-16 rounded-full bg-primary/20 flex items-center justify-center">
+                            <User className="h-8 w-8 text-primary" />
+                        </div>
+                        <div>
+                            <h2 className="text-2xl font-bold">¡Bienvenido, {promoterName}!</h2>
+                            <p className="text-muted-foreground">Aquí está el resumen de tu actividad como promotor.</p>
+                        </div>
+                    </div>
+                </CardContent>
+            </Card>
+            
+            {/* KPI Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <Card>
+                    <CardHeader className="flex flex-row items-center justify-between pb-2">
+                        <CardTitle className="text-sm font-medium">Clientes Referidos</CardTitle>
+                        <Users className="h-4 w-4 text-muted-foreground" />
+                    </CardHeader>
+                    <CardContent>
+                        <div className="text-2xl font-bold">{clientCount}</div>
+                        <p className="text-xs text-muted-foreground">{activeClientCount} activos</p>
+                    </CardContent>
+                </Card>
+                
+                <Card>
+                    <CardHeader className="flex flex-row items-center justify-between pb-2">
+                        <CardTitle className="text-sm font-medium">Comisiones Totales</CardTitle>
+                        <DollarSign className="h-4 w-4 text-muted-foreground" />
+                    </CardHeader>
+                    <CardContent>
+                        <div className="text-2xl font-bold text-green-600">${totalCommissions.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</div>
+                        <p className="text-xs text-muted-foreground">De ${totalTransactions.toLocaleString('es-MX')} en ventas</p>
+                    </CardContent>
+                </Card>
+                
+                <Card>
+                    <CardHeader className="flex flex-row items-center justify-between pb-2">
+                        <CardTitle className="text-sm font-medium">Este Mes</CardTitle>
+                        <TrendingUp className="h-4 w-4 text-muted-foreground" />
+                    </CardHeader>
+                    <CardContent>
+                        <div className="text-2xl font-bold text-blue-600">${thisMonthTotal.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</div>
+                        <p className="text-xs text-muted-foreground">{thisMonthCommissions.length} transacciones</p>
+                    </CardContent>
+                </Card>
+                
+                <Card>
+                    <CardHeader className="flex flex-row items-center justify-between pb-2">
+                        <CardTitle className="text-sm font-medium">Tasa Promedio</CardTitle>
+                        <CircleDollarSign className="h-4 w-4 text-muted-foreground" />
+                    </CardHeader>
+                    <CardContent>
+                        <div className="text-2xl font-bold">
+                            {commissions.length > 0 
+                                ? (commissions.reduce((sum, c) => sum + c.commissionRate, 0) / commissions.length).toFixed(1)
+                                : '10'}%
+                        </div>
+                        <p className="text-xs text-muted-foreground">Comisión por venta</p>
+                    </CardContent>
+                </Card>
+            </div>
+            
+            {/* Recent Activity */}
+            <Card>
+                <CardHeader>
+                    <CardTitle>Actividad Reciente</CardTitle>
+                    <CardDescription>Últimas comisiones generadas</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    {recentCommissions.length > 0 ? (
+                        <div className="space-y-3">
+                            {recentCommissions.map(c => (
+                                <div key={c.id} className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
+                                    <div>
+                                        <p className="font-medium">{c.clientName}</p>
+                                        <p className="text-sm text-muted-foreground">
+                                            {isClient ? format(new Date(c.date), 'dd MMM yyyy', { locale: es }) : '-'} • {c.description}
+                                        </p>
+                                    </div>
+                                    <div className="text-right">
+                                        <p className="font-bold text-green-600">+${c.commissionAmount.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</p>
+                                        <p className="text-xs text-muted-foreground">{c.commissionRate}% de ${c.transactionAmount.toLocaleString()}</p>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    ) : (
+                        <div className="text-center py-8 text-muted-foreground">
+                            <CircleDollarSign className="h-12 w-12 mx-auto mb-2 opacity-50" />
+                            <p>Aún no tienes comisiones registradas.</p>
+                            <p className="text-sm">¡Refiere clientes para empezar a ganar!</p>
+                        </div>
+                    )}
+                </CardContent>
+            </Card>
+        </div>
+    );
+}
+
+// --- Clients View ---
+function ClientsView({ promoterId }: { promoterId: string }) {
+    const { referredClients } = usePromoterData(promoterId);
+    const [isClient, setIsClient] = useState(false);
 
     useEffect(() => {
         setIsClient(true);
@@ -46,31 +214,50 @@ function ClientsView({ promoterId }: { promoterId: string }) {
     return (
         <Card>
             <CardHeader>
-                <CardTitle>Clientes Referidos</CardTitle>
-                <CardDescription>Esta es la lista de clientes que has referido a WitBiz.</CardDescription>
+                <CardTitle className="flex items-center gap-2">
+                    <Users className="h-5 w-5" />
+                    Mis Clientes Referidos
+                </CardTitle>
+                <CardDescription>
+                    Tienes {referredClients.length} cliente{referredClients.length !== 1 ? 's' : ''} referido{referredClients.length !== 1 ? 's' : ''}.
+                </CardDescription>
             </CardHeader>
             <CardContent>
                 <div className="relative w-full overflow-auto">
                     <Table>
                         <TableHeader>
                             <TableRow>
-                                <TableHead>Nombre del Cliente</TableHead>
+                                <TableHead>Cliente</TableHead>
                                 <TableHead>Fecha de Ingreso</TableHead>
+                                <TableHead>Servicios</TableHead>
                                 <TableHead>Estado</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
                             {referredClients.length > 0 ? referredClients.map(client => (
                                 <TableRow key={client.id}>
-                                    <TableCell className="font-medium">{client.name}</TableCell>
+                                    <TableCell>
+                                        <div className="flex items-center gap-2">
+                                            <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
+                                                <UserCheck className="h-4 w-4 text-primary" />
+                                            </div>
+                                            <span className="font-medium">{client.name}</span>
+                                        </div>
+                                    </TableCell>
                                     <TableCell>{isClient && client.createdAt ? format(client.createdAt.toDate(), 'dd/MM/yyyy') : '-'}</TableCell>
+                                    <TableCell>{client.subscribedServiceIds?.length || 0} servicio(s)</TableCell>
                                     <TableCell>
                                         <Badge variant={client.status === 'Activo' ? 'default' : 'secondary'}>{client.status}</Badge>
                                     </TableCell>
                                 </TableRow>
                             )) : (
                                 <TableRow>
-                                    <TableCell colSpan={3} className="text-center h-24">No hay clientes referidos.</TableCell>
+                                    <TableCell colSpan={4} className="text-center h-24">
+                                        <div className="text-muted-foreground">
+                                            <Users className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                                            <p>Aún no tienes clientes referidos.</p>
+                                        </div>
+                                    </TableCell>
                                 </TableRow>
                             )}
                         </TableBody>
@@ -81,83 +268,95 @@ function ClientsView({ promoterId }: { promoterId: string }) {
     );
 }
 
-function CommissionsView() {
-    const { transactions, promoters } = useCRMData();
+function CommissionsView({ promoterId }: { promoterId: string }) {
+    const { commissions, totalCommissions } = usePromoterData(promoterId);
     const [isClient, setIsClient] = useState(false);
-    const [dateRange, setDateRange] = useState<DateRange | undefined>();
-    const [selectedDay, setSelectedDay] = useState<Date | undefined>();
-
-    // This is a placeholder for real commission data structure.
-    const commissions: any[] = []; 
+    const [dateRange, setDateRange] = useState<DateRange | undefined>({
+        from: subDays(new Date(), 30),
+        to: new Date(),
+    });
 
     useEffect(() => {
         setIsClient(true);
     }, []);
 
-    const dayModifiers = useMemo(() => {
-        const paidDays: Date[] = [];
-        const pendingDays: Date[] = [];
-        commissions.forEach(c => {
-            const commissionDate = startOfDay(c.date);
-            if (c.status === 'Pagada') {
-                paidDays.push(commissionDate);
-            } else {
-                pendingDays.push(commissionDate);
-            }
-        });
-        return { paid: paidDays, pending: pendingDays };
-    }, [commissions]);
-
-    const dayModifiersClassNames = {
-        paid: 'day-paid',
-        pending: 'day-pending',
-    };
-
+    // Filter commissions by date range
     const filteredCommissions = useMemo(() => {
-        const filterByDate = (c: typeof commissions[0]) => {
-            const commissionDate = startOfDay(c.date);
+        if (!dateRange?.from || !dateRange?.to) return commissions;
+        return commissions.filter(c => {
+            const date = new Date(c.date);
+            return isWithinInterval(date, { 
+                start: startOfDay(dateRange.from!), 
+                end: endOfDay(dateRange.to!) 
+            });
+        });
+    }, [commissions, dateRange]);
 
-            if (dateRange?.from && dateRange?.to) {
-                return isWithinInterval(commissionDate, { start: startOfDay(dateRange.from), end: startOfDay(dateRange.to) });
-            }
-            if (selectedDay) {
-                return commissionDate.getTime() === startOfDay(selectedDay).getTime();
-            }
-            return true;
-        };
-        return commissions.filter(filterByDate);
-    }, [dateRange, selectedDay, commissions]);
+    const filteredTotal = filteredCommissions.reduce((sum, c) => sum + c.commissionAmount, 0);
 
-    const handleDayClick = (day: Date) => {
-        setSelectedDay(day);
-        setDateRange(undefined);
-    };
-
-    const totalSelected = useMemo(() => filteredCommissions.reduce((sum, c) => sum + c.amount, 0), [filteredCommissions]);
-    const totalPaid = useMemo(() => filteredCommissions.filter(c => c.status === 'Pagada').reduce((sum, c) => sum + c.amount, 0), [filteredCommissions]);
-    const totalPending = useMemo(() => filteredCommissions.filter(c => c.status === 'Pendiente').reduce((sum, c) => sum + c.amount, 0), [filteredCommissions]);
-
-    const getSelectionTitle = () => {
-        if (dateRange?.from && dateRange?.to) {
-            return `Rango: ${format(dateRange.from, 'dd/MM/yy')} - ${format(dateRange.to, 'dd/MM/yy')}`;
-        }
-        if (selectedDay) {
-            return `Día: ${format(selectedDay, 'PPP', { locale: es })}`;
-        }
-        return 'Historial Completo';
-    };
+    // Group by month for summary
+    const monthlyData = useMemo(() => {
+        const grouped: { [key: string]: number } = {};
+        commissions.forEach(c => {
+            const monthKey = format(new Date(c.date), 'yyyy-MM');
+            grouped[monthKey] = (grouped[monthKey] || 0) + c.commissionAmount;
+        });
+        return Object.entries(grouped)
+            .sort((a, b) => b[0].localeCompare(a[0]))
+            .slice(0, 6)
+            .map(([month, total]) => ({
+                month: format(new Date(month + '-01'), 'MMM yyyy', { locale: es }),
+                total,
+            }));
+    }, [commissions]);
 
     return (
         <div className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <Card className="md:col-span-1">
+            {/* Summary Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <Card>
+                    <CardHeader className="pb-2">
+                        <CardTitle className="text-sm font-medium">Total Histórico</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="text-2xl font-bold text-green-600">
+                            ${totalCommissions.toLocaleString('es-MX', { minimumFractionDigits: 2 })}
+                        </div>
+                        <p className="text-xs text-muted-foreground">{commissions.length} comisiones</p>
+                    </CardContent>
+                </Card>
+                <Card>
+                    <CardHeader className="pb-2">
+                        <CardTitle className="text-sm font-medium">Período Seleccionado</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="text-2xl font-bold text-blue-600">
+                            ${filteredTotal.toLocaleString('es-MX', { minimumFractionDigits: 2 })}
+                        </div>
+                        <p className="text-xs text-muted-foreground">{filteredCommissions.length} comisiones</p>
+                    </CardContent>
+                </Card>
+                <Card>
+                    <CardHeader className="pb-2">
+                        <CardTitle className="text-sm font-medium">Promedio por Comisión</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="text-2xl font-bold">
+                            ${commissions.length > 0 
+                                ? (totalCommissions / commissions.length).toLocaleString('es-MX', { minimumFractionDigits: 2 })
+                                : '0.00'}
+                        </div>
+                        <p className="text-xs text-muted-foreground">Por transacción</p>
+                    </CardContent>
+                </Card>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                {/* Calendar Filter */}
+                <Card>
                     <CardHeader>
-                        <CardTitle>Calendario de Comisiones</CardTitle>
-                        <CardDescription className="flex flex-col gap-1.5 text-xs">
-                          <span>Seleccione día o rango.</span>
-                          <span className="flex items-center gap-2"><span className="w-2.5 h-2.5 rounded-full bg-blue-500/80"></span>Pagadas</span>
-                          <span className="flex items-center gap-2"><span className="w-2.5 h-2.5 rounded-full bg-slate-400/80"></span>Pendientes</span>
-                        </CardDescription>
+                        <CardTitle className="text-base">Filtrar por Fecha</CardTitle>
+                        <CardDescription>Selecciona un rango de fechas</CardDescription>
                     </CardHeader>
                     <CardContent className="flex justify-center">
                         {isClient && (
@@ -165,70 +364,61 @@ function CommissionsView() {
                                 mode="range"
                                 selected={dateRange}
                                 onSelect={setDateRange}
-                                onDayClick={handleDayClick}
-                                modifiers={dayModifiers}
-                                modifiersClassNames={dayModifiersClassNames}
                                 className="rounded-md border"
                                 locale={es}
                             />
                         )}
                     </CardContent>
                 </Card>
-                <Card className="md:col-span-2">
+
+                {/* Monthly Summary */}
+                <Card className="lg:col-span-2">
                     <CardHeader>
-                        <CardTitle>Información de Selección</CardTitle>
-                        <CardDescription>{getSelectionTitle()}</CardDescription>
+                        <CardTitle className="text-base">Resumen Mensual</CardTitle>
+                        <CardDescription>Últimos 6 meses</CardDescription>
                     </CardHeader>
                     <CardContent>
-                        <div className="grid grid-cols-3 gap-4 text-center">
-                            <div>
-                                <p className="text-sm text-muted-foreground">Total</p>
-                                <p className="text-2xl font-bold">${totalSelected.toFixed(2)}</p>
-                            </div>
-                            <div>
-                                <p className="text-sm text-muted-foreground">Pagado</p>
-                                <p className="text-2xl font-bold text-blue-600">${totalPaid.toFixed(2)}</p>
-                            </div>
-                            <div>
-                                <p className="text-sm text-muted-foreground">Pendiente</p>
-                                <p className="text-2xl font-bold text-slate-500">${totalPending.toFixed(2)}</p>
-                            </div>
-                        </div>
-                        <div className="mt-4 max-h-80 overflow-y-auto">
-                            {filteredCommissions.length > 0 ? (
-                                <ul className="space-y-2">
-                                {filteredCommissions.map(c => (
-                                    <li key={c.id} className="flex justify-between items-center p-2 rounded-md bg-muted/50">
-                                        <div>
-                                            <p className="font-semibold">{c.clientName}</p>
-                                            <p className="text-xs text-muted-foreground">{isClient ? format(c.date, 'PPP', { locale: es }) : '-'}</p>
+                        {monthlyData.length > 0 ? (
+                            <div className="space-y-3">
+                                {monthlyData.map((m, i) => (
+                                    <div key={i} className="flex items-center justify-between">
+                                        <span className="text-sm font-medium capitalize">{m.month}</span>
+                                        <div className="flex items-center gap-2">
+                                            <div className="w-32 h-2 bg-muted rounded-full overflow-hidden">
+                                                <div 
+                                                    className="h-full bg-green-500 rounded-full"
+                                                    style={{ width: `${Math.min((m.total / (monthlyData[0]?.total || 1)) * 100, 100)}%` }}
+                                                />
+                                            </div>
+                                            <span className="text-sm font-bold w-24 text-right">
+                                                ${m.total.toLocaleString('es-MX', { minimumFractionDigits: 2 })}
+                                            </span>
                                         </div>
-                                        <div className="text-right">
-                                             <p className="font-semibold">${c.amount.toFixed(2)}</p>
-                                             <Badge variant={c.status === 'Pagada' ? 'default' : 'secondary'} className={cn(c.status === 'Pagada' ? 'bg-blue-600 text-white' : 'bg-slate-500 text-white')}>{c.status}</Badge>
-                                        </div>
-                                    </li>
+                                    </div>
                                 ))}
-                                </ul>
-                            ) : (
-                                <div className="text-center text-muted-foreground py-8">
-                                    <p>No hay comisiones en la fecha o rango seleccionado.</p>
-                                </div>
-                            )}
-                        </div>
+                            </div>
+                        ) : (
+                            <p className="text-center text-muted-foreground py-8">Sin datos</p>
+                        )}
                     </CardContent>
                 </Card>
             </div>
+
+            {/* Detailed Table */}
             <Card>
                 <CardHeader>
                     <div className="flex justify-between items-center">
                         <div>
-                            <CardTitle>Historial de Comisiones</CardTitle>
+                            <CardTitle>Detalle de Comisiones</CardTitle>
                             <CardDescription>
-                                Mostrando {filteredCommissions.length} de {commissions.length} registros. 
+                                {filteredCommissions.length} registro{filteredCommissions.length !== 1 ? 's' : ''} en el período
                             </CardDescription>
                         </div>
-                         {(dateRange || selectedDay) && <Button variant="outline" size="sm" onClick={() => { setDateRange(undefined); setSelectedDay(undefined); }}>Limpiar selección</Button>}
+                        {dateRange && (
+                            <Button variant="outline" size="sm" onClick={() => setDateRange(undefined)}>
+                                Ver todo
+                            </Button>
+                        )}
                     </div>
                 </CardHeader>
                 <CardContent>
@@ -238,23 +428,32 @@ function CommissionsView() {
                                 <TableRow>
                                     <TableHead>Cliente</TableHead>
                                     <TableHead>Fecha</TableHead>
-                                    <TableHead>Monto</TableHead>
-                                    <TableHead>Estado</TableHead>
+                                    <TableHead>Venta</TableHead>
+                                    <TableHead>Tasa</TableHead>
+                                    <TableHead className="text-right">Comisión</TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
                                 {filteredCommissions.length > 0 ? filteredCommissions.map(c => (
                                     <TableRow key={c.id}>
                                         <TableCell className="font-medium">{c.clientName}</TableCell>
-                                        <TableCell>{isClient ? format(c.date, 'PPP', { locale: es }) : '-'}</TableCell>
-                                        <TableCell>${c.amount.toFixed(2)}</TableCell>
+                                        <TableCell>{isClient ? format(new Date(c.date), 'dd/MM/yyyy') : '-'}</TableCell>
+                                        <TableCell>${c.transactionAmount.toLocaleString('es-MX')}</TableCell>
                                         <TableCell>
-                                            <Badge variant={c.status === 'Pagada' ? 'default' : 'secondary'} className={cn(c.status === 'Pagada' ? 'bg-blue-600 text-white' : 'bg-slate-500 text-white')}>{c.status}</Badge>
+                                            <Badge variant="outline">{c.commissionRate}%</Badge>
+                                        </TableCell>
+                                        <TableCell className="text-right font-bold text-green-600">
+                                            +${c.commissionAmount.toLocaleString('es-MX', { minimumFractionDigits: 2 })}
                                         </TableCell>
                                     </TableRow>
                                 )) : (
                                     <TableRow>
-                                        <TableCell colSpan={4} className="text-center h-24">No hay comisiones para mostrar.</TableCell>
+                                        <TableCell colSpan={5} className="text-center h-24">
+                                            <div className="text-muted-foreground">
+                                                <CircleDollarSign className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                                                <p>No hay comisiones en este período.</p>
+                                            </div>
+                                        </TableCell>
                                     </TableRow>
                                 )}
                             </TableBody>
@@ -287,20 +486,26 @@ function ResourcesView({ promoterId }: { promoterId: string }) {
     return (
         <Card>
             <CardHeader>
-                <CardTitle>Recursos</CardTitle>
-                <CardDescription>Material de apoyo para promotores.</CardDescription>
+                <CardTitle className="flex items-center gap-2">
+                    <BookText className="h-5 w-5" />
+                    Recursos y Materiales
+                </CardTitle>
+                <CardDescription>Material de apoyo exclusivo para promotores.</CardDescription>
             </CardHeader>
             <CardContent>
                 {resources.length > 0 ? (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                         {resources.map(resource => (
-                            <Card key={resource.id} className="cursor-pointer hover:bg-muted/50" onClick={() => handleDownload(resource)}>
-                                <CardHeader>
-                                    <CardTitle className="flex items-center gap-2"><BookText className="h-5 w-5 text-accent"/>{resource.name}</CardTitle>
-                                    <CardDescription>{resource.type}</CardDescription>
+                            <Card key={resource.id} className="cursor-pointer hover:bg-muted/50 transition-colors" onClick={() => handleDownload(resource)}>
+                                <CardHeader className="pb-2">
+                                    <CardTitle className="text-base flex items-center gap-2">
+                                        <BookText className="h-4 w-4 text-primary"/>
+                                        {resource.name}
+                                    </CardTitle>
+                                    <CardDescription className="text-xs">{resource.type}</CardDescription>
                                 </CardHeader>
                                 <CardContent>
-                                    <Button className="w-full">
+                                    <Button size="sm" className="w-full">
                                         <Download className="mr-2 h-4 w-4" />
                                         Descargar
                                     </Button>
@@ -310,7 +515,9 @@ function ResourcesView({ promoterId }: { promoterId: string }) {
                     </div>
                 ) : (
                     <div className="text-center text-muted-foreground py-10">
+                        <BookText className="h-12 w-12 mx-auto mb-2 opacity-50" />
                         <p>No hay recursos disponibles en este momento.</p>
+                        <p className="text-sm">Pronto agregaremos materiales de apoyo.</p>
                     </div>
                 )}
             </CardContent>
@@ -318,69 +525,213 @@ function ResourcesView({ promoterId }: { promoterId: string }) {
     );
 }
 
-function ProfileView({ promoter }: { promoter: Promoter }) {
+function ProfileView({ promoter, onUpdateCode }: { promoter: Promoter; onUpdateCode: (newCode: string) => Promise<boolean> }) {
     const { toast } = useToast();
+    const { referredClients, totalCommissions, clientCount } = usePromoterData(promoter.id);
+    
+    const [currentCode, setCurrentCode] = useState('');
+    const [newCode, setNewCode] = useState('');
+    const [confirmCode, setConfirmCode] = useState('');
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [showCurrentCode, setShowCurrentCode] = useState(false);
+    const [showNewCode, setShowNewCode] = useState(false);
 
-    const handlePasswordChange = (e: React.FormEvent<HTMLFormElement>) => {
+    const handleCodeChange = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
-        toast({
-            title: "Contraseña Actualizada",
-            description: "Tu contraseña ha sido cambiada exitosamente (simulación).",
-        });
+        
+        if (currentCode !== promoter.accessCode) {
+            toast({
+                variant: "destructive",
+                title: "Error",
+                description: "El código actual no es correcto.",
+            });
+            return;
+        }
+        
+        if (newCode.length !== 6 || !/^\d+$/.test(newCode)) {
+            toast({
+                variant: "destructive",
+                title: "Error",
+                description: "El nuevo código debe ser de 6 dígitos numéricos.",
+            });
+            return;
+        }
+        
+        if (newCode !== confirmCode) {
+            toast({
+                variant: "destructive",
+                title: "Error",
+                description: "Los códigos nuevos no coinciden.",
+            });
+            return;
+        }
+        
+        setIsSubmitting(true);
+        const success = await onUpdateCode(newCode);
+        
+        if (success) {
+            toast({
+                title: "Código Actualizado",
+                description: "Tu código de acceso ha sido cambiado exitosamente.",
+            });
+            setCurrentCode('');
+            setNewCode('');
+            setConfirmCode('');
+        } else {
+            toast({
+                variant: "destructive",
+                title: "Error",
+                description: "No se pudo actualizar el código. Intenta de nuevo.",
+            });
+        }
+        setIsSubmitting(false);
     };
 
     return (
-        <Card className="max-w-2xl mx-auto">
-            <CardHeader>
-                <CardTitle>Mi Perfil de Promotor</CardTitle>
-                <CardDescription>
-                    Información de tu cuenta y gestión de seguridad.
-                </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-                 <div className="space-y-2">
-                    <Label>Nombre Completo</Label>
-                    <Input value={promoter.name} disabled />
-                </div>
-                 <div className="space-y-2">
-                    <Label>Rol</Label>
-                    <Input value="Promotor" disabled />
-                </div>
-                 <div className="space-y-2">
-                    <Label>Correo Electrónico</Label>
-                    <Input value={promoter.email || 'N/A'} disabled />
-                </div>
-            </CardContent>
-            <Separator />
-            <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                    <Lock className="h-5 w-5 text-accent" /> Cambiar Contraseña
-                </CardTitle>
-                <CardDescription>
-                    Para mayor seguridad, te recomendamos usar una contraseña única.
-                </CardDescription>
-            </CardHeader>
-            <CardContent>
-                <form onSubmit={handlePasswordChange} className="space-y-4">
-                    <div>
-                        <Label htmlFor="currentPassword">Contraseña Actual</Label>
-                        <PasswordInput id="currentPassword" placeholder="••••••••" />
+        <div className="space-y-6 max-w-2xl mx-auto">
+            {/* Profile Info Card */}
+            <Card>
+                <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                        <User className="h-5 w-5" />
+                        Mi Perfil
+                    </CardTitle>
+                    <CardDescription>
+                        Información de tu cuenta como promotor.
+                    </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                    <div className="flex items-center gap-4 p-4 bg-muted/50 rounded-lg">
+                        <div className="h-16 w-16 rounded-full bg-primary/20 flex items-center justify-center">
+                            <User className="h-8 w-8 text-primary" />
+                        </div>
+                        <div>
+                            <h3 className="text-lg font-bold">{promoter.name}</h3>
+                            <p className="text-sm text-muted-foreground">Promotor desde {promoter.createdAt ? format(promoter.createdAt.toDate(), 'MMMM yyyy', { locale: es }) : 'N/A'}</p>
+                        </div>
                     </div>
-                    <div>
-                        <Label htmlFor="newPassword">Nueva Contraseña</Label>
-                        <PasswordInput id="newPassword" placeholder="••••••••" />
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                            <Label>Nombre Completo</Label>
+                            <Input value={promoter.name} disabled />
+                        </div>
+                        <div className="space-y-2">
+                            <Label>Estado</Label>
+                            <Input value={promoter.status} disabled />
+                        </div>
+                        <div className="space-y-2">
+                            <Label>Correo Electrónico</Label>
+                            <Input value={promoter.email || 'No especificado'} disabled />
+                        </div>
+                        <div className="space-y-2">
+                            <Label>Teléfono</Label>
+                            <Input value={promoter.phone || 'No especificado'} disabled />
+                        </div>
                     </div>
-                    <div>
-                        <Label htmlFor="confirmNewPassword">Confirmar Nueva Contraseña</Label>
-                        <PasswordInput id="confirmNewPassword" placeholder="••••••••" />
+                    
+                    {/* Stats Summary */}
+                    <Separator className="my-4" />
+                    <div className="grid grid-cols-3 gap-4 text-center">
+                        <div>
+                            <p className="text-2xl font-bold text-primary">{clientCount}</p>
+                            <p className="text-xs text-muted-foreground">Clientes Referidos</p>
+                        </div>
+                        <div>
+                            <p className="text-2xl font-bold text-green-600">${totalCommissions.toLocaleString('es-MX', { minimumFractionDigits: 0 })}</p>
+                            <p className="text-xs text-muted-foreground">Comisiones Totales</p>
+                        </div>
+                        <div>
+                            <p className="text-2xl font-bold">{promoter.status === 'Activo' ? '✓' : '✗'}</p>
+                            <p className="text-xs text-muted-foreground">Cuenta Activa</p>
+                        </div>
                     </div>
-                    <Button type="submit">
-                        <Save className="mr-2 h-4 w-4" />
-                        Guardar Cambios
-                    </Button>
-                </form>
-            </CardContent>
-        </Card>
+                </CardContent>
+            </Card>
+            
+            {/* Change Access Code Card */}
+            <Card>
+                <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                        <KeyRound className="h-5 w-5 text-primary" />
+                        Cambiar Código de Acceso
+                    </CardTitle>
+                    <CardDescription>
+                        Tu código de acceso es de 6 dígitos. Úsalo para iniciar sesión en el portal de promotores.
+                    </CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <form onSubmit={handleCodeChange} className="space-y-4">
+                        <div className="space-y-2">
+                            <Label htmlFor="currentCode">Código Actual</Label>
+                            <div className="relative">
+                                <Input 
+                                    id="currentCode" 
+                                    type={showCurrentCode ? "text" : "password"}
+                                    placeholder="••••••"
+                                    value={currentCode}
+                                    onChange={(e) => setCurrentCode(e.target.value)}
+                                    maxLength={6}
+                                    disabled={isSubmitting}
+                                />
+                                <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="icon"
+                                    className="absolute right-0 top-0 h-full"
+                                    onClick={() => setShowCurrentCode(!showCurrentCode)}
+                                >
+                                    {showCurrentCode ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                                </Button>
+                            </div>
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="newCode">Nuevo Código (6 dígitos)</Label>
+                            <div className="relative">
+                                <Input 
+                                    id="newCode" 
+                                    type={showNewCode ? "text" : "password"}
+                                    placeholder="••••••"
+                                    value={newCode}
+                                    onChange={(e) => setNewCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                                    maxLength={6}
+                                    disabled={isSubmitting}
+                                />
+                                <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="icon"
+                                    className="absolute right-0 top-0 h-full"
+                                    onClick={() => setShowNewCode(!showNewCode)}
+                                >
+                                    {showNewCode ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                                </Button>
+                            </div>
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="confirmCode">Confirmar Nuevo Código</Label>
+                            <Input 
+                                id="confirmCode" 
+                                type="password"
+                                placeholder="••••••"
+                                value={confirmCode}
+                                onChange={(e) => setConfirmCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                                maxLength={6}
+                                disabled={isSubmitting}
+                            />
+                        </div>
+                        <Button type="submit" disabled={isSubmitting || !currentCode || !newCode || !confirmCode}>
+                            {isSubmitting ? (
+                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            ) : (
+                                <Save className="mr-2 h-4 w-4" />
+                            )}
+                            Guardar Nuevo Código
+                        </Button>
+                    </form>
+                </CardContent>
+            </Card>
+        </div>
     );
 }
 
@@ -388,10 +739,10 @@ function ProfileView({ promoter }: { promoter: Promoter }) {
 function PromoterPageContent() {
     const router = useRouter();
     const searchParams = useSearchParams();
-    const { promoters, isLoadingPromoters } = useCRMData();
+    const { promoters, isLoadingPromoters, updatePromoter } = useCRMData();
     const { toast } = useToast();
 
-    const [activeView, setActiveView] = useState('clients');
+    const [activeView, setActiveView] = useState('dashboard');
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const [isValidPromoter, setIsValidPromoter] = useState<boolean | null>(null);
     const [currentPromoter, setCurrentPromoter] = useState<Promoter | null>(null);
@@ -428,6 +779,15 @@ function PromoterPageContent() {
         router.push('/promoter-login');
     };
     
+    const handleUpdateCode = async (newCode: string): Promise<boolean> => {
+        if (!currentPromoter) return false;
+        const success = await updatePromoter(currentPromoter.id, { accessCode: newCode });
+        if (success) {
+            setCurrentPromoter(prev => prev ? { ...prev, accessCode: newCode } : null);
+        }
+        return success;
+    };
+    
     if (isValidPromoter === null || !currentPromoter) {
         return (
             <div className="flex h-screen w-full items-center justify-center">
@@ -437,12 +797,12 @@ function PromoterPageContent() {
     }
     
     const navItems = [
+        { id: 'dashboard', label: 'Inicio', icon: Home, component: () => <DashboardView promoterId={currentPromoter.id} promoterName={currentPromoter.name} /> },
         { id: 'clients', label: 'Clientes', icon: Users, component: () => <ClientsView promoterId={currentPromoter.id} /> },
-        { id: 'commissions', label: 'Comisiones', icon: CircleDollarSign, component: CommissionsView },
-        { id: 'charts', label: 'Gráficos', icon: BarChart, component: () => <DateRangeChartsTab transactions={[]} /> },
+        { id: 'commissions', label: 'Comisiones', icon: CircleDollarSign, component: () => <CommissionsView promoterId={currentPromoter.id} /> },
         { id: 'resources', label: 'Recursos', icon: BookText, component: () => <ResourcesView promoterId={currentPromoter.id} /> },
     ];
-    const profileNavItem = { id: 'profile', label: 'Perfil', icon: User, component: () => <ProfileView promoter={currentPromoter} /> };
+    const profileNavItem = { id: 'profile', label: 'Perfil', icon: User, component: () => <ProfileView promoter={currentPromoter} onUpdateCode={handleUpdateCode} /> };
 
     const ActiveComponent = [...navItems, profileNavItem].find(item => item.id === activeView)?.component;
     
