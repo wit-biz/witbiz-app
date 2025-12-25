@@ -103,6 +103,8 @@ export type Task = {
   archivedAt?: any;
 };
 
+export type DocumentCategory = 'general' | 'caja_fuerte';
+
 export type Document = {
   id: string;
   name: string;
@@ -117,6 +119,8 @@ export type Document = {
   uploadDate?: string; // ISO String YYYY-MM-DD
   status?: 'Activo' | 'Archivado';
   archivedAt?: any;
+  category?: DocumentCategory; // 'caja_fuerte' for important docs
+  description?: string; // Optional description for the document
   ai?: {
     status?: 'analyzing' | 'proposed' | 'applied' | 'failed';
     proposal?: any;
@@ -214,9 +218,10 @@ export type LogAction =
   | 'service_deleted_permanently'
   | 'supplier_deleted_permanently'
   | 'promoter_deleted_permanently'
-  | 'entity_deleted_automatically';
+  | 'entity_deleted_automatically'
+  | 'timeoff_requested' | 'timeoff_approved' | 'timeoff_rejected' | 'timeoff_cancelled' | 'timeoff_auto_approved';
 
-export type LogEntityType = 'client' | 'task' | 'document' | 'note' | 'transaction' | 'user' | 'service' | 'promoter' | 'supplier' | 'system';
+export type LogEntityType = 'client' | 'task' | 'document' | 'note' | 'transaction' | 'user' | 'service' | 'promoter' | 'supplier' | 'system' | 'timeoff';
 
 export type Log = {
   id: string;
@@ -319,11 +324,29 @@ export type AppPermissions = {
     team_finance_view: boolean;
 }
 
+export type TimeOffRequest = {
+  id: string;
+  userId: string;
+  userName: string;
+  dates: string[]; // Array of date strings in YYYY-MM-DD format
+  type: 'libre' | 'urgencia';
+  status: 'pending' | 'approved' | 'rejected' | 'cancelled';
+  requestedAt: any;
+  approvedBy?: string;
+  approvedByName?: string;
+  approvedAt?: any;
+  rejectionReason?: string;
+  cancelledBy?: string;
+  cancelledByName?: string;
+  cancelledAt?: any;
+};
+
 export type UserRole = {
-    id: string;
-    name: string;
-    permissions: Partial<AppPermissions>;
-    isBaseRole?: boolean;
+  id: string;
+  name: string;
+  permissions: AppPermissions;
+  approvalHierarchy?: string[]; // Array of role names that can approve this role's requests
+  isBaseRole?: boolean;
 }
 
 export interface AppUser {

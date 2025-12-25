@@ -212,7 +212,7 @@ export async function POST(req: NextRequest) {
     
     // Bank accounts summary
     const bankAccountsSummary = bankAccountsList.map((a: any) => {
-      const company = companiesList.find((c: any) => c.id === a.companyId);
+      const company = companiesList.find((c: any) => c.id === a.companyId) as any;
       return `- ${a.bankName}: $${a.balance?.toLocaleString() || 0} ${a.currency || 'MXN'} (${company?.name || 'Sin empresa'})`;
     }).join('\n');
     

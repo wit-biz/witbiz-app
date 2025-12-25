@@ -105,14 +105,14 @@ export function SmartDocumentUploadDialog({
     setFiles(prev => prev.filter((_, i) => i !== index));
   };
   
-  const handleSubmit = async (e?: React.FormEvent) => {
-    e?.preventDefault();
+  const handleSubmit = async (withAIAnalysis: boolean = false) => {
     if (files.length === 0) {
       toast({ variant: "destructive", title: 'Faltan datos', description: 'Por favor, suba al menos un archivo.' });
       return;
     }
     
     setIsSubmitting(true);
+    setEnableAIAnalysis(withAIAnalysis);
     
     // Upload all files without any manual associations
     const uploadedDocsTemp: Array<{ id: string; name: string }> = [];
@@ -124,14 +124,18 @@ export function SmartDocumentUploadDialog({
       
       const newDocData: Omit<AppDocument, 'id' | 'uploadedAt' | 'downloadURL'> = {
           name: file.name,
-          type: 'Otro' as DocumentType, // Default type, AI will suggest better classification
+          type: isServiceResourceMode ? 'Descargable' as DocumentType : 'Otro' as DocumentType,
+          ...(preselectedServiceId && { serviceId: preselectedServiceId }),
+          ...(preselectedClientId && { clientId: preselectedClientId }),
+          ...(preselectedPromoterId && { promoterId: preselectedPromoterId }),
+          ...(preselectedSupplierId && { supplierId: preselectedSupplierId }),
       };
 
       const newDoc = await addDocument(newDocData, file);
       if (newDoc) {
           onDocumentUploaded?.(newDoc.id);
-          // Add to AI analysis if enabled
-          if (enableAIAnalysis) {
+          // Add to AI analysis only if withAIAnalysis is true
+          if (withAIAnalysis) {
             uploadedDocsTemp.push({ id: newDoc.id, name: file.name });
           }
       }
@@ -145,7 +149,7 @@ export function SmartDocumentUploadDialog({
     });
     
     // If AI analysis is enabled and we have documents to analyze
-    if (enableAIAnalysis && uploadedDocsTemp.length > 0) {
+    if (withAIAnalysis && uploadedDocsTemp.length > 0) {
         setUploadedDocs(uploadedDocsTemp);
         setShowAIModal(true);
     } else {
@@ -159,7 +163,7 @@ export function SmartDocumentUploadDialog({
     <>
     <Dialog open={isOpen} onOpenChange={handleDialogChange}>
       <DialogContent className="sm:max-w-lg">
-        <form onSubmit={handleSubmit}>
+        <form onSubmit={(e) => { e.preventDefault(); handleSubmit(enableAIAnalysis); }}>
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2"><UploadCloud className="h-5 w-5 text-accent"/>Subir Nuevo Documento</DialogTitle>
             <DialogDescription>
@@ -210,7 +214,7 @@ export function SmartDocumentUploadDialog({
               type="button" 
               variant="secondary"
               disabled={files.length === 0 || isSubmitting}
-              onClick={() => { setEnableAIAnalysis(false); handleSubmit(); }}
+              onClick={() => handleSubmit(false)}
             >
               {isSubmitting && !enableAIAnalysis ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <UploadCloud className="mr-2 h-4 w-4"/>}
               Subir sin analizar
@@ -218,7 +222,7 @@ export function SmartDocumentUploadDialog({
             <Button 
               type="button"
               disabled={files.length === 0 || isSubmitting}
-              onClick={() => { setEnableAIAnalysis(true); handleSubmit(); }}
+              onClick={() => handleSubmit(true)}
             >
               {isSubmitting && enableAIAnalysis ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Sparkles className="mr-2 h-4 w-4"/>}
               Analizar con IA

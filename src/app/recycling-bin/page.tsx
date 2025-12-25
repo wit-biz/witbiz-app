@@ -55,7 +55,8 @@ const LOG_ACTION_TEXTS: Record<LogAction, string> = {
     // Add other non-deletion logs here to satisfy the type, though they won't be used
     client_created: '', client_updated: '', client_archived: '',
     task_created: '', task_completed: '', task_updated: '',
-    document_uploaded: '', note_created: '', transaction_created: '', user_invited: ''
+    document_uploaded: '', note_created: '', transaction_created: '', user_invited: '',
+    timeoff_requested: '', timeoff_approved: '', timeoff_rejected: '', timeoff_cancelled: '', timeoff_auto_approved: ''
 };
 
 export default function RecyclingBinPage() {

@@ -16,6 +16,7 @@ export const initialRoles: UserRole[] = [
         name: 'Director',
         isBaseRole: true,
         permissions: allPermissions.reduce((acc, p) => ({...acc, [p.key]: true}), {}) as any,
+        approvalHierarchy: [], // Nobody needs to approve Director's requests
     },
     { 
         id: 'admin', 
@@ -32,7 +33,8 @@ export const initialRoles: UserRole[] = [
             intelligence_view: true, accounting_view: true, accounting_config: true,
             admin_view: true, team_manage_members: true, team_manage_roles: true,
             team_tasks_view: true, team_activity_view: true, team_finance_view: true,
-        }
+        },
+        approvalHierarchy: ['Director'], // Director must approve Admin requests
     },
     { 
         id: 'collaborator', 
@@ -49,7 +51,8 @@ export const initialRoles: UserRole[] = [
             intelligence_view: false, accounting_view: false, accounting_config: false,
             admin_view: false, team_manage_members: false, team_manage_roles: false,
             team_tasks_view: false, team_activity_view: false, team_finance_view: false,
-        }
+        },
+        approvalHierarchy: ['Director', 'Administrador'], // Director or Admin can approve Collaborator requests
     },
 ];
 

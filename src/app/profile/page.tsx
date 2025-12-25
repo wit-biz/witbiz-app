@@ -33,6 +33,8 @@ import { initiateSignOut } from "@/firebase/non-blocking-login";
 import { useCRMData } from "@/contexts/CRMDataContext";
 import React, { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
+import { PersonalCalendar } from "@/components/shared/PersonalCalendar";
+import { Calendar } from "lucide-react";
 
 export default function ProfilePage() {
   const { user, isUserLoading } = useUser();
@@ -103,10 +105,14 @@ export default function ProfilePage() {
       />
       <main className="flex-1 p-4 md:p-8">
         <Tabs defaultValue="summary" className="w-full">
-          <TabsList className="grid w-full grid-cols-1 sm:grid-cols-3 mb-6">
+          <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4 mb-6">
             <TabsTrigger value="summary">
               <User className="mr-2 h-4 w-4" />
               Resumen
+            </TabsTrigger>
+            <TabsTrigger value="calendar">
+              <Calendar className="mr-2 h-4 w-4" />
+              Calendario
             </TabsTrigger>
             <TabsTrigger value="security">
               <Shield className="mr-2 h-4 w-4" />
@@ -154,6 +160,9 @@ export default function ProfilePage() {
                 </Button>
               </CardContent>
             </Card>
+          </TabsContent>
+          <TabsContent value="calendar">
+            <PersonalCalendar />
           </TabsContent>
           <TabsContent value="security">
              <div className="grid gap-6">

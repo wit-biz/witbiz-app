@@ -8,8 +8,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { PlusCircle, AlertTriangle, Loader2, Briefcase, Clock, CalendarDays, Info, CheckCircle2, ListTodo, History } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { Calendar } from "@/components/ui/calendar";
-import { format, differenceInDays } from "date-fns";
+import { format, differenceInDays, isSameDay } from "date-fns";
+import { DayPicker } from "react-day-picker";
 import { es } from "date-fns/locale";
 import { cn, parseDateString, formatTimeString } from "@/lib/utils"; 
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
@@ -39,8 +39,8 @@ function groupTasksByGroupId(tasks: Task[]): GroupedTask[] {
         const existingGroup = groupMap.get(groupId)!;
         if (!existingGroup.assignees?.find(a => a.id === task.assignedToId)) {
           existingGroup.assignees?.push({
-            id: task.assignedToId,
-            name: task.assignedToName,
+            id: task.assignedToId || '',
+            name: task.assignedToName || '',
             photoURL: task.assignedToPhotoURL
           });
         }
@@ -49,8 +49,8 @@ function groupTasksByGroupId(tasks: Task[]): GroupedTask[] {
         const groupedTask: GroupedTask = {
           ...task,
           assignees: [{
-            id: task.assignedToId,
-            name: task.assignedToName,
+            id: task.assignedToId || '',
+            name: task.assignedToName || '',
             photoURL: task.assignedToPhotoURL
           }]
         };
@@ -62,8 +62,8 @@ function groupTasksByGroupId(tasks: Task[]): GroupedTask[] {
       result.push({
         ...task,
         assignees: [{
-          id: task.assignedToId,
-          name: task.assignedToName,
+          id: task.assignedToId || '',
+          name: task.assignedToName || '',
           photoURL: task.assignedToPhotoURL
         }]
       });
@@ -268,18 +268,27 @@ export default function TasksPage() {
   }, [allTasks, currentClientDate, currentUser]);
     
   
- const dayModifiers = useMemo(() => {
-    if (!currentClientDate || !Array.isArray(allTasks)) return {};
+ type DayModifiers = {
+    overdue_highlight: Date[];
+    today_task_highlight: Date[];
+    upcoming_highlight: Date[];
+    postponed_highlight: Date[];
+  };
+
+  const dayModifiers = useMemo((): DayModifiers => {
+    const emptyModifiers: DayModifiers = {
+      overdue_highlight: [],
+      today_task_highlight: [],
+      upcoming_highlight: [],
+      postponed_highlight: [],
+    };
+    
+    if (!currentClientDate || !Array.isArray(allTasks)) return emptyModifiers;
 
     const today = new Date(currentClientDate);
     today.setHours(0, 0, 0, 0);
 
-    const modifiers: {
-      overdue_highlight: Date[];
-      today_task_highlight: Date[];
-      upcoming_highlight: Date[];
-      postponed_highlight: Date[];
-    } = {
+    const modifiers: DayModifiers = {
       overdue_highlight: [],
       today_task_highlight: [],
       upcoming_highlight: [],
@@ -311,11 +320,26 @@ export default function TasksPage() {
     return modifiers;
   }, [allTasks, currentClientDate]);
   
-  const dayModifiersClassNames = { 
-      overdue_highlight: 'calendar-day--overdue-bg', 
-      today_task_highlight: 'calendar-day--today-task-bg', 
-      upcoming_highlight: 'calendar-day--upcoming-bg',
-      postponed_highlight: 'calendar-day--postponed-bg'
+  // Custom DayContent component for colored dots
+  const DayContent = ({ date }: { date: Date }) => {
+    const hasOverdue = dayModifiers.overdue_highlight?.some(d => isSameDay(d, date));
+    const hasToday = dayModifiers.today_task_highlight?.some(d => isSameDay(d, date));
+    const hasUpcoming = dayModifiers.upcoming_highlight?.some(d => isSameDay(d, date));
+    const hasPostponed = dayModifiers.postponed_highlight?.some(d => isSameDay(d, date));
+    
+    return (
+      <div className="relative w-full h-full flex flex-col items-center justify-center">
+        <span>{date.getDate()}</span>
+        {(hasOverdue || hasToday || hasUpcoming || hasPostponed) && (
+          <div className="absolute bottom-0.5 flex gap-0.5">
+            {hasOverdue && <div className="w-1.5 h-1.5 bg-red-500 rounded-full" />}
+            {hasToday && <div className="w-1.5 h-1.5 bg-green-500 rounded-full" />}
+            {hasUpcoming && <div className="w-1.5 h-1.5 bg-blue-500 rounded-full" />}
+            {hasPostponed && <div className="w-1.5 h-1.5 bg-amber-500 rounded-full" />}
+          </div>
+        )}
+      </div>
+    );
   };
   
   // Calendario: mostrar TODAS las tareas del equipo para la fecha seleccionada (agrupadas)
@@ -392,10 +416,10 @@ export default function TasksPage() {
                     Selecciona una fecha para ver las tareas. Fechas resaltadas:
                   </CardDescription>
                   <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs text-muted-foreground pt-2">
-                    <div className="flex items-center gap-2"><span className="w-3 h-3 rounded-full bg-indicator-upcoming" /> Próximas</div>
-                    <div className="flex items-center gap-2"><span className="w-3 h-3 rounded-full bg-indicator-today" /> Hoy</div>
-                    <div className="flex items-center gap-2"><span className="w-3 h-3 rounded-full bg-destructive" /> Atrasadas</div>
-                    <div className="flex items-center gap-2"><span className="w-3 h-3 rounded-full bg-indicator-postponed" /> Pospuestas</div>
+                    <div className="flex items-center gap-2"><span className="w-3 h-3 rounded-full bg-blue-500" /> Próximas</div>
+                    <div className="flex items-center gap-2"><span className="w-3 h-3 rounded-full bg-green-500" /> Hoy</div>
+                    <div className="flex items-center gap-2"><span className="w-3 h-3 rounded-full bg-red-500" /> Atrasadas</div>
+                    <div className="flex items-center gap-2"><span className="w-3 h-3 rounded-full bg-amber-500" /> Pospuestas</div>
                   </div>
                 </CardHeader> 
                 <CardContent className="flex justify-center flex-grow items-center">
@@ -404,17 +428,18 @@ export default function TasksPage() {
                       <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
                     </div>
                   ) : (
-                    <Calendar 
+                    <DayPicker 
                       mode="single" 
                       selected={selectedDate} 
                       onSelect={(date) => { setSelectedDate(date); setOpenAccordionItem(''); }} 
                       month={calendarMonth} 
                       onMonthChange={setCalendarMonth} 
                       locale={es} 
-                      className="rounded-md border" 
-                      disabled={!currentClientDate} 
-                      modifiers={dayModifiers} 
-                      modifiersClassNames={dayModifiersClassNames} 
+                      className="p-3 rounded-md border" 
+                      disabled={!currentClientDate}
+                      components={{
+                        DayContent,
+                      }}
                     />
                   )}
                 </CardContent> 

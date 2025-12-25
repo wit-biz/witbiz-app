@@ -55,6 +55,15 @@ export default function TeamPage() {
 
     const canManageMembers = currentUser?.permissions?.team_manage_members ?? false;
     const canManageRoles = currentUser?.permissions?.team_manage_roles ?? false;
+    
+    // Debug logging
+    console.log('🔍 Team Management Debug:', {
+        currentUser: currentUser,
+        userRole: currentUser?.role,
+        permissions: currentUser?.permissions,
+        canManageMembers,
+        canManageRoles
+    });
 
     const sortedTeamMembers = useMemo(() => {
         if (!teamMembers) return [];
@@ -120,11 +129,16 @@ export default function TeamPage() {
         if (roleToEdit) { // Editing existing role name
             setLocalRoles(prevRoles => prevRoles.map(r => r.id === roleToEdit.id ? { ...r, name } : r));
         } else { // Creating a new role
+            const basePermissions = localRoles.find(r => r.id === 'collaborator')?.permissions;
+            if (!basePermissions) {
+                toast({ variant: "destructive", title: "Error", description: "No se pudo encontrar permisos base." });
+                return;
+            }
             const newRole: UserRole = {
                 id: name.toLowerCase().replace(/\s+/g, '-').replace(/[^\w-]/g, ''),
                 name,
                 isBaseRole: false,
-                permissions: localRoles.find(r => r.id === 'collaborator')?.permissions || {}
+                permissions: { ...basePermissions }
             };
             const updatedRoles = [...localRoles, newRole];
             setServerRoles(updatedRoles);

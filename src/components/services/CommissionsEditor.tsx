@@ -6,7 +6,8 @@ import { type Commission, type SubCommission } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { PlusCircle, Trash2, Percent, AlertTriangle } from "lucide-react";
+import { PlusCircle, Trash2, Percent, AlertTriangle, Info } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '../ui/card';
 import { cn } from '@/lib/utils';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '../ui/accordion';
@@ -95,9 +96,23 @@ export function ServiceCommissionsEditor({ initialCommissions, onUpdate, canEdit
     };
 
     return (
-        <div className="space-y-4">
-            <Label className="text-sm font-medium">Tarifas de Comisión</Label>
-            <div className="space-y-3">
+        <TooltipProvider>
+            <div className="space-y-4">
+                <div className="flex items-center gap-2">
+                    <Label className="text-sm font-medium">Tarifas de Comisión</Label>
+                    <Tooltip>
+                        <TooltipTrigger asChild>
+                            <Info className="h-4 w-4 text-muted-foreground cursor-help" />
+                        </TooltipTrigger>
+                        <TooltipContent side="right" className="max-w-xs">
+                            <p className="text-sm">
+                                <strong>Sub-comisiones:</strong> Permiten dividir una comisión principal entre diferentes conceptos o participantes. 
+                                Por ejemplo, en Estímulos Fiscales puede usarse para distribuir el porcentaje entre promotor, gestor y empresa.
+                            </p>
+                        </TooltipContent>
+                    </Tooltip>
+                </div>
+                <div className="space-y-3">
                 {localCommissions.map((commission, index) => {
                     const totalSubRate = commission.subCommissions?.reduce((sum, sub) => sum + sub.rate, 0) || 0;
                     const remainingRate = commission.rate - totalSubRate;
@@ -192,12 +207,13 @@ export function ServiceCommissionsEditor({ initialCommissions, onUpdate, canEdit
                         </Card>
                     )
                 })}
+                </div>
+                {canEdit && (
+                    <Button variant="outline" size="sm" onClick={handleAddCommission}>
+                        <PlusCircle className="h-4 w-4 mr-2" /> Añadir Comisión Principal
+                    </Button>
+                )}
             </div>
-            {canEdit && (
-                <Button variant="outline" size="sm" onClick={handleAddCommission}>
-                    <PlusCircle className="h-4 w-4 mr-2" /> Añadir Comisión Principal
-                </Button>
-            )}
-        </div>
+        </TooltipProvider>
     );
 }

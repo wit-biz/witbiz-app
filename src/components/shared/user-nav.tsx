@@ -64,6 +64,11 @@ const LOG_ACTION_DETAILS: Record<LogAction, { text: string; icon: React.ElementT
     supplier_deleted_permanently: { text: "Proveedor Eliminado (Per.)", icon: Trash2 },
     promoter_deleted_permanently: { text: "Promotor Eliminado (Per.)", icon: Trash2 },
     entity_deleted_automatically: { text: "Entidad Eliminada (Auto)", icon: Trash2 },
+    timeoff_requested: { text: "Tiempo Libre Solicitado", icon: PlusCircle },
+    timeoff_approved: { text: "Tiempo Libre Aprobado", icon: PlusCircle },
+    timeoff_rejected: { text: "Tiempo Libre Rechazado", icon: Trash2 },
+    timeoff_cancelled: { text: "Tiempo Libre Cancelado", icon: Trash2 },
+    timeoff_auto_approved: { text: "Tiempo Libre Auto-Aprobado", icon: PlusCircle },
 };
 
 type Period = 'day' | 'week' | 'month';

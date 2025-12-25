@@ -240,38 +240,59 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
     const { data: logs = [], isLoading: isLoadingLogs } = useCollection<Log>(logsCollection);
     
     const registerUser = useCallback(async (name: string, email: string, pass: string, role: string) => {
-        if (!auth || !firestore) {
-            showNotification('error', 'Error de registro', 'Los servicios de autenticación no están listos.');
-            throw new Error('Los servicios de autenticación no están listos.');
+        if (!auth || !currentUser) {
+            showNotification('error', 'Error de registro', 'Debe estar autenticado para crear usuarios.');
+            throw new Error('Debe estar autenticado para crear usuarios.');
         }
         
         try {
-            const userCredential = await createUserWithEmailAndPassword(auth, email, pass);
-            const { user: newUser } = userCredential;
-    
-            await updateProfile(newUser, { displayName: name });
+            // Get current user's token
+            const token = await auth.currentUser?.getIdToken();
+            if (!token) {
+                throw new Error('No se pudo obtener el token de autenticación');
+            }
             
-            const userDocRef = doc(firestore, "users", newUser.uid);
-            await setDocumentNonBlocking(userDocRef, {
-                id: newUser.uid,
-                name: name,
-                email: newUser.email,
-                role: role,
-                status: 'Activo',
-            }, { merge: true });
+            // Call server-side API to create user
+            const response = await fetch('/api/admin/users/create', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`,
+                },
+                body: JSON.stringify({
+                    name,
+                    email,
+                    password: pass,
+                    role,
+                }),
+            });
             
-            await addLog('user_invited', newUser.uid, 'user', name);
-    
-            return userCredential;
+            const data = await response.json();
+            
+            if (!response.ok) {
+                if (data.error === 'email_already_exists') {
+                    showNotification('warning', 'Usuario Existente', 'Este correo electrónico ya está registrado.');
+                } else if (data.error === 'insufficient_permissions') {
+                    showNotification('error', 'Sin Permisos', 'No tiene permisos para crear usuarios.');
+                } else {
+                    showNotification('error', 'Error de registro', data.error || 'No se pudo crear el usuario.');
+                }
+                throw new Error(data.error || 'No se pudo crear el usuario.');
+            }
+            
+            await addLog('user_invited', data.user.id, 'user', name);
+            
+            showNotification('success', 'Usuario Creado', `El usuario ${data.user.email} ha sido creado exitosamente.`);
+            
+            return data;
         } catch (error: any) {
-            if (error.code === 'auth/email-already-in-use') {
-                 showNotification('warning', 'Usuario Existente', 'Este correo electrónico ya está registrado.');
-            } else {
-                 showNotification('error', 'Error de registro', error.message);
+            console.error('Error in registerUser:', error);
+            if (error.message !== 'Usuario Existente' && error.message !== 'Sin Permisos') {
+                showNotification('error', 'Error de registro', error.message || 'No se pudo crear el usuario.');
             }
             throw error;
         }
-    }, [auth, firestore, showNotification, addLog]);
+    }, [auth, currentUser, showNotification, addLog]);
 
     const updateUser = async (userId: string, updates: Partial<AppUser>): Promise<boolean> => {
         if (!usersCollection) return false;
@@ -329,7 +350,7 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
             }
             
             const initialStage = service?.stages?.[0];
-            console.log('🔍 Found service:', service.name, 'Initial stage:', initialStage?.name);
+            console.log('🔍 Found service:', service.name, 'Initial stage:', initialStage?.title);
 
             const payload: any = {
                 ...newClientData,
