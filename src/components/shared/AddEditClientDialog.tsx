@@ -68,8 +68,12 @@ const clientSchema = z.object({
   customCommissions: z.array(customCommissionSchema).optional(),
 }).refine(data => {
     if (data.promoters && data.promoters.length > 0) {
-        const totalPercentage = data.promoters.reduce((sum, p) => sum + p.percentage, 0);
-        return Math.abs(totalPercentage - 100) < 0.01;
+        const totalPercentage = data.promoters.reduce((sum, p) => sum + (p.percentage || 0), 0);
+        // Only enforce 100% rule if at least one percentage is set (> 0)
+        // This allows adding promoters without immediately blocking the form
+        if (totalPercentage > 0 && Math.abs(totalPercentage - 100) >= 0.01) {
+            return false;
+        }
     }
     return true;
 }, {
@@ -360,7 +364,12 @@ export function AddEditClientDialog({ client, isOpen, onClose }: AddEditClientDi
                                   <Button type="button" variant="ghost" size="icon" onClick={() => removePromoter(index)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
                               </div>
                           ))}
-                          <Button type="button" variant="outline" size="sm" onClick={() => appendPromoter({ promoterId: '', percentage: 0 })}><PlusCircle className="mr-2 h-4 w-4" />Añadir Promotor</Button>
+                          <Button type="button" variant="outline" size="sm" onClick={() => {
+                            const currentPromoters = form.getValues('promoters') || [];
+                            // If first promoter, set to 100%. Otherwise set to 0 and let user adjust.
+                            const defaultPercentage = currentPromoters.length === 0 ? 100 : 0;
+                            appendPromoter({ promoterId: '', percentage: defaultPercentage });
+                          }}><PlusCircle className="mr-2 h-4 w-4" />Añadir Promotor</Button>
                            <FormMessage>{form.formState.errors.promoters?.message}</FormMessage>
                         </div>
                     </div>

@@ -337,7 +337,21 @@ export default function WorkflowConfigurationPage() {
   
   useEffect(() => {
     if (selectedWorkflow) {
-        setEditableWorkflow(JSON.parse(JSON.stringify(selectedWorkflow)));
+        // Deep clone and ensure all nested arrays are properly initialized
+        const workflow = JSON.parse(JSON.stringify(selectedWorkflow));
+        workflow.stages = (workflow.stages || []).map((stage: WorkflowStage) => ({
+            ...stage,
+            actions: stage.actions || [],
+            subStages: (stage.subStages || []).map((subStage: SubStage) => ({
+                ...subStage,
+                actions: subStage.actions || [],
+                subSubStages: (subStage.subSubStages || []).map((subSubStage: SubSubStage) => ({
+                    ...subSubStage,
+                    actions: subSubStage.actions || [],
+                })),
+            })),
+        }));
+        setEditableWorkflow(workflow);
     } else {
         setEditableWorkflow(null);
     }

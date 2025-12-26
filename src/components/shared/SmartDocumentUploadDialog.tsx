@@ -162,8 +162,8 @@ export function SmartDocumentUploadDialog({
   return (
     <>
     <Dialog open={isOpen} onOpenChange={handleDialogChange}>
-      <DialogContent className="sm:max-w-lg">
-        <form onSubmit={(e) => { e.preventDefault(); handleSubmit(enableAIAnalysis); }}>
+      <DialogContent className="sm:max-w-xl w-[95vw] max-w-[95vw]">
+        <form onSubmit={(e) => { e.preventDefault(); handleSubmit(enableAIAnalysis); }} className="overflow-hidden">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2"><UploadCloud className="h-5 w-5 text-accent"/>Subir Nuevo Documento</DialogTitle>
             <DialogDescription>
@@ -183,13 +183,13 @@ export function SmartDocumentUploadDialog({
             {files.length > 0 && (
               <div className="space-y-2 max-h-40 overflow-y-auto">
                 {files.map((file, index) => (
-                  <div key={index} className="p-2 border rounded-md bg-secondary/50 flex items-center justify-between">
-                    <div className="flex items-center gap-2 min-w-0">
-                      <FileIcon className="h-4 w-4 text-accent flex-shrink-0" />
-                      <span className="truncate font-medium text-sm">{file.name}</span>
-                      <span className="text-xs text-muted-foreground">({(file.size / 1024).toFixed(1)} KB)</span>
+                  <div key={index} className="p-2 border rounded-md bg-secondary/50 flex items-center gap-2">
+                    <FileIcon className="h-4 w-4 text-accent shrink-0" />
+                    <div className="flex-1" style={{ minWidth: 0, maxWidth: 'calc(100% - 3rem)' }}>
+                      <p className="font-medium text-sm overflow-hidden text-ellipsis whitespace-nowrap" title={file.name}>{file.name}</p>
+                      <p className="text-xs text-muted-foreground">({(file.size / 1024).toFixed(1)} KB)</p>
                     </div>
-                    <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => removeFile(index)} disabled={isSubmitting}>
+                    <Button variant="ghost" size="icon" className="h-6 w-6 shrink-0" onClick={() => removeFile(index)} disabled={isSubmitting}>
                       <X className="h-3 w-3" />
                     </Button>
                   </div>

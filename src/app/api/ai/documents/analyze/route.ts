@@ -3,10 +3,28 @@ import { DocumentProcessorServiceClient } from "@google-cloud/documentai";
 import { lookup as lookupMimeType } from "mime-types";
 import { FieldValue } from "firebase-admin/firestore";
 import { parseStringPromise } from "xml2js";
+import mammoth from "mammoth";
 
 import { adminAuth, adminDb, adminStorage } from "@/lib/firebaseAdmin";
 import { documentAIConfig } from "@/ai/config";
 import { firebaseConfig } from "@/firebase/config";
+
+// Supported MIME types for Document AI
+const DOCUMENT_AI_SUPPORTED_MIMES = [
+  "application/pdf",
+  "image/tiff",
+  "image/gif", 
+  "image/jpeg",
+  "image/png",
+  "image/bmp",
+  "image/webp",
+];
+
+// Word document MIME types
+const WORD_DOC_MIMES = [
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document", // .docx
+  "application/msword", // .doc
+];
 
 // Get Document AI client with service account credentials
 function getDocumentAIClient(): DocumentProcessorServiceClient {
@@ -633,6 +651,89 @@ function extractVatDetails(entities: any[]): any[] {
   return vatItems;
 }
 
+// ═══════════════════════════════════════════════════════════════════════════
+// WORD DOCUMENT PROCESSING
+// ═══════════════════════════════════════════════════════════════════════════
+
+async function extractTextFromWord(buffer: Buffer): Promise<{ text: string; html: string }> {
+  try {
+    const result = await mammoth.extractRawText({ buffer });
+    const htmlResult = await mammoth.convertToHtml({ buffer });
+    return {
+      text: result.value || "",
+      html: htmlResult.value || "",
+    };
+  } catch (e) {
+    console.error("Error extracting text from Word document:", e);
+    return { text: "", html: "" };
+  }
+}
+
+function extractFieldsFromWordText(text: string, fileName: string): any {
+  // Basic extraction from Word document text
+  // Since Word documents are typically contracts, proposals, etc., we do basic text analysis
+  
+  const lines = text.split('\n').filter(l => l.trim());
+  const fullText = text.substring(0, 2000);
+  
+  // Try to detect document type from content
+  const lowerText = text.toLowerCase();
+  let suggestedType = "Documento";
+  if (lowerText.includes("contrato") || lowerText.includes("acuerdo")) {
+    suggestedType = "Contrato";
+  } else if (lowerText.includes("propuesta") || lowerText.includes("cotización") || lowerText.includes("cotizacion")) {
+    suggestedType = "Propuesta";
+  } else if (lowerText.includes("factura") || lowerText.includes("invoice")) {
+    suggestedType = "Factura";
+  } else if (lowerText.includes("reporte") || lowerText.includes("informe")) {
+    suggestedType = "Reporte";
+  }
+  
+  // Try to extract amounts (look for currency patterns)
+  const amountMatches = text.match(/\$[\d,]+(?:\.\d{2})?/g) || [];
+  const amounts = amountMatches.map(m => parseFloat(m.replace(/[$,]/g, ''))).filter(n => !isNaN(n));
+  const primaryAmount = amounts.length > 0 ? Math.max(...amounts) : undefined;
+  
+  // Try to extract dates
+  const datePatterns = [
+    /(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})/g,
+    /(\d{1,2}) de ([a-záéíóú]+) de (\d{4})/gi,
+  ];
+  let date: string | undefined;
+  for (const pattern of datePatterns) {
+    const match = text.match(pattern);
+    if (match) {
+      date = match[0];
+      break;
+    }
+  }
+  
+  // Detect currency
+  let currency = "MXN";
+  if (lowerText.includes("usd") || lowerText.includes("dólar") || lowerText.includes("dollar")) {
+    currency = "USD";
+  } else if (lowerText.includes("eur") || lowerText.includes("euro")) {
+    currency = "EUR";
+  }
+  
+  return {
+    documentType: suggestedType,
+    fullText,
+    primaryAmount,
+    currency,
+    date,
+    lineItemsCount: 0,
+    totalEntitiesFound: 0,
+    rawEntities: [],
+    // Word-specific fields
+    wordDocumentInfo: {
+      totalLines: lines.length,
+      totalCharacters: text.length,
+      fileName,
+    },
+  };
+}
+
 function extractFields(doc: any) {
   const entities: any[] = Array.isArray(doc?.entities) ? doc.entities : [];
   const byType = new Map<string, any>();
@@ -850,11 +951,13 @@ function extractFields(doc: any) {
     // TEXTO Y ENTIDADES RAW
     // ─────────────────────────────────────────────────────────────────────────
     fullText: fullText.substring(0, 1000), // Más contexto: 1000 chars
-    rawEntities: entities.map((e) => ({
-      type: e.type,
-      text: getEntityText(e),
-      confidence: e.confidence,
-    })),
+    rawEntities: entities
+      .map((e) => ({
+        type: e.type || "unknown",
+        text: getEntityText(e) || "",
+        confidence: e.confidence ?? 0,
+      }))
+      .filter((e) => e.text !== ""), // Filter out entities with empty text
     totalEntitiesFound: entities.length,
   };
 }
@@ -894,7 +997,15 @@ export async function POST(req: NextRequest) {
 
   const mimeType = (lookupMimeType(storagePath) as string) || "application/pdf";
   const bucketName = process.env.FIREBASE_STORAGE_BUCKET || firebaseConfig.storageBucket;
-  const isXML = storagePath.toLowerCase().endsWith('.xml') || mimeType.includes('xml');
+  const lowerPath = storagePath.toLowerCase();
+  
+  // Check Word documents FIRST (before XML check) because .docx files contain XML internally
+  const isWord = WORD_DOC_MIMES.includes(mimeType) || 
+                 lowerPath.endsWith('.docx') || 
+                 lowerPath.endsWith('.doc');
+  // Only treat as XML if it's NOT a Word document and ends with .xml or has xml mime type
+  const isXML = !isWord && (lowerPath.endsWith('.xml') || mimeType === 'application/xml' || mimeType === 'text/xml');
+  const isDocumentAISupported = DOCUMENT_AI_SUPPORTED_MIMES.includes(mimeType);
 
   try {
     await docRef.set(
@@ -913,11 +1024,30 @@ export async function POST(req: NextRequest) {
     const [fileBuffer] = await adminStorage.bucket(bucketName).file(storagePath).download();
 
     let extracted: any;
+    let processingMethod: string;
 
-    if (isXML) {
+    if (isWord) {
+      // ═══════════════════════════════════════════════════════════════════════
+      // Word Document Processing - Extract text using mammoth (check FIRST!)
+      // ═══════════════════════════════════════════════════════════════════════
+      processingMethod = "word";
+      console.log("📄 Processing Word document with mammoth");
+      console.log("📄 File size:", fileBuffer.length, "bytes, mimeType:", mimeType);
+      
+      const { text } = await extractTextFromWord(fileBuffer);
+      
+      if (!text || text.trim().length === 0) {
+        throw new Error("No se pudo extraer texto del documento Word. El archivo puede estar vacío o corrupto.");
+      }
+      
+      extracted = extractFieldsFromWordText(text, docData.name || storagePath);
+      console.log("✅ Word document processed successfully");
+      console.log("📋 Extracted type:", extracted.documentType, "Amount:", extracted.primaryAmount);
+    } else if (isXML) {
       // ═══════════════════════════════════════════════════════════════════════
       // XML/CFDI Processing - Parse directly without Document AI
       // ═══════════════════════════════════════════════════════════════════════
+      processingMethod = "xml";
       console.log("📄 Processing XML/CFDI file directly");
       console.log("📄 File size:", fileBuffer.length, "bytes");
       
@@ -931,10 +1061,11 @@ export async function POST(req: NextRequest) {
       extracted = extractFieldsFromXML(xmlData);
       console.log("✅ XML/CFDI parsed successfully");
       console.log("📋 Extracted:", extracted.supplierName, extracted.totalAmount, extracted.currency);
-    } else {
+    } else if (isDocumentAISupported) {
       // ═══════════════════════════════════════════════════════════════════════
       // Document AI Processing - For PDFs and Images
       // ═══════════════════════════════════════════════════════════════════════
+      processingMethod = "documentai";
       console.log("📄 Calling Document AI with processor:", processorName);
       console.log("📄 File size:", fileBuffer.length, "bytes, mimeType:", mimeType);
       
@@ -949,17 +1080,36 @@ export async function POST(req: NextRequest) {
       
       console.log("✅ Document AI processed successfully");
       extracted = extractFields(result.document);
+    } else {
+      // ═══════════════════════════════════════════════════════════════════════
+      // Unsupported file type
+      // ═══════════════════════════════════════════════════════════════════════
+      throw new Error(`Tipo de archivo no soportado: ${mimeType}. Formatos soportados: PDF, imágenes (JPEG, PNG, etc.), XML/CFDI, y documentos Word (.docx)`);
     }
     
-    // Helper to remove undefined values (Firestore doesn't accept them)
+    // Helper to remove undefined values recursively (Firestore doesn't accept them)
     const cleanObject = (obj: Record<string, any>): Record<string, any> => {
-      return Object.fromEntries(
-        Object.entries(obj).filter(([_, v]) => v !== undefined)
-      );
+      const cleaned: Record<string, any> = {};
+      for (const [key, value] of Object.entries(obj)) {
+        if (value === undefined) continue;
+        if (value === null) {
+          cleaned[key] = null;
+        } else if (Array.isArray(value)) {
+          cleaned[key] = value
+            .filter(item => item !== undefined)
+            .map(item => (typeof item === 'object' && item !== null ? cleanObject(item) : item));
+        } else if (typeof value === 'object') {
+          cleaned[key] = cleanObject(value);
+        } else {
+          cleaned[key] = value;
+        }
+      }
+      return cleaned;
     };
 
     // Determine document type based on processor and extracted data
     const suggestedType = isXML ? "CFDI (Factura Electrónica)"
+      : isWord ? (extracted.documentType || "Documento Word")
       : processorKey === "invoice" ? "Factura" 
       : processorKey === "expense" ? "Comprobante de Gasto"
       : processorKey === "bankStatement" ? "Estado de Cuenta"
