@@ -109,6 +109,11 @@ service cloud.firestore {
         allow read, create: if isSignedIn();
     }
     
+    // TPV Reports - terminal transaction reports
+    match /tpvReports/{reportId} {
+        allow read, write: if isSignedIn();
+    }
+    
     // Chat conversations - users can only access their own conversations
     match /chatConversations/{conversationId} {
         allow read, write: if isSignedIn() && resource.data.userId == request.auth.uid;

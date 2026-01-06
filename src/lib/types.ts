@@ -44,6 +44,8 @@ export type Client = {
   submittedRequirements?: SubmittedRequirement[];
   archivedAt?: any;
   customCommissionServiceIds?: string[];
+  // TPV Configuration override - if set, overrides service-level tpvConfig
+  tpvConfig?: TPVConfig;
 };
 
 export type Promoter = {
@@ -88,6 +90,103 @@ export type RevenueDistribution = {
   witbizPercentage: number; // % that goes to WitBiz
   // Second level: How WitBiz's share is distributed internally
   witbizDistribution?: CommissionRecipient[];
+}
+
+// TPV Configuration - Configurable commissions per service/client
+export type TPVReportFormat = 'formato1' | 'formato2';
+
+export type TPVConfig = {
+  reportFormat: TPVReportFormat;
+  // Billpocket commissions (shown separately in Formato 1, absorbed in Formato 2)
+  billpocketNacional: number;      // Default: 1.9%
+  billpocketInternacional: number; // Default: 3.8%
+  // WitBiz commission (6% for Formato 1, 7% for Formato 2)
+  witbizComision: number;
+}
+
+// Default TPV configurations
+export const TPV_CONFIG_DEFAULTS: Record<TPVReportFormat, TPVConfig> = {
+  formato1: {
+    reportFormat: 'formato1',
+    billpocketNacional: 1.9,
+    billpocketInternacional: 3.8,
+    witbizComision: 6,
+  },
+  formato2: {
+    reportFormat: 'formato2',
+    billpocketNacional: 1.9,
+    billpocketInternacional: 3.8,
+    witbizComision: 7,
+  },
+};
+
+// TPV Report Types - For terminal transaction processing
+export type TPVTransaction = {
+  id: string;
+  transactionId: string;
+  dateTime: string;
+  device: string;
+  cardNumber: string;
+  cardType: 'Debito' | 'Credito' | 'Internacional';
+  subtotal: number;
+  tip: number;
+  totalAmount: number;
+  refundAmount: number;
+  providerCommission: number; // What Billpocket charges
+  providerCommissionRate: number; // % Billpocket rate
+  witbizCommission: number; // What WitBiz charges
+  witbizCommissionRate: number; // % WitBiz rate
+  clientReturn: number; // What client gets back
+}
+
+export type TPVCommissionDistribution = {
+  recipientId: string;
+  recipientName: string;
+  recipientType: 'witbiz' | 'team_member' | 'promoter';
+  percentage: number;
+  amount: number;
+}
+
+export type TPVReportSummary = {
+  totalTransactions: number;
+  totalSales: number;
+  totalTips: number;
+  totalAmount: number;
+  totalProviderCommission: number;
+  totalWitbizCommission: number;
+  totalClientReturn: number;
+  commissionDistribution: TPVCommissionDistribution[];
+  byCardType: {
+    debito: { count: number; amount: number };
+    credito: { count: number; amount: number };
+    internacional: { count: number; amount: number };
+  };
+  byDay: { date: string; sales: number; clientReturn: number }[];
+}
+
+export type TPVReport = {
+  id: string;
+  clientId: string;
+  clientName: string;
+  serviceId: string;
+  serviceName: string;
+  supplierId?: string;
+  supplierName?: string;
+  periodStart: string;
+  periodEnd: string;
+  transactions: TPVTransaction[];
+  summary: TPVReportSummary;
+  originalFileURL: string;
+  originalFileName: string;
+  generatedFileURL?: string;
+  generatedFileName?: string;
+  status: 'Procesado' | 'Error' | 'Pendiente';
+  processedAt: any;
+  processedBy: string;
+  createdAt: any;
+  // TPV Configuration used for this report
+  reportFormat?: TPVReportFormat;
+  tpvConfig?: TPVConfig;
 }
 
 export type SubTask = {
@@ -431,6 +530,10 @@ export interface ServiceWorkflow {
     primarySupplierId?: string; // Main supplier for this service
     // Revenue distribution configuration
     revenueDistribution?: RevenueDistribution;
+    // Default commission rate for TPV/terminal services (used if client has no custom rate)
+    defaultCommissionRate?: number;
+    // TPV Configuration - default for all clients using this service
+    tpvConfig?: TPVConfig;
 }
 
 // Service Package - combines multiple services for unified billing/accounting

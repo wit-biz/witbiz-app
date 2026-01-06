@@ -19,7 +19,8 @@ import { Input } from '@/components/ui/input';
 import { Loader2, Save, ChevronsUpDown, PlusCircle, Trash2, Percent } from 'lucide-react';
 import { useCRMData } from '@/contexts/CRMDataContext';
 import { useToast } from '@/hooks/use-toast';
-import type { Client } from '@/lib/types';
+import type { Client, TPVReportFormat } from '@/lib/types';
+import { TPV_CONFIG_DEFAULTS } from '@/lib/types';
 import {
   Form,
   FormControl,
@@ -66,18 +67,18 @@ const clientSchema = z.object({
   hasPosTerminals: z.boolean().default(false),
   posTerminals: z.array(posTerminalSchema).optional(),
   customCommissions: z.array(customCommissionSchema).optional(),
+  tpvFormat: z.enum(['formato1', 'formato2']).optional(),
 }).refine(data => {
     if (data.promoters && data.promoters.length > 0) {
         const totalPercentage = data.promoters.reduce((sum, p) => sum + (p.percentage || 0), 0);
-        // Only enforce 100% rule if at least one percentage is set (> 0)
-        // This allows adding promoters without immediately blocking the form
-        if (totalPercentage > 0 && Math.abs(totalPercentage - 100) >= 0.01) {
+        // Ensure total doesn't exceed 100% (WitBiz can't give more than it earns)
+        if (totalPercentage > 100) {
             return false;
         }
     }
     return true;
 }, {
-    message: "La suma de los porcentajes de los promotores debe ser exactamente 100.",
+    message: "La suma de los porcentajes no puede exceder 100%.",
     path: ["promoters"],
 });
 
@@ -134,6 +135,7 @@ export function AddEditClientDialog({ client, isOpen, onClose }: AddEditClientDi
             hasPosTerminals: !!client?.posTerminals && client.posTerminals.length > 0,
             posTerminals: client?.posTerminals || [],
             customCommissions: client?.customCommissions || [],
+            tpvFormat: client?.tpvConfig?.reportFormat || 'formato2',
         });
     }
   }, [isOpen, client, form, serviceWorkflows]);
@@ -193,6 +195,10 @@ export function AddEditClientDialog({ client, isOpen, onClose }: AddEditClientDi
                 id: t.id || `pos-${Date.now()}-${Math.random()}`,
               }))
             : [],
+          // Set TPV config when client has POS terminals
+          tpvConfig: values.hasPosTerminals && values.tpvFormat
+            ? TPV_CONFIG_DEFAULTS[values.tpvFormat]
+            : undefined,
       };
       
       console.log('🔍 Final values to save:', finalValues);
@@ -340,6 +346,7 @@ export function AddEditClientDialog({ client, isOpen, onClose }: AddEditClientDi
                     <Separator />
                     <div>
                         <FormLabel>Promotores Referidos</FormLabel>
+                        <p className="text-xs text-muted-foreground mb-2">% de la comisión WitBiz que se le da al promotor</p>
                         <div className="space-y-3 mt-2">
                           {promoterFields.map((field, index) => (
                               <div key={field.id} className="grid grid-cols-[1fr_auto_auto] items-center gap-2 p-2 border rounded-md">
@@ -365,10 +372,7 @@ export function AddEditClientDialog({ client, isOpen, onClose }: AddEditClientDi
                               </div>
                           ))}
                           <Button type="button" variant="outline" size="sm" onClick={() => {
-                            const currentPromoters = form.getValues('promoters') || [];
-                            // If first promoter, set to 100%. Otherwise set to 0 and let user adjust.
-                            const defaultPercentage = currentPromoters.length === 0 ? 100 : 0;
-                            appendPromoter({ promoterId: '', percentage: defaultPercentage });
+                            appendPromoter({ promoterId: '', percentage: 10 });
                           }}><PlusCircle className="mr-2 h-4 w-4" />Añadir Promotor</Button>
                            <FormMessage>{form.formState.errors.promoters?.message}</FormMessage>
                         </div>
@@ -389,8 +393,26 @@ export function AddEditClientDialog({ client, isOpen, onClose }: AddEditClientDi
                         </FormItem>
                     )} />
                      
-                    {hasPosTerminals && (
-                        <div className="space-y-2 mt-2 pl-4 border-l-2">
+                    {hasPosTerminals ? (
+                        <div className="space-y-3 mt-2 p-3 border rounded-lg bg-muted/30">
+                          <div className="p-2 bg-green-100 dark:bg-green-900 rounded border border-green-500">
+                            <p className="text-sm font-bold text-green-700 dark:text-green-300">📊 Formato de Reporte TPV</p>
+                            <select 
+                              className="w-full mt-1 p-2 border rounded bg-white dark:bg-gray-800"
+                              value={form.watch('tpvFormat') || 'formato2'}
+                              onChange={(e) => form.setValue('tpvFormat', e.target.value as 'formato1' | 'formato2')}
+                            >
+                              <option value="formato1">Formato 1 - Comisiones Separadas</option>
+                              <option value="formato2">Formato 2 - Comisión Única (recomendado)</option>
+                            </select>
+                            <p className="text-xs text-muted-foreground mt-1">
+                              {form.watch('tpvFormat') === 'formato1' 
+                                ? 'Muestra Billpocket y WitBiz por separado' 
+                                : 'WitBiz absorbe la comisión de Billpocket'}
+                            </p>
+                          </div>
+                          <Separator />
+                          <FormLabel className="text-sm font-semibold">🖥️ Terminales</FormLabel>
                           {terminalFields.map((field, index) => (
                               <FormField key={field.id} control={form.control} name={`posTerminals.${index}.serialNumber`} render={({ field }) => (
                                   <FormItem>
@@ -405,7 +427,7 @@ export function AddEditClientDialog({ client, isOpen, onClose }: AddEditClientDi
                           ))}
                           <Button type="button" variant="outline" size="sm" onClick={() => appendTerminal({ serialNumber: ''})}><PlusCircle className="mr-2 h-4 w-4" />Añadir Terminal</Button>
                         </div>
-                    )}
+                    ) : null}
                 </div>
 
                 <DialogFooter>

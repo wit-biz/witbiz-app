@@ -31,6 +31,7 @@ import {
     type Log,
     type LogAction,
     type LogEntityType,
+    type TPVReport,
 } from '@/lib/types';
 import { useUser, useFirestore, useMemoFirebase, useCollection, useDoc, useAuth, addDocumentNonBlocking, setDocumentNonBlocking, deleteDocumentNonBlocking, useStorage, FirestorePermissionError, errorEmitter } from '@/firebase';
 import { collection, doc, writeBatch, serverTimestamp, query, where, updateDoc, runTransaction, getDoc } from 'firebase/firestore';
@@ -155,6 +156,13 @@ interface CRMContextType {
   updateServicePackage: (packageId: string, updates: Partial<ServicePackage>) => Promise<boolean>;
   deleteServicePackage: (packageId: string, permanent?: boolean) => Promise<boolean>;
   restoreServicePackage: (packageId: string) => Promise<boolean>;
+
+  // TPV Reports
+  tpvReports: TPVReport[];
+  isLoadingTPVReports: boolean;
+  addTPVReport: (reportData: Omit<TPVReport, 'id' | 'createdAt' | 'processedAt'>) => Promise<TPVReport | null>;
+  getTPVReportsByClientId: (clientId: string) => TPVReport[];
+  deleteTPVReport: (reportId: string) => Promise<boolean>;
 }
 
 const CRMContext = createContext<CRMContextType | undefined>(undefined);
@@ -193,6 +201,7 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
     const loansCollection = useMemoFirebase(() => (firestore && user) ? collection(firestore, 'loans') : null, [firestore, user]);
     const logsCollection = useMemoFirebase(() => (firestore && user) ? collection(firestore, 'logs') : null, [firestore, user]);
     const servicePackagesCollection = useMemoFirebase(() => (firestore && user) ? collection(firestore, 'servicePackages') : null, [firestore, user]);
+    const tpvReportsCollection = useMemoFirebase(() => (firestore && user) ? collection(firestore, 'tpvReports') : null, [firestore, user]);
 
     const addLog = useCallback(async (action: LogAction, entityId: string, entityType: LogEntityType, entityName?: string) => {
         if (!logsCollection || !currentUser) return;
@@ -254,6 +263,7 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
     const { data: loans = [], isLoading: isLoadingLoans } = useCollection<InterCompanyLoan>(loansCollection);
     const { data: logs = [], isLoading: isLoadingLogs } = useCollection<Log>(logsCollection);
     const { data: servicePackages = [], isLoading: isLoadingPackages } = useCollection<ServicePackage>(servicePackagesCollection);
+    const { data: tpvReports = [], isLoading: isLoadingTPVReports } = useCollection<TPVReport>(tpvReportsCollection);
     
     const registerUser = useCallback(async (name: string, email: string, pass: string, role: string) => {
         if (!auth || !currentUser) {
@@ -1066,6 +1076,50 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
         return true;
     };
 
+    // TPV Reports CRUD
+    const addTPVReport = async (reportData: Omit<TPVReport, 'id' | 'createdAt' | 'processedAt'>): Promise<TPVReport | null> => {
+        if (!tpvReportsCollection || !currentUser) return null;
+        
+        // Remove undefined fields (Firestore doesn't accept undefined)
+        const cleanData = Object.fromEntries(
+            Object.entries(reportData).filter(([_, v]) => v !== undefined)
+        );
+        
+        const payload = {
+            ...cleanData,
+            createdAt: serverTimestamp(),
+            processedAt: serverTimestamp(),
+        };
+        
+        const docRef = await addDocumentNonBlocking(tpvReportsCollection, payload);
+        setDocumentNonBlocking(doc(tpvReportsCollection, docRef.id), { id: docRef.id }, { merge: true });
+        
+        showNotification('success', 'Reporte TPV Procesado', 
+            `${reportData.summary.totalTransactions} transacciones procesadas. Total: $${reportData.summary.totalAmount.toLocaleString()}`
+        );
+        
+        addLog('tpv_report_created' as any, docRef.id, 'document' as any, `Reporte TPV - ${reportData.clientName}`);
+        
+        return { ...payload, id: docRef.id } as TPVReport;
+    };
+
+    const getTPVReportsByClientId = (clientId: string): TPVReport[] => {
+        return tpvReports.filter(r => r.clientId === clientId)
+            .sort((a, b) => {
+                const dateA = a.createdAt?.toDate?.() || new Date(0);
+                const dateB = b.createdAt?.toDate?.() || new Date(0);
+                return dateB.getTime() - dateA.getTime();
+            });
+    };
+
+    const deleteTPVReport = async (reportId: string): Promise<boolean> => {
+        if (!tpvReportsCollection) return false;
+        const report = tpvReports.find(r => r.id === reportId);
+        deleteDocumentNonBlocking(doc(tpvReportsCollection, reportId));
+        showNotification('info', 'Reporte Eliminado', `El reporte TPV ha sido eliminado.`);
+        return true;
+    };
+
     const addCompany = async (data: Omit<Company, 'id'>) => {
         if (!companiesCollection) return;
         const docRef = await addDocumentNonBlocking(companiesCollection, data);
@@ -1214,6 +1268,10 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
         servicePackages, isLoadingPackages,
         addServicePackage, updateServicePackage, deleteServicePackage, restoreServicePackage,
 
+        // TPV Reports
+        tpvReports, isLoadingTPVReports,
+        addTPVReport, getTPVReportsByClientId, deleteTPVReport,
+
         registerUser,
         updateUser,
         deleteUser,
@@ -1226,7 +1284,7 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
         promoters, isLoadingPromoters, suppliers, isLoadingSuppliers,
         companies, isLoadingCompanies, bankAccounts, isLoadingBankAccounts, categories, isLoadingCategories,
         transactions, isLoadingTransactions, loans, isLoadingLoans,
-        servicePackages, isLoadingPackages,
+        servicePackages, isLoadingPackages, tpvReports, isLoadingTPVReports,
         addLog, registerUser
     ]);
 

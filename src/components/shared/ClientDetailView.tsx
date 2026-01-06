@@ -2,11 +2,11 @@
 "use client";
 
 import React, { useState, useMemo } from "react";
-import { type Client, type Document, type Task, type WorkflowAction, type WorkflowStage, type SubStage, type SubSubStage, type Commission, type SubmittedRequirement, type Note } from "@/lib/types";
+import { type Client, type Document, type Task, type WorkflowAction, type WorkflowStage, type SubStage, type SubSubStage, type Commission, type SubmittedRequirement, type Note, type TPVReport, type TPVConfig, type TPVReportFormat, TPV_CONFIG_DEFAULTS } from "@/lib/types";
 import { useCRMData } from "@/contexts/CRMDataContext";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Edit, Trash2, Plus, Download, FileText, UploadCloud, Info, Users, Target, ListTodo, CheckCircle2, Briefcase, UserCheck, Smartphone, CalendarDays, Percent, Tag, FileCheck2, Save, MessageSquare, Eye, ChevronsRight } from "lucide-react";
+import { Edit, Trash2, Plus, Download, FileText, UploadCloud, Info, Users, Target, ListTodo, CheckCircle2, Briefcase, UserCheck, Smartphone, CalendarDays, Percent, Tag, FileCheck2, Save, MessageSquare, Eye, ChevronsRight, CreditCard } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { SmartDocumentUploadDialog } from "./SmartDocumentUploadDialog";
@@ -16,7 +16,10 @@ import { Checkbox } from "../ui/checkbox";
 import { Label } from "../ui/label";
 import { serverTimestamp } from "firebase/firestore";
 import { Textarea } from "../ui/textarea";
-
+import { TPVUploadDialog } from "../tpv/TPVUploadDialog";
+import { TPVReportList, TPVReportView } from "../tpv/TPVReportView";
+import { formatCurrency, getEffectiveTPVConfig } from "@/lib/tpvProcessor";
+import { Input } from "../ui/input";
 
 type AnyStage = WorkflowStage | SubStage | SubSubStage;
 
@@ -43,13 +46,20 @@ const DetailItem = ({ label, value, href }: { label: string; value?: string | nu
 };
 
 export function ClientDetailView({ client, onClose }: ClientDetailViewProps) {
-    const { getDocumentsByClientId, serviceWorkflows, getTasksByClientId, promoters: allPromoters, updateClient, addNote, notes: allNotes, addTask } = useCRMData();
+    const { getDocumentsByClientId, serviceWorkflows, getTasksByClientId, promoters: allPromoters, updateClient, addNote, notes: allNotes, addTask, getTPVReportsByClientId, deleteTPVReport } = useCRMData();
     const { toast } = useToast();
     
     const [isUploadDialogOpen, setIsUploadDialogOpen] = useState(false);
+    const [isTPVUploadDialogOpen, setIsTPVUploadDialogOpen] = useState(false);
+    const [selectedTPVReport, setSelectedTPVReport] = useState<TPVReport | null>(null);
     const [newNote, setNewNote] = useState('');
     const [isSavingNote, setIsSavingNote] = useState(false);
     const [isChangingStage, setIsChangingStage] = useState(false);
+    
+    // TPV Configuration state
+    const [isEditingTPVConfig, setIsEditingTPVConfig] = useState(false);
+    const [tpvConfigDraft, setTpvConfigDraft] = useState<TPVConfig | null>(null);
+    const [isSavingTPVConfig, setIsSavingTPVConfig] = useState(false);
     
     if (!client) {
         return (
@@ -95,6 +105,69 @@ export function ClientDetailView({ client, onClose }: ClientDetailViewProps) {
             .sort((a, b) => (b.createdAt?.toMillis() || 0) - (a.createdAt?.toMillis() || 0));
     }, [allNotes, client.id]);
 
+    const clientTPVReports = useMemo(() => {
+        return getTPVReportsByClientId(client.id);
+    }, [getTPVReportsByClientId, client.id]);
+
+    const handleDeleteTPVReport = async (reportId: string) => {
+        const success = await deleteTPVReport(reportId);
+        if (success) {
+            setSelectedTPVReport(null);
+        }
+    };
+
+    // TPV Configuration helpers
+    const tpvService = useMemo(() => {
+        return subscribedServices.find(s => 
+            s.name?.toLowerCase().includes('terminal') || 
+            s.name?.toLowerCase().includes('tpv') ||
+            s.name?.toLowerCase().includes('pos')
+        );
+    }, [subscribedServices]);
+
+    const effectiveTPVConfig = useMemo(() => {
+        if (!tpvService) return null;
+        return getEffectiveTPVConfig(client.tpvConfig, tpvService.tpvConfig, 'formato2');
+    }, [client.tpvConfig, tpvService]);
+
+    const hasCustomTPVConfig = !!client.tpvConfig;
+
+    const handleEditTPVConfig = () => {
+        setTpvConfigDraft(client.tpvConfig || effectiveTPVConfig || TPV_CONFIG_DEFAULTS['formato2']);
+        setIsEditingTPVConfig(true);
+    };
+
+    const handleCancelTPVConfigEdit = () => {
+        setTpvConfigDraft(null);
+        setIsEditingTPVConfig(false);
+    };
+
+    const handleSaveTPVConfig = async () => {
+        if (!tpvConfigDraft) return;
+        setIsSavingTPVConfig(true);
+        try {
+            await updateClient(client.id, { tpvConfig: tpvConfigDraft });
+            toast({ title: '✅ Configuración TPV guardada', description: 'Las comisiones personalizadas han sido aplicadas.' });
+            setIsEditingTPVConfig(false);
+            setTpvConfigDraft(null);
+        } catch (error) {
+            toast({ variant: 'destructive', title: 'Error', description: 'No se pudo guardar la configuración.' });
+        } finally {
+            setIsSavingTPVConfig(false);
+        }
+    };
+
+    const handleRemoveCustomTPVConfig = async () => {
+        setIsSavingTPVConfig(true);
+        try {
+            await updateClient(client.id, { tpvConfig: undefined });
+            toast({ title: '✅ Configuración eliminada', description: 'Se usará la configuración del servicio.' });
+        } catch (error) {
+            toast({ variant: 'destructive', title: 'Error', description: 'No se pudo eliminar la configuración.' });
+        } finally {
+            setIsSavingTPVConfig(false);
+        }
+    };
 
     const pendingTasks = useMemo(() => {
         return clientTasks.filter(task => task.status === 'Pendiente');
@@ -358,6 +431,131 @@ export function ClientDetailView({ client, onClose }: ClientDetailViewProps) {
                         </Card>
                     )}
 
+                    {/* TPV Configuration Card - Only show if client has TPV service */}
+                    {tpvService && (
+                        <Card>
+                            <CardHeader className="pb-2">
+                                <div className="flex items-center justify-between">
+                                    <CardTitle className="flex items-center gap-2">
+                                        <CreditCard className="h-4 w-4" />
+                                        Configuración TPV
+                                    </CardTitle>
+                                    {!isEditingTPVConfig && (
+                                        <Button variant="outline" size="sm" onClick={handleEditTPVConfig}>
+                                            <Edit className="h-3 w-3 mr-1" />
+                                            {hasCustomTPVConfig ? 'Editar' : 'Personalizar'}
+                                        </Button>
+                                    )}
+                                </div>
+                                {hasCustomTPVConfig && !isEditingTPVConfig && (
+                                    <p className="text-xs text-primary">✓ Configuración personalizada activa</p>
+                                )}
+                            </CardHeader>
+                            <CardContent>
+                                {isEditingTPVConfig && tpvConfigDraft ? (
+                                    <div className="space-y-4">
+                                        {/* Format Selection */}
+                                        <div className="space-y-2">
+                                            <Label className="text-sm font-medium">Formato de Reporte</Label>
+                                            <Select
+                                                value={tpvConfigDraft.reportFormat}
+                                                onValueChange={(value: TPVReportFormat) => {
+                                                    const defaults = TPV_CONFIG_DEFAULTS[value];
+                                                    setTpvConfigDraft({ ...defaults });
+                                                }}
+                                            >
+                                                <SelectTrigger>
+                                                    <SelectValue />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    <SelectItem value="formato1">Formato 1 - Comisiones Separadas</SelectItem>
+                                                    <SelectItem value="formato2">Formato 2 - Comisión Única</SelectItem>
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
+
+                                        {/* Commission Fields */}
+                                        <div className="grid grid-cols-2 gap-3">
+                                            <div className="space-y-1">
+                                                <Label className="text-xs">Billpocket Nacional (%)</Label>
+                                                <Input
+                                                    type="number"
+                                                    step="0.1"
+                                                    value={tpvConfigDraft.billpocketNacional}
+                                                    onChange={(e) => setTpvConfigDraft({
+                                                        ...tpvConfigDraft,
+                                                        billpocketNacional: parseFloat(e.target.value) || 0
+                                                    })}
+                                                />
+                                            </div>
+                                            <div className="space-y-1">
+                                                <Label className="text-xs">Billpocket Internacional (%)</Label>
+                                                <Input
+                                                    type="number"
+                                                    step="0.1"
+                                                    value={tpvConfigDraft.billpocketInternacional}
+                                                    onChange={(e) => setTpvConfigDraft({
+                                                        ...tpvConfigDraft,
+                                                        billpocketInternacional: parseFloat(e.target.value) || 0
+                                                    })}
+                                                />
+                                            </div>
+                                        </div>
+                                        <div className="space-y-1">
+                                            <Label className="text-xs">Comisión WitBiz (%)</Label>
+                                            <Input
+                                                type="number"
+                                                step="0.1"
+                                                value={tpvConfigDraft.witbizComision}
+                                                onChange={(e) => setTpvConfigDraft({
+                                                    ...tpvConfigDraft,
+                                                    witbizComision: parseFloat(e.target.value) || 0
+                                                })}
+                                            />
+                                        </div>
+
+                                        {/* Action Buttons */}
+                                        <div className="flex gap-2 pt-2">
+                                            <Button size="sm" onClick={handleSaveTPVConfig} disabled={isSavingTPVConfig}>
+                                                {isSavingTPVConfig ? <><span className="animate-spin mr-1">⏳</span>Guardando...</> : <><Save className="h-3 w-3 mr-1" />Guardar</>}
+                                            </Button>
+                                            <Button size="sm" variant="outline" onClick={handleCancelTPVConfigEdit}>Cancelar</Button>
+                                            {hasCustomTPVConfig && (
+                                                <Button size="sm" variant="destructive" onClick={handleRemoveCustomTPVConfig} disabled={isSavingTPVConfig}>
+                                                    <Trash2 className="h-3 w-3 mr-1" />Usar Default
+                                                </Button>
+                                            )}
+                                        </div>
+                                    </div>
+                                ) : effectiveTPVConfig ? (
+                                    <div className="space-y-2 text-sm">
+                                        <div className="flex justify-between">
+                                            <span className="text-muted-foreground">Formato:</span>
+                                            <span className="font-medium">{effectiveTPVConfig.reportFormat === 'formato1' ? 'F1 - Separadas' : 'F2 - Única'}</span>
+                                        </div>
+                                        <div className="flex justify-between">
+                                            <span className="text-muted-foreground">Billpocket Nacional:</span>
+                                            <span className="font-medium">{effectiveTPVConfig.billpocketNacional}%</span>
+                                        </div>
+                                        <div className="flex justify-between">
+                                            <span className="text-muted-foreground">Billpocket Internacional:</span>
+                                            <span className="font-medium">{effectiveTPVConfig.billpocketInternacional}%</span>
+                                        </div>
+                                        <div className="flex justify-between">
+                                            <span className="text-muted-foreground">WitBiz:</span>
+                                            <span className="font-medium">{effectiveTPVConfig.witbizComision}%</span>
+                                        </div>
+                                        {!hasCustomTPVConfig && (
+                                            <p className="text-xs text-muted-foreground pt-1">Usando configuración del servicio</p>
+                                        )}
+                                    </div>
+                                ) : (
+                                    <p className="text-sm text-muted-foreground">No hay configuración disponible.</p>
+                                )}
+                            </CardContent>
+                        </Card>
+                    )}
+
                      <Card>
                         <CardHeader><CardTitle>Promotores Referidos</CardTitle></CardHeader>
                         <CardContent>
@@ -518,6 +716,50 @@ export function ClientDetailView({ client, onClose }: ClientDetailViewProps) {
                             )}
                         </CardContent>
                     </Card>
+
+                    {/* TPV Reports Section */}
+                    <Card>
+                        <CardHeader>
+                            <div className="flex items-center justify-between">
+                                <CardTitle className="flex items-center gap-2">
+                                    <CreditCard className="h-5 w-5 text-primary"/>
+                                    Reportes TPV / Terminales
+                                </CardTitle>
+                                <Button size="sm" onClick={() => setIsTPVUploadDialogOpen(true)}>
+                                    <UploadCloud className="h-4 w-4 mr-2" />
+                                    Subir Corte
+                                </Button>
+                            </div>
+                            {clientTPVReports.length > 0 && (
+                                <CardDescription>
+                                    {clientTPVReports.length} reporte(s) • Total histórico: {formatCurrency(clientTPVReports.reduce((sum, r) => sum + r.summary.totalAmount, 0))}
+                                </CardDescription>
+                            )}
+                        </CardHeader>
+                        <CardContent>
+                            {selectedTPVReport ? (
+                                <div className="space-y-4">
+                                    <Button 
+                                        variant="outline" 
+                                        size="sm"
+                                        onClick={() => setSelectedTPVReport(null)}
+                                    >
+                                        ← Volver a la lista
+                                    </Button>
+                                    <TPVReportView 
+                                        report={selectedTPVReport} 
+                                        onDelete={handleDeleteTPVReport}
+                                    />
+                                </div>
+                            ) : (
+                                <TPVReportList 
+                                    reports={clientTPVReports}
+                                    onSelectReport={setSelectedTPVReport}
+                                    onDeleteReport={handleDeleteTPVReport}
+                                />
+                            )}
+                        </CardContent>
+                    </Card>
                 </div>
             </div>
             
@@ -525,6 +767,13 @@ export function ClientDetailView({ client, onClose }: ClientDetailViewProps) {
                 isOpen={isUploadDialogOpen}
                 onOpenChange={setIsUploadDialogOpen}
                 preselectedClientId={client.id}
+            />
+
+            <TPVUploadDialog
+                isOpen={isTPVUploadDialogOpen}
+                onOpenChange={setIsTPVUploadDialogOpen}
+                preselectedClientId={client.id}
+                onReportProcessed={() => setSelectedTPVReport(null)}
             />
         </>
     );
