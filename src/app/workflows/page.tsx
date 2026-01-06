@@ -7,8 +7,8 @@ import { useSearchParams, useRouter } from "next/navigation";
 import { Header } from "@/components/header";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { useCRMData } from "@/contexts/CRMDataContext";
-import type { WorkflowStage, ServiceWorkflow, WorkflowAction, SubStage, SubSubStage, Commission } from "@/lib/types";
-import { Edit, Save, Trash2, Plus, X, Loader2, UploadCloud, ChevronsRight, FileText, ListTodo, Workflow as WorkflowIcon, ArrowLeft, PlusCircle, Layers, FolderCog, Redo, AlertTriangle, GripVertical, ChevronsUpDown } from "lucide-react";
+import type { WorkflowStage, ServiceWorkflow, ServicePackage, WorkflowAction, SubStage, SubSubStage, Commission, RevenueDistribution } from "@/lib/types";
+import { Edit, Save, Trash2, Plus, X, Loader2, UploadCloud, ChevronsRight, FileText, ListTodo, Workflow as WorkflowIcon, ArrowLeft, PlusCircle, Layers, FolderCog, Redo, AlertTriangle, GripVertical, ChevronsUpDown, Package } from "lucide-react";
 import { Card, CardHeader, CardTitle, CardContent, CardDescription, CardFooter } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
@@ -29,24 +29,54 @@ import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover
 import { ServiceDetailsEditor } from "@/components/services/DetailsEditor";
 import { ServiceDocumentsEditor } from "@/components/services/DocumentsEditor";
 import { ServiceCommissionsEditor } from "@/components/services/CommissionsEditor";
+import { RevenueDistributionEditor } from "@/components/services/RevenueDistributionEditor";
 
 type AnyStage = WorkflowStage | SubStage | SubSubStage;
+
+// Professional solid color palette
+const stageColorPalette = [
+  { solid: 'bg-slate-700 dark:bg-slate-600', text: 'text-white', border: 'border-slate-700 dark:border-slate-500' },
+  { solid: 'bg-blue-700 dark:bg-blue-600', text: 'text-white', border: 'border-blue-700 dark:border-blue-500' },
+  { solid: 'bg-emerald-700 dark:bg-emerald-600', text: 'text-white', border: 'border-emerald-700 dark:border-emerald-500' },
+  { solid: 'bg-violet-700 dark:bg-violet-600', text: 'text-white', border: 'border-violet-700 dark:border-violet-500' },
+  { solid: 'bg-amber-600 dark:bg-amber-500', text: 'text-white', border: 'border-amber-600 dark:border-amber-500' },
+  { solid: 'bg-rose-700 dark:bg-rose-600', text: 'text-white', border: 'border-rose-700 dark:border-rose-500' },
+];
 
 const StageNumberIcon = ({ path }: { path: string }) => {
     const numbers = path.split('.').filter(p => !isNaN(parseInt(p))).map(p => parseInt(p) + 1);
     const displayNumber = numbers.join('.');
+    const firstNumber = numbers[0] || 1;
+    const color = stageColorPalette[(firstNumber - 1) % stageColorPalette.length];
     
     const level = numbers.length;
-    const levelStyles = {
-        1: "text-3xl",
-        2: "text-2xl",
-        3: "text-xl",
+    const sizeStyles = {
+        1: "w-11 h-11 text-lg",
+        2: "w-9 h-9 text-sm",
+        3: "w-7 h-7 text-xs",
     };
 
+    // Solid style for level 1, outlined for sub-levels
+    if (level === 1) {
+        return (
+            <div className={cn(
+                "rounded-full flex items-center justify-center font-semibold shadow-md",
+                sizeStyles[1],
+                color.solid, color.text
+            )}>
+                {displayNumber}
+            </div>
+        );
+    }
+    
     return (
-        <span className={cn("font-bold text-accent", levelStyles[level as keyof typeof levelStyles])}>
+        <div className={cn(
+            "rounded-full flex items-center justify-center font-medium border-2 bg-background shadow-sm",
+            sizeStyles[level as keyof typeof sizeStyles],
+            color.border
+        )}>
             {displayNumber}
-        </span>
+        </div>
     );
 };
 
@@ -74,10 +104,14 @@ const StageCard = ({
     const canEditWorkflow = true; 
     const [addTaskDialogState, setAddTaskDialogState] = useState<{isOpen: boolean, path: string | null}>({isOpen: false, path: null});
 
+    // Get color based on stage number from path
+    const stageNumber = parseInt(path.split('.').filter(p => !isNaN(parseInt(p)))[0] || '0');
+    const stageColor = stageColorPalette[stageNumber % stageColorPalette.length];
+    
     const levelStyles = {
-        1: { card: "bg-card", trigger: "text-lg", subStageContainer: "", subSubStageContainer: "", subStageButton: "default", subSubStageButton: "default" },
-        2: { card: "bg-muted/40", trigger: "text-md", subStageContainer: "pl-4", subSubStageContainer: "pl-4", subStageButton: "default", subSubStageButton: "default" },
-        3: { card: "bg-muted/20", trigger: "text-base", subStageContainer: "pl-8", subSubStageContainer: "pl-8", subStageButton: "default", subSubStageButton: "default" }
+        1: { card: `border-l-4 ${stageColor.border} bg-card shadow-sm`, trigger: "text-lg", subStageContainer: "", subSubStageContainer: "" },
+        2: { card: "bg-muted/30 border-l-2 border-muted-foreground/30", trigger: "text-md", subStageContainer: "pl-4", subSubStageContainer: "pl-4" },
+        3: { card: "bg-muted/20 border-l-2 border-dashed border-muted-foreground/20", trigger: "text-base", subStageContainer: "pl-6", subSubStageContainer: "pl-6" }
     }
 
     const handleUpdateAction = (actionId: string, updates: Partial<WorkflowAction>) => {
@@ -176,7 +210,10 @@ const StageCard = ({
                    
                     {'subStages' in stage && (
                         <div className={cn("border-l-2 ml-2 space-y-4", levelStyles[level].subStageContainer)}>
-                             <Label className="text-sm font-medium">Sub-Etapas</Label>
+                             <div className="space-y-1">
+                                <Label className="text-sm font-medium">📋 Etapas dentro de esta Fase</Label>
+                                <p className="text-xs text-muted-foreground">Divide esta fase en etapas más específicas</p>
+                             </div>
                             {((stage as any).subStages as SubStage[] | undefined)?.map((sub: SubStage, i: number) => (
                                 <StageCard
                                     key={sub.id}
@@ -192,14 +229,17 @@ const StageCard = ({
                             ))}
                              {canEditWorkflow && (
                                 <Button variant={'default'} size="sm" onClick={() => onAddSubStage(path)} className="bg-primary hover:bg-primary/90">
-                                    <Plus className="mr-2 h-4 w-4"/>Añadir Sub-Etapa
+                                    <Plus className="mr-2 h-4 w-4"/>+ Etapa
                                 </Button>
                             )}
                         </div>
                     )}
                     {'subSubStages' in stage && (
                          <div className={cn("border-l-2 ml-2 space-y-4", levelStyles[level].subSubStageContainer)}>
-                            <Label className="text-sm font-medium">Sub-Sub-Etapas</Label>
+                            <div className="space-y-1">
+                                <Label className="text-sm font-medium">📌 Pasos de esta Etapa</Label>
+                                <p className="text-xs text-muted-foreground">Detalla los pasos específicos a seguir</p>
+                            </div>
                             {((stage as any).subSubStages as SubSubStage[] | undefined)?.map((sub: SubSubStage, i: number) => (
                                 <StageCard
                                     key={sub.id}
@@ -216,7 +256,7 @@ const StageCard = ({
                              {canEditWorkflow && (
                                 <div className="pl-6">
                                     <Button variant={'default'} size="sm" onClick={() => onAddSubStage(path)} className="bg-primary hover:bg-primary/90">
-                                        <Plus className="mr-2 h-4 w-4"/>Añadir Sub-Sub-Etapa
+                                        <Plus className="mr-2 h-4 w-4"/>+ Paso
                                     </Button>
                                 </div>
                             )}
@@ -270,6 +310,11 @@ export default function WorkflowConfigurationPage() {
     addService,
     setServiceWorkflows,
     deleteService,
+    servicePackages,
+    isLoadingPackages,
+    addServicePackage,
+    updateServicePackage,
+    deleteServicePackage,
   } = useCRMData();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -280,6 +325,14 @@ export default function WorkflowConfigurationPage() {
   const [editableWorkflow, setEditableWorkflow] = useState<ServiceWorkflow | null>(null);
   const [serviceToDelete, setServiceToDelete] = useState<ServiceWorkflow | null>(null);
   const [isSelectorOpen, setIsSelectorOpen] = useState(false);
+  
+  // Package management state
+  const [isPackageDialogOpen, setIsPackageDialogOpen] = useState(false);
+  const [editingPackage, setEditingPackage] = useState<ServicePackage | null>(null);
+  const [newPackageName, setNewPackageName] = useState('');
+  const [newPackageDescription, setNewPackageDescription] = useState('');
+  const [selectedServiceIds, setSelectedServiceIds] = useState<string[]>([]);
+  const [packageToDelete, setPackageToDelete] = useState<ServicePackage | null>(null);
   
   const [isPromptNameOpen, setIsPromptNameOpen] = useState(false);
   const [promptNameConfig, setPromptNameConfig] = useState<{
@@ -509,7 +562,7 @@ export default function WorkflowConfigurationPage() {
   const handleAddStage = () => {
        const newStage: WorkflowStage = { 
            id: `stage-${Date.now()}`, 
-           title: "Nueva Etapa Principal", 
+           title: "Nueva Fase", 
            order: (editableWorkflow?.stages?.length || 0) + 1, 
            actions: [],
            subStages: [],
@@ -524,7 +577,7 @@ export default function WorkflowConfigurationPage() {
       if (parentIsStage) {
           const newSubStage: SubStage = {
               id: `subStage-${Date.now()}`,
-              title: "Nueva Sub-Etapa",
+              title: "Nueva Etapa",
               order: 1,
               actions: [],
               subSubStages: []
@@ -533,7 +586,7 @@ export default function WorkflowConfigurationPage() {
       } else { 
           const newSubSubStage: SubSubStage = {
               id: `subSubStage-${Date.now()}`,
-              title: "Nueva Sub-Sub-Etapa",
+              title: "Nuevo Paso",
               order: 1,
               actions: []
           };
@@ -549,6 +602,68 @@ export default function WorkflowConfigurationPage() {
         subActions: [],
       };
       updateNestedState(`${path}.actions`, newTask, 'add');
+  };
+
+  // Package handlers
+  const activePackages = useMemo(() => {
+    return (servicePackages || []).filter(p => p.status !== 'Archivado');
+  }, [servicePackages]);
+
+  const handleOpenPackageDialog = (pkg?: ServicePackage) => {
+    if (pkg) {
+      setEditingPackage(pkg);
+      setNewPackageName(pkg.name);
+      setNewPackageDescription(pkg.description || '');
+      setSelectedServiceIds(pkg.serviceIds || []);
+    } else {
+      setEditingPackage(null);
+      setNewPackageName('');
+      setNewPackageDescription('');
+      setSelectedServiceIds([]);
+    }
+    setIsPackageDialogOpen(true);
+  };
+
+  const handleSavePackage = async () => {
+    if (!newPackageName.trim()) {
+      showNotification('error', 'Error', 'El nombre del paquete es requerido');
+      return;
+    }
+    if (selectedServiceIds.length < 2) {
+      showNotification('error', 'Error', 'Un paquete debe incluir al menos 2 servicios');
+      return;
+    }
+
+    if (editingPackage) {
+      await updateServicePackage(editingPackage.id, {
+        name: newPackageName.trim(),
+        description: newPackageDescription.trim(),
+        serviceIds: selectedServiceIds,
+      });
+      showNotification('success', 'Paquete Actualizado', `El paquete "${newPackageName}" ha sido actualizado.`);
+    } else {
+      await addServicePackage({
+        name: newPackageName.trim(),
+        description: newPackageDescription.trim(),
+        serviceIds: selectedServiceIds,
+      });
+    }
+    setIsPackageDialogOpen(false);
+  };
+
+  const handleToggleServiceInPackage = (serviceId: string) => {
+    setSelectedServiceIds(prev => 
+      prev.includes(serviceId) 
+        ? prev.filter(id => id !== serviceId)
+        : [...prev, serviceId]
+    );
+  };
+
+  const confirmDeletePackage = async () => {
+    if (packageToDelete) {
+      await deleteServicePackage(packageToDelete.id);
+      setPackageToDelete(null);
+    }
   };
 
   if (isLoadingWorkflows) {
@@ -635,6 +750,61 @@ export default function WorkflowConfigurationPage() {
                     )}
                 </CardContent>
             </Card>
+
+            {/* Service Packages Section */}
+            <Card>
+                <CardHeader>
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <CardTitle className="flex items-center gap-2">
+                                <Package className="h-5 w-5" />
+                                Paquetes de Servicios
+                            </CardTitle>
+                            <CardDescription>Combine múltiples servicios en paquetes para contabilidad unificada.</CardDescription>
+                        </div>
+                        <Button onClick={() => handleOpenPackageDialog()} size="sm">
+                            <Plus className="mr-2 h-4 w-4" />
+                            Crear Paquete
+                        </Button>
+                    </div>
+                </CardHeader>
+                <CardContent>
+                    {activePackages.length > 0 ? (
+                        <div className="space-y-3">
+                            {activePackages.map(pkg => {
+                                const includedServices = pkg.serviceIds
+                                    .map(id => activeWorkflows.find(s => s.id === id)?.name)
+                                    .filter(Boolean);
+                                return (
+                                    <div key={pkg.id} className="flex items-center justify-between p-3 border rounded-lg bg-muted/30">
+                                        <div className="flex-1 min-w-0">
+                                            <p className="font-medium">{pkg.name}</p>
+                                            <p className="text-sm text-muted-foreground truncate">
+                                                {includedServices.join(' + ')}
+                                            </p>
+                                            {pkg.description && (
+                                                <p className="text-xs text-muted-foreground mt-1">{pkg.description}</p>
+                                            )}
+                                        </div>
+                                        <div className="flex items-center gap-2 ml-4">
+                                            <Button variant="ghost" size="icon" onClick={() => handleOpenPackageDialog(pkg)}>
+                                                <Edit className="h-4 w-4" />
+                                            </Button>
+                                            <Button variant="ghost" size="icon" className="text-destructive" onClick={() => setPackageToDelete(pkg)}>
+                                                <Trash2 className="h-4 w-4" />
+                                            </Button>
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    ) : (
+                        <p className="text-sm text-muted-foreground text-center py-6">
+                            No hay paquetes creados. Cree uno para combinar servicios.
+                        </p>
+                    )}
+                </CardContent>
+            </Card>
             
             {editableWorkflow ? (
                 <Accordion type="multiple" defaultValue={["details", "stages"]} className="w-full space-y-4">
@@ -668,19 +838,76 @@ export default function WorkflowConfigurationPage() {
                         </Card>
                     </AccordionItem>
 
+                    <AccordionItem value="revenue" asChild>
+                        <Card>
+                            <AccordionTrigger className="w-full p-0 [&_svg]:ml-auto [&_svg]:mr-4">
+                                <CardHeader className="flex-1 text-left">
+                                    <CardTitle>💰 Proveedores y Distribución de Ingresos</CardTitle>
+                                    <CardDescription>Vincula proveedores y configura cómo se reparte el ingreso.</CardDescription>
+                                </CardHeader>
+                            </AccordionTrigger>
+                            <AccordionContent className="p-6 pt-0">
+                                <RevenueDistributionEditor
+                                    key={`${editableWorkflow.id}-revenue`}
+                                    distribution={editableWorkflow.revenueDistribution}
+                                    linkedSupplierIds={editableWorkflow.linkedSupplierIds}
+                                    primarySupplierId={editableWorkflow.primarySupplierId}
+                                    onUpdateDistribution={(distribution) => 
+                                        setEditableWorkflow((prev: ServiceWorkflow | null) => 
+                                            prev ? { ...prev, revenueDistribution: distribution } : null
+                                        )
+                                    }
+                                    onUpdateSuppliers={(linkedIds, primaryId) => 
+                                        setEditableWorkflow((prev: ServiceWorkflow | null) => 
+                                            prev ? { ...prev, linkedSupplierIds: linkedIds, primarySupplierId: primaryId } : null
+                                        )
+                                    }
+                                    canEdit={canEditWorkflow}
+                                />
+                            </AccordionContent>
+                        </Card>
+                    </AccordionItem>
+
                     <AccordionItem value="stages" asChild>
                         <Card>
                             <AccordionTrigger className="w-full p-0 [&_svg]:ml-auto [&_svg]:mr-4">
                                 <CardHeader className="flex-1 text-left">
-                                  <CardTitle>Etapas del Flujo de Trabajo</CardTitle>
-                                  <CardDescription>Configure las etapas principales para este servicio.</CardDescription>
+                                  <CardTitle>📈 Fases del Flujo de Trabajo</CardTitle>
+                                  <CardDescription>Organice el proceso en fases, etapas y pasos con sus tareas automáticas.</CardDescription>
                                 </CardHeader>
                             </AccordionTrigger>
                             <AccordionContent className="p-6 pt-0 space-y-6">
+                                {/* Help Guide */}
+                                <div className="p-4 rounded-lg bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800">
+                                    <p className="text-sm font-medium text-blue-800 dark:text-blue-200 mb-2">💡 Cómo organizar tu flujo:</p>
+                                    <div className="grid sm:grid-cols-3 gap-3 text-xs text-blue-700 dark:text-blue-300">
+                                        <div className="flex items-start gap-2">
+                                            <span className="font-bold text-lg">1️⃣</span>
+                                            <div>
+                                                <p className="font-semibold">Fase</p>
+                                                <p>Etapa principal del proceso (ej: Prospección, Onboarding)</p>
+                                            </div>
+                                        </div>
+                                        <div className="flex items-start gap-2">
+                                            <span className="font-bold text-lg">1.1</span>
+                                            <div>
+                                                <p className="font-semibold">Etapa</p>
+                                                <p>Subdivisión de la fase (ej: Contacto inicial, Documentación)</p>
+                                            </div>
+                                        </div>
+                                        <div className="flex items-start gap-2">
+                                            <span className="text-xs bg-muted rounded-full w-5 h-5 flex items-center justify-center">1</span>
+                                            <div>
+                                                <p className="font-semibold">Paso</p>
+                                                <p>Acción específica (ej: Verificar RFC, Subir contrato)</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
                                 <div className="space-y-4">
                                     {canEditWorkflow && (
                                         <Button size="sm" variant="default" onClick={handleAddStage} className="bg-primary hover:bg-primary/90">
-                                            <Plus className="mr-2 h-4 w-4"/>Añadir Etapa Principal
+                                            <Plus className="mr-2 h-4 w-4"/>+ Nueva Fase
                                         </Button>
                                     )}
                                     <Accordion type="multiple" className="w-full space-y-4" defaultValue={editableWorkflow.stages?.map((s: WorkflowStage) => s.id) || []}>
@@ -699,7 +926,10 @@ export default function WorkflowConfigurationPage() {
                                                 />
                                             ))
                                         ) : (
-                                            <p className="text-sm text-muted-foreground text-center py-8">{canEditWorkflow ? 'Añada una etapa para empezar.' : 'No hay etapas principales definidas.'}</p>
+                                            <div className="text-center py-8 space-y-2">
+                                                <p className="text-sm text-muted-foreground">{canEditWorkflow ? '¡Comienza creando tu primera fase!' : 'No hay fases definidas.'}</p>
+                                                {canEditWorkflow && <p className="text-xs text-muted-foreground">Haz clic en "+ Nueva Fase" para empezar a diseñar tu flujo de trabajo.</p>}
+                                            </div>
                                         )}
                                     </Accordion>
                                 </div>
@@ -742,6 +972,102 @@ export default function WorkflowConfigurationPage() {
                     <AlertDialogCancel onClick={() => setServiceToDelete(null)}>Cancelar</AlertDialogCancel>
                     <AlertDialogAction onClick={confirmDeleteService} className="bg-destructive hover:bg-destructive/90">
                         Enviar a la papelera
+                    </AlertDialogAction>
+                </AlertDialogFooter>
+            </AlertDialogContent>
+        </AlertDialog>
+
+        {/* Package Delete Confirmation */}
+        <AlertDialog open={!!packageToDelete} onOpenChange={() => setPackageToDelete(null)}>
+            <AlertDialogContent>
+                <AlertDialogHeader>
+                    <AlertDialogTitle>¿Eliminar paquete?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                        Esta acción eliminará el paquete "{packageToDelete?.name}". Los servicios individuales no serán afectados.
+                    </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                    <AlertDialogCancel onClick={() => setPackageToDelete(null)}>Cancelar</AlertDialogCancel>
+                    <AlertDialogAction onClick={confirmDeletePackage} className="bg-destructive hover:bg-destructive/90">
+                        Eliminar Paquete
+                    </AlertDialogAction>
+                </AlertDialogFooter>
+            </AlertDialogContent>
+        </AlertDialog>
+
+        {/* Package Create/Edit Dialog */}
+        <AlertDialog open={isPackageDialogOpen} onOpenChange={setIsPackageDialogOpen}>
+            <AlertDialogContent className="max-w-lg">
+                <AlertDialogHeader>
+                    <AlertDialogTitle>
+                        {editingPackage ? 'Editar Paquete' : 'Crear Paquete de Servicios'}
+                    </AlertDialogTitle>
+                    <AlertDialogDescription>
+                        Combine múltiples servicios en un paquete para contabilidad y facturación unificada.
+                    </AlertDialogDescription>
+                </AlertDialogHeader>
+                <div className="space-y-4 py-4">
+                    <div className="space-y-2">
+                        <Label htmlFor="packageName">Nombre del Paquete</Label>
+                        <Input
+                            id="packageName"
+                            placeholder="Ej: Terminales + Banca Digital"
+                            value={newPackageName}
+                            onChange={(e) => setNewPackageName(e.target.value)}
+                        />
+                    </div>
+                    <div className="space-y-2">
+                        <Label htmlFor="packageDescription">Descripción (opcional)</Label>
+                        <Textarea
+                            id="packageDescription"
+                            placeholder="Descripción del paquete..."
+                            value={newPackageDescription}
+                            onChange={(e) => setNewPackageDescription(e.target.value)}
+                            rows={2}
+                        />
+                    </div>
+                    <div className="space-y-2">
+                        <Label>Servicios Incluidos ({selectedServiceIds.length} seleccionados)</Label>
+                        <div className="border rounded-md p-3 space-y-2 max-h-48 overflow-y-auto">
+                            {activeWorkflows.map(service => (
+                                <div
+                                    key={service.id}
+                                    className={cn(
+                                        "flex items-center gap-3 p-2 rounded-md cursor-pointer transition-colors",
+                                        selectedServiceIds.includes(service.id) 
+                                            ? "bg-primary/10 border border-primary" 
+                                            : "hover:bg-muted"
+                                    )}
+                                    onClick={() => handleToggleServiceInPackage(service.id)}
+                                >
+                                    <div className={cn(
+                                        "h-4 w-4 rounded border flex items-center justify-center",
+                                        selectedServiceIds.includes(service.id) 
+                                            ? "bg-primary border-primary text-primary-foreground" 
+                                            : "border-muted-foreground"
+                                    )}>
+                                        {selectedServiceIds.includes(service.id) && (
+                                            <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                                            </svg>
+                                        )}
+                                    </div>
+                                    <span className="text-sm">{service.name}</span>
+                                </div>
+                            ))}
+                        </div>
+                        {selectedServiceIds.length < 2 && (
+                            <p className="text-xs text-amber-600">Seleccione al menos 2 servicios para crear un paquete.</p>
+                        )}
+                    </div>
+                </div>
+                <AlertDialogFooter>
+                    <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                    <AlertDialogAction 
+                        onClick={handleSavePackage}
+                        disabled={!newPackageName.trim() || selectedServiceIds.length < 2}
+                    >
+                        {editingPackage ? 'Guardar Cambios' : 'Crear Paquete'}
                     </AlertDialogAction>
                 </AlertDialogFooter>
             </AlertDialogContent>

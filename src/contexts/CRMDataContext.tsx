@@ -11,6 +11,7 @@ import {
     type Document, 
     type Note, 
     type ServiceWorkflow, 
+    type ServicePackage,
     type WorkflowAction,
     type AppUser,
     type UserRole,
@@ -113,6 +114,11 @@ interface CRMContextType {
   updateSupplier: (supplierId: string, updates: Partial<Supplier>) => Promise<boolean>;
   deleteSupplier: (supplierId: string, permanent?: boolean) => Promise<boolean>;
   restoreSupplier: (supplierId: string) => Promise<boolean>;
+  getServicesBySupplierId: (supplierId: string) => ServiceWorkflow[];
+  getSuppliersByServiceId: (serviceId: string) => Supplier[];
+  getPromoterById: (promoterId: string) => Promoter | undefined;
+  getSupplierById: (supplierId: string) => Supplier | undefined;
+  getMemberById: (memberId: string) => AppUser | undefined;
 
   companies: Company[];
   isLoadingCompanies: boolean;
@@ -141,6 +147,14 @@ interface CRMContextType {
   updateUser: (userId: string, updates: Partial<AppUser>) => Promise<boolean>;
   deleteUser: (userId: string, permanent?: boolean) => Promise<boolean>;
   restoreUser: (userId: string) => Promise<boolean>;
+
+  // Service Packages
+  servicePackages: ServicePackage[];
+  isLoadingPackages: boolean;
+  addServicePackage: (data: Omit<ServicePackage, 'id'>) => Promise<ServicePackage | null>;
+  updateServicePackage: (packageId: string, updates: Partial<ServicePackage>) => Promise<boolean>;
+  deleteServicePackage: (packageId: string, permanent?: boolean) => Promise<boolean>;
+  restoreServicePackage: (packageId: string) => Promise<boolean>;
 }
 
 const CRMContext = createContext<CRMContextType | undefined>(undefined);
@@ -178,6 +192,7 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
     const transactionsCollection = useMemoFirebase(() => (firestore && user) ? collection(firestore, 'transactions') : null, [firestore, user]);
     const loansCollection = useMemoFirebase(() => (firestore && user) ? collection(firestore, 'loans') : null, [firestore, user]);
     const logsCollection = useMemoFirebase(() => (firestore && user) ? collection(firestore, 'logs') : null, [firestore, user]);
+    const servicePackagesCollection = useMemoFirebase(() => (firestore && user) ? collection(firestore, 'servicePackages') : null, [firestore, user]);
 
     const addLog = useCallback(async (action: LogAction, entityId: string, entityType: LogEntityType, entityName?: string) => {
         if (!logsCollection || !currentUser) return;
@@ -238,6 +253,7 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
     const { data: transactions = [], isLoading: isLoadingTransactions } = useCollection<Transaction>(transactionsCollection);
     const { data: loans = [], isLoading: isLoadingLoans } = useCollection<InterCompanyLoan>(loansCollection);
     const { data: logs = [], isLoading: isLoadingLogs } = useCollection<Log>(logsCollection);
+    const { data: servicePackages = [], isLoading: isLoadingPackages } = useCollection<ServicePackage>(servicePackagesCollection);
     
     const registerUser = useCallback(async (name: string, email: string, pass: string, role: string) => {
         if (!auth || !currentUser) {
@@ -339,6 +355,27 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
             if (!newClientData.name || newClientData.name.trim().length < 2) {
                 console.error('❌ Invalid client name');
                 throw new Error('El nombre del cliente debe tener al menos 2 caracteres');
+            }
+            
+            // Check for duplicates by name or RFC
+            const normalizedName = newClientData.name.trim().toLowerCase();
+            const existingClient = clients.find(c => 
+                c.name.trim().toLowerCase() === normalizedName ||
+                (newClientData.rfc && c.rfc && c.rfc.trim().toLowerCase() === newClientData.rfc.trim().toLowerCase())
+            );
+            
+            if (existingClient) {
+                console.log('⚠️ Client already exists, updating instead:', existingClient.id);
+                // Merge new services with existing ones
+                const mergedServiceIds = [...new Set([...(existingClient.subscribedServiceIds || []), ...newClientData.subscribedServiceIds])];
+                const updates: Partial<Client> = {
+                    ...newClientData,
+                    subscribedServiceIds: mergedServiceIds,
+                    status: 'Activo',
+                };
+                await updateClient(existingClient.id, updates);
+                showNotification('info', 'Cliente Existente', `El cliente "${existingClient.name}" ya existe. Se actualizó con la nueva información.`);
+                return { ...existingClient, ...updates };
             }
             
             const firstServiceId = newClientData.subscribedServiceIds[0];
@@ -447,8 +484,13 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
             return getAllStages(service.id).some(stage => stage.actions.some(action => action.title === newTaskData.title));
         }) || '';
 
-        const assignedUserId = newTaskData.assignedToId || currentUser.uid;
+        // Priority: 1. Explicitly assigned, 2. Client owner, 3. Current user
+        const clientOwner = client.owner ? teamMembers.find(m => m.id === client.owner || m.name === client.owner) : null;
+        const assignedUserId = newTaskData.assignedToId || clientOwner?.id || currentUser.uid;
         const assignedUser = teamMembers.find(m => m.id === assignedUserId);
+
+        // Get current stage ID for the task
+        const stageId = client.currentWorkflowStageId || '';
 
         const newTaskPayload = { 
             ...newTaskData, 
@@ -456,6 +498,7 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
             status: 'Pendiente' as const, 
             clientName: client.name,
             serviceId: serviceId || '',
+            stageId: stageId,
             assignedToId: assignedUser?.id || currentUser.uid,
             assignedToName: assignedUser?.name || currentUser.displayName || 'Usuario Actual',
             assignedToPhotoURL: assignedUser?.photoURL || currentUser.photoURL || '',
@@ -506,35 +549,53 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
         const client = clients.find(c => c.id === clientId);
         if (!client || !client.currentWorkflowStageId) return;
 
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        // Wait for Firestore to update
+        await new Promise(resolve => setTimeout(resolve, 1500));
 
-        const clientTasks = tasks.filter(t => t.clientId === clientId);
-        
         const allStagesForClient = getAllStagesForClient(client);
         const currentStage = allStagesForClient.find(s => s.id === client.currentWorkflowStageId);
         if (!currentStage) return;
 
-        const updatedTasks = (await (useCollection(tasksCollection)).data) || tasks;
-        const pendingTasksForCurrentStage = (currentStage.actions || []).filter(action => {
-            return updatedTasks.some(task => task.title === action.title && task.clientId === clientId && task.status === 'Pendiente');
+        // Get current tasks for this client in this stage
+        const clientTasks = tasks.filter(t => t.clientId === clientId && t.status !== 'Archivado');
+        
+        // Check if there are any pending tasks for the current stage
+        // Use stageId if available, otherwise fall back to title matching
+        const pendingTasksForCurrentStage = clientTasks.filter(task => {
+            const matchesByStageId = task.stageId === client.currentWorkflowStageId;
+            const matchesByTitle = (currentStage.actions || []).some(action => action.title === task.title);
+            return (matchesByStageId || matchesByTitle) && task.status === 'Pendiente';
         });
+        
+        console.log('🔍 Checking workflow advancement for client:', client.name);
+        console.log('📋 Current stage:', currentStage.title);
+        console.log('📋 Pending tasks for current stage:', pendingTasksForCurrentStage.length);
         
         if (pendingTasksForCurrentStage.length === 0) {
             const nextStage = findNextStage(client);
             if (nextStage) {
+                console.log('✅ Advancing to next stage:', nextStage.title);
                 await updateClient(clientId, { currentWorkflowStageId: nextStage.id });
                 showNotification('info', 'Cliente Avanzó', `${client.name} ha avanzado a la etapa: ${nextStage.title}.`);
                 
                 const serviceForNextStage = serviceWorkflows.find(s => getAllStages(s.id).some(st => st.id === nextStage.id));
 
-                if (nextStage.actions) {
+                // Create tasks for the next stage with proper stageId
+                if (nextStage.actions && nextStage.actions.length > 0) {
+                    console.log('📝 Creating tasks for next stage:', nextStage.actions.length);
                     for (const action of nextStage.actions) {
-                        await addTask({ ...action, clientId: clientId, serviceId: serviceForNextStage?.id });
+                        await addTask({ 
+                            ...action, 
+                            clientId: clientId, 
+                            serviceId: serviceForNextStage?.id,
+                            stageId: nextStage.id 
+                        });
                     }
                 }
 
             } else {
-                 showNotification('success', 'Flujo Completado', `¡${client.name} ha completado el flujo de trabajo!`);
+                console.log('🎉 Workflow completed for client:', client.name);
+                showNotification('success', 'Flujo Completado', `¡${client.name} ha completado el flujo de trabajo!`);
             }
         }
     };
@@ -545,21 +606,27 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
       const servicesToScan = serviceId ? serviceWorkflows.filter(s => s.id === serviceId) : serviceWorkflows;
       const all: AnyStage[] = [];
       
+      // Sort services by order
       const sortedWorkflows = [...servicesToScan].sort((a,b) => (a.order || 0) - (b.order || 0));
 
+      // Build hierarchical list: Stage → SubStages → SubSubStages (in order)
       sortedWorkflows.forEach(service => {
-        (service.stages || []).forEach(stage1 => {
+        const sortedStages = [...(service.stages || [])].sort((a,b) => (a.order || 0) - (b.order || 0));
+        sortedStages.forEach(stage1 => {
           all.push(stage1);
-          (stage1.subStages || []).forEach(stage2 => {
+          const sortedSubStages = [...(stage1.subStages || [])].sort((a,b) => (a.order || 0) - (b.order || 0));
+          sortedSubStages.forEach(stage2 => {
             all.push(stage2);
-            (stage2.subSubStages || []).forEach(stage3 => {
+            const sortedSubSubStages = [...(stage2.subSubStages || [])].sort((a,b) => (a.order || 0) - (b.order || 0));
+            sortedSubSubStages.forEach(stage3 => {
                 all.push(stage3);
             });
           });
         });
       });
 
-      return all.sort((a,b) => a.order - b.order);
+      // Return in hierarchical order (don't re-sort, the order is already correct)
+      return all;
     }, [serviceWorkflows]);
 
     const getAllStagesForClient = (client: Client): AnyStage[] => {
@@ -823,6 +890,22 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
 
     const addPromoter = async (promoterData: Omit<Promoter, 'id'>): Promise<Promoter | null> => {
         if (!promotersCollection) return null;
+        
+        // Check for duplicates by name or email
+        const normalizedName = promoterData.name?.trim().toLowerCase();
+        const existingPromoter = promoters.find(p => 
+            (normalizedName && p.name.trim().toLowerCase() === normalizedName) ||
+            (promoterData.email && p.email && p.email.trim().toLowerCase() === promoterData.email.trim().toLowerCase())
+        );
+        
+        if (existingPromoter) {
+            console.log('⚠️ Promoter already exists, updating instead:', existingPromoter.id);
+            const updates: Partial<Promoter> = { ...promoterData, status: 'Activo' };
+            await updatePromoter(existingPromoter.id, updates);
+            showNotification('info', 'Promotor Existente', `El promotor "${existingPromoter.name}" ya existe. Se actualizó con la nueva información.`);
+            return { ...existingPromoter, ...updates };
+        }
+        
         const payload = { ...promoterData, status: 'Activo' as const, createdAt: serverTimestamp() };
         const docRef = await addDocumentNonBlocking(promotersCollection, payload);
         const finalPayload = { ...payload, id: docRef.id };
@@ -856,6 +939,22 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
 
     const addSupplier = async (supplierData: Omit<Supplier, 'id'>): Promise<Supplier | null> => {
         if (!suppliersCollection) return null;
+        
+        // Check for duplicates by name or RFC
+        const normalizedName = supplierData.name?.trim().toLowerCase();
+        const existingSupplier = suppliers.find(s => 
+            (normalizedName && s.name.trim().toLowerCase() === normalizedName) ||
+            (supplierData.rfc && s.rfc && s.rfc.trim().toLowerCase() === supplierData.rfc.trim().toLowerCase())
+        );
+        
+        if (existingSupplier) {
+            console.log('⚠️ Supplier already exists, updating instead:', existingSupplier.id);
+            const updates: Partial<Supplier> = { ...supplierData, status: 'Activo' };
+            await updateSupplier(existingSupplier.id, updates);
+            showNotification('info', 'Proveedor Existente', `El proveedor "${existingSupplier.name}" ya existe. Se actualizó con la nueva información.`);
+            return { ...existingSupplier, ...updates };
+        }
+        
         const payload = { ...supplierData, status: 'Activo' as const, createdAt: serverTimestamp() };
         const docRef = await addDocumentNonBlocking(suppliersCollection, payload);
         return { ...payload, id: docRef.id };
@@ -881,6 +980,88 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
     const restoreSupplier = async (supplierId: string): Promise<boolean> => {
         if (!suppliersCollection) return false;
         const docRef = doc(suppliersCollection, supplierId);
+        setDocumentNonBlocking(docRef, { status: 'Activo', archivedAt: undefined }, { merge: true });
+        return true;
+    };
+
+    // Helper functions for related data
+    const getServicesBySupplierId = (supplierId: string): ServiceWorkflow[] => {
+        return serviceWorkflows.filter(s => 
+            s.linkedSupplierIds?.includes(supplierId) || s.primarySupplierId === supplierId
+        );
+    };
+
+    const getSuppliersByServiceId = (serviceId: string): Supplier[] => {
+        const service = serviceWorkflows.find(s => s.id === serviceId);
+        if (!service) return [];
+        const linkedIds = service.linkedSupplierIds || [];
+        if (service.primarySupplierId && !linkedIds.includes(service.primarySupplierId)) {
+            linkedIds.push(service.primarySupplierId);
+        }
+        return suppliers.filter(s => linkedIds.includes(s.id));
+    };
+
+    const getPromoterById = (promoterId: string): Promoter | undefined => {
+        return promoters.find(p => p.id === promoterId);
+    };
+
+    const getSupplierById = (supplierId: string): Supplier | undefined => {
+        return suppliers.find(s => s.id === supplierId);
+    };
+
+    const getMemberById = (memberId: string): AppUser | undefined => {
+        return teamMembers.find(m => m.id === memberId);
+    };
+
+    // Service Packages CRUD
+    const addServicePackage = async (packageData: Omit<ServicePackage, 'id'>): Promise<ServicePackage | null> => {
+        if (!servicePackagesCollection) return null;
+        
+        // Check for duplicates by name
+        const normalizedName = packageData.name?.trim().toLowerCase();
+        const existingPackage = servicePackages.find(p => 
+            p.name.trim().toLowerCase() === normalizedName
+        );
+        
+        if (existingPackage) {
+            console.log('⚠️ Package already exists, updating instead:', existingPackage.id);
+            const updates: Partial<ServicePackage> = { ...packageData, status: 'Activo' };
+            await updateServicePackage(existingPackage.id, updates);
+            showNotification('info', 'Paquete Existente', `El paquete "${existingPackage.name}" ya existe. Se actualizó.`);
+            return { ...existingPackage, ...updates };
+        }
+        
+        const payload = { ...packageData, status: 'Activo' as const, createdAt: serverTimestamp() };
+        const docRef = await addDocumentNonBlocking(servicePackagesCollection, payload);
+        setDocumentNonBlocking(doc(servicePackagesCollection, docRef.id), { id: docRef.id }, { merge: true });
+        showNotification('success', 'Paquete Creado', `El paquete "${packageData.name}" ha sido creado.`);
+        return { ...payload, id: docRef.id };
+    };
+
+    const updateServicePackage = async (packageId: string, updates: Partial<ServicePackage>): Promise<boolean> => {
+        if (!servicePackagesCollection) return false;
+        const docRef = doc(servicePackagesCollection, packageId);
+        setDocumentNonBlocking(docRef, updates, { merge: true });
+        return true;
+    };
+
+    const deleteServicePackage = async (packageId: string, permanent: boolean = false): Promise<boolean> => {
+        if (!servicePackagesCollection) return false;
+        const docRef = doc(servicePackagesCollection, packageId);
+        const packageName = servicePackages.find(p => p.id === packageId)?.name;
+        if (permanent) {
+            deleteDocumentNonBlocking(docRef);
+            showNotification('info', 'Paquete Eliminado', `El paquete "${packageName}" ha sido eliminado permanentemente.`);
+        } else {
+            setDocumentNonBlocking(docRef, { status: 'Archivado', archivedAt: serverTimestamp() }, { merge: true });
+            showNotification('info', 'Paquete Archivado', `El paquete "${packageName}" ha sido archivado.`);
+        }
+        return true;
+    };
+
+    const restoreServicePackage = async (packageId: string): Promise<boolean> => {
+        if (!servicePackagesCollection) return false;
+        const docRef = doc(servicePackagesCollection, packageId);
         setDocumentNonBlocking(docRef, { status: 'Activo', archivedAt: undefined }, { merge: true });
         return true;
     };
@@ -1020,12 +1201,18 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
 
         suppliers, isLoadingSuppliers,
         addSupplier, updateSupplier, deleteSupplier, restoreSupplier,
+        getServicesBySupplierId, getSuppliersByServiceId,
+        getPromoterById, getSupplierById, getMemberById,
         
         companies, isLoadingCompanies, addCompany, deleteCompany,
         bankAccounts, isLoadingBankAccounts, addBankAccount, deleteBankAccount,
         categories, isLoadingCategories, addCategory, deleteCategory,
         transactions, isLoadingTransactions, addTransaction,
         loans, isLoadingLoans, addLoan,
+
+        // Service Packages
+        servicePackages, isLoadingPackages,
+        addServicePackage, updateServicePackage, deleteServicePackage, restoreServicePackage,
 
         registerUser,
         updateUser,
@@ -1039,6 +1226,7 @@ export function CRMDataProvider({ children }: { children: ReactNode }) {
         promoters, isLoadingPromoters, suppliers, isLoadingSuppliers,
         companies, isLoadingCompanies, bankAccounts, isLoadingBankAccounts, categories, isLoadingCategories,
         transactions, isLoadingTransactions, loans, isLoadingLoans,
+        servicePackages, isLoadingPackages,
         addLog, registerUser
     ]);
 

@@ -14,6 +14,7 @@ import { AddSupplierDialog } from './AddSupplierDialog';
 import { useToast } from '@/hooks/use-toast';
 import { type Supplier } from '@/lib/types';
 import { Badge } from '../ui/badge';
+import { useCRMData } from '@/contexts/CRMDataContext';
 import { cn } from '@/lib/utils';
 import { formatDateString } from '@/lib/utils';
 
@@ -37,6 +38,7 @@ export function SuppliersTab({
     selectedSupplierId
 }: SuppliersTabProps) {
   const { toast } = useToast();
+  const { getServicesBySupplierId } = useCRMData();
   const [searchTerm, setSearchTerm] = useState('');
   const [serviceFilter, setServiceFilter] = useState('all');
 
@@ -145,7 +147,7 @@ export function SuppliersTab({
                   <TableHeader>
                       <TableRow>
                           <TableHead>Nombre del Proveedor</TableHead>
-                          <TableHead>Fecha de Inicio</TableHead>
+                          <TableHead>Servicios Vinculados</TableHead>
                           <TableHead>Estado</TableHead>
                           <TableHead>Servicio/Producto</TableHead>
                           {showActions && <TableHead className="text-right">Acciones</TableHead>}
@@ -162,7 +164,26 @@ export function SuppliersTab({
                             )}
                           >
                               <TableCell className="font-medium">{supplier.name}</TableCell>
-                               <TableCell>{supplier.createdAt ? formatDateString(supplier.createdAt.toDate()) : 'N/A'}</TableCell>
+                              <TableCell>
+                                {(() => {
+                                  const linkedServices = getServicesBySupplierId(supplier.id);
+                                  return linkedServices.length > 0 ? (
+                                    <div className="flex flex-wrap gap-1">
+                                      {linkedServices.slice(0, 2).map(s => (
+                                        <Badge key={s.id} variant="outline" className="text-xs">
+                                          {s.name}
+                                          {s.primarySupplierId === supplier.id && ' ★'}
+                                        </Badge>
+                                      ))}
+                                      {linkedServices.length > 2 && (
+                                        <Badge variant="secondary" className="text-xs">+{linkedServices.length - 2}</Badge>
+                                      )}
+                                    </div>
+                                  ) : (
+                                    <span className="text-muted-foreground text-xs">Sin vincular</span>
+                                  );
+                                })()}
+                              </TableCell>
                               <TableCell>
                                   <Badge variant={supplier.status === 'Activo' ? 'default' : 'secondary'}>{supplier.status}</Badge>
                               </TableCell>

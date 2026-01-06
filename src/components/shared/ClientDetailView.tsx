@@ -6,7 +6,8 @@ import { type Client, type Document, type Task, type WorkflowAction, type Workfl
 import { useCRMData } from "@/contexts/CRMDataContext";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Edit, Trash2, Plus, Download, FileText, UploadCloud, Info, Users, Target, ListTodo, CheckCircle2, Briefcase, UserCheck, Smartphone, CalendarDays, Percent, Tag, FileCheck2, Save, MessageSquare, Eye } from "lucide-react";
+import { Edit, Trash2, Plus, Download, FileText, UploadCloud, Info, Users, Target, ListTodo, CheckCircle2, Briefcase, UserCheck, Smartphone, CalendarDays, Percent, Tag, FileCheck2, Save, MessageSquare, Eye, ChevronsRight } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { SmartDocumentUploadDialog } from "./SmartDocumentUploadDialog";
 import { DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
@@ -42,12 +43,13 @@ const DetailItem = ({ label, value, href }: { label: string; value?: string | nu
 };
 
 export function ClientDetailView({ client, onClose }: ClientDetailViewProps) {
-    const { getDocumentsByClientId, serviceWorkflows, getTasksByClientId, promoters: allPromoters, updateClient, addNote, notes: allNotes } = useCRMData();
+    const { getDocumentsByClientId, serviceWorkflows, getTasksByClientId, promoters: allPromoters, updateClient, addNote, notes: allNotes, addTask } = useCRMData();
     const { toast } = useToast();
     
     const [isUploadDialogOpen, setIsUploadDialogOpen] = useState(false);
     const [newNote, setNewNote] = useState('');
     const [isSavingNote, setIsSavingNote] = useState(false);
+    const [isChangingStage, setIsChangingStage] = useState(false);
     
     if (!client) {
         return (
@@ -149,6 +151,70 @@ export function ClientDetailView({ client, onClose }: ClientDetailViewProps) {
         }
         return null;
     }, [client.currentWorkflowStageId, serviceWorkflows]);
+
+    // Get all stages for client's subscribed services (hierarchically ordered)
+    const allStagesForClient = useMemo((): { stage: AnyStage; serviceName: string; level: number; path: string }[] => {
+        if (!client.subscribedServiceIds || !serviceWorkflows) return [];
+        const stages: { stage: AnyStage; serviceName: string; level: number; path: string }[] = [];
+        
+        client.subscribedServiceIds.forEach(serviceId => {
+            const service = serviceWorkflows.find(s => s.id === serviceId);
+            if (!service) return;
+            
+            const sortedStages = [...(service.stages || [])].sort((a,b) => (a.order || 0) - (b.order || 0));
+            sortedStages.forEach((stage1, i1) => {
+                stages.push({ stage: stage1, serviceName: service.name, level: 1, path: `${i1 + 1}` });
+                const sortedSubStages = [...(stage1.subStages || [])].sort((a,b) => (a.order || 0) - (b.order || 0));
+                sortedSubStages.forEach((stage2, i2) => {
+                    stages.push({ stage: stage2, serviceName: service.name, level: 2, path: `${i1 + 1}.${i2 + 1}` });
+                    const sortedSubSubStages = [...(stage2.subSubStages || [])].sort((a,b) => (a.order || 0) - (b.order || 0));
+                    sortedSubSubStages.forEach((stage3, i3) => {
+                        stages.push({ stage: stage3, serviceName: service.name, level: 3, path: `${i1 + 1}.${i2 + 1}.${i3 + 1}` });
+                    });
+                });
+            });
+        });
+        
+        return stages;
+    }, [client.subscribedServiceIds, serviceWorkflows]);
+
+    const handleStageChange = async (stageId: string) => {
+        if (!client || stageId === client.currentWorkflowStageId) return;
+        
+        setIsChangingStage(true);
+        try {
+            const selectedStageInfo = allStagesForClient.find(s => s.stage.id === stageId);
+            if (!selectedStageInfo) return;
+            
+            await updateClient(client.id, { currentWorkflowStageId: stageId });
+            
+            // Create tasks for the new stage if it has actions
+            const newStage = selectedStageInfo.stage;
+            if (newStage.actions && newStage.actions.length > 0) {
+                const service = serviceWorkflows.find(s => s.name === selectedStageInfo.serviceName);
+                for (const action of newStage.actions) {
+                    // Check if task already exists for this client
+                    const existingTask = clientTasks.find(t => t.title === action.title && t.status !== 'Archivado');
+                    if (!existingTask) {
+                        await addTask({ ...action, clientId: client.id, serviceId: service?.id });
+                    }
+                }
+            }
+            
+            toast({
+                title: "Etapa Actualizada",
+                description: `${client.name} ahora está en la etapa: ${selectedStageInfo.stage.title}`,
+            });
+        } catch (error) {
+            toast({
+                variant: "destructive",
+                title: "Error",
+                description: "No se pudo cambiar la etapa del cliente.",
+            });
+        } finally {
+            setIsChangingStage(false);
+        }
+    };
     
     const handleDownload = (doc: Document) => {
         if (doc.downloadURL) {
@@ -317,17 +383,43 @@ export function ClientDetailView({ client, onClose }: ClientDetailViewProps) {
                     </Card>
 
                     <Card>
-                        <CardHeader><CardTitle>Tareas pendientes</CardTitle></CardHeader>
+                        <CardHeader><CardTitle>Etapa y Tareas</CardTitle></CardHeader>
                         <CardContent className="space-y-4">
-                            {currentStage && (
-                                <div className="flex items-start gap-2">
-                                    <Target className="h-4 w-4 text-blue-500 mt-1 flex-shrink-0" />
-                                    <div>
-                                        <p className="text-sm text-muted-foreground">Etapa Actual</p>
-                                        <p className="text-sm font-medium">{currentStage.title}</p>
-                                    </div>
+                            <div className="space-y-2">
+                                <div className="flex items-center gap-2">
+                                    <Target className="h-4 w-4 text-blue-500 flex-shrink-0" />
+                                    <p className="text-sm font-medium">Etapa Actual</p>
                                 </div>
-                            )}
+                                <Select 
+                                    value={client.currentWorkflowStageId || ''} 
+                                    onValueChange={handleStageChange}
+                                    disabled={isChangingStage}
+                                >
+                                    <SelectTrigger className="w-full">
+                                        <SelectValue placeholder="Seleccionar etapa...">
+                                            {currentStage ? currentStage.title : 'Sin etapa asignada'}
+                                        </SelectValue>
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {allStagesForClient.map(({ stage, serviceName, level, path }) => (
+                                            <SelectItem key={stage.id} value={stage.id}>
+                                                <span className="flex items-center gap-2">
+                                                    <span className="text-muted-foreground text-xs">{path}</span>
+                                                    <span style={{ paddingLeft: `${(level - 1) * 12}px` }}>
+                                                        {stage.title}
+                                                    </span>
+                                                    {client.subscribedServiceIds.length > 1 && (
+                                                        <span className="text-xs text-muted-foreground">({serviceName})</span>
+                                                    )}
+                                                </span>
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                                {isChangingStage && (
+                                    <p className="text-xs text-muted-foreground">Cambiando etapa...</p>
+                                )}
+                            </div>
 
                             <div>
                                 <h4 className="flex items-center gap-2 text-sm font-semibold mb-2">

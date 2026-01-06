@@ -35,6 +35,7 @@ export type Client = {
   contactPhone?: string;
   website?: string;
   subscribedServiceIds: string[];
+  subscribedPackageIds?: string[]; // IDs of service packages client is subscribed to
   currentWorkflowStageId?: string;
   createdAt?: any;
   promoters?: PromoterRef[];
@@ -71,6 +72,24 @@ export type Supplier = {
   archivedAt?: any;
 }
 
+// Represents a recipient of commission distribution
+export type CommissionRecipient = {
+  id: string;
+  type: 'witbiz' | 'supplier' | 'team_member' | 'promoter';
+  entityId?: string; // ID of supplier, team member, or promoter
+  name: string;
+  percentage: number; // Percentage of the parent's share
+}
+
+// Revenue distribution configuration for a service
+export type RevenueDistribution = {
+  // First level: How revenue is split between provider and WitBiz
+  supplierPercentage: number; // % that goes to the supplier/provider
+  witbizPercentage: number; // % that goes to WitBiz
+  // Second level: How WitBiz's share is distributed internally
+  witbizDistribution?: CommissionRecipient[];
+}
+
 export type SubTask = {
   id: string;
   description: string;
@@ -86,6 +105,7 @@ export type Task = {
   clientId: string;
   clientName?: string;
   serviceId?: string; // ID of the service this task belongs to
+  stageId?: string; // ID of the workflow stage this task belongs to
   assignedToId?: string;
   assignedToName?: string;
   assignedToPhotoURL?: string;
@@ -183,6 +203,9 @@ export type Transaction = {
   clientId?: string;
   clientName?: string;
   attachmentUrl?: string; // URL al comprobante
+  documentId?: string; // Link to Document for audit trail
+  serviceId?: string; // Link to service workflow
+  stageId?: string; // Link to workflow stage
   destinationAccountId?: string;
 }
 
@@ -402,6 +425,26 @@ export interface ServiceWorkflow {
     stages: WorkflowStage[];
     order: number;
     status?: 'Activo' | 'Archivado';
+    archivedAt?: any;
+    // Supplier/Provider link
+    linkedSupplierIds?: string[]; // Suppliers that provide this service
+    primarySupplierId?: string; // Main supplier for this service
+    // Revenue distribution configuration
+    revenueDistribution?: RevenueDistribution;
+}
+
+// Service Package - combines multiple services for unified billing/accounting
+export interface ServicePackage {
+    id: string;
+    name: string;
+    description?: string;
+    serviceIds: string[]; // IDs of services included in this package
+    // Package-level pricing (overrides individual service pricing when subscribed as package)
+    packagePrice?: number;
+    packageCommissions?: Commission[]; // Unified commissions for the package
+    discount?: number; // Discount percentage when buying as package
+    status?: 'Activo' | 'Archivado';
+    createdAt?: any;
     archivedAt?: any;
 }
 

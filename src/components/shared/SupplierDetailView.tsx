@@ -6,7 +6,7 @@ import { type Supplier, type Document } from "@/lib/types";
 import { useCRMData } from "@/contexts/CRMDataContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { X, Truck, UserCheck, Briefcase, Phone, Mail, UploadCloud, FileText, Download, Info, CalendarDays, Eye } from "lucide-react";
+import { X, Truck, UserCheck, Briefcase, Phone, Mail, UploadCloud, FileText, Download, Info, CalendarDays, Eye, Workflow, Link2 } from "lucide-react";
 import { DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Badge } from "../ui/badge";
 import { useDialogs } from "@/contexts/DialogsContext";
@@ -47,7 +47,7 @@ const DetailItem = ({ icon: Icon, label, value, href }: { icon: React.ElementTyp
 };
 
 export function SupplierDetailView({ supplier, onClose }: SupplierDetailViewProps) {
-    const { promoters, getDocumentsBySupplierId } = useCRMData();
+    const { promoters, getDocumentsBySupplierId, getServicesBySupplierId } = useCRMData();
     const { toast } = useToast();
 
     if (!supplier) {
@@ -61,6 +61,7 @@ export function SupplierDetailView({ supplier, onClose }: SupplierDetailViewProp
     }
     
     const supplierDocuments = getDocumentsBySupplierId(supplier.id);
+    const linkedServices = getServicesBySupplierId(supplier.id);
 
     const handleDownload = (doc: Document) => {
         if (doc.downloadURL) {
@@ -107,6 +108,41 @@ export function SupplierDetailView({ supplier, onClose }: SupplierDetailViewProp
                                         <span className="text-sm text-muted-foreground">Fecha de Inicio</span>
                                         <p className="text-sm font-medium">{formatDateString(supplier.createdAt.toDate())}</p>
                                     </div>
+                                </div>
+                            )}
+                        </CardContent>
+                    </Card>
+
+                    <Card>
+                        <CardHeader>
+                            <CardTitle className="flex items-center gap-2">
+                                <Link2 className="h-5 w-5" />
+                                Servicios Vinculados
+                            </CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            {linkedServices.length > 0 ? (
+                                <div className="space-y-2">
+                                    {linkedServices.map(service => (
+                                        <div 
+                                            key={service.id} 
+                                            className="flex items-center justify-between p-3 rounded-md bg-primary/5 border border-primary/20"
+                                        >
+                                            <div className="flex items-center gap-2">
+                                                <Workflow className="h-4 w-4 text-primary"/>
+                                                <span className="font-medium">{service.name}</span>
+                                            </div>
+                                            {service.primarySupplierId === supplier.id && (
+                                                <Badge variant="default" className="text-xs">Principal</Badge>
+                                            )}
+                                        </div>
+                                    ))}
+                                </div>
+                            ) : (
+                                <div className="text-center text-muted-foreground py-6">
+                                    <Link2 className="mx-auto h-8 w-8 mb-2 opacity-50" />
+                                    <p className="text-sm">Este proveedor no está vinculado a ningún servicio.</p>
+                                    <p className="text-xs mt-1">Vincúlalo desde la configuración de servicios en /workflows</p>
                                 </div>
                             )}
                         </CardContent>

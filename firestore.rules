@@ -73,6 +73,10 @@ service cloud.firestore {
         allow read, write: if isSignedIn();
     }
     
+    match /servicePackages/{packageId} {
+        allow read, write: if isSignedIn();
+    }
+    
     match /promoters/{promoterId} {
         allow read, write: if isSignedIn();
     }
